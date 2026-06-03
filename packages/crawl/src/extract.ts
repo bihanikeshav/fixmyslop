@@ -79,7 +79,7 @@ export async function withPage<T>(
   }
 }
 
-async function extractElements(page: Page): Promise<CrawlElement[]> {
+export async function extractElements(page: Page): Promise<CrawlElement[]> {
   return page.evaluate(() => {
     const vh = window.innerHeight;
     const out: CrawlElement[] = [];

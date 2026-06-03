@@ -8,3 +8,4 @@ export * from "./role.js";
 export * from "./saturation.js";
 export * from "./recommend.js";
 export * from "./slop.js";
+export * from "./recommendations.js";
