@@ -1,0 +1,23 @@
+Ranked Google Fonts for Healthcare Hero Heading
+=================================================
+
+1. Inter
+2. Poppins
+3. Lato
+4. Montserrat
+5. DM Sans
+6. Sora
+7. Work Sans
+8. Outfit
+9. Public Sans
+10. Rubik
+11. Nunito
+12. IBM Plex Sans
+13. Manrope
+14. Space Mono
+15. Cabin
+16. Barlow
+17. Lexend
+18. JetBrains Mono
+19. Alata
+20. Pathway Gothic One

@@ -22,17 +22,25 @@ const slug = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   const indexIds = await loadIndexIds();
+  const existing = await loadExistingProfiles();
+  const existingUrls = new Set(existing.map((p) => p.url));
 
-  const profiles = await withBrowser(async (browser) => {
-    let urls = args.urls;
-    if (args.directory) {
-      const listing = AI_DIRECTORIES[args.directory] ?? args.directory;
+  const fresh = await withBrowser(async (browser) => {
+    const urls = [...args.urls];
+    for (const dir of args.directories) {
+      const listing = AI_DIRECTORIES[dir] ?? dir;
       console.log(`Discovering product sites from ${listing} ...`);
-      urls = await discoverOutboundLinks(browser, listing, args.limit);
-      console.log(`  found ${urls.length} candidate sites`);
+      const found = await discoverOutboundLinks(browser, listing, args.limit);
+      console.log(`  found ${found.length} candidate sites`);
+      urls.push(...found);
     }
+    // Dedupe, and skip anything already in the corpus (accumulate, don't re-crawl).
+    const seen = new Set(existingUrls);
+    const todo: string[] = [];
+    for (const u of urls) if (!seen.has(u)) { seen.add(u); todo.push(u); }
+
     const results: SiteProfile[] = [];
-    for (const url of urls) {
+    for (const url of todo) {
       const p = await crawlUrl(browser, url);
       const heroReal = p.heroFont && indexIds.has(slug(p.heroFont)) ? "" : " (non-GF)";
       console.log(p.ok ? `  ✓ ${url}  hero=${p.heroFont}${p.heroFont ? heroReal : ""}  body=${p.bodyFont}` : `  ✗ ${url}  ${p.error}`);
@@ -41,7 +49,9 @@ async function main(): Promise<void> {
     return results;
   });
 
-  // Aggregate role-aware observations.
+  const profiles = [...existing, ...fresh]; // accumulate across runs
+
+  // Aggregate role-aware observations over the FULL corpus.
   const display = new Map<string, number>();
   const body = new Map<string, number>();
   for (const p of profiles) {
@@ -58,25 +68,35 @@ async function main(): Promise<void> {
   await writeFile(resolve(DATA_DIR, "observations.crawl.json"), JSON.stringify(observations, null, 2));
 
   const ok = profiles.filter((p) => p.ok).length;
-  console.log(`\nDone. ${ok}/${profiles.length} sites crawled.`);
-  const topDisplay = [...display.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
+  console.log(`\nDone. +${fresh.length} new this run. Corpus: ${ok}/${profiles.length} sites.`);
+  const topDisplay = [...display.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12);
   console.log("Most common HERO/HEADING fonts in the wild:");
   for (const [id, c] of topDisplay) console.log(`   ${String(c).padStart(2)}  ${id}${indexIds.has(id) ? "" : "  (non-Google)"}`);
 }
 
 interface Args {
   urls: string[];
-  directory?: string;
+  directories: string[];
   limit: number;
 }
 
+async function loadExistingProfiles(): Promise<SiteProfile[]> {
+  try {
+    return JSON.parse(await readFile(resolve(DATA_DIR, "crawl-profiles.json"), "utf8")) as SiteProfile[];
+  } catch {
+    return [];
+  }
+}
+
 function parseArgs(argv: string[]): Args {
-  const out: Args = { urls: [], limit: 15 };
+  const out: Args = { urls: [], directories: [], limit: 15 };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--urls") out.urls = (argv[++i] ?? "").split(",").filter(Boolean);
-    else if (argv[i] === "--directory") out.directory = argv[++i];
+    else if (argv[i] === "--directory") out.directories.push(argv[++i] ?? "");
+    else if (argv[i] === "--directories") out.directories.push(...(argv[++i] ?? "").split(",").filter(Boolean));
     else if (argv[i] === "--limit") out.limit = Number(argv[++i] ?? "15");
   }
+  out.directories = out.directories.filter(Boolean);
   return out;
 }
 
