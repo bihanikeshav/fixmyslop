@@ -203,6 +203,11 @@ export const FONT_GROUPS: readonly FontGroup[] = [
   { id: "esports-edge", name: "Esports Edge", hero: "Russo One", body: "Saira", vibes: ["gaming-esports", "events-conference"], mood: "aggressive", why: "Heavy techno display + condensed body, no Orbitron cliché." },
   { id: "gazette", name: "Gazette", hero: "Cinzel", body: "EB Garamond", vibes: ["luxury-fashion", "magazine-editorial"], mood: "classical", why: "Inscriptional caps over a workhorse garalde." },
   { id: "art-tech", name: "Art-Tech", hero: "Syne", body: "Hanken Grotesk", accent: "Syne Mono", vibes: ["ai-saas", "creative-portfolio", "design-agency"], mood: "art-world", why: "Wide art-school display + grotesk + matching mono." },
+  { id: "crypto-terminal", name: "Crypto Terminal", hero: "Michroma", body: "Chivo", accent: "Space Mono", vibes: ["web3-crypto", "gaming-esports", "dev-tool"], mood: "techno", why: "Wide sci-fi caps + neutral body + mono, without the Orbitron cliché." },
+  { id: "counsel", name: "Counsel", hero: "EB Garamond", body: "Source Serif 4", vibes: ["legal-services", "consulting", "news-media"], mood: "authoritative", why: "Garalde gravity that isn't Playfair." },
+  { id: "atelier", name: "Atelier", hero: "Italiana", body: "Spectral", vibes: ["beauty-cosmetics", "luxury-fashion"], mood: "delicate", why: "Fashion-plate display with an airy reading serif." },
+  { id: "broadsheet", name: "Broadsheet", hero: "Newsreader", body: "Source Serif 4", vibes: ["news-media", "magazine-editorial", "personal-blog"], mood: "press", why: "News serif built for screens, no Didone cliché." },
+  { id: "playground", name: "Playground", hero: "Grandstander", body: "Hanken Grotesk", vibes: ["kids-family", "education", "dtc-brand"], mood: "playful", why: "Bouncy display + clean body, dodges Poppins/Nunito." },
 ];
 
 export interface Palette {
@@ -227,6 +232,9 @@ export const FRESH_PALETTES: readonly Palette[] = [
   { id: "ink-teal", name: "Ink & Teal", background: "#F2EBDD", surface: "#FFFFFF", text: "#14140F", accent: "#0E5C53", accent2: "#14140F", avoids: "oxblood/ink-red (editorial default)", vibes: ["magazine-editorial", "personal-blog"] },
   { id: "hi-vis", name: "Hi-Vis", background: "#121212", surface: "#1C1C1C", text: "#F2F2F2", accent: "#C6F432", accent2: "#FF1F6B", avoids: "neon-green-on-black (gaming default)", vibes: ["gaming-esports", "events-conference"] },
   { id: "fuchsia-ink", name: "Fuchsia Ink", background: "#FBF6EF", surface: "#FFFFFF", text: "#16121A", accent: "#FF1F6B", accent2: "#1454FF", avoids: "both indigo default and warm-terracotta escape", vibes: ["dtc-brand", "creative-portfolio", "music-artist"] },
+  { id: "voltage", name: "Voltage", background: "#0B0B12", surface: "#15151F", text: "#EDEDF2", accent: "#C6F432", accent2: "#FF1F6B", avoids: "neon-green/cyan-on-black (gaming/web3 default)", vibes: ["web3-crypto", "gaming-esports", "events-conference"] },
+  { id: "chambers", name: "Chambers", background: "#F3EFE7", surface: "#FFFFFF", text: "#1A1A14", accent: "#14403A", accent2: "#8A6D3B", avoids: "Playfair + ink-red/navy (legal/consulting default)", vibes: ["legal-services", "consulting", "real-estate"] },
+  { id: "petal", name: "Petal", background: "#F7EFEF", surface: "#FFFFFF", text: "#2A1E26", accent: "#7C2E5A", accent2: "#2A1E26", avoids: "gold + blush-pink (beauty default)", vibes: ["beauty-cosmetics", "music-artist"] },
 ];
 
 export function fontGroupsForVibe(vibe?: string): FontGroup[] {
