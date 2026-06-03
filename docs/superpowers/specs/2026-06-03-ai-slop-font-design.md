@@ -1,12 +1,12 @@
 # ai-slop-font — Design Spec
 
 **Date:** 2026-06-03
-**Status:** Draft for review
+**Status:** Draft for review (v2)
 **Working name:** `ai-slop-font`
 
 ## 1. Problem
 
-AI coding tools (Claude, GPT) converge on the same handful of fonts (Inter, Geist, and friends) and the same color palettes. Plugins that "fix" this (e.g. impeccable) help briefly, but their picks become the next mainstream as soon as enough people adopt them. The result is homogenized, recognizably "AI-built" websites.
+AI coding tools (Claude, GPT) converge on the same handful of fonts and color palettes. Plugins that "fix" this help briefly, but their picks become the next mainstream as soon as enough people adopt them. The result is homogenized, recognizably "AI-built" websites.
 
 The hard part is not finding a good font once. It is *staying ahead of saturation* — any fixed recommendation list eventually becomes the new slop.
 
@@ -16,127 +16,156 @@ Nothing in this system is ever a fixed "good list." Every recommendation is comp
 
 > **recommend = high quality × low _current_ saturation**
 
-As soon as a font or palette starts trending in the usage data, the engine automatically de-weights it and rotates to the next under-saturated option. This feedback loop is the actual product. It lives in exactly one place (the Brain), so all four user-facing surfaces stay fresh together rather than each going stale on its own schedule.
+As something starts trending in the usage data, the engine de-weights it and rotates toward the next under-saturated option. This feedback loop is the actual product, and it lives in one place (the Brain), so all four surfaces stay fresh together.
 
-This applies to every surface, including the palette picker — a curated "good palettes" list would itself become slop if adopted widely, so palettes are recommended by the same saturation × quality rule, not a static list.
+**Two hard rules that keep it from feeling erratic or recommending junk:**
 
-## 3. Architecture: one Brain, four thin surfaces
+1. **Saturation only re-orders _within_ the quality-floored set.** It never pushes a recommendation down into low-quality fonts. Every suggestion is always genuinely good — just less worn. You never get "weird ugly font," only "good and less common."
+2. **Stability over a project's lifetime.** Saturation moves at the speed of real adoption (months/quarters), not hours. The recommendation set is cached and *deterministic within a refresh window* (same query → same answer this cycle), refreshed on a slow cadence. A "lock my pick" rule means the engine won't call your chosen font slop mid-project, and a **freshness↔safety dial** lets users choose how aggressively to avoid the mainstream.
+
+## 3. Saturation is role-aware (the key insight)
+
+Font popularity is meaningless without **role**. Foundational body/UI fonts (Inter, Roboto, Open Sans) are *infrastructure* — being common there is neutral, not slop. The slop that hurts is in the **display/hero role**: the H1, the headline, the font meant to carry personality.
+
+So saturation is segmented by role:
+
+- **`body/foundational`** — the dominant font in paragraph/long text. High saturation here is fine.
+- **`display/hero`** — the largest above-the-fold font + the first `<h1>`. **This is where slop is measured.**
+
+A font that is a popular *body* font is neutral. A *display* font appearing everywhere this month is the signal we fight.
+
+Consequence: **Google Fonts popularity ranking is NOT the slop detector** (it is dominated by body-text volume and is role-blind). It is demoted to a **"foundational baseline / exclusion list"** — the set of fonts so common they read as invisible, used to exclude from personality recommendations.
+
+## 4. Architecture: one Brain, four thin surfaces
 
 ```
-INGEST (scheduled, weekly)
-  ├─ Crawler:      Product Hunt + Show HN → live sites → detect fonts & palette colors
-  └─ Index builder: all ~1,500 Google Fonts + metadata + computed metrics + ratings
+INGEST (deterministic, scheduled weekly)
+  Reusable new-products pipeline:  discover → store → run analyzers
+    ├─ Discovery: feed-first source registry (§7)
+    ├─ Crawl:     headless Chromium VM, NO LLM (§6)
+    └─ Analyzer #1: fonts (role-aware) + palette.  More analyzers later.
+  Plus two more saturation signals:
+    ├─ Synthetic: sample LLMs, read their hero-font defaults
+    └─ Community: chatter from HN/Reddit (leading-edge trend)
+  Plus the Font Index: all Google Fonts + metadata + metrics + ratings
             │
             ▼
-THE BRAIN (the actual product)
-  Saturation × Quality scoring engine.
-  Every font & palette has two live scores:
-    - saturation  (how overused right now — from the crawler)
-    - quality     (metrics floor → personality/taste layer)
-  Serves one answer: "good AND currently under-saturated, appropriate for use-case X."
-  Anti-inductive: trending items auto-retire.
+THE BRAIN  (the actual product)
+  Saturation (role-aware) × Quality (metrics floor → taste) scoring engine.
+  Serves: "good AND currently under-saturated in the display role,
+           appropriate for use-case X." Anti-inductive; rules in §2.
             │
    ┌────────┼────────┬───────────────┐
    ▼        ▼        ▼               ▼
  ③ MCP   ④ Discovery ⑤ Slop-o-meter  ⑥ Palette picker
 ```
 
-The Brain is the only component with opinions. Each surface is a thin client that asks the Brain a question and renders the answer.
+The Brain is the only component with opinions. Each surface is a thin client.
 
-## 4. Stack
+## 5. Stack
 
 TypeScript monorepo:
-
 - **Web surfaces:** Next.js
-- **Crawler + scoring engine:** Node (TypeScript)
-- **Database:** Postgres (saturation + quality + index)
+- **Crawler + engine:** Node (TypeScript)
+- **Headless browser:** Playwright (Chromium) on a single scheduled VM
+- **Database:** Postgres
 - **AI surface:** official TypeScript MCP SDK
-- **Font metrics:** `opentype.js` / `fontkit` for glyph-level measurements
+- **Font metrics:** `opentype.js` / `fontkit`
 
-One repo, one Brain, four thin clients.
+## 6. The crawl is deterministic and LLM-free
 
-## 5. Components
+The entire empirical pipeline runs on **one scheduled VM with headless Chromium** — no LLM, no GPU, no ML serving. It is reproducible and auditable.
 
-### 5.1 Font Index
-- Source: Google Fonts Developer API for the family list + metadata (category, variants, subsets).
-- Download font files (the O'Donovan `gwfonts.zip` is a convenient seed set) for metric extraction.
-- Stores: family, category, available weights/styles, subsets, computed metrics (§7), personality vector (§7), saturation score (§6).
+1. **Pull product list** from the source registry (§7) — feed-first.
+2. **Render each site** in headless Chromium (defeats JS-rendered + self-hosted-font invisibility).
+3. **Extract fonts** via `getComputedStyle` → exact `font-family`, `font-size`, `weight`. Pure DOM measurement.
+4. **Classify role by deterministic heuristic** — `display/hero` = largest above-the-fold font + first `<h1>`; `body` = dominant font in long text. Auditable rules, no LLM.
+5. **Multi-supplier detection** — read whatever is actually rendered (Adobe Fonts, Fontshare, Fontspring, self-hosted `@font-face`), not just `fonts.googleapis.com`.
+6. **Palette extraction** — computed colors weighted by rendered area, clustered with fixed-seed k-means (deterministic).
+7. **Aggregate** → role-segmented saturation counts. Snapshot + timestamp each crawl so any result is reproducible from stored data.
 
-### 5.2 Crawler (saturation signal)
-- Weekly scheduled job.
-- Sources (v1, empirical): **Product Hunt** (API, dated launches) and **Show HN** via the free Hacker News Algolia API.
-- For each discovered site: fetch HTML/CSS, detect `fonts.googleapis.com` `<link>` references (fonts are named in plain text), and extract palette colors from CSS.
-- Writes time-stamped usage counts so saturation is a *trend*, not a static count.
-- Polite crawling; respect robots/ToS. HN Algolia is open; Product Hunt via its API.
-- Design choice (v1): empirical scraping first. Synthetic LLM-sampling ("prompt models to build a landing page, parse their default fonts/colors") is a planned second signal, stored with a `source` tag in the same saturation table.
+Observation is supplier-agnostic; **recommendations bias toward easily-usable sources** (Google Fonts + free Fontshare) so the MCP's suggestions are droppable straight into a build.
 
-### 5.3 The Brain (scoring engine + internal API)
-- Input: `(personality / attributes, use-case, optional constraints)`.
-- Output: ranked fonts and palettes that maximize quality × (1 − saturation), filtered for use-case appropriateness.
-- Single source of truth queried by all four surfaces.
+## 7. Discovery source registry (feed-first)
 
-### 5.4 Surfaces (thin clients)
-- **③ MCP server** — tools for Claude/GPT mid-build: e.g. `suggest_font(personality, use_case)`, `suggest_palette(...)`, `check_slop(url_or_stack)`. The "soul" of the project; small adapter over the Brain.
-- **④ Discovery site** — humans browse fonts by personality/attribute.
-- **⑤ Slop-o-meter** — paste a URL → slop score. Reuses the crawler's detection code.
-- **⑥ Palette picker** — under-used good palettes + an explicit anti-list of the overused ones. Built last because palettes need their own saturation/quality modeling (continuous color space → clustering) and carry the highest paradox risk, so they get the most-mature engine.
+Ingest order favors clean APIs/RSS (reproducible) over HTML scraping (fragile).
 
-## 6. Saturation scoring
-- Per font / per palette: frequency of appearance across crawled sites, weighted toward recency (a font trending *up* is penalized faster than one with a flat long tail).
-- Stored as a normalized 0–1 score that updates each crawl cycle.
+**Tier 1 — clean APIs/feeds (deterministic backbone):**
+- Hacker News (Show HN) — Firebase + Algolia API
+- Reddit — r/SideProject, r/SaaS, r/InternetIsBeautiful — official API / `.json` / RSS
+- Product Hunt — GraphQL API + RSS
+- BetaList — RSS
 
-## 7. Quality + personality scoring (the "taste" axis)
+**Tier 2 — scrape "just launched" pages:** Uneed, Peerlist, Startup Fame, EverFeatured, SaaSHub, Indie Hackers, Makerlog
 
-Grounded in typography research (§9). A **three-vote pipeline**:
+**Tier 3 — AI-tool directories (scrape "newest" views only):** There's An AI For That, Futurepedia, Toolify, RankmyAI
 
-1. **Objective metrics floor** (computed from the font file, no taste):
-   - x-height ratio, aperture (openness of c/e/s), counter size, stroke contrast, weight count, has-italics, charset completeness.
-   - Acts as a hard filter: kills fonts that are "rare because broken/limited," not rare-and-good.
-2. **Personality vector** (seeded from real data):
-   - Seed from the **O'Donovan crowdsourced attribute dataset** (ratings on Google Fonts).
-   - Extend to unrated/newer fonts via a **visual embedding** (DeepFont-style) → predict attributes from nearest neighbors.
-   - Organize the attribute list under **Shaikh & Chaparro's three factors**: Potency (rugged↔delicate), Evaluative (beautiful↔cheap), Activity (loud↔calm).
-3. **LLM + curation vote**:
-   - LLM-as-judge and human-curation sources (Typewolf, Fonts In Use) as a third vote that breaks ties and adds use-case appropriateness. Never decides alone — metrics + data model can outvote it, which guards against re-introducing AI taste bias.
+**Self-seeding:** parse the maintained GitHub "awesome lists" (`best-of-ai/ai-directories`, `DirectorySurf/awesome-producthunt-alternatives`) to auto-discover new aggregators, so the registry is not hardcoded.
 
-The "personality" controlled vocabulary is therefore the O'Donovan attribute set, structured by Shaikh's three factors — not invented from scratch.
+**Deliberate gap:** X/Twitter's API is now expensive and locked down; the "build in public" signal there is out of scope for v1 rather than built on fragile infra. Conscious choice, not a silent omission.
 
-## 8. Build order (all four ship; this is sequence, not triage)
+## 8. The reusable new-products pipeline
+
+The valuable asset is not "a font counter" — it is a **weekly compiled feed of new products**, with pluggable analyzers:
+
+```
+discover products → store → run analyzers[]
+```
+
+- **Analyzer #1 (now):** fonts (role-aware) + palette.
+- **Later:** additional analyzers (messaging patterns, stack, pricing) plug into the same feed without re-building discovery.
+
+Fonts first; the pipeline is built so the rest can plug in.
+
+## 9. Quality + personality scoring (the "taste" axis)
+
+Grounded in typography research (§12). A **three-vote pipeline**:
+
+1. **Objective metrics floor** (deterministic, from the font file): x-height ratio, aperture, counter size, stroke contrast, weight count, italics, charset completeness. Hard filter that kills "rare because broken/limited" fonts.
+2. **Personality vector** (seeded from real data): seed from the **O'Donovan crowdsourced attribute dataset** (ratings on Google Fonts); extend to unrated fonts via a **DeepFont-style visual embedding** (predict attributes from nearest neighbors). Organized under **Shaikh & Chaparro's three factors**: Potency, Evaluative, Activity.
+3. **LLM + curation vote** (offline, cached, outvotable): LLM-as-judge + human curation (Typewolf, Fonts In Use) as a third vote for ties and use-case appropriateness. Never decides alone.
+
+**Where the LLM lives:** only here (taste tagging — run once per font, cached forever, outvotable) and in the *separate* synthetic saturation signal. **The crawl and all extraction are LLM-free.**
+
+## 10. Surfaces and their markets (honest per-surface)
+
+- **③ MCP — mass market, invisible.** Claude/GPT call it mid-build (`suggest_font`, `suggest_palette`, `check_slop`); end users get better fonts without caring or installing anything. This is the real distribution play and the soul of the project.
+- **⑤ Slop-o-meter — acquisition/viral.** Paste a URL → role-aware slop score. Shares the single-page **role-aware extraction module** (render one URL → hero/body fonts), which is *built here* and then reused at scale by the M3 crawl. At M2 it scores against the synthetic signal + foundational baseline; the score deepens once the real crawl lands in M3.
+- **④ Discovery site — niche.** Humans browse by personality. Competes with Typewolf; weakest commercial surface, but cheap once the Brain exists.
+- **⑥ Palette picker — last, riskiest.** Continuous color space needs clustering; highest paradox risk → gets the most-mature engine.
+
+## 11. Build order (all four ship; sequence, not triage)
 
 | # | Milestone | Rationale |
 |---|-----------|-----------|
-| M1 | Font Index + quality scoring | Foundation; yields a queryable "good fonts" dataset before any crawling. |
-| M2 | Crawler + saturation DB | Makes the engine anti-inductive (the whole point). |
-| M3 | The Brain (scoring API) | Unifies M1 + M2 into one endpoint. |
-| M4 | MCP | The soul; small adapter over the Brain. |
-| M5 | Slop-o-meter | Reuses M2 detection; the viral hook. |
-| M6 | Discovery site | Most UI work. |
-| M7 | Palette picker | Last; palettes get the most-mature engine. |
+| M1 | Font Index + quality scoring + **synthetic signal** | Foundation; synthetic gives a role-aware AI-slop signal in days with no crawl infra. Yields a working Brain fast. |
+| M2 | Brain (scoring API) + **role-aware extraction module** + **MCP + Slop-o-meter** | The cheap, high-leverage surfaces ship early (Grok's valid point). The single-page extraction module is built here and reused at scale in M3. |
+| M3 | Deterministic crawl + source registry + role-aware saturation | The empirical backbone; reuses M2's extraction module, adds scheduling/sourcing/aggregation. Heavier, lands after the engine is proven. |
+| M4 | Discovery site | Most UI work. |
+| M5 | Palette picker | Most-mature engine; own color modeling. |
 
-Implementation plans are written one milestone at a time (M1 first: build → verify → then plan M2), so we never have four half-finished pieces.
+Implementation plans are written one milestone at a time (M1 first: build → verify → then plan M2), so we never have several half-finished pieces.
 
-## 9. Research foundations
+## 12. Research foundations
 
-The quality and personality axes are grounded in prior work rather than guessed:
-
-- **O'Donovan, Lībeks, Agarwala, Hertzmann — *Exploratory Font Selection Using Crowdsourced Attributes* (SIGGRAPH 2014).** Crowdsourced descriptive attributes (dramatic, friendly, legible, graceful, …) over Google Fonts, plus a trained model to predict attributes for new fonts. Downloadable: `attribute.zip`, `similarity.zip` (metric-learning code), `gwfonts.zip`. **Directly seeds our personality axis.** https://www.dgp.toronto.edu/~donovan/font/
-- **Shaikh & Chaparro — *Perception of Fonts: Perceived Personality Traits and Uses*.** Three-factor model (Potency, Evaluative, Activity) and family-level personality/use associations; congruence finding (mismatched font ↔ content is judged worse). https://soma.sbcc.edu/users/russotti/113/personality_Shaikh.pdf
-- **Wang et al. — *DeepFont* (Adobe).** CNN visual font embedding (4096-dim) → font-similarity metric; used to extend attribute prediction to unrated fonts. https://arxiv.org/pdf/1507.03196
-- **Gao et al. — *Attribute2Font* (SIGGRAPH 2020).** Attribute-conditioned font modeling; reference for attribute↔glyph relationships. https://yuegao.me/Attr2Font/
-- **Vox-ATypI classification.** Established structural taxonomy (serif/sans/contrast/axis) for the metrics layer. https://en.wikipedia.org/wiki/Vox-ATypI_classification
+- **O'Donovan et al., *Exploratory Font Selection Using Crowdsourced Attributes* (SIGGRAPH 2014).** Crowdsourced attributes over Google Fonts + a model to predict them for new fonts. Downloadable data (`attribute.zip`, `similarity.zip`, `gwfonts.zip`). Seeds our personality axis. https://www.dgp.toronto.edu/~donovan/font/
+- **Shaikh & Chaparro, *Perception of Fonts*.** Three-factor model (Potency, Evaluative, Activity) + family/use associations + congruence finding. https://soma.sbcc.edu/users/russotti/113/personality_Shaikh.pdf
+- **Wang et al., *DeepFont* (Adobe).** CNN visual font embedding → similarity metric to extend attribute prediction. https://arxiv.org/pdf/1507.03196
+- **Gao et al., *Attribute2Font* (SIGGRAPH 2020).** https://yuegao.me/Attr2Font/
+- **Vox-ATypI classification.** Structural taxonomy for the metrics layer. https://en.wikipedia.org/wiki/Vox-ATypI_classification
 - **Legibility metrics** (x-height, aperture, counter, stroke contrast). https://en.wikipedia.org/wiki/Legibility
-- **Morris / Baskerville experiment** (~45,000 participants, p≈.008): identical text trusted more in Baskerville than Helvetica/Comic Sans — justifies returning use-case-appropriate fonts, not just rare ones. https://marketingexperiments.com/value-proposition/importance-of-font
+- **Morris / Baskerville experiment** (~45k participants, p≈.008): identical text trusted more in Baskerville — justifies use-case-appropriate recommendations. https://marketingexperiments.com/value-proposition/importance-of-font
 
-## 10. Known risks
+## 13. Known risks
 
-- **Palette modeling ≠ font modeling.** Color is a continuous space; saturation/quality needs clustering, not a simple list. Deferred to M7 deliberately.
-- **LLM-as-judge bias.** Mitigated by making it one of three votes, outvotable by metrics + the O'Donovan data model.
-- **Crawl politeness / ToS.** HN Algolia is open; Product Hunt via its API; rate-limit and respect robots.
-- **Personality vocabulary drift.** Anchored to the O'Donovan attribute set + Shaikh factors to keep it stable and grounded.
-- **The paradox at the meta level.** If *this tool itself* becomes ubiquitous, its recommendations trend up and the anti-inductive loop must retire them — which it is designed to do. The system eating its own recommendations is a feature, not a bug.
+- **Crawl sample = leading edge, by design.** New products on HN/Reddit/PH are not a bias to correct; they are exactly the population where AI-slop and trends surface first. We want the leading edge, not the whole web.
+- **Role heuristic edge cases.** Sites with unusual DOMs may mis-classify hero vs. body; mitigated by simple, auditable rules and snapshotting for review.
+- **LLM-as-judge bias.** One of three votes, outvotable by metrics + the O'Donovan model.
+- **Palette modeling ≠ font modeling.** Continuous color space; deferred to M5 deliberately.
+- **The meta paradox.** If this tool itself becomes ubiquitous, its recommendations trend up and the anti-inductive loop retires them. The system eating its own recommendations is a feature, mitigated by §2's stability rules.
 
-## 11. Out of scope (v1)
+## 14. Out of scope (v1)
 
-- Non-Google font sources (Adobe Fonts, foundries) — Google Fonts only for v1.
-- Synthetic LLM-sampling slop signal — planned second signal, not in M1–M2.
+- Non-Google font *recommendation* sources (Adobe/foundry) — observed for saturation, but recommendations stay Google Fonts + free Fontshare for usability.
+- X/Twitter ingestion (§7).
 - Accounts/auth, paid tiers — defer until a surface proves traction.
