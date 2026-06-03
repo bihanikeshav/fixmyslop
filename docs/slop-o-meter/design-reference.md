@@ -34,6 +34,38 @@ the site's own anti-slop identity.
 
 ---
 
+## PART 1.5 — SECOND-ORDER SLOP (where AI runs when you tell it to "fix it")
+
+First-order slop is the default. But the moment you say *"make it less generic / more premium / unique,"* AI converges on an equally narrow set. Two measurements:
+
+### The escape ladder (iterative matrix: "too overused, give another")
+**It never leaves the lane.** Pushed off its #1, AI swaps neighbors in the same category:
+- rank 1: Playfair Display · Inter · Poppins · Space Grotesk
+- rank 2–4 (first escape): **Cormorant Garamond · Bodoni Moda · DM Sans · Sora · Libre Baskerville**
+- rank 5–10: Outfit · Raleway · Work Sans · Fraunces · Spectral
+- rank 11–20 (finally fresher — and the *next* slop wave): **Bricolage Grotesque · Hanken Grotesk · Onest**
+
+### The "improve it" directions (18 runs: 6 intents × 3 models) — each intent has ONE answer
+| Ask AI to make it… | Font convergence | Accent convergence | Style convergence |
+|---|---|---|---|
+| **premium** | Playfair / Cormorant (serif) | near-black + **gold** `#C9A84C` | high-contrast serif on dark |
+| **editorial** | Playfair / Fraunces | **ink red** `#C8102E`/`#D32F2F` | oversized serif + hard ruled lines |
+| **minimal** | Space Grotesk / serif | **`#1a1a1a` — identical ×3** | kill color, ink-on-bone, hairlines |
+| **bold** | **Bebas Neue** / Archivo | **red `#FF33xx` ×3** | no radius, black borders, brutalist |
+| **playful** | Bricolage / Fraunces | **coral-orange `#FF5C38` (11–25° ×3)** | oversized chunky display |
+| **unique** | Space Grotesk / Instrument Serif | **warm terracotta `#C8522A`** | warm off-black, sharp edges |
+
+### The meta-pattern (this is the important part)
+When AI escapes the indigo/violet default, **it stampedes to one of two places**:
+1. **Warm orange / coral / red / terracotta** (`#FF5C38`, `#C8522A`, `#FF3300`) — *every* "unique/bold/playful" run landed at 11–25° red-orange.
+2. **Monochrome ink-on-bone** + occasional gold (premium) or ink-red (editorial).
+
+And the *moves* are recited verbatim across all models: **"kill gradients," "hard borders / no radius," "serif headlines," "ink-on-bone," "hairline rules."** The anti-slop playbook is itself now a template.
+
+**So the Slop-o-meter must flag second-order slop too:** *"You did the #1 AI 'premium' move — Playfair + gold on near-black. Still slop."*
+
+---
+
 ## PART 2 — THE ANTI-SLOP (the "after")
 
 Principle: **be intentional, editorial, characterful.** Every slop tell has an antidote —
@@ -64,9 +96,10 @@ Hanken Grotesk, Public Sans, Schibsted Grotesk, Spline Sans, Bitter (slab), News
 - Confident-modern: **Unbounded** (hero) + **Hanken Grotesk** (body) + **Geist Mono** (mono)
 
 ### 2b. Fresh color directions (NO gradient)
-- **Riso / print:** ink black `#111111` + paper cream `#F4EFE6` + ONE saturated hit (tomato `#FF4D3D`, electric blue `#1454FF`, or acid lime `#C6F432`)
-- **Diagnostic-meter:** off-black + bone white + hazard amber `#FFC400` — fits a "meter" and reads as analytical, not pretty
-- Rule: flat color blocks, hard edges between fields, one accent doing the work. The slop is gradients; the antidote is **conviction in flat color.**
+**Avoid all three measured slop palettes:** the indigo/violet Tailwind default (1st-order), AND the warm terracotta/coral/red escape (`#FF5C38`/`#C8522A`), AND premium gold / editorial ink-red. Those are all where AI already goes. Go where it doesn't:
+- **Acid / cool:** ink black `#111111` + paper bone `#F4EFE6` + ONE *cool or acid* hit — **acid lime `#C6F432`**, **electric cobalt `#1454FF`** (deeper than Tailwind blue), or **cyan `#00E5D1`**
+- **Odd two-tone:** an unexpected pair the stampedes never pick (e.g. **aubergine + chartreuse**, **slate teal + bone**)
+- Rule: flat color blocks, hard edges, one accent doing the work. The slop is gradients; the antidote is **conviction in flat, unexpected color** — and specifically *not* warm-terracotta, which is now everyone's "tasteful" escape.
 
 ### 2c. Fresh style directions
 - **Replace gradient-text** → solid heavy color, or outline/stroked type, or a knockout on a color block
