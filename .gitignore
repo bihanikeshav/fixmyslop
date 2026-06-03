@@ -7,6 +7,9 @@ dist/
 .next/
 *.log
 
+# Generated data (regenerable via the pipeline: npm run index / metrics / synthetic)
+data/
+
 # Env
 .env
 .env.local
