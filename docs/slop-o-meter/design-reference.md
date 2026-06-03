@@ -30,6 +30,20 @@ the site's own anti-slop identity.
 - **Animations = Tailwind built-ins:** `animate-spin`, `animate-pulse`, `animate-ping`, `animate-bounce`, plus fade-in-up on scroll. (Found verbatim on vimeraai, happyseeds, aihair, floorplanmaker.)
 - Bento grids, emoji bullets, "✨ AI-powered" badges
 
+### 1d. Slop palettes by vibe (measured — accents often *identical* across models)
+| Vibe | Default accent | Background |
+|---|---|---|
+| ai-saas / b2b / dev-tool / fintech / education | **blue/indigo** `#3b82f6` `#6366f1` `#2563eb` | dark navy or white |
+| dtc-brand | **coral `#ff6b35` + teal `#4ecdc4`** (identical ×3) | light cream |
+| health-wellness | **sage green `#6b9e7f`** (identical ×3) | light |
+| luxury-fashion | **gold `#d4af37` / `#c9a96e`** | cream or black |
+| magazine-editorial | **oxblood `#8b2e2e`** | cream |
+| retro-vintage | **rust `#c0392b`** | cream |
+| gaming-esports | **neon green/cyan on black** | dark |
+| creative-portfolio | **hot pink / magenta on black** | dark |
+
+Every vibe has a fixed default palette all three models reach for. For the meter: `#6366f1` accent + dark navy = *"you used the default AI-SaaS palette."* "Fresh" means dodging **your vibe's specific default**, not just the generic indigo.
+
 > The one-line thesis to put in the hero: **"AI slop is just the Tailwind defaults."**
 
 ---
