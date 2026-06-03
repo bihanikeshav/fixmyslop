@@ -6,7 +6,10 @@
  *    real Google Fonts drawn from the under-saturated / model-vouched-fresh pool.
  *  - FRESH_PALETTES: real color palettes that dodge BOTH the indigo default AND
  *    the warm-terracotta escape AND each vibe's measured default.
+ *  - suggestReplacements(): deterministic "same vibe, fresher" font swaps.
  */
+
+import { personalityMatch } from "./personality.js";
 
 export interface Improvement {
   /** What's generic about it. */
@@ -70,6 +73,73 @@ export function diagnoseImprovements(input: DiagnoseInput): Improvement[] {
     out.push({ tell: "Uppercase + tight-tracked hero — the default 'bold SaaS' look.", fix: "Try real type contrast: a characterful display over a quiet body." });
   }
   return out;
+}
+
+/**
+ * Like-for-like swap: given the font a site uses, find fresh fonts with a SIMILAR
+ * vibe (personality) but more character and far lower saturation. Deterministic
+ * nearest-neighbour in personality space, filtered by freshness. No LLM.
+ */
+export interface SwapCandidate {
+  id: string;
+  family: string;
+  personality: import("./types.js").PersonalityVector;
+  category: string;
+  displaySaturation: number;
+  /** Visual sub-style signals — keep a Didone matching Didones, not slabs. */
+  strokeContrast?: number;
+  xHeightRatio?: number;
+}
+
+export interface SwapSuggestion {
+  family: string;
+  similarity: number;
+  saturation: number;
+  reason: string;
+}
+
+export function suggestReplacements(
+  target: { personality: import("./types.js").PersonalityVector; category: string; strokeContrast?: number; xHeightRatio?: number; family?: string },
+  candidates: readonly SwapCandidate[],
+  opts: { freshCutoff?: number; limit?: number } = {},
+): SwapSuggestion[] {
+  const freshCutoff = opts.freshCutoff ?? 0.35;
+  const limit = opts.limit ?? 3;
+  const hasPersonality = Object.keys(target.personality).length > 0;
+  const targetBase = (target.family ?? "").toLowerCase().split(/\s+/)[0] ?? "";
+
+  const scored = candidates
+    // Same category only — a strong/bold *serif* must not be "replaced" by a
+    // strong/bold *stencil*. Category is the coarse visual class personality misses.
+    // Also exclude same-family variants (Inter -> "Inter Tight" is not a swap).
+    .filter((c) => c.displaySaturation < freshCutoff && c.category === target.category &&
+      (!targetBase || (c.family.toLowerCase().split(/\s+/)[0] ?? "") !== targetBase))
+    .map((c) => {
+      const sim = hasPersonality ? personalityMatch(target.personality, c.personality) : 0.6;
+      const character = magnitude(c.personality);
+      // Visual proximity: stroke contrast + x-height. Keeps Didone~Didone.
+      const metricSim =
+        target.strokeContrast !== undefined && c.strokeContrast !== undefined
+          ? Math.max(0, 1 - (Math.abs(target.strokeContrast - c.strokeContrast) + 0.5 * Math.abs((target.xHeightRatio ?? 0.5) - (c.xHeightRatio ?? 0.5))))
+          : 1;
+      const score = sim * metricSim * (1 - c.displaySaturation) * (0.6 + 0.4 * character);
+      return { c, sim, score };
+    })
+    .filter((x) => x.sim > 0.35)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
+
+  return scored.map(({ c, sim }) => ({
+    family: c.family,
+    similarity: Math.round(sim * 100) / 100,
+    saturation: Math.round(c.displaySaturation * 100) / 100,
+    reason: `same vibe (${Math.round(sim * 100)}% personality match), far less common (saturation ${c.displaySaturation.toFixed(2)})`,
+  }));
+}
+
+function magnitude(p: import("./types.js").PersonalityVector): number {
+  const sum = Object.values(p).reduce((a, b) => a + (b ?? 0), 0);
+  return Math.min(1, sum / 3);
 }
 
 export interface FontGroup {
