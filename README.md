@@ -18,8 +18,8 @@ Early. The **deterministic Brain core** is built and tested.
 | `@ai-slop-font/pipeline` — Google Fonts index (keyless, 1934 fonts) | ✅ built |
 | Real glyph-metric extraction (opentype.js: x-height, stroke contrast, counters) | ✅ built + verified on 30 fonts |
 | Synthetic saturation signal (sample LLM defaults) | ✅ built, key-ready (needs `ANTHROPIC_API_KEY` to run) |
-| O'Donovan attribute seeding (real personality vectors) | ⬜ next |
-| Brain API + MCP server + Slop-o-meter | ⬜ |
+| O'Donovan attribute seeding (real personality vectors) | ✅ built, 131/200 study fonts matched to the index |
+| Brain API + MCP server + Slop-o-meter | ⬜ next |
 | Deterministic crawl (headless Chromium) + source registry | ⬜ |
 | Discovery site, palette picker | ⬜ |
 
@@ -27,7 +27,8 @@ Early. The **deterministic Brain core** is built and tested.
 
 ```bash
 npm run index   -w @ai-slop-font/pipeline   # fetch Google Fonts -> data/fonts.index.json (keyless)
-npm run metrics -w @ai-slop-font/pipeline 30 # extract real glyph metrics for top N fonts
+npm run metrics  -w @ai-slop-font/pipeline 30 # extract real glyph metrics for top N fonts
+npm run personality -w @ai-slop-font/pipeline # seed real personality from O'Donovan attributes
 ANTHROPIC_API_KEY=... npm run synthetic -w @ai-slop-font/pipeline 20  # sample AI font defaults
 ```
 
