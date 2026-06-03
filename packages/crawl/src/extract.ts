@@ -51,6 +51,34 @@ export async function crawlUrl(browser: Browser, url: string, timeoutMs = 20000)
   }
 }
 
+/** Open a page (shared context setup) and run `fn` against it. Null on failure. */
+export async function withPage<T>(
+  browser: Browser,
+  url: string,
+  fn: (page: Page) => Promise<T>,
+  timeoutMs = 20000,
+): Promise<T | null> {
+  const context = await browser.newContext({ userAgent: UA, viewport: { width: 1366, height: 900 } });
+  // Shim the esbuild/tsx __name helper that decorates serialized evaluate functions.
+  await context.addInitScript({ content: "window.__name=window.__name||function(f){return f;};" });
+  await context.route("**/*", (route) => {
+    const type = route.request().resourceType();
+    if (type === "image" || type === "media" || type === "font") return route.abort();
+    return route.continue();
+  });
+  const page = await context.newPage();
+  try {
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: timeoutMs });
+    await page.waitForTimeout(1200);
+    return await fn(page);
+  } catch (e) {
+    if (process.env.CRAWL_DEBUG) console.error(`  [withPage] ${url}: ${(e as Error).message.slice(0, 200)}`);
+    return null;
+  } finally {
+    await context.close();
+  }
+}
+
 async function extractElements(page: Page): Promise<CrawlElement[]> {
   return page.evaluate(() => {
     const vh = window.innerHeight;
