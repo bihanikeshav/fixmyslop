@@ -1,0 +1,12 @@
+# Brainstorming visual-companion working files
+.superpowers/
+
+# Node
+node_modules/
+dist/
+.next/
+*.log
+
+# Env
+.env
+.env.local
