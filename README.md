@@ -19,8 +19,11 @@ Early. The **deterministic Brain core** is built and tested.
 | Real glyph-metric extraction (opentype.js: x-height, stroke contrast, counters) | ✅ built + verified on 30 fonts |
 | Synthetic saturation signal (sample LLM defaults) | ✅ built, key-ready (needs `ANTHROPIC_API_KEY` to run) |
 | O'Donovan attribute seeding (real personality vectors) | ✅ built, 131/200 study fonts matched to the index |
-| Brain API + MCP server + Slop-o-meter | ⬜ next |
-| Deterministic crawl (headless Chromium) + source registry | ⬜ |
+| Synthetic slop matrix (12 vibes × Opus/Sonnet/Haiku) | ✅ collected; merged into display-saturation for 212 fonts |
+| GPT-5.5 (OpenAI) synthetic client | ✅ built, key-ready |
+| Deterministic crawl (`@ai-slop-font/crawl`, headless Chromium) | ✅ built + verified; multi-supplier, role-aware, AI-directory discovery |
+| Slop-o-meter (paste a URL → score) | ⬜ next |
+| Brain API + MCP server | ⬜ |
 | Discovery site, palette picker | ⬜ |
 
 ## Pipeline
