@@ -15,6 +15,7 @@ import { dirname, resolve } from "node:path";
 import {
   diagnoseImprovements,
   suggestReplacements,
+  classifyAccent,
   fontGroupsForVibe,
   palettesForVibe,
   type SwapCandidate,
@@ -83,6 +84,14 @@ async function main(): Promise<void> {
   if (styleImps.length === 0) console.log("  Nothing obvious — this site already dodges the common tells.");
   for (const i of styleImps) console.log(`  • ${i.tell}  →  ${i.fix}`);
   console.log("  (We flag over-used styles; we don't auto-generate a new one — that would need an LLM.)");
+
+  console.log("\n## Your colors — the stats");
+  const accents = style.accentColors.slice(0, 3).map(classifyAccent).filter((a) => a.status !== "neutral");
+  if (accents.length === 0) console.log("  No strong accent detected.");
+  for (const a of accents) {
+    const tag = a.status === "fresh" ? "FRESH ✓" : a.status === "default-slop" ? "OVER-USED" : a.status === "escape-slop" ? "OVER-USED (the escape)" : "common default";
+    console.log(`  • ${a.hex} (${a.family}) — ${tag}. ${a.note}`);
+  }
 
   console.log("\n## Cohesive font groups to consider");
   for (const g of fontGroupsForVibe().slice(0, 5)) console.log(`  ▸ ${g.name}: ${g.hero} / ${g.body}${g.accent ? " / " + g.accent : ""}  (${g.mood})`);

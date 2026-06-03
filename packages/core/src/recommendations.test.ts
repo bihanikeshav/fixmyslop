@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   diagnoseImprovements,
   suggestReplacements,
+  classifyAccent,
   fontGroupsForVibe,
   palettesForVibe,
   FONT_GROUPS,
@@ -49,6 +50,23 @@ describe("suggestReplacements", () => {
   it("ranks the similar-vibe match above the dissimilar one", () => {
     const out = suggestReplacements({ personality: { professional: 0.9, calm: 0.5 }, category: "sans-serif" }, cands);
     expect(out[0]!.family).toBe("Fresh Similar");
+  });
+});
+
+describe("classifyAccent", () => {
+  it("flags the Tailwind indigo default as slop", () => {
+    expect(classifyAccent("#6366f1").status).toBe("default-slop");
+    expect(classifyAccent("#3b82f6").status).toBe("default-slop");
+  });
+  it("flags warm coral as the escape slop", () => {
+    expect(classifyAccent("#ff6b35").status).toBe("escape-slop");
+  });
+  it("passes a genuinely fresh accent (acid lime, plum)", () => {
+    expect(classifyAccent("#C6F432").status).toBe("fresh");
+    expect(classifyAccent("#5A1E50").status).toBe("fresh");
+  });
+  it("treats near-neutral as not an accent", () => {
+    expect(classifyAccent("#1a1a1a").status).toBe("neutral");
   });
 });
 

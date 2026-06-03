@@ -142,6 +142,44 @@ function magnitude(p: import("./types.js").PersonalityVector): number {
   return Math.min(1, sum / 3);
 }
 
+/** Classify a site's accent color against the measured palette slop. Deterministic. */
+export interface AccentVerdict {
+  hex: string;
+  family: string;
+  status: "default-slop" | "escape-slop" | "vibe-default" | "fresh" | "neutral";
+  note: string;
+}
+
+export function classifyAccent(hex: string): AccentVerdict {
+  const n = hex.replace("#", "");
+  if (n.length < 6) return { hex, family: "?", status: "neutral", note: "couldn't parse" };
+  const r = parseInt(n.slice(0, 2), 16) / 255, g = parseInt(n.slice(2, 4), 16) / 255, b = parseInt(n.slice(4, 6), 16) / 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  const lum = (mx + mn) / 2;
+  const sat = d === 0 ? 0 : d / (1 - Math.abs(2 * lum - 1));
+  if (sat < 0.18 || lum < 0.06 || lum > 0.96) return { hex, family: "neutral", status: "neutral", note: "neutral — not really an accent" };
+  let h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  h = ((h * 60) + 360) % 360;
+
+  if (h >= 200 && h < 300) return { hex, family: "blue/indigo", status: "default-slop", note: "the #1 AI-default accent (Tailwind blue/indigo) — the SaaS/dev/fintech default in our data" };
+  if ((h >= 345 || h < 40) && sat > 0.45) return { hex, family: "warm red/coral", status: "escape-slop", note: "the most common 'de-slop escape' accent — still a tell" };
+  if (h >= 40 && h < 60 && lum < 0.7) return { hex, family: "gold", status: "vibe-default", note: "the default 'luxury' accent" };
+  if (h >= 90 && h < 160 && sat < 0.45) return { hex, family: "sage green", status: "vibe-default", note: "the default 'wellness' accent" };
+  if (h >= 130 && h < 175 && sat > 0.6) return { hex, family: "neon green", status: "vibe-default", note: "the default 'gaming' accent" };
+  return { hex, family: hueName(h), status: "fresh", note: "not a common AI default — good" };
+}
+
+function hueName(h: number): string {
+  if (h < 18) return "red";
+  if (h < 45) return "orange";
+  if (h < 70) return "lime";
+  if (h < 160) return "green";
+  if (h < 200) return "teal";
+  if (h < 300) return "blue";
+  if (h < 330) return "magenta";
+  return "pink";
+}
+
 export interface FontGroup {
   id: string;
   name: string;
