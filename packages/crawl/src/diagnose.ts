@@ -36,7 +36,7 @@ async function main(): Promise<void> {
   const url = process.argv[2];
   if (!url) { console.log("usage: tsx src/diagnose.ts <url>"); return; }
 
-  const { index, displaySat, crawlCount, rankOf, totalRanked } = await loadSignals();
+  const { index, displaySat, crawlCount, rankOf, totalRanked, neighbors } = await loadSignals();
   const recById = new Map(index.map((f) => [f.id, f]));
   const candidates: SwapCandidate[] = index.map((f) => ({
     id: f.id, family: f.family, category: f.category, personality: f.personality,
@@ -67,9 +67,18 @@ async function main(): Promise<void> {
     const stat = `saturation ${sat.toFixed(2)}` + (sat > 0 ? `, #${rankOf(id)} most over-used of ${totalRanked}` : "") + (crawlCount.get(id) ? `, seen on ${crawlCount.get(id)} crawled sites` : "");
     console.log(`  • ${role}: "${rec.family}" — ${overused ? "OVER-USED" : "okay"}. ${stat}`);
     if (overused) {
-      const swaps = suggestReplacements({ personality: rec.personality, category: rec.category, strokeContrast: rec.metrics?.strokeContrast, xHeightRatio: rec.metrics?.xHeightRatio, family: rec.family }, candidates, { limit: 3 });
-      for (const s of swaps) console.log(`        ↳ try ${s.family.padEnd(20)} — ${s.reason}`);
-      if (swaps.length === 0) console.log("        ↳ (no close fresh match found)");
+      // Prefer the visual closeness index: visually-similar fonts that are fresh.
+      const base = id.split("-")[0];
+      const nbrs = (neighbors[id] ?? []).filter((n) =>
+        (displaySat.get(n.id) ?? 0) < SLOP_CUTOFF && !recById.get(n.id)?.isFoundational &&
+        recById.get(n.id)?.category === rec.category && n.id.split("-")[0] !== base).slice(0, 3);
+      if (nbrs.length) {
+        for (const n of nbrs) console.log(`        ↳ try ${n.family.padEnd(20)} — visually similar (${n.sim}), fresh (saturation ${(displaySat.get(n.id) ?? 0).toFixed(2)})`);
+      } else {
+        const swaps = suggestReplacements({ personality: rec.personality, category: rec.category, strokeContrast: rec.metrics?.strokeContrast, xHeightRatio: rec.metrics?.xHeightRatio, family: rec.family }, candidates, { limit: 3 });
+        for (const s of swaps) console.log(`        ↳ try ${s.family.padEnd(20)} — ${s.reason}`);
+        if (swaps.length === 0) console.log("        ↳ (no close fresh match found)");
+      }
     }
   }
 
@@ -105,13 +114,15 @@ async function loadSignals() {
   const sat = JSON.parse(await readFile(resolve(DATA_DIR, "saturation.json"), "utf8")) as Array<{ fontId: string; display: number }>;
   let crawl: Array<{ fontId: string; role: string; count: number }> = [];
   try { crawl = JSON.parse(await readFile(resolve(DATA_DIR, "observations.crawl.json"), "utf8")); } catch { /* optional */ }
+  let neighbors: Record<string, Array<{ id: string; family: string; sim: number }>> = {};
+  try { neighbors = JSON.parse(await readFile(resolve(DATA_DIR, "font-neighbors.json"), "utf8")); } catch { /* optional */ }
 
   const displaySat = new Map(sat.map((s) => [s.fontId, s.display]));
   const crawlCount = new Map(crawl.filter((o) => o.role === "display").map((o) => [o.fontId, o.count]));
   const ranked = [...sat].filter((s) => s.display > 0).sort((a, b) => b.display - a.display);
   const rankIndex = new Map(ranked.map((s, i) => [s.fontId, i + 1]));
   return {
-    index, displaySat, crawlCount,
+    index, displaySat, crawlCount, neighbors,
     rankOf: (id: string) => rankIndex.get(id) ?? ranked.length,
     totalRanked: ranked.length,
   };
