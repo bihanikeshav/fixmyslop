@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadence — AI Notetaker for Product & Ops Teams</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --cream:    #F7F4EE;
+      --ink:      #1A1814;
+      --brass:    #C17F3A;
+      --brass-lt: #DBA55A;
+      --muted:    #6B6459;
+      --rule:     #E0D9CF;
+      --white:    #FDFBF8;
+    }
+
+    html {
+      font-size: 16px;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: var(--cream);
+      color: var(--ink);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ─── NAV ─── */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 clamp(1.5rem, 5vw, 4rem);
+      height: 64px;
+      background: color-mix(in oklch, var(--cream) 92%, transparent);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .nav-logo {
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      font-size: 1.25rem;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      text-decoration: none;
+    }
+
+    .nav-logo span {
+      color: var(--brass);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 2.5rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-size: 0.875rem;
+      font-weight: 400;
+      color: var(--muted);
+      text-decoration: none;
+      letter-spacing: 0.01em;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--ink); }
+
+    .nav-cta {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--white);
+      background: var(--ink);
+      text-decoration: none;
+      padding: 0.5rem 1.25rem;
+      border-radius: 2px;
+      letter-spacing: 0.01em;
+      transition: background 0.2s;
+    }
+
+    .nav-cta:hover { background: color-mix(in oklch, var(--ink) 80%, var(--brass)); }
+
+    /* ─── HERO ─── */
+    .hero {
+      min-height: 100dvh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      padding-top: 64px;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding-left: clamp(1.5rem, 5vw, 4rem);
+      padding-right: clamp(1.5rem, 5vw, 4rem);
+      gap: 4rem;
+    }
+
+    .hero-left {
+      padding-right: 2rem;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--brass);
+      margin-bottom: 2rem;
+      opacity: 0;
+      transform: translateY(12px);
+      animation: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
+    }
+
+    .hero-eyebrow::before {
+      content: '';
+      display: block;
+      width: 24px;
+      height: 1px;
+      background: var(--brass);
+    }
+
+    .hero-headline {
+      font-family: 'Playfair Display', serif;
+      font-weight: 900;
+      font-size: clamp(3rem, 5.5vw, 5.5rem);
+      line-height: 1.03;
+      letter-spacing: -0.025em;
+      color: var(--ink);
+      margin-bottom: 1.75rem;
+      opacity: 0;
+      transform: translateY(16px);
+      animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+    }
+
+    .hero-headline em {
+      font-style: italic;
+      color: var(--brass);
+    }
+
+    .hero-sub {
+      font-size: clamp(1rem, 1.5vw, 1.2rem);
+      font-weight: 300;
+      color: var(--muted);
+      line-height: 1.6;
+      max-width: 44ch;
+      margin-bottom: 2.75rem;
+      opacity: 0;
+      transform: translateY(12px);
+      animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.35s forwards;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+      opacity: 0;
+      transform: translateY(12px);
+      animation: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      color: var(--white);
+      background: var(--ink);
+      text-decoration: none;
+      padding: 0.875rem 2rem;
+      border-radius: 2px;
+      letter-spacing: 0.01em;
+      transition: background 0.25s, transform 0.15s;
+    }
+
+    .btn-primary:hover {
+      background: color-mix(in oklch, var(--ink) 80%, var(--brass));
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9375rem;
+      font-weight: 400;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 0.875rem 0;
+      border-bottom: 1px solid var(--rule);
+      letter-spacing: 0.01em;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .btn-secondary:hover {
+      color: var(--ink);
+      border-color: var(--ink);
+    }
+
+    .btn-secondary svg { transition: transform 0.2s; }
+    .btn-secondary:hover svg { transform: translateX(3px); }
+
+    /* ─── HERO RIGHT: MEETING CARD VISUAL ─── */
+    .hero-right {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      opacity: 0;
+      transform: translateX(24px);
+      animation: fade-left 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.45s forwards;
+    }
+
+    .meeting-card {
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: 4px;
+      padding: 1.5rem;
+      position: relative;
+    }
+
+    .meeting-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+
+    .meeting-title {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--ink);
+    }
+
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      font-size: 0.6875rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #2D7D52;
+      background: #E8F5EE;
+      padding: 0.25rem 0.625rem;
+      border-radius: 100px;
+    }
+
+    .live-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #2D7D52;
+      animation: pulse-green 1.8s ease-in-out infinite;
+    }
+
+    .transcript-lines {
+      display: flex;
+      flex-direction: column;
+      gap: 0.625rem;
+    }
+
+    .transcript-line {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+
+    .speaker-avatar {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      font-size: 0.625rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--white);
+      margin-top: 1px;
+    }
+
+    .avatar-r { background: #7B68EE; }
+    .avatar-m { background: #E07B54; }
+    .avatar-k { background: #4BA3C3; }
+
+    .transcript-text {
+      font-size: 0.8125rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .transcript-text strong {
+      color: var(--ink);
+      font-weight: 500;
+    }
+
+    /* Typing line */
+    .typing-line .transcript-text {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .typing-cursor {
+      display: inline-block;
+      width: 2px;
+      height: 0.875em;
+      background: var(--brass);
+      animation: blink 1s step-end infinite;
+      margin-left: 1px;
+      vertical-align: middle;
+    }
+
+    /* Notes preview card */
+    .notes-card {
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: 4px;
+      padding: 1.25rem 1.5rem;
+    }
+
+    .notes-card-label {
+      font-size: 0.6875rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--brass);
+      margin-bottom: 0.875rem;
+    }
+
+    .notes-items {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .notes-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.625rem;
+      font-size: 0.8125rem;
+      color: var(--ink);
+    }
+
+    .notes-bullet {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--brass);
+      flex-shrink: 0;
+      margin-top: 0.45em;
+    }
+
+    /* Action items card */
+    .actions-strip {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .action-chip {
+      flex: 1;
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: 4px;
+      padding: 0.875rem 1rem;
+    }
+
+    .chip-assignee {
+      font-size: 0.6875rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.3rem;
+    }
+
+    .chip-task {
+      font-size: 0.8rem;
+      color: var(--ink);
+      line-height: 1.4;
+    }
+
+    .chip-due {
+      font-size: 0.6875rem;
+      color: var(--muted);
+      margin-top: 0.4rem;
+    }
+
+    /* ─── DIVIDER ─── */
+    .section-divider {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 clamp(1.5rem, 5vw, 4rem);
+    }
+
+    .section-divider hr {
+      border: none;
+      border-top: 1px solid var(--rule);
+    }
+
+    /* ─── HOW IT WORKS ─── */
+    .how {
+      padding: clamp(5rem, 10vw, 9rem) clamp(1.5rem, 5vw, 4rem);
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .how-header {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 3rem;
+      align-items: end;
+      margin-bottom: 5rem;
+    }
+
+    .how-label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--brass);
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      transform: rotate(180deg);
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--brass);
+    }
+
+    .how-headline {
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      font-size: clamp(2rem, 3.5vw, 3.5rem);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      max-width: 24ch;
+    }
+
+    /* Steps: horizontal timeline layout */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      position: relative;
+    }
+
+    /* Connecting rule behind steps */
+    .steps::before {
+      content: '';
+      position: absolute;
+      top: 28px;
+      left: calc(100% / 6);
+      right: calc(100% / 6);
+      height: 1px;
+      background: var(--rule);
+      z-index: 0;
+    }
+
+    /* Animated progress line */
+    .steps::after {
+      content: '';
+      position: absolute;
+      top: 28px;
+      left: calc(100% / 6);
+      width: 0;
+      height: 1px;
+      background: var(--brass);
+      z-index: 1;
+      transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .steps.animated::after {
+      width: calc(100% - 100% / 3);
+    }
+
+    .step {
+      padding: 0 2.5rem;
+      position: relative;
+    }
+
+    .step:first-child { padding-left: 0; }
+    .step:last-child  { padding-right: 0; }
+
+    .step-node {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 2rem;
+      position: relative;
+      z-index: 2;
+      background: var(--cream);
+      border: 1px solid var(--rule);
+      transition: border-color 0.4s, background 0.4s;
+    }
+
+    .step.active .step-node {
+      border-color: var(--brass);
+      background: var(--white);
+    }
+
+    .step-number {
+      font-family: 'Playfair Display', serif;
+      font-weight: 900;
+      font-size: 1.375rem;
+      color: var(--rule);
+      line-height: 1;
+      transition: color 0.4s;
+    }
+
+    .step.active .step-number {
+      color: var(--brass);
+    }
+
+    .step-title {
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      font-size: 1.375rem;
+      letter-spacing: -0.015em;
+      color: var(--ink);
+      margin-bottom: 0.875rem;
+      line-height: 1.2;
+    }
+
+    .step-body {
+      font-size: 0.9375rem;
+      color: var(--muted);
+      line-height: 1.65;
+      max-width: 30ch;
+    }
+
+    .step-detail {
+      margin-top: 1.25rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--rule);
+    }
+
+    .step-detail-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8125rem;
+      color: var(--muted);
+      margin-bottom: 0.375rem;
+    }
+
+    .step-detail-item::before {
+      content: '';
+      display: block;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--brass);
+      flex-shrink: 0;
+    }
+
+    /* ─── SOCIAL PROOF STRIP ─── */
+    .proof-strip {
+      border-top: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+      padding: clamp(3rem, 6vw, 5rem) clamp(1.5rem, 5vw, 4rem);
+      background: var(--white);
+    }
+
+    .proof-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1px 1fr 1px 1fr;
+      align-items: center;
+      gap: 0;
+    }
+
+    .proof-divider-line {
+      height: clamp(2rem, 4vw, 3.5rem);
+      background: var(--rule);
+      align-self: center;
+    }
+
+    .proof-quote {
+      padding: 0 clamp(2rem, 4vw, 4rem);
+    }
+
+    .proof-quote:first-child { padding-left: 0; }
+    .proof-quote:last-child  { padding-right: 0; }
+
+    .quote-text {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: clamp(1rem, 1.5vw, 1.2rem);
+      color: var(--ink);
+      line-height: 1.5;
+      margin-bottom: 1rem;
+    }
+
+    .quote-attribution {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .quote-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 0.75rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--white);
+      flex-shrink: 0;
+    }
+
+    .qa-1 { background: #9B6FB5; }
+    .qa-2 { background: #4BA3C3; }
+    .qa-3 { background: #D4855B; }
+
+    .quote-name {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--ink);
+      line-height: 1.3;
+    }
+
+    .quote-role {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    /* ─── BOTTOM CTA ─── */
+    .bottom-cta {
+      padding: clamp(6rem, 12vw, 10rem) clamp(1.5rem, 5vw, 4rem);
+      max-width: 1400px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: center;
+    }
+
+    .cta-headline {
+      font-family: 'Playfair Display', serif;
+      font-weight: 900;
+      font-size: clamp(2.25rem, 4vw, 4rem);
+      line-height: 1.05;
+      letter-spacing: -0.025em;
+      color: var(--ink);
+    }
+
+    .cta-headline em {
+      font-style: italic;
+      color: var(--brass);
+    }
+
+    .cta-right {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .cta-sub {
+      font-size: 1rem;
+      color: var(--muted);
+      line-height: 1.65;
+      max-width: 40ch;
+    }
+
+    .cta-actions {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .cta-note {
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    /* ─── FOOTER ─── */
+    footer {
+      border-top: 1px solid var(--rule);
+      padding: 1.75rem clamp(1.5rem, 5vw, 4rem);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .footer-logo {
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--ink);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+
+    .footer-logo span { color: var(--brass); }
+
+    .footer-copy {
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    /* ─── ANIMATIONS ─── */
+    @keyframes fade-up {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fade-left {
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    @keyframes pulse-green {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.8); }
+    }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 900px) {
+      .hero {
+        grid-template-columns: 1fr;
+        padding-top: 96px;
+        gap: 3rem;
+        align-items: start;
+      }
+
+      .hero-left { padding-right: 0; }
+
+      .steps {
+        grid-template-columns: 1fr;
+        gap: 3rem;
+      }
+
+      .steps::before,
+      .steps::after { display: none; }
+
+      .step { padding: 0; }
+
+      .how-header {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+
+      .how-label {
+        writing-mode: horizontal-tb;
+        transform: none;
+        border-bottom: none;
+        border-left: 2px solid var(--brass);
+        padding-left: 0.75rem;
+      }
+
+      .proof-inner {
+        grid-template-columns: 1fr;
+        gap: 2.5rem;
+      }
+
+      .proof-divider-line { display: none; }
+      .proof-quote { padding: 0; }
+
+      .bottom-cta {
+        grid-template-columns: 1fr;
+        gap: 2.5rem;
+      }
+
+      nav .nav-links { display: none; }
+
+      footer {
+        flex-direction: column;
+        gap: 0.75rem;
+        text-align: center;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+      .steps::after { width: calc(100% - 100% / 3) !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a href="#" class="nav-logo">Cadence<span>.</span></a>
+    <ul class="nav-links">
+      <li><a href="#how-it-works">How it works</a></li>
+      <li><a href="#">Pricing</a></li>
+      <li><a href="#">Blog</a></li>
+    </ul>
+    <a href="#" class="nav-cta">Start free trial</a>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero" aria-labelledby="hero-headline">
+    <div class="hero-left">
+      <p class="hero-eyebrow">AI Notetaker for Teams</p>
+      <h1 class="hero-headline" id="hero-headline">
+        Your meetings,<br><em>finally</em><br>on the record.
+      </h1>
+      <p class="hero-sub">
+        Cadence joins your calls, writes structured notes, and assigns every action item to the right person — automatically.
+      </p>
+      <div class="hero-actions">
+        <a href="#" class="btn-primary">
+          Start free trial
+        </a>
+        <a href="#how-it-works" class="btn-secondary">
+          See it in action
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <div class="hero-right" aria-hidden="true">
+      <!-- Live meeting transcript card -->
+      <div class="meeting-card">
+        <div class="meeting-card-header">
+          <span class="meeting-title">Q3 Roadmap Sync</span>
+          <span class="live-badge">
+            <span class="live-dot"></span>
+            Live
+          </span>
+        </div>
+        <div class="transcript-lines">
+          <div class="transcript-line">
+            <div class="speaker-avatar avatar-r">R</div>
+            <p class="transcript-text"><strong>Rachel</strong> — "The timeline for the API migration needs to move up before the partner launch."</p>
+          </div>
+          <div class="transcript-line">
+            <div class="speaker-avatar avatar-m">M</div>
+            <p class="transcript-text"><strong>Marcus</strong> — "Agreed. I'll loop in the infra team today and get a revised estimate by Thursday."</p>
+          </div>
+          <div class="transcript-line typing-line">
+            <div class="speaker-avatar avatar-k">K</div>
+            <p class="transcript-text"><strong>Keiko</strong> — "Can we sync on dependencies first<span class="typing-cursor"></span>"</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Auto-generated notes -->
+      <div class="notes-card">
+        <p class="notes-card-label">Cadence — Notes</p>
+        <div class="notes-items">
+          <div class="notes-item">
+            <span class="notes-bullet"></span>
+            API migration timeline moved ahead of partner launch
+          </div>
+          <div class="notes-item">
+            <span class="notes-bullet"></span>
+            Infra team to provide revised estimate by Thursday
+          </div>
+          <div class="notes-item">
+            <span class="notes-bullet"></span>
+            Dependency review required before finalizing schedule
+          </div>
+        </div>
+      </div>
+
+      <!-- Action item chips -->
+      <div class="actions-strip">
+        <div class="action-chip">
+          <p class="chip-assignee">Marcus</p>
+          <p class="chip-task">Loop in infra team, share revised API estimate</p>
+          <p class="chip-due">Due Thu</p>
+        </div>
+        <div class="action-chip">
+          <p class="chip-assignee">Keiko</p>
+          <p class="chip-task">Schedule dependency review meeting</p>
+          <p class="chip-due">Due Fri</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="how" id="how-it-works" aria-labelledby="how-headline">
+    <div class="how-header">
+      <span class="how-label" aria-hidden="true">Process</span>
+      <h2 class="how-headline" id="how-headline">Three steps. Zero admin overhead.</h2>
+    </div>
+
+    <div class="steps" id="steps-container">
+      <div class="step active">
+        <div class="step-node">
+          <span class="step-number">01</span>
+        </div>
+        <h3 class="step-title">Cadence joins your call</h3>
+        <p class="step-body">Invite Cadence once. It shows up to every Zoom, Meet, or Teams meeting on your calendar — no one needs to remember to record.</p>
+        <div class="step-detail">
+          <div class="step-detail-item">Works with Zoom, Meet &amp; Teams</div>
+          <div class="step-detail-item">No app download required</div>
+          <div class="step-detail-item">Attendees are notified</div>
+        </div>
+      </div>
+
+      <div class="step active">
+        <div class="step-node">
+          <span class="step-number">02</span>
+        </div>
+        <h3 class="step-title">Writes structured notes</h3>
+        <p class="step-body">Decisions, context, and key discussion points — organized into clean, searchable notes. Sent to your inbox the moment the call ends.</p>
+        <div class="step-detail">
+          <div class="step-detail-item">Decisions clearly marked</div>
+          <div class="step-detail-item">Full transcript included</div>
+          <div class="step-detail-item">Searchable across all meetings</div>
+        </div>
+      </div>
+
+      <div class="step active">
+        <div class="step-node">
+          <span class="step-number">03</span>
+        </div>
+        <h3 class="step-title">Assigns action items</h3>
+        <p class="step-body">Cadence identifies every commitment and assigns it to the right person with a due date. Push directly to Linear, Jira, or Notion.</p>
+        <div class="step-detail">
+          <div class="step-detail-item">Syncs with Linear &amp; Jira</div>
+          <div class="step-detail-item">Slack reminders on due date</div>
+          <div class="step-detail-item">Owner assigned automatically</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SOCIAL PROOF -->
+  <div class="proof-strip">
+    <div class="proof-inner">
+      <blockquote class="proof-quote">
+        <p class="quote-text">"We stopped losing action items the week we switched to Cadence. It's embarrassingly good."</p>
+        <footer class="quote-attribution">
+          <div class="quote-avatar qa-1">AL</div>
+          <div>
+            <p class="quote-name">Amara Lewis</p>
+            <p class="quote-role">Head of Product, Meridian</p>
+          </div>
+        </footer>
+      </blockquote>
+
+      <div class="proof-divider-line" aria-hidden="true"></div>
+
+      <blockquote class="proof-quote">
+        <p class="quote-text">"Our ops syncs went from 60 minutes of follow-up to zero. Everyone knows exactly what they own."</p>
+        <footer class="quote-attribution">
+          <div class="quote-avatar qa-2">DK</div>
+          <div>
+            <p class="quote-name">Daniel Kim</p>
+            <p class="quote-role">VP Operations, Flare Labs</p>
+          </div>
+        </footer>
+      </blockquote>
+
+      <div class="proof-divider-line" aria-hidden="true"></div>
+
+      <blockquote class="proof-quote">
+        <p class="quote-text">"I stopped taking notes entirely. Cadence handles it and the output is honestly better than mine."</p>
+        <footer class="quote-attribution">
+          <div class="quote-avatar qa-3">SO</div>
+          <div>
+            <p class="quote-name">Sofia Okonkwo</p>
+            <p class="quote-role">Product Manager, Velt</p>
+          </div>
+        </footer>
+      </blockquote>
+    </div>
+  </div>
+
+  <!-- BOTTOM CTA -->
+  <section class="bottom-cta" aria-labelledby="cta-headline">
+    <h2 class="cta-headline" id="cta-headline">
+      Stop<br>losing<br><em>what matters.</em>
+    </h2>
+    <div class="cta-right">
+      <p class="cta-sub">Join product and ops teams who've made Cadence their silent, reliable colleague in every meeting.</p>
+      <div class="cta-actions">
+        <a href="#" class="btn-primary">Start free trial</a>
+        <span class="cta-note">14 days free &middot; No credit card</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <a href="#" class="footer-logo">Cadence<span>.</span></a>
+    <p class="footer-copy">&copy; 2026 Cadence Inc. All rights reserved.</p>
+  </footer>
+
+  <script>
+    // Animate the timeline rule when steps scroll into view
+    const stepsEl = document.getElementById('steps-container');
+    if (stepsEl && window.matchMedia('(min-width: 900px)').matches) {
+      const obs = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+          if (e.isIntersecting) {
+            stepsEl.classList.add('animated');
+            obs.disconnect();
+          }
+        });
+      }, { threshold: 0.4 });
+      obs.observe(stepsEl);
+    }
+  </script>
+</body>
+</html>

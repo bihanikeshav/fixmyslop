@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadence — Meeting notes that write themselves</title>
+
+  <!-- Fontshare: Sentient (serif heading) + Cabinet Grotesk (sans body) -->
+  <link rel="preconnect" href="https://api.fontshare.com">
+  <link href="https://api.fontshare.com/v2/css?f[]=sentient@400,500,700,400i&f[]=cabinet-grotesk@400,500,700&display=swap" rel="stylesheet">
+
+  <!-- Google Fonts: Azeret Mono (transcript labels) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    /* ── Design tokens ─────────────────────────────────────────── */
+    :root {
+      --ink:          #1C1917;
+      --ink-mid:      #6B6560;
+      --ink-faint:    #9C9690;
+      --surface:      #F4F3EE;
+      --rule:         #E0DDD4;
+      --rule-strong:  #C8C4BB;
+      --accent:       #2D6A4F;
+      --accent-light: #E6F0EB;
+      --accent-mid:   #3D8B67;
+      --white:        #FAFAF8;
+
+      /* spacing on an 8pt scale */
+      --sp-2:   2px;
+      --sp-4:   4px;
+      --sp-8:   8px;
+      --sp-12:  12px;
+      --sp-16:  16px;
+      --sp-24:  24px;
+      --sp-32:  32px;
+      --sp-48:  48px;
+      --sp-64:  64px;
+      --sp-96:  96px;
+
+      /* typography */
+      --f-head: 'Sentient', Georgia, serif;
+      --f-body: 'Cabinet Grotesk', system-ui, sans-serif;
+      --f-mono: 'Azeret Mono', 'Courier Prime', monospace;
+
+      /* rule rhythm — must match body line-height in px */
+      --rule-height: 28px;
+    }
+
+    /* ── Reset ──────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      font-size: 17px;
+      -webkit-font-smoothing: antialiased;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: var(--surface);
+      color: var(--ink);
+      font-family: var(--f-body);
+      font-size: 1rem;
+      line-height: 1.65;
+      /* Signature element: horizontal ruled lines across the entire surface,
+         like meeting-notes paper. 28px matches the body line-height exactly. */
+      background-image: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent calc(var(--rule-height) - 1px),
+        var(--rule) calc(var(--rule-height) - 1px),
+        var(--rule) var(--rule-height)
+      );
+      background-attachment: local;
+    }
+
+    /* Reduced-motion: kill entrance animations, keep rules */
+    @media (prefers-reduced-motion: reduce) {
+      .hero-notes-item { animation: none !important; opacity: 1 !important; }
+      .hero-cta, .hero-heading, .hero-sub { animation: none !important; opacity: 1 !important; transform: none !important; }
+      * { transition-duration: 0.01ms !important; }
+    }
+
+    /* ── Page-level layout ──────────────────────────────────────── */
+    .page-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 var(--sp-32);
+    }
+
+    /* ── Topbar / Nav ───────────────────────────────────────────── */
+    .topbar {
+      padding: var(--sp-24) 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--rule-strong);
+      background: var(--surface);
+    }
+
+    .wordmark {
+      font-family: var(--f-head);
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: var(--sp-8);
+    }
+
+    /* Live dot — pulled from meeting UIs; the green "someone is on the call" dot */
+    .live-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+      animation: pulse-dot 2.4s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.55; transform: scale(0.8); }
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-32);
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--ink-mid);
+      text-decoration: none;
+      transition: color 160ms ease-out;
+    }
+
+    .nav-links a:hover { color: var(--ink); }
+
+    .nav-cta {
+      font-family: var(--f-body);
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--white) !important;
+      background: var(--accent);
+      border: none;
+      padding: var(--sp-8) var(--sp-24);
+      cursor: pointer;
+      text-decoration: none;
+      border-radius: 3px;
+      transition: background 160ms ease-out;
+      display: inline-block;
+    }
+
+    .nav-cta:hover { background: var(--accent-mid); color: var(--white); }
+    .nav-cta:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+    /* ── Hero ───────────────────────────────────────────────────── */
+    .hero {
+      padding: var(--sp-96) 0 var(--sp-64);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--sp-64);
+      align-items: start;
+    }
+
+    .hero-left { max-width: 540px; }
+
+    .hero-heading {
+      font-family: var(--f-head);
+      font-size: clamp(2.4rem, 4.5vw, 3.6rem);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+      margin-bottom: var(--sp-24);
+      opacity: 0;
+      transform: translateY(12px);
+      animation: fade-up 0.55s ease-out 0.1s forwards;
+    }
+
+    /* Italic serif on the key phrase — editorial, specific to meeting notes */
+    .hero-heading em {
+      font-style: italic;
+      font-weight: 400;
+      color: var(--accent);
+    }
+
+    .hero-sub {
+      font-size: 1.05rem;
+      line-height: 1.65;
+      color: var(--ink-mid);
+      max-width: 52ch;
+      margin-bottom: var(--sp-40, 40px);
+      opacity: 0;
+      transform: translateY(8px);
+      animation: fade-up 0.5s ease-out 0.25s forwards;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-16);
+      flex-wrap: wrap;
+      opacity: 0;
+      animation: fade-up 0.5s ease-out 0.4s forwards;
+    }
+
+    .btn-primary {
+      font-family: var(--f-body);
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--white);
+      background: var(--accent);
+      border: 2px solid var(--accent);
+      padding: var(--sp-12) var(--sp-32);
+      border-radius: 3px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: background 150ms ease-out, border-color 150ms ease-out;
+      letter-spacing: -0.01em;
+    }
+
+    .btn-primary:hover { background: var(--accent-mid); border-color: var(--accent-mid); }
+    .btn-primary:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+    .btn-secondary {
+      font-family: var(--f-body);
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--ink-mid);
+      background: transparent;
+      border: none;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      cursor: pointer;
+      padding: var(--sp-12) var(--sp-8);
+      transition: color 150ms ease-out;
+    }
+
+    .btn-secondary:hover { color: var(--ink); }
+    .btn-secondary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+
+    /* ── Hero right: live notes panel ───────────────────────────── */
+    /*
+      THE SIGNATURE ELEMENT:
+      This panel demonstrates Cadence's output by *being* that output.
+      Transcript lines appear as speaker-attributed text, exactly as a
+      generated notes document would look. Action items are assigned in
+      real time. The product explains itself through its own artifact.
+    */
+    .hero-notes {
+      background: var(--white);
+      border: 1px solid var(--rule-strong);
+      border-radius: 4px;
+      overflow: hidden;
+      font-family: var(--f-mono);
+      font-size: 0.82rem;
+      /* The ruled lines continue into this panel too — same rhythm */
+      background-image: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent calc(var(--rule-height) - 1px),
+        var(--rule) calc(var(--rule-height) - 1px),
+        var(--rule) var(--rule-height)
+      );
+    }
+
+    .notes-titlebar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--rule-strong);
+      padding: var(--sp-8) var(--sp-16);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--f-body);
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--ink-mid);
+      gap: var(--sp-8);
+      /* must be exactly one rule-height tall so grid aligns below it */
+      height: var(--rule-height);
+      box-sizing: border-box;
+    }
+
+    .notes-titlebar-left {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-8);
+    }
+
+    .notes-live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--sp-4);
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .notes-live-badge .live-dot { width: 6px; height: 6px; }
+
+    .notes-body {
+      padding: var(--sp-16) var(--sp-16) var(--sp-24);
+    }
+
+    .notes-section-title {
+      font-family: var(--f-body);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      margin-bottom: var(--sp-8);
+      margin-top: var(--sp-16);
+    }
+
+    .notes-section-title:first-child { margin-top: 0; }
+
+    /* Individual transcript / action-item lines */
+    .hero-notes-item {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0 var(--sp-8);
+      padding: var(--sp-2) 0;
+      opacity: 0;
+      transform: translateX(-4px);
+    }
+
+    /* Staggered entrance animations */
+    .hero-notes-item:nth-child(1)  { animation: slide-in 0.3s ease-out 0.6s  forwards; }
+    .hero-notes-item:nth-child(2)  { animation: slide-in 0.3s ease-out 0.9s  forwards; }
+    .hero-notes-item:nth-child(3)  { animation: slide-in 0.3s ease-out 1.15s forwards; }
+    .hero-notes-item:nth-child(4)  { animation: slide-in 0.3s ease-out 1.35s forwards; }
+    .hero-notes-item:nth-child(5)  { animation: slide-in 0.3s ease-out 1.6s  forwards; }
+    .hero-notes-item:nth-child(6)  { animation: slide-in 0.3s ease-out 1.85s forwards; }
+    .hero-notes-item:nth-child(7)  { animation: slide-in 0.3s ease-out 2.1s  forwards; }
+    .hero-notes-item:nth-child(8)  { animation: slide-in 0.3s ease-out 2.35s forwards; }
+    .hero-notes-item:nth-child(9)  { animation: slide-in 0.3s ease-out 2.6s  forwards; }
+    .hero-notes-item:nth-child(10) { animation: slide-in 0.3s ease-out 2.85s forwards; }
+
+    @keyframes slide-in {
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .item-speaker {
+      color: var(--accent);
+      font-weight: 500;
+      white-space: nowrap;
+      font-size: 0.78rem;
+    }
+
+    /* Unassigned speakers in neutral */
+    .item-speaker.neutral { color: var(--ink-mid); }
+
+    .item-text {
+      color: var(--ink);
+      line-height: 1.5;
+      font-size: 0.78rem;
+    }
+
+    .item-text.muted { color: var(--ink-mid); }
+
+    /* Action item checkmark rows */
+    .action-row {
+      display: grid;
+      grid-template-columns: 14px 1fr;
+      gap: 0 var(--sp-8);
+      align-items: start;
+      padding: var(--sp-2) 0;
+      opacity: 0;
+      transform: translateX(-4px);
+    }
+
+    .action-row:nth-child(1)  { animation: slide-in 0.3s ease-out 1.7s  forwards; }
+    .action-row:nth-child(2)  { animation: slide-in 0.3s ease-out 1.95s forwards; }
+    .action-row:nth-child(3)  { animation: slide-in 0.3s ease-out 2.2s  forwards; }
+
+    .action-check {
+      width: 13px;
+      height: 13px;
+      border: 1.5px solid var(--rule-strong);
+      border-radius: 2px;
+      margin-top: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      background: var(--white);
+    }
+
+    .action-check.done {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .action-check.done::after {
+      content: '';
+      display: block;
+      width: 7px;
+      height: 4px;
+      border-left: 1.5px solid #fff;
+      border-bottom: 1.5px solid #fff;
+      transform: rotate(-45deg) translate(1px, -1px);
+    }
+
+    .action-label {
+      font-family: var(--f-mono);
+      font-size: 0.76rem;
+      color: var(--ink);
+      line-height: 1.4;
+    }
+
+    .action-assignee {
+      display: inline;
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .action-due {
+      color: var(--ink-faint);
+      font-size: 0.7rem;
+      margin-left: var(--sp-4);
+    }
+
+    /* Blinking cursor to show live recording */
+    .cursor {
+      display: inline-block;
+      width: 2px;
+      height: 0.9em;
+      background: var(--accent);
+      vertical-align: text-bottom;
+      animation: blink 1.1s step-end infinite;
+      margin-left: 2px;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0; }
+    }
+
+    /* ── Shared animations ──────────────────────────────────────── */
+    @keyframes fade-up {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Transcript section ─────────────────────────────────────── */
+    /*
+      The product's proof in the second section.
+      Left column = raw meeting transcript.
+      Right column = what Cadence extracted.
+      Shows the transformation — the entire value prop in one layout.
+    */
+    .proof-section {
+      padding: var(--sp-96) 0;
+      border-top: 1px solid var(--rule-strong);
+    }
+
+    .proof-label {
+      font-family: var(--f-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      margin-bottom: var(--sp-32);
+    }
+
+    .proof-heading {
+      font-family: var(--f-head);
+      font-size: clamp(1.8rem, 3vw, 2.6rem);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.15;
+      color: var(--ink);
+      max-width: 30ch;
+      margin-bottom: var(--sp-64);
+    }
+
+    .proof-heading em {
+      font-style: italic;
+      font-weight: 400;
+    }
+
+    .proof-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--sp-48);
+      align-items: start;
+    }
+
+    /* Left: raw transcript panel */
+    .transcript-panel {
+      position: relative;
+    }
+
+    .panel-label {
+      font-family: var(--f-body);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      margin-bottom: var(--sp-16);
+      padding-bottom: var(--sp-8);
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .transcript-line {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0 var(--sp-12);
+      padding: var(--sp-4) 0;
+      border-bottom: 1px solid var(--rule);
+      align-items: start;
+    }
+
+    .transcript-line:last-child { border-bottom: none; }
+
+    .ts-stamp {
+      font-family: var(--f-mono);
+      font-size: 0.72rem;
+      color: var(--ink-faint);
+      white-space: nowrap;
+      padding-top: 2px;
+    }
+
+    .ts-content { }
+
+    .ts-speaker {
+      font-family: var(--f-mono);
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--accent);
+      display: block;
+      margin-bottom: 1px;
+    }
+
+    .ts-text {
+      font-family: var(--f-body);
+      font-size: 0.88rem;
+      line-height: 1.55;
+      color: var(--ink-mid);
+    }
+
+    /* Highlight the key phrase that becomes an action item */
+    .ts-highlight {
+      background: var(--accent-light);
+      color: var(--ink);
+      padding: 0 2px;
+      border-radius: 2px;
+      font-weight: 500;
+    }
+
+    /* Right: extracted output panel */
+    .output-panel {
+      background: var(--white);
+      border: 1px solid var(--rule-strong);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .output-header {
+      background: var(--accent);
+      padding: var(--sp-12) var(--sp-16);
+      font-family: var(--f-body);
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: 0.02em;
+    }
+
+    .output-body {
+      padding: var(--sp-16) var(--sp-16) var(--sp-24);
+    }
+
+    .output-section {
+      margin-bottom: var(--sp-24);
+    }
+
+    .output-section:last-child { margin-bottom: 0; }
+
+    .output-section-title {
+      font-family: var(--f-body);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      margin-bottom: var(--sp-8);
+      padding-bottom: var(--sp-4);
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .output-item {
+      display: grid;
+      grid-template-columns: 14px 1fr;
+      gap: 0 var(--sp-8);
+      padding: var(--sp-4) 0;
+    }
+
+    .out-check {
+      width: 13px;
+      height: 13px;
+      border-radius: 2px;
+      margin-top: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .out-check.done {
+      background: var(--accent);
+    }
+
+    .out-check.done::after {
+      content: '';
+      display: block;
+      width: 7px;
+      height: 4px;
+      border-left: 1.5px solid #fff;
+      border-bottom: 1.5px solid #fff;
+      transform: rotate(-45deg) translate(1px, -1px);
+    }
+
+    .out-check.open {
+      border: 1.5px solid var(--rule-strong);
+      background: var(--white);
+    }
+
+    .out-text {
+      font-family: var(--f-body);
+      font-size: 0.85rem;
+      color: var(--ink);
+      line-height: 1.45;
+    }
+
+    .out-meta {
+      display: block;
+      font-family: var(--f-mono);
+      font-size: 0.68rem;
+      color: var(--ink-faint);
+      margin-top: 1px;
+    }
+
+    .out-assignee {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    /* ── Feature statements (transcript-voice copy) ─────────────── */
+    /*
+      Instead of the standard icon+heading+body card grid,
+      each feature is a transcript-voice statement — formatted
+      as if Cadence itself said it during a demo call.
+      Left-aligned column, not centered card grid.
+    */
+    .features-section {
+      padding: var(--sp-96) 0;
+      border-top: 1px solid var(--rule-strong);
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: var(--sp-48) var(--sp-48);
+      margin-top: var(--sp-48);
+    }
+
+    .feature-item {
+      padding-top: var(--sp-24);
+      border-top: 2px solid var(--ink);
+    }
+
+    .feature-speaker-line {
+      font-family: var(--f-mono);
+      font-size: 0.72rem;
+      color: var(--accent);
+      font-weight: 500;
+      margin-bottom: var(--sp-8);
+      display: flex;
+      align-items: center;
+      gap: var(--sp-8);
+    }
+
+    .feature-ts {
+      color: var(--ink-faint);
+      font-weight: 400;
+    }
+
+    .feature-quote {
+      font-family: var(--f-head);
+      font-size: 1.05rem;
+      font-weight: 500;
+      line-height: 1.4;
+      color: var(--ink);
+      margin-bottom: var(--sp-8);
+    }
+
+    .feature-quote em {
+      font-style: italic;
+      font-weight: 400;
+      color: var(--accent);
+    }
+
+    .feature-body {
+      font-family: var(--f-body);
+      font-size: 0.875rem;
+      color: var(--ink-mid);
+      line-height: 1.6;
+      max-width: 38ch;
+    }
+
+    /* ── Social proof (transcript attribution style) ─────────────── */
+    .quote-section {
+      padding: var(--sp-64) 0;
+      border-top: 1px solid var(--rule-strong);
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: var(--sp-48);
+      align-items: center;
+    }
+
+    .quote-left {
+      font-family: var(--f-head);
+      font-size: clamp(1.4rem, 2vw, 1.8rem);
+      font-weight: 500;
+      font-style: italic;
+      line-height: 1.35;
+      color: var(--ink);
+      max-width: 28ch;
+    }
+
+    .quote-attribution {
+      font-family: var(--f-mono);
+      font-size: 0.75rem;
+      color: var(--ink-faint);
+      margin-top: var(--sp-16);
+      font-style: normal;
+    }
+
+    .quote-attribution strong {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .quote-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: var(--sp-32);
+    }
+
+    .stat-item {
+      padding: var(--sp-24) 0;
+      border-top: 2px solid var(--rule-strong);
+    }
+
+    .stat-number {
+      font-family: var(--f-head);
+      font-size: 2.4rem;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      color: var(--ink);
+      margin-bottom: var(--sp-4);
+    }
+
+    .stat-label {
+      font-family: var(--f-body);
+      font-size: 0.85rem;
+      color: var(--ink-mid);
+      line-height: 1.4;
+    }
+
+    /* ── Footer CTA ─────────────────────────────────────────────── */
+    .footer-cta {
+      padding: var(--sp-96) 0;
+      border-top: 1px solid var(--rule-strong);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: var(--sp-48);
+      align-items: center;
+    }
+
+    .footer-heading {
+      font-family: var(--f-head);
+      font-size: clamp(1.8rem, 2.8vw, 2.4rem);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.15;
+      color: var(--ink);
+      max-width: 30ch;
+    }
+
+    .footer-heading em {
+      font-style: italic;
+      font-weight: 400;
+      color: var(--accent);
+    }
+
+    .footer-cta-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: var(--sp-12);
+    }
+
+    .footer-note {
+      font-family: var(--f-mono);
+      font-size: 0.72rem;
+      color: var(--ink-faint);
+      text-align: right;
+    }
+
+    /* ── Footer bar ──────────────────────────────────────────────── */
+    .footer-bar {
+      padding: var(--sp-24) 0;
+      border-top: 1px solid var(--rule);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--f-mono);
+      font-size: 0.7rem;
+      color: var(--ink-faint);
+    }
+
+    /* ── Responsive ──────────────────────────────────────────────── */
+    @media (max-width: 860px) {
+      .page-inner { padding: 0 var(--sp-24); }
+
+      .hero {
+        grid-template-columns: 1fr;
+        padding: var(--sp-64) 0 var(--sp-48);
+        gap: var(--sp-48);
+      }
+
+      .hero-left { max-width: 100%; }
+
+      .proof-grid {
+        grid-template-columns: 1fr;
+        gap: var(--sp-32);
+      }
+
+      .features-grid { grid-template-columns: 1fr 1fr; }
+
+      .quote-section {
+        grid-template-columns: 1fr;
+        gap: var(--sp-32);
+      }
+
+      .quote-stats { grid-template-columns: 1fr 1fr; }
+
+      .footer-cta {
+        grid-template-columns: 1fr;
+        gap: var(--sp-32);
+      }
+
+      .footer-cta-actions { align-items: flex-start; }
+
+      .nav-links { display: none; }
+    }
+
+    @media (max-width: 560px) {
+      .page-inner { padding: 0 var(--sp-16); }
+      .features-grid { grid-template-columns: 1fr; }
+      .quote-stats { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Nav ──────────────────────────────────────────────────── -->
+  <header>
+    <div class="page-inner">
+      <nav class="topbar" aria-label="Main navigation">
+        <a href="#" class="wordmark" aria-label="Cadence home">
+          <span class="live-dot" aria-hidden="true"></span>
+          Cadence
+        </a>
+        <ul class="nav-links" role="list">
+          <li><a href="#how-it-works">How it works</a></li>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#pricing">Pricing</a></li>
+          <li><a href="#start" class="nav-cta">Start free trial</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ── Hero ─────────────────────────────────────────────────── -->
+  <main>
+    <section aria-labelledby="hero-heading">
+      <div class="page-inner">
+        <div class="hero">
+
+          <!-- Left: headline + CTA -->
+          <div class="hero-left">
+            <h1 class="hero-heading" id="hero-heading">
+              Your meeting notes,<br>
+              <em>finished before you leave the call.</em>
+            </h1>
+            <p class="hero-sub">
+              Cadence joins every video meeting, transcribes in real time, and
+              delivers a finished summary with action items assigned to the right
+              people — no editing, no follow-up, no chasing.
+            </p>
+            <div class="hero-actions">
+              <a href="#start" class="btn-primary">Connect your calendar</a>
+              <button class="btn-secondary" type="button">See a sample summary</button>
+            </div>
+          </div>
+
+          <!-- Right: live notes panel (the signature element) -->
+          <div class="hero-notes" role="img" aria-label="Sample Cadence meeting summary appearing in real time">
+            <div class="notes-titlebar">
+              <div class="notes-titlebar-left">
+                <span>Q3 Planning · Mon 10:00 AM</span>
+              </div>
+              <span class="notes-live-badge">
+                <span class="live-dot" aria-hidden="true"></span>
+                Live
+              </span>
+            </div>
+
+            <div class="notes-body">
+              <!-- Section: Key decisions (transcript voice) -->
+              <div class="notes-section-title">Transcript</div>
+
+              <div class="hero-notes-item">
+                <span class="item-speaker">Maya K.</span>
+                <span class="item-text">We need the API docs updated before the launch window.</span>
+              </div>
+              <div class="hero-notes-item">
+                <span class="item-speaker neutral">Dev P.</span>
+                <span class="item-text muted">Agreed. I can own that — target Friday EOD.</span>
+              </div>
+              <div class="hero-notes-item">
+                <span class="item-speaker">Maya K.</span>
+                <span class="item-text">Great. What about the onboarding checklist?</span>
+              </div>
+              <div class="hero-notes-item">
+                <span class="item-speaker neutral">Sam R.</span>
+                <span class="item-text muted">I'll have a draft by Wednesday, needs design review.</span>
+              </div>
+              <div class="hero-notes-item">
+                <span class="item-speaker neutral">Priya T.</span>
+                <span class="item-text muted">I can review it Thursday morning, send it over Sam.</span>
+              </div>
+
+              <!-- Section: Action items -->
+              <div class="notes-section-title" style="margin-top: 16px;">Action items</div>
+
+              <div class="action-row">
+                <div class="action-check done" aria-hidden="true"></div>
+                <div class="action-label">
+                  Update API docs
+                  <span class="action-assignee"> → Dev P.</span>
+                  <span class="action-due">Fri EOD</span>
+                </div>
+              </div>
+              <div class="action-row">
+                <div class="action-check done" aria-hidden="true"></div>
+                <div class="action-label">
+                  Draft onboarding checklist
+                  <span class="action-assignee"> → Sam R.</span>
+                  <span class="action-due">Wed</span>
+                </div>
+              </div>
+              <div class="action-row">
+                <div class="action-check open" aria-hidden="true"></div>
+                <div class="action-label">
+                  Design review of checklist
+                  <span class="action-assignee"> → Priya T.</span>
+                  <span class="action-due">Thu AM</span>
+                  <span class="cursor" aria-hidden="true"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Proof section: transcript → extracted output ──────────── -->
+    <section class="proof-section" id="how-it-works" aria-labelledby="proof-heading">
+      <div class="page-inner">
+        <p class="proof-label">How it works</p>
+        <h2 class="proof-heading" id="proof-heading">
+          Cadence reads what was said.<br>
+          <em>You act on what matters.</em>
+        </h2>
+
+        <div class="proof-grid">
+
+          <!-- Left: raw transcript -->
+          <div class="transcript-panel" aria-label="Raw meeting transcript">
+            <div class="panel-label">What was said</div>
+
+            <div class="transcript-line">
+              <span class="ts-stamp">09:04</span>
+              <div class="ts-content">
+                <span class="ts-speaker">Jordan M.</span>
+                <span class="ts-text">So the dashboard redesign — we're blocked on the color system. Whose call is that?</span>
+              </div>
+            </div>
+
+            <div class="transcript-line">
+              <span class="ts-stamp">09:05</span>
+              <div class="ts-content">
+                <span class="ts-speaker">Alex W.</span>
+                <span class="ts-text">Design owns it. <span class="ts-highlight">I'll finalize the tokens and share a Figma link by Thursday.</span></span>
+              </div>
+            </div>
+
+            <div class="transcript-line">
+              <span class="ts-stamp">09:06</span>
+              <div class="ts-content">
+                <span class="ts-speaker">Jordan M.</span>
+                <span class="ts-text">Perfect. And for the mobile breakpoints — are those in scope for this sprint?</span>
+              </div>
+            </div>
+
+            <div class="transcript-line">
+              <span class="ts-stamp">09:07</span>
+              <div class="ts-content">
+                <span class="ts-speaker">Priya N.</span>
+                <span class="ts-text">Yes, <span class="ts-highlight">I'm picking those up — target end of sprint review.</span></span>
+              </div>
+            </div>
+
+            <div class="transcript-line">
+              <span class="ts-stamp">09:09</span>
+              <div class="ts-content">
+                <span class="ts-speaker">Alex W.</span>
+                <span class="ts-text">One more thing — we need QA signoff on the current release candidate.</span>
+              </div>
+            </div>
+
+            <div class="transcript-line">
+              <span class="ts-stamp">09:09</span>
+              <div class="ts-content">
+                <span class="ts-speaker">Chris B.</span>
+                <span class="ts-text"><span class="ts-highlight">I'll get it done by Friday noon, I have context.</span></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Cadence extracted output -->
+          <div class="output-panel" aria-label="Cadence extracted summary">
+            <div class="output-header">Cadence · Dashboard Redesign Sync · extracted in 4 s</div>
+            <div class="output-body">
+
+              <div class="output-section">
+                <div class="output-section-title">Decision</div>
+                <p style="font-family: var(--f-body); font-size: 0.88rem; color: var(--ink); line-height: 1.55; padding: 4px 0;">
+                  Dashboard color system finalization is owned by Design (Alex W.). Mobile breakpoints in scope for this sprint.
+                </p>
+              </div>
+
+              <div class="output-section">
+                <div class="output-section-title">Action items</div>
+
+                <div class="output-item">
+                  <div class="out-check open" aria-hidden="true"></div>
+                  <div class="out-text">
+                    Finalize design tokens &amp; share Figma link
+                    <span class="out-meta"><span class="out-assignee">Alex W.</span> · Thu EOD</span>
+                  </div>
+                </div>
+
+                <div class="output-item">
+                  <div class="out-check open" aria-hidden="true"></div>
+                  <div class="out-text">
+                    Implement mobile breakpoints for dashboard
+                    <span class="out-meta"><span class="out-assignee">Priya N.</span> · Sprint review</span>
+                  </div>
+                </div>
+
+                <div class="output-item">
+                  <div class="out-check open" aria-hidden="true"></div>
+                  <div class="out-text">
+                    QA signoff on release candidate
+                    <span class="out-meta"><span class="out-assignee">Chris B.</span> · Fri 12:00</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="output-section">
+                <div class="output-section-title">Sent to</div>
+                <p style="font-family: var(--f-mono); font-size: 0.72rem; color: var(--ink-faint); line-height: 1.6;">
+                  Jordan M. · Alex W. · Priya N. · Chris B.<br>
+                  + Linear tickets created · Slack threads updated
+                </p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Features section (transcript-voice copy format) ──────── -->
+    <section class="features-section" id="features" aria-labelledby="features-heading">
+      <div class="page-inner">
+        <p class="proof-label">Built for teams that move fast</p>
+        <h2 id="features-heading" class="proof-heading">
+          Cadence works the way<br>
+          <em>your team actually talks.</em>
+        </h2>
+
+        <div class="features-grid">
+
+          <div class="feature-item">
+            <div class="feature-speaker-line">
+              Cadence <span class="feature-ts">· joining now</span>
+            </div>
+            <p class="feature-quote">
+              "Joins <em>automatically,</em> no manual start."
+            </p>
+            <p class="feature-body">
+              Connect your calendar once. Cadence joins every meeting on time, whether it's Zoom, Meet, or Teams — before your coffee is ready.
+            </p>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-speaker-line">
+              Cadence <span class="feature-ts">· extracting</span>
+            </div>
+            <p class="feature-quote">
+              "Action items <em>assigned by name,</em> not by guesswork."
+            </p>
+            <p class="feature-body">
+              Cadence reads who said what, cross-references your org chart, and assigns each task to the person who committed to it in the call.
+            </p>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-speaker-line">
+              Cadence <span class="feature-ts">· delivered</span>
+            </div>
+            <p class="feature-quote">
+              "Summary sent before the <em>calendar invite closes.</em>"
+            </p>
+            <p class="feature-body">
+              Notes, decisions, and tasks land in Slack, Linear, and email within seconds of the call ending — no action required from anyone.
+            </p>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-speaker-line">
+              Cadence <span class="feature-ts">· syncing</span>
+            </div>
+            <p class="feature-quote">
+              "Your tools updated,<br><em>automatically.</em>"
+            </p>
+            <p class="feature-body">
+              Cadence pushes tasks to Linear, Jira, or Asana with the right assignee, due date, and project — without anyone touching a keyboard.
+            </p>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-speaker-line">
+              Cadence <span class="feature-ts">· searching</span>
+            </div>
+            <p class="feature-quote">
+              "Ask <em>any question</em> about any past meeting."
+            </p>
+            <p class="feature-body">
+              Full transcript search across your team's history. Who committed to the Q2 roadmap? What was decided on the pricing call? Two seconds.
+            </p>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-speaker-line">
+              Cadence <span class="feature-ts">· respecting</span>
+            </div>
+            <p class="feature-quote">
+              "Private by default,<br><em>yours to control.</em>"
+            </p>
+            <p class="feature-body">
+              Cadence never trains on your transcripts. Data is encrypted at rest and in transit. Retention, deletion, and access — on your terms.
+            </p>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Social proof ──────────────────────────────────────────── -->
+    <section class="quote-section" aria-labelledby="quote-heading">
+      <div class="page-inner" style="display: contents;">
+
+        <blockquote class="quote-left" id="quote-heading">
+          <p>"Our retros used to start with fifteen minutes of 'wait, who was supposed to do that.' Cadence ended that."</p>
+          <footer class="quote-attribution">
+            <strong>Leila Hassan</strong> · Head of Product Operations · Arch Software
+          </footer>
+        </blockquote>
+
+        <div class="quote-stats" role="list">
+          <div class="stat-item" role="listitem">
+            <div class="stat-number">94%</div>
+            <div class="stat-label">of action items completed on time, up from 61%</div>
+          </div>
+          <div class="stat-item" role="listitem">
+            <div class="stat-number">47 min</div>
+            <div class="stat-label">saved per person per week in follow-up work</div>
+          </div>
+          <div class="stat-item" role="listitem">
+            <div class="stat-number">4 s</div>
+            <div class="stat-label">average time from call end to notes in your inbox</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── Footer CTA ─────────────────────────────────────────────── -->
+    <section class="footer-cta" id="start" aria-labelledby="footer-heading">
+      <div class="page-inner" style="display: contents;">
+        <h2 class="footer-heading" id="footer-heading">
+          Your next meeting starts in minutes.<br>
+          <em>Let Cadence handle the notes.</em>
+        </h2>
+        <div class="footer-cta-actions">
+          <a href="#" class="btn-primary">Connect your calendar</a>
+          <p class="footer-note">Free 14-day trial · No credit card · Cancel any time</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ── Footer bar ────────────────────────────────────────────── -->
+  <footer>
+    <div class="page-inner">
+      <div class="footer-bar">
+        <span>© 2026 Cadence, Inc.</span>
+        <span>Privacy · Terms · Security · Status</span>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
