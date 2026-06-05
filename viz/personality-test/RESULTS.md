@@ -32,6 +32,18 @@ The treatment still drifted faintly toward the new default — cream surface, an
 italic-serif accent, and a three-stat hero-metric block (a named tell) — plus a
 low-contrast faint-text miss and dropped mobile nav. A clear win, not a clean sweep.
 
+## Visual confirmation (screenshots)
+
+`control-full.png` and `treatment-full.png` (1440px, full-page). The render confirms
+the verdict and adds nuance: the control is unmistakable second-gen slop (Playfair
+italic on cream, gold accent, eyebrow chip, 01/02/03 steps). The treatment is clearly
+more designed — the raw-transcript→green-extracted-output transformation is a real
+load-bearing concept, with ruled paper, mono speaker labels, and a semantic green
+accent. **But** it still sits in the same warm-serif-on-cream register and keeps a
+three-stat hero-metric block — i.e. it improved on, but did not fully escape, the
+second-gen default. Motivates the manifest hardening below (and a re-run to confirm
+the hardened skill escapes the cream/serif register entirely).
+
 ## Earned follow-up
 
 Add an explicit **second-generation slop** callout to the slop manifest (tasteful
