@@ -54,6 +54,7 @@ in only what the current step needs — don't read everything every time.
 |---|---|
 | **Always, before building** | `reference/slop-manifest.md` (what to avoid) + `reference/tensions.md` (resolve conflicting rules) |
 | Inventing the signature element & voice | `reference/personality-moves.md` (moves + Voice & delight) |
+| Wanting a proven distinctiveness move (how the best escape sameness) | `reference/distinctiveness.md` (steal the method, not the tokens) |
 | Choosing fonts & color | `reference/type-and-color.md` (avoid-list + fresh option-sets) |
 | Composing visuals — hierarchy, type, color, layout, spacing, gestalt, motion, accessibility, responsive, tokens | `reference/craft-principles.md` |
 | Designing behavior — affordances, UX laws, cognitive load, IA/nav, forms, onboarding | `reference/ux-principles.md` |

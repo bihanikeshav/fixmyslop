@@ -21,7 +21,7 @@ describe("personality skill", () => {
   });
 
   it("ships all non-empty reference files", () => {
-    for (const f of ["personality-moves.md", "slop-manifest.md", "craft-principles.md", "type-and-color.md", "ux-principles.md", "tensions.md"]) {
+    for (const f of ["personality-moves.md", "slop-manifest.md", "craft-principles.md", "type-and-color.md", "ux-principles.md", "tensions.md", "distinctiveness.md"]) {
       expect(existsSync(resolve(SKILL, "reference", f)), `${f} exists`).toBe(true);
       expect(read(`reference/${f}`).trim().length, `${f} non-empty`).toBeGreaterThan(200);
     }

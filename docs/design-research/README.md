@@ -36,6 +36,9 @@ These are **not** loaded by the skill yet. The plan: harvest the "how to apply" 
 - [onboarding-empty-states.md](onboarding-empty-states.md) — time-to-value, progressive over front-loaded, empty-state anatomy, contextual guidance.
 - [dark-patterns.md](dark-patterns.md) — the deceptive-pattern taxonomy to AVOID, persuasion vs manipulation, ethical defaults.
 
+## Distinctiveness playbook
+- [distinctiveness/](distinctiveness/README.md) — how ~115 genuinely distinctive sites (15 categories: tech, consumer, creative, indie) make themselves unmistakable, reverse-engineered into transferable techniques. The positive mirror of the slop manifest. Each exemplar separates the *transferable technique* from the *literal token you must never copy*.
+
 ## Provenance
 Each essay was produced by a focused web-research pass (primary sources preferred:
 Nielsen Norman Group, Refactoring UI, Practical Typography, W3C/WCAG + WebAIM,
