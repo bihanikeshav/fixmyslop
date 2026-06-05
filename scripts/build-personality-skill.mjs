@@ -67,13 +67,15 @@ const GENERIC = new Set([
   "apple-system", "blinkmacsystemfont", "segoe-ui", "roboto-flex", "inherit", "initial",
 ]);
 const titleCase = (s) => String(s).split(/[\s-]+/).filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1)).join(" ");
+// crawl variants sometimes append a 6-hex color/hash token (e.g. "montserrat 7c84aa") — drop those
+const isArtifact = (id) => id.split("-").some((seg) => /^[0-9a-f]{6}$/.test(seg));
 const siteCount = crawl.length;
 const fontSites = new Map();   // normalized id -> Set of site indices (dedupe per site)
 crawl.forEach((p, i) => {
   const fams = [p.heroFont, p.headingFont, p.bodyFont, ...((p.allFonts ?? []).map((a) => a.family))].filter(Boolean);
   for (const f of fams) {
     const id = norm(f);
-    if (!id || GENERIC.has(id)) continue;
+    if (!id || GENERIC.has(id) || isArtifact(id)) continue;
     if (!fontSites.has(id)) fontSites.set(id, new Set());
     fontSites.get(id).add(i);
   }

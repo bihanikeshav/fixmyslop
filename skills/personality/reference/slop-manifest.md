@@ -85,8 +85,8 @@ The fonts most likely to make a site read as generic, by how many crawled sites 
 - DM Sans — 5% of sites (2/44)
 - Lato — 5% of sites (2/44)
 - Pacifico — 2% of sites (1/44)
-- Montserrat 7c84aa — 2% of sites (1/44)
-- Roboto 13b720 — 2% of sites (1/44)
+- Bricolage Grotesque — 2% of sites (1/44)
+- Albert Sans — 2% of sites (1/44)
 
 Detectors we flag deterministically: AI purple/violet gradient, gradient text,
 glassmorphism (backdrop-blur), pill buttons, extreme corner radius, tight hero
