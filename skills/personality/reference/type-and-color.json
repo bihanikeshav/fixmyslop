@@ -1,0 +1,676 @@
+{
+  "cutoff": 0.4,
+  "avoidFonts": [
+    {
+      "id": "inter",
+      "family": "Inter",
+      "sat": 0.83
+    },
+    {
+      "id": "cormorant-garamond",
+      "family": "Cormorant Garamond",
+      "sat": 0.69
+    },
+    {
+      "id": "playfair-display",
+      "family": "Playfair Display",
+      "sat": 0.64
+    },
+    {
+      "id": "space-grotesk",
+      "family": "Space Grotesk",
+      "sat": 0.59
+    },
+    {
+      "id": "poppins",
+      "family": "Poppins",
+      "sat": 0.58
+    },
+    {
+      "id": "lora",
+      "family": "Lora",
+      "sat": 0.53
+    },
+    {
+      "id": "sora",
+      "family": "Sora",
+      "sat": 0.5
+    },
+    {
+      "id": "libre-baskerville",
+      "family": "Libre Baskerville",
+      "sat": 0.41
+    }
+  ],
+  "freshByCat": {
+    "serif": [
+      {
+        "family": "Aktura",
+        "supplier": "fontshare",
+        "sat": 0
+      },
+      {
+        "family": "Bespoke Serif",
+        "supplier": "fontshare",
+        "sat": 0
+      },
+      {
+        "family": "Bonny",
+        "supplier": "fontshare",
+        "sat": 0
+      },
+      {
+        "family": "Boska",
+        "supplier": "fontshare",
+        "sat": 0
+      },
+      {
+        "family": "Career",
+        "supplier": "uncut",
+        "sat": 0
+      },
+      {
+        "family": "Erode",
+        "supplier": "fontshare",
+        "sat": 0
+      },
+      {
+        "family": "Gambarino",
+        "supplier": "fontshare",
+        "sat": 0
+      },
+      {
+        "family": "Gambetta",
+        "supplier": "fontshare",
+        "sat": 0
+      },
+      {
+        "family": "Neco",
+        "supplier": "fontshare",
+        "sat": 0
+      },
+      {
+        "family": "Paquito",
+        "supplier": "fontshare",
+        "sat": 0
+      },
+      {
+        "family": "Recia",
+        "supplier": "fontshare",
+        "sat": 0
+      },
+      {
+        "family": "Rowan",
+        "supplier": "fontshare",
+        "sat": 0
+      },
+      {
+        "family": "Sentient",
+        "supplier": "fontshare",
+        "sat": 0.01
+      },
+      {
+        "family": "Sprat",
+        "supplier": "uncut",
+        "sat": 0
+      }
+    ],
+    "sans-serif": [
+      {
+        "family": "Alpino",
+        "supplier": "fontshare",
+        "sat": 0
+      },
+      {
+        "family": "Amulya",
+        "supplier": "fontshare",
+        "sat": 0
+      },
+      {
+        "family": "Aspekta",
+        "supplier": "uncut",
+        "sat": 0
+      },
+      {
+        "family": "Author",
+        "supplier": "fontshare",
+        "sat": 0
+      },
+      {
+        "family": "Bertioga Sans",
+        "supplier": "uncut",
+        "sat": 0
+      },
+      {
+        "family": "Bespoke Sans",
+        "supplier": "fontshare",
+        "sat": 0
+      },
+      {
+        "family": "Bespoke Slab",
+        "supplier": "fontshare",
+        "sat": 0
+      },
+      {
+        "family": "Bespoke Stencil",
+        "supplier": "fontshare",
+        "sat": 0
+      },
+      {
+        "family": "Breite Grotesk",
+        "supplier": "uncut",
+        "sat": 0
+      },
+      {
+        "family": "Cabinet Grotesk",
+        "supplier": "fontshare",
+        "sat": 0.04
+      },
+      {
+        "family": "Chillax",
+        "supplier": "fontshare",
+        "sat": 0
+      },
+      {
+        "family": "Clash Display",
+        "supplier": "fontshare",
+        "sat": 0.1
+      },
+      {
+        "family": "Clash Grotesk",
+        "supplier": "fontshare",
+        "sat": 0.01
+      },
+      {
+        "family": "Evening",
+        "supplier": "uncut",
+        "sat": 0
+      }
+    ],
+    "display": [
+      {
+        "family": "amdal",
+        "supplier": "velvetyne",
+        "sat": 0
+      },
+      {
+        "family": "Anthony",
+        "supplier": "velvetyne",
+        "sat": 0
+      },
+      {
+        "family": "Array",
+        "supplier": "fontshare",
+        "sat": 0
+      },
+      {
+        "family": "Avara",
+        "supplier": "velvetyne",
+        "sat": 0
+      },
+      {
+        "family": "BackOut",
+        "supplier": "velvetyne",
+        "sat": 0
+      },
+      {
+        "family": "Basteleur",
+        "supplier": "velvetyne",
+        "sat": 0
+      },
+      {
+        "family": "Bevellier",
+        "supplier": "fontshare",
+        "sat": 0
+      },
+      {
+        "family": "Blocks on Blocks",
+        "supplier": "uncut",
+        "sat": 0
+      },
+      {
+        "family": "Boxing",
+        "supplier": "fontshare",
+        "sat": 0
+      },
+      {
+        "family": "Cantique",
+        "supplier": "velvetyne",
+        "sat": 0
+      },
+      {
+        "family": "Chubbo",
+        "supplier": "fontshare",
+        "sat": 0
+      },
+      {
+        "family": "compagnon",
+        "supplier": "velvetyne",
+        "sat": 0
+      },
+      {
+        "family": "Façade",
+        "supplier": "velvetyne",
+        "sat": 0
+      },
+      {
+        "family": "Flor des ruina",
+        "supplier": "velvetyne",
+        "sat": 0
+      }
+    ],
+    "monospace": [
+      {
+        "family": "Lab Mono",
+        "supplier": "uncut",
+        "sat": 0
+      },
+      {
+        "family": "Max Hana",
+        "supplier": "uncut",
+        "sat": 0
+      },
+      {
+        "family": "New Heterodox Mono",
+        "supplier": "uncut",
+        "sat": 0
+      },
+      {
+        "family": "Uncut Plan8",
+        "supplier": "uncut",
+        "sat": 0
+      },
+      {
+        "family": "Whois",
+        "supplier": "uncut",
+        "sat": 0
+      },
+      {
+        "family": "Anonymous Pro",
+        "supplier": "google",
+        "sat": 0
+      },
+      {
+        "family": "Azeret Mono",
+        "supplier": "google",
+        "sat": 0.02
+      },
+      {
+        "family": "B612 Mono",
+        "supplier": "google",
+        "sat": 0
+      },
+      {
+        "family": "Chivo Mono",
+        "supplier": "google",
+        "sat": 0
+      },
+      {
+        "family": "Courier Prime",
+        "supplier": "google",
+        "sat": 0.07
+      },
+      {
+        "family": "Cousine",
+        "supplier": "google",
+        "sat": 0
+      },
+      {
+        "family": "Cutive Mono",
+        "supplier": "google",
+        "sat": 0
+      },
+      {
+        "family": "Datatype",
+        "supplier": "google",
+        "sat": 0
+      },
+      {
+        "family": "DM Mono",
+        "supplier": "google",
+        "sat": 0.02
+      }
+    ],
+    "handwriting": [
+      {
+        "family": "Britney",
+        "supplier": "fontshare",
+        "sat": 0
+      },
+      {
+        "family": "Comico",
+        "supplier": "fontshare",
+        "sat": 0
+      },
+      {
+        "family": "Pencerio",
+        "supplier": "fontshare",
+        "sat": 0
+      },
+      {
+        "family": "Rosaline",
+        "supplier": "fontshare",
+        "sat": 0
+      },
+      {
+        "family": "Telma",
+        "supplier": "fontshare",
+        "sat": 0
+      },
+      {
+        "family": "Aguafina Script",
+        "supplier": "google",
+        "sat": 0
+      },
+      {
+        "family": "Alex Brush",
+        "supplier": "google",
+        "sat": 0
+      },
+      {
+        "family": "Allison",
+        "supplier": "google",
+        "sat": 0
+      },
+      {
+        "family": "Allura",
+        "supplier": "google",
+        "sat": 0
+      },
+      {
+        "family": "Amatic SC",
+        "supplier": "google",
+        "sat": 0
+      },
+      {
+        "family": "Amita",
+        "supplier": "google",
+        "sat": 0
+      },
+      {
+        "family": "Annie Use Your Telescope",
+        "supplier": "google",
+        "sat": 0
+      },
+      {
+        "family": "Architects Daughter",
+        "supplier": "google",
+        "sat": 0
+      },
+      {
+        "family": "Are You Serious",
+        "supplier": "google",
+        "sat": 0
+      }
+    ]
+  },
+  "directions": [
+    {
+      "intent": "premium",
+      "options": [
+        {
+          "heading": "Playfair Display",
+          "body": "Inter",
+          "accent": "#1A1A1A",
+          "move": "High-contrast serif headlines on flat near-black"
+        },
+        {
+          "heading": "Cormorant Garamond",
+          "body": "DM Sans",
+          "accent": "#C9A84C",
+          "move": "Editorial serif headings with gold ink"
+        },
+        {
+          "heading": "Playfair Display",
+          "body": "Inter",
+          "accent": "#0a6b5c",
+          "move": "Replace soft gradients with solid saturated color"
+        }
+      ]
+    },
+    {
+      "intent": "unique",
+      "options": [
+        {
+          "heading": "Space Grotesk",
+          "body": "Inter",
+          "accent": "#ff5c35",
+          "move": "Swap to warm off-black canvas, sharp edges"
+        },
+        {
+          "heading": "Instrument Serif",
+          "body": "DM Sans",
+          "accent": "#C8522A",
+          "move": "Terracotta ink on raw linen texture"
+        },
+        {
+          "heading": "Playfair Display",
+          "body": "Source Sans Pro",
+          "accent": "#D946EF",
+          "move": "Bold serif headlines on dark solid backgrounds"
+        }
+      ]
+    },
+    {
+      "intent": "editorial",
+      "options": [
+        {
+          "heading": "Fraunces",
+          "body": "Newsreader",
+          "accent": "#1a1a1a",
+          "move": "Oversized serif headlines on hairline-ruled off-white"
+        },
+        {
+          "heading": "Playfair Display",
+          "body": "Source Serif 4",
+          "accent": "#C8102E",
+          "move": "Serif type, ink red, hard ruled lines"
+        },
+        {
+          "heading": "Playfair Display",
+          "body": "Lora",
+          "accent": "#D32F2F",
+          "move": "Kill glassmorphism, use serif/sans contrast"
+        }
+      ]
+    },
+    {
+      "intent": "minimal",
+      "options": [
+        {
+          "heading": "Space Grotesk",
+          "body": "Inter",
+          "accent": "#1A1A1A",
+          "move": "Kill gradients; flat ink-on-bone with hairline borders"
+        },
+        {
+          "heading": "Cormorant Garamond",
+          "body": "DM Sans",
+          "accent": "#1a1a1a",
+          "move": "Kill color; let type carry the weight"
+        },
+        {
+          "heading": "Crimson Text",
+          "body": "Inter",
+          "accent": "#1a1a1a",
+          "move": "Remove border radius, serif headings only"
+        }
+      ]
+    },
+    {
+      "intent": "bold",
+      "options": [
+        {
+          "heading": "Archivo",
+          "body": "Archivo",
+          "accent": "#FF3B00",
+          "move": "Oversized tight-tracked headline, hard black borders"
+        },
+        {
+          "heading": "Bebas Neue",
+          "body": "Space Grotesk",
+          "accent": "#FF3300",
+          "move": "Black borders, no radius, raw grid"
+        },
+        {
+          "heading": "Bebas Neue",
+          "body": "IBM Plex Mono",
+          "accent": "#FF2E63",
+          "move": "Remove rounded corners, gradients, glassmorphism entirely"
+        }
+      ]
+    },
+    {
+      "intent": "playful",
+      "options": [
+        {
+          "heading": "Bricolage Grotesque",
+          "body": "Inter",
+          "accent": "#FF5C38",
+          "move": "Oversized chunky display headings, warm coral accent"
+        },
+        {
+          "heading": "Fraunces",
+          "body": "DM Sans",
+          "accent": "#f97316",
+          "move": "Serif headings with warm orange punches"
+        },
+        {
+          "heading": "Poppins",
+          "body": "Inter",
+          "accent": "#FF6B35",
+          "move": "Warm serif accent, friendly sans headings"
+        }
+      ]
+    }
+  ],
+  "avoidPalettes": [
+    {
+      "vibe": "ai-saas",
+      "slopAccent": "blue (2/3)",
+      "bg": "dark",
+      "examples": "#6366f1 #6366f1 #00d9ff"
+    },
+    {
+      "vibe": "b2b-saas",
+      "slopAccent": "blue (3/3)",
+      "bg": "light",
+      "examples": "#2563eb #1A56DB #0066cc"
+    },
+    {
+      "vibe": "dev-tool",
+      "slopAccent": "blue (3/3)",
+      "bg": "dark",
+      "examples": "#3b82f6 #2f81f7 #3b82f6"
+    },
+    {
+      "vibe": "fintech",
+      "slopAccent": "blue (3/3)",
+      "bg": "dark",
+      "examples": "#3b82f6 #4F8EF7 #1e40af"
+    },
+    {
+      "vibe": "luxury-fashion",
+      "slopAccent": "red (1/3)",
+      "bg": "light",
+      "examples": "#6e2230 #c9a96e #d4af37"
+    },
+    {
+      "vibe": "dtc-brand",
+      "slopAccent": "red (3/3)",
+      "bg": "light",
+      "examples": "#ff5a3c #FF6B35 #ff6b35"
+    },
+    {
+      "vibe": "magazine-editorial",
+      "slopAccent": "red (2/3)",
+      "bg": "light",
+      "examples": "#7c2d36 #8B2E2E #8b4513"
+    },
+    {
+      "vibe": "creative-portfolio",
+      "slopAccent": "red (2/3)",
+      "bg": "dark",
+      "examples": "#ff5c39 #e8365d #ff006e"
+    },
+    {
+      "vibe": "health-wellness",
+      "slopAccent": "green (3/3)",
+      "bg": "light",
+      "examples": "#7FB09E #6BAB8A #6b9e7f"
+    },
+    {
+      "vibe": "gaming-esports",
+      "slopAccent": "green (2/3)",
+      "bg": "dark",
+      "examples": "#00ff9c #00f5a0 #00d9ff"
+    },
+    {
+      "vibe": "education",
+      "slopAccent": "blue (3/3)",
+      "bg": "light",
+      "examples": "#3b6ef5 #4F8EF7 #3b82f6"
+    },
+    {
+      "vibe": "retro-vintage",
+      "slopAccent": "red (2/3)",
+      "bg": "light",
+      "examples": "#c0492b #c0392b #c17a4f"
+    }
+  ],
+  "dataTells": {
+    "siteCount": 44,
+    "topCrawl": [
+      {
+        "font": "Inter",
+        "pct": 45,
+        "n": 20
+      },
+      {
+        "font": "jetbrains mono",
+        "pct": 20,
+        "n": 9
+      },
+      {
+        "font": "ui-sans-serif",
+        "pct": 9,
+        "n": 4
+      },
+      {
+        "font": "plus jakarta sans",
+        "pct": 9,
+        "n": 4
+      },
+      {
+        "font": "geist mono",
+        "pct": 7,
+        "n": 3
+      },
+      {
+        "font": "-apple-system",
+        "pct": 7,
+        "n": 3
+      },
+      {
+        "font": "playfair display",
+        "pct": 5,
+        "n": 2
+      },
+      {
+        "font": "dm sans",
+        "pct": 5,
+        "n": 2
+      },
+      {
+        "font": "ui-monospace",
+        "pct": 5,
+        "n": 2
+      },
+      {
+        "font": "Lato",
+        "pct": 5,
+        "n": 2
+      }
+    ]
+  }
+}

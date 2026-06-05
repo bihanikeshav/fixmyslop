@@ -75,5 +75,20 @@ If someone would instantly believe "an AI made this," it's slop. Aim for "how wa
 this made?"
 
 <!-- GENERATED:data-tells:start -->
-<!-- (populated by scripts/build-personality-skill.mjs) -->
+## Measured tells (this repo's crawl of 44 AI-built sites)
+The fonts most likely to make a site read as generic, by how many crawled sites use them:
+- Inter — 45% of sites (20/44)
+- jetbrains mono — 20% of sites (9/44)
+- ui-sans-serif — 9% of sites (4/44)
+- plus jakarta sans — 9% of sites (4/44)
+- geist mono — 7% of sites (3/44)
+- -apple-system — 7% of sites (3/44)
+- playfair display — 5% of sites (2/44)
+- dm sans — 5% of sites (2/44)
+- ui-monospace — 5% of sites (2/44)
+- Lato — 5% of sites (2/44)
+
+Detectors we flag deterministically: AI purple/violet gradient, gradient text,
+glassmorphism (backdrop-blur), pill buttons, extreme corner radius, tight hero
+tracking, uppercase headings. See packages/crawl/src/style.ts.
 <!-- GENERATED:data-tells:end -->
