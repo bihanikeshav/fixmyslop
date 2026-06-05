@@ -48,6 +48,21 @@ no `Date.now()`, no LLM — same input always yields the same output.
   saturation only re-orders *within* it; foundational fonts excluded from display).
 - **`slop.ts`** — the Slop-o-meter / `check_slop` scorer.
 
+## The /personality skill
+
+`skills/personality/` is a self-contained Claude Code skill that makes a model
+invent page-specific personality inside anti-slop constraints — a forced ideation
+process (absorb the subject → diverge 15 concepts → ground & commit → constrain →
+build), a personality-move catalog, a merged slop manifest (impeccable.style's 49
+rules + frontend-design DON'Ts + this repo's measured crawl tells), cited craft
+principles, and per-vibe type/color option-sets generated from the font data with
+a "rotate, never default" anti-convergence rule. See `viz/personality-demo/` for a
+before→after proof. Regenerate the data-backed parts with:
+
+```bash
+node scripts/build-personality-skill.mjs
+```
+
 ## Run it
 
 ```bash
