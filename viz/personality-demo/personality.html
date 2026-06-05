@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="night">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The Lamp Room — a keeper's logbook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,560;1,9..144,400&family=Spectral:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    /* spacing scale — varied rhythm, not one value */
+    --s1: 0.5rem;
+    --s2: 0.75rem;
+    --s3: 1rem;
+    --s4: 1.5rem;
+    --s5: 2.25rem;
+    --s6: 3.5rem;
+    --s7: 5.5rem;
+  }
+
+  html[data-theme="night"] {
+    --bg:        #0c1a20;   /* deep teal ink */
+    --bg-deep:   #081215;
+    --surface:   #112a31;   /* the log page, by lamplight */
+    --surface-edge: #1d3a41;
+    --ink:       #ece4d2;   /* bone */
+    --ink-soft:  #9fb3b0;   /* muted sea-gray */
+    --ink-faint: #5d7470;
+    --line:      rgba(236, 228, 210, 0.13);
+    --rule:      #7d3f34;   /* ledger margin rule, weathered red */
+    --amber:     #f1b352;   /* the lamp */
+    --amber-deep:#d6912c;
+    --beam:      241, 179, 82;
+    --beam-strength: 1;
+    color-scheme: dark;
+  }
+  html[data-theme="day"] {
+    --bg:        #e7e0cf;   /* bone / pale sky */
+    --bg-deep:   #dad2bd;
+    --surface:   #f2ece0;
+    --surface-edge: #d8cfb8;
+    --ink:       #1a2a2e;   /* deep teal ink */
+    --ink-soft:  #4f5f5b;
+    --ink-faint: #8a958f;
+    --line:      rgba(26, 42, 46, 0.16);
+    --rule:      #a8584a;
+    --amber:     #9c5c10;   /* darker for AA on pale ground */
+    --amber-deep:#7d480a;
+    --beam:      214, 196, 150;
+    --beam-strength: 0;     /* lamp is off — it's morning */
+    color-scheme: light;
+  }
+
+  html, body { height: 100%; }
+  body {
+    font-family: 'Spectral', Georgia, serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    min-height: 100%;
+    overflow-x: hidden;
+    transition: background 0.7s ease, color 0.7s ease;
+  }
+
+  /* ---- subtle horizon vignette so the dark ground has depth ---- */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(120% 90% at 14% 16%, rgba(var(--beam), calc(0.10 * var(--beam-strength))) 0%, transparent 42%),
+      radial-gradient(140% 100% at 100% 110%, var(--bg-deep) 0%, transparent 60%);
+    transition: opacity 0.7s ease;
+  }
+
+  /* ====================================================================
+     SIGNATURE 1 — the Fresnel beam.
+     A narrow wedge of light pinned to the lamp, it sweeps the page on
+     load then settles into a slow, periodic rotation.
+     ==================================================================== */
+  .beam {
+    position: fixed;
+    top: 16%;
+    left: 13%;
+    width: 220vmax;
+    height: 220vmax;
+    transform-origin: 0 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: var(--beam-strength);
+    transition: opacity 0.8s ease;
+    background: conic-gradient(
+      from -8deg,
+      transparent 0deg,
+      transparent 6deg,
+      rgba(var(--beam), 0.03) 14deg,
+      rgba(var(--beam), 0.12) 26deg,
+      rgba(var(--beam), 0.20) 31deg,
+      rgba(var(--beam), 0.10) 38deg,
+      rgba(var(--beam), 0.02) 50deg,
+      transparent 62deg,
+      transparent 360deg
+    );
+    -webkit-mask-image: radial-gradient(closest-side, #000 62%, transparent 100%);
+    mask-image: radial-gradient(closest-side, #000 62%, transparent 100%);
+    animation:
+      beam-intro 3.4s cubic-bezier(0.16, 1, 0.3, 1) 0.2s 1 both,
+      beam-loop 26s linear 3.6s infinite;
+  }
+  @keyframes beam-intro {
+    0%   { transform: rotate(-46deg); opacity: 0; }
+    18%  { opacity: var(--beam-strength); }
+    100% { transform: rotate(314deg); opacity: var(--beam-strength); }
+  }
+  @keyframes beam-loop {
+    from { transform: rotate(314deg); }
+    to   { transform: rotate(674deg); }
+  }
+
+  /* the lamp itself — a small fixed glow where the beam is pinned */
+  .lamp {
+    position: fixed;
+    top: 16%;
+    left: 13%;
+    width: 13px;
+    height: 13px;
+    margin: -6px 0 0 -6px;
+    border-radius: 50%;
+    z-index: 1;
+    pointer-events: none;
+    background: rgba(var(--beam), var(--beam-strength));
+    box-shadow:
+      0 0 12px 3px rgba(var(--beam), calc(0.85 * var(--beam-strength))),
+      0 0 34px 10px rgba(var(--beam), calc(0.35 * var(--beam-strength)));
+    transition: background 0.7s ease, box-shadow 0.7s ease;
+  }
+
+  /* ====================================================================
+     SIGNATURE 2 — the brass pull-cord that works the lamp.
+     Pulling it switches the lamp off (day) and on (night).
+     ==================================================================== */
+  .cord {
+    position: fixed;
+    top: 0;
+    right: clamp(28px, 7vw, 84px);
+    z-index: 40;
+    width: 46px;
+    height: 240px;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    padding: 0;
+    transform-origin: top center;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cord svg { display: block; overflow: visible; }
+  .cord-line { stroke: var(--ink-soft); stroke-width: 1.4; stroke-linecap: round; }
+  .cord-knot { fill: var(--amber-deep); }
+  .cord-handle {
+    fill: var(--amber);
+    stroke: var(--amber-deep);
+    stroke-width: 1.2;
+    transition: fill 0.7s ease;
+  }
+  .cord-arm {
+    transform-origin: 23px 0;
+    animation: cord-rest 0.01s;
+  }
+  .cord:focus-visible { outline: none; }
+  .cord:focus-visible .cord-handle {
+    stroke: var(--ink);
+    stroke-width: 2.4;
+  }
+  .cord:hover .cord-arm { transform: translateY(7px); transition: transform 0.25s cubic-bezier(0.16,1,0.3,1); }
+  .cord.pulling .cord-arm {
+    animation: cord-pull 0.62s cubic-bezier(0.22, 1, 0.32, 1);
+  }
+  @keyframes cord-pull {
+    0%   { transform: translateY(0); }
+    32%  { transform: translateY(46px); }
+    62%  { transform: translateY(-6px); }
+    82%  { transform: translateY(3px); }
+    100% { transform: translateY(0); }
+  }
+  .cord-caption {
+    position: absolute;
+    top: 156px;
+    right: 52px;
+    width: 116px;
+    text-align: right;
+    font-family: 'Architects Daughter', cursive;
+    font-size: 13px;
+    line-height: 1.35;
+    color: var(--ink-faint);
+    pointer-events: none;
+    transition: color 0.7s ease;
+  }
+
+  /* ---------------------------- layout ---------------------------- */
+  .page {
+    position: relative;
+    z-index: 2;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: var(--s7) clamp(1.5rem, 6vw, 6rem) var(--s7);
+  }
+
+  .keeper-mark {
+    font-family: 'Spectral', serif;
+    font-style: italic;
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+    letter-spacing: 0.01em;
+    margin-bottom: var(--s6);
+    transition: color 0.7s ease;
+  }
+  .keeper-mark::before {
+    content: "";
+    display: inline-block;
+    width: 26px;
+    height: 1px;
+    background: var(--amber);
+    vertical-align: middle;
+    margin-right: 12px;
+    transition: background 0.7s ease;
+  }
+
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    gap: clamp(2rem, 5vw, var(--s7));
+    align-items: end;
+  }
+  .hero-text { max-width: 19ch; }
+
+  h1 {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 560;
+    font-size: clamp(2.9rem, 7.5vw, 5.6rem);
+    line-height: 0.98;
+    letter-spacing: -0.012em;
+    margin-bottom: var(--s4);
+  }
+  h1 .glow { color: var(--amber); font-style: italic; font-weight: 400; transition: color 0.7s ease; }
+
+  .subhead {
+    font-size: clamp(1.05rem, 1.5vw, 1.22rem);
+    line-height: 1.65;
+    color: var(--ink-soft);
+    max-width: 38ch;
+    margin-bottom: var(--s5);
+    transition: color 0.7s ease;
+  }
+
+  .actions { display: flex; align-items: center; gap: var(--s4); flex-wrap: wrap; }
+  .btn-primary {
+    font-family: 'Spectral', serif;
+    font-size: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    color: var(--bg);
+    background: var(--amber);
+    border: 1px solid var(--amber-deep);
+    border-radius: 3px;
+    padding: 0.85rem 1.6rem;
+    cursor: pointer;
+    transition: background 0.25s ease, transform 0.25s cubic-bezier(0.16,1,0.3,1);
+  }
+  .btn-primary:hover { background: var(--amber-deep); transform: translateY(-1px); }
+  .btn-primary:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+  .ghost-link {
+    font-style: italic;
+    color: var(--ink-soft);
+    text-decoration: none;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 2px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .ghost-link:hover { color: var(--ink); border-color: var(--amber); }
+
+  /* --------------------------- the log --------------------------- */
+  .logbook { position: relative; align-self: end; }
+  .log {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--surface-edge);
+    border-radius: 2px;
+    padding: var(--s4) var(--s5) var(--s5) calc(var(--s5) + 18px);
+    box-shadow: 0 18px 40px -28px rgba(0,0,0,0.7);
+    transition: background 0.7s ease, border-color 0.7s ease;
+  }
+  /* the ruled ledger margin */
+  .log::before {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0;
+    left: calc(var(--s5) - 4px);
+    width: 1px;
+    background: var(--rule);
+    opacity: 0.55;
+    transition: background 0.7s ease;
+  }
+  .log-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: 'Fraunces', serif;
+    font-weight: 560;
+    font-size: 1.12rem;
+    padding-bottom: var(--s2);
+    margin-bottom: var(--s2);
+    border-bottom: 1px solid var(--line);
+  }
+  .log-head .date { font-family: 'Spectral', serif; font-style: italic; font-weight: 400; font-size: 0.9rem; color: var(--ink-soft); }
+
+  .log-row {
+    display: grid;
+    grid-template-columns: 4.5rem 1fr;
+    gap: var(--s3);
+    align-items: baseline;
+    padding: 0.62rem 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 0.98rem;
+  }
+  .log-row:last-child { border-bottom: 0; }
+  .log-row .k {
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    transition: color 0.7s ease;
+  }
+  .log-row .v { color: var(--ink); }
+  .log-row .v em { font-style: italic; color: var(--ink-soft); }
+
+  .is-annotated { position: relative; }
+  .is-annotated .v strong {
+    font-weight: 500;
+    color: var(--amber);
+    transition: color 0.7s ease;
+  }
+
+  /* ====================================================================
+     SIGNATURE 3 — the keeper's marginal note: a dashed ink pointer,
+     drawn by hand, aimed at the wind reading.
+     ==================================================================== */
+  .annotation {
+    position: absolute;
+    left: calc(100% + 14px);
+    top: -18px;
+    width: 196px;
+    pointer-events: none;
+  }
+  .annotation .scribble {
+    font-family: 'Architects Daughter', cursive;
+    font-size: 0.94rem;
+    line-height: 1.3;
+    color: var(--amber);
+    transform: rotate(-2.5deg);
+    transform-origin: left top;
+    transition: color 0.7s ease;
+    margin-bottom: 2px;
+  }
+  .annotation svg { display: block; overflow: visible; }
+  .annotation .pointer {
+    fill: none;
+    stroke: var(--amber);
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-dasharray: 4 4.5;
+    transition: stroke 0.7s ease;
+  }
+  .annotation .arrowhead {
+    fill: none;
+    stroke: var(--amber);
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: stroke 0.7s ease;
+  }
+
+  /* ----------------------- entrance choreography ------------------ */
+  .reveal { opacity: 0; transform: translateY(14px); }
+  .in .reveal { animation: rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .in .reveal.d1 { animation-delay: 0.35s; }
+  .in .reveal.d2 { animation-delay: 0.5s; }
+  .in .reveal.d3 { animation-delay: 0.65s; }
+  .in .reveal.d4 { animation-delay: 0.95s; }
+  .in .reveal.d5 { animation-delay: 1.7s; }
+  @keyframes rise {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .colophon {
+    margin-top: var(--s7);
+    padding-top: var(--s4);
+    border-top: 1px solid var(--line);
+    font-size: 0.85rem;
+    font-style: italic;
+    color: var(--ink-faint);
+    max-width: 52ch;
+    transition: color 0.7s ease;
+  }
+
+  .corner-label {
+    position: fixed;
+    bottom: 16px;
+    left: 16px;
+    z-index: 60;
+    font-family: 'Spectral', serif;
+    font-size: 12px;
+    font-style: italic;
+    color: var(--ink-soft);
+    background: var(--surface);
+    border: 1px solid var(--surface-edge);
+    border-radius: 2px;
+    padding: 6px 13px;
+    transition: background 0.7s ease, color 0.7s ease, border-color 0.7s ease;
+  }
+
+  /* ----------------------------- responsive ----------------------- */
+  @media (max-width: 880px) {
+    .hero { grid-template-columns: 1fr; gap: var(--s6); align-items: start; }
+    .hero-text { max-width: 16ch; }
+    .logbook { margin-top: var(--s2); }
+    .annotation {
+      left: auto;
+      right: var(--s3);
+      top: calc(100% + 6px);
+      width: 180px;
+      text-align: right;
+    }
+    .annotation .scribble { transform: rotate(2deg); transform-origin: right top; }
+    .annotation svg { transform: scaleX(-1); margin-left: auto; }
+  }
+  @media (max-width: 420px) {
+    .cord-caption { display: none; }
+  }
+
+  /* ----------------------- reduced motion ------------------------- */
+  @media (prefers-reduced-motion: reduce) {
+    .beam {
+      animation: none;
+      transform: rotate(36deg);
+    }
+    .cord.pulling .cord-arm { animation: none; }
+    .in .reveal,
+    .reveal { animation: none !important; opacity: 1; transform: none; }
+    body, .btn-primary, .annotation .scribble, .pointer, .arrowhead { transition: none; }
+  }
+</style>
+</head>
+<body>
+  <!-- the sweeping light + the lamp it comes from -->
+  <div class="beam" aria-hidden="true"></div>
+  <div class="lamp" aria-hidden="true"></div>
+
+  <!-- the pull-cord that works the lamp -->
+  <button class="cord" id="cord" aria-pressed="false" aria-label="Pull the cord to switch the lamp — toggles night and day">
+    <svg width="46" height="186" viewBox="0 0 46 186" aria-hidden="true">
+      <g class="cord-arm">
+        <path class="cord-line" d="M23 0 C 23 40, 21 78, 23 118" />
+        <circle class="cord-knot" cx="23" cy="121" r="3.4" />
+        <path class="cord-handle" d="M23 124
+          C 16 124, 15 134, 18 142
+          C 20 148, 26 148, 28 142
+          C 31 134, 30 124, 23 124 Z" />
+        <line class="cord-line" x1="23" y1="148" x2="23" y2="156" />
+      </g>
+    </svg>
+    <span class="cord-caption">pull to wake<br>the morning</span>
+  </button>
+
+  <main class="page" id="page">
+    <p class="keeper-mark reveal d1">Keeper's logbook · North Stack light · est. 1873</p>
+
+    <div class="hero">
+      <div class="hero-text">
+        <h1 class="reveal d2">Mind the light,<br>and <span class="glow">write the night</span> down.</h1>
+        <p class="subhead reveal d3">A quiet record for the long watch — weather, tides, and the ships that pass — kept from the lamp room between dusk and the dawn relief.</p>
+        <div class="actions reveal d4">
+          <button class="btn-primary">Open the logbook</button>
+          <a class="ghost-link" href="#log">Read a night's page →</a>
+        </div>
+      </div>
+
+      <div class="logbook reveal d5" id="log">
+        <article class="log">
+          <header class="log-head">
+            <span>Night watch</span>
+            <span class="date">12 Nov · 02:40</span>
+          </header>
+          <div class="log-row">
+            <span class="k">Sky</span>
+            <span class="v">Overcast, fog banks drifting in from the <em>south-west</em></span>
+          </div>
+          <div class="log-row is-annotated">
+            <span class="k">Wind</span>
+            <span class="v">NW, <strong>18 kn</strong>, freshening on the half-hour</span>
+
+            <!-- hand-drawn marginalia: dashed pointer + scribbled note -->
+            <div class="annotation" aria-hidden="true">
+              <p class="scribble">freshening — flag it<br>for the dawn relief</p>
+              <svg width="170" height="58" viewBox="0 0 170 58">
+                <path class="pointer" d="M168 6 C 120 10, 70 14, 30 40 C 22 45, 14 48, 4 50" />
+                <path class="arrowhead" d="M16 41 L 3 50 L 16 55" />
+              </svg>
+            </div>
+          </div>
+          <div class="log-row">
+            <span class="k">Sea</span>
+            <span class="v">Moderate swell, long interval</span>
+          </div>
+          <div class="log-row">
+            <span class="k">Passing</span>
+            <span class="v">Cargo vessel, eastbound — <em>no signal, kept clear of the reef</em></span>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <p class="colophon reveal d4">Logged by hand, the way the keepers did: one watch, one page. The lamp turns whether or not anyone is watching — the cord above turns it on and off.</p>
+  </main>
+
+  <div class="corner-label">✓ /personality — built from the subject</div>
+
+  <script>
+    // start the entrance once fonts/layout settle
+    requestAnimationFrame(function () {
+      document.getElementById('page').classList.add('in');
+    });
+
+    // the pull-cord: pull → switch the lamp → swap night/day
+    var cord = document.getElementById('cord');
+    var root = document.documentElement;
+    cord.addEventListener('click', function () {
+      var next = root.getAttribute('data-theme') === 'night' ? 'day' : 'night';
+      root.setAttribute('data-theme', next);
+      cord.setAttribute('aria-pressed', next === 'day' ? 'true' : 'false');
+      // re-trigger the spring
+      cord.classList.remove('pulling');
+      void cord.offsetWidth;
+      cord.classList.add('pulling');
+    });
+    cord.addEventListener('animationend', function () {
+      cord.classList.remove('pulling');
+    });
+  </script>
+</body>
+</html>
