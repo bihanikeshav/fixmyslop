@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hearth &amp; Moon — Sourdough Bakery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --parchment:   #f4ede0;
+      --parchment-2: #ede3d0;
+      --ink:         #1c1812;
+      --ink-soft:    #3d3526;
+      --rust:        #b85c2a;
+      --rust-light:  #d4795a;
+      --sage:        #5e6e58;
+      --moon-ghost:  oklch(88% 0.02 80 / 0.45);
+
+      --ff-display: 'Cormorant Garamond', Georgia, serif;
+      --ff-body:    'Jost', 'Helvetica Neue', sans-serif;
+
+      --step--1: clamp(0.75rem,  0.7rem + 0.25vw,  0.875rem);
+      --step-0:  clamp(0.9375rem, 0.875rem + 0.3vw, 1.0625rem);
+      --step-1:  clamp(1.125rem, 1rem + 0.6vw, 1.375rem);
+      --step-2:  clamp(1.5rem,   1.25rem + 1.2vw, 2rem);
+      --step-3:  clamp(2rem,     1.5rem + 2.5vw, 3.25rem);
+      --step-4:  clamp(3rem,     2rem + 5vw, 6rem);
+      --step-5:  clamp(4.5rem,   2.5rem + 9vw, 9.5rem);
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background-color: var(--parchment);
+      color: var(--ink);
+      font-family: var(--ff-body);
+      font-size: var(--step-0);
+      font-weight: 300;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ── Entrance animations ────────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes moonRise {
+      from { opacity: 0; transform: translateY(40px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .reveal {
+      opacity: 0;
+      animation: fadeUp 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .reveal-slow {
+      opacity: 0;
+      animation: fadeIn 1.4s ease forwards;
+    }
+
+    /* ── Navigation ─────────────────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem clamp(1.5rem, 5vw, 4rem);
+      mix-blend-mode: multiply;
+    }
+
+    .nav-logo {
+      font-family: var(--ff-display);
+      font-size: var(--step-1);
+      font-weight: 500;
+      letter-spacing: 0.03em;
+      color: var(--ink);
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-family: var(--ff-body);
+      font-size: var(--step--1);
+      font-weight: 400;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+    .nav-links a:hover { color: var(--rust); }
+
+    /* ── Hero ───────────────────────────────────────────────────── */
+    .hero {
+      position: relative;
+      min-height: 100svh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      padding: clamp(6rem, 14vw, 10rem) clamp(1.5rem, 5vw, 4rem) clamp(4rem, 8vw, 6rem);
+      overflow: hidden;
+    }
+
+    /* The moon — pure CSS circle, intentionally large and atmospheric */
+    .moon {
+      position: absolute;
+      top: -10%;
+      right: -8%;
+      width: clamp(340px, 52vw, 700px);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: radial-gradient(
+        ellipse at 40% 38%,
+        oklch(94% 0.025 80) 0%,
+        oklch(88% 0.03 75) 45%,
+        oklch(82% 0.04 72) 75%,
+        oklch(76% 0.05 70) 100%
+      );
+      box-shadow:
+        inset -8px -8px 40px oklch(68% 0.05 70 / 0.4),
+        inset 12px 12px 60px oklch(96% 0.01 85 / 0.6);
+      animation: moonRise 1.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+      pointer-events: none;
+    }
+
+    /* Subtle grain texture overlay on the moon */
+    .moon::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.07'/%3E%3C/svg%3E");
+      opacity: 0.5;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      grid-column: 1;
+    }
+
+    .hero-eyebrow {
+      display: inline-block;
+      font-family: var(--ff-body);
+      font-size: var(--step--1);
+      font-weight: 400;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--rust);
+      margin-bottom: 1.25rem;
+      animation-delay: 0.1s;
+    }
+
+    .hero-title {
+      font-family: var(--ff-display);
+      font-size: var(--step-5);
+      font-weight: 300;
+      line-height: 0.95;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      margin-bottom: 0.15em;
+      animation-delay: 0.2s;
+    }
+
+    .hero-title em {
+      font-style: italic;
+      font-weight: 300;
+      color: var(--rust);
+    }
+
+    .hero-tagline {
+      font-family: var(--ff-display);
+      font-size: var(--step-2);
+      font-weight: 300;
+      font-style: italic;
+      color: var(--ink-soft);
+      line-height: 1.3;
+      margin-top: 0.6em;
+      margin-bottom: 1.75rem;
+      max-width: 34ch;
+      animation-delay: 0.35s;
+    }
+
+    .hero-story {
+      font-size: var(--step-0);
+      font-weight: 300;
+      color: var(--ink-soft);
+      max-width: 42ch;
+      line-height: 1.7;
+      margin-bottom: 2.5rem;
+      animation-delay: 0.5s;
+    }
+
+    .cta-group {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+      animation-delay: 0.65s;
+    }
+
+    .btn-primary {
+      display: inline-block;
+      background-color: var(--rust);
+      color: var(--parchment);
+      font-family: var(--ff-body);
+      font-size: var(--step--1);
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      text-decoration: none;
+      padding: 0.9em 2.2em;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.25s ease, transform 0.2s ease;
+    }
+    .btn-primary:hover {
+      background-color: var(--ink);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      font-family: var(--ff-body);
+      font-size: var(--step--1);
+      font-weight: 400;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      text-decoration: none;
+      border-bottom: 1px solid var(--rust);
+      padding-bottom: 2px;
+      transition: color 0.2s ease;
+    }
+    .btn-secondary:hover { color: var(--rust); }
+
+    /* ── Divider ────────────────────────────────────────────────── */
+    .section-divider {
+      width: clamp(1.5rem, 5vw, 4rem);
+      height: 1px;
+      background-color: var(--rust);
+      display: block;
+      margin-bottom: 2rem;
+    }
+
+    /* ── Bakes Section ──────────────────────────────────────────── */
+    .bakes {
+      background-color: var(--ink);
+      color: var(--parchment);
+      padding: clamp(5rem, 10vw, 8rem) clamp(1.5rem, 5vw, 4rem);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Faint moon echo in the bakes section */
+    .bakes::before {
+      content: '';
+      position: absolute;
+      bottom: -20%;
+      right: -5%;
+      width: clamp(200px, 35vw, 480px);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: 1px solid oklch(80% 0.02 80 / 0.12);
+      box-shadow: 0 0 0 clamp(12px, 2vw, 24px) oklch(80% 0.02 80 / 0.05);
+      pointer-events: none;
+    }
+
+    .bakes-header {
+      margin-bottom: clamp(3rem, 6vw, 5rem);
+    }
+
+    .bakes-eyebrow {
+      display: inline-block;
+      font-family: var(--ff-body);
+      font-size: var(--step--1);
+      font-weight: 400;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--rust-light);
+      margin-bottom: 1rem;
+    }
+
+    .bakes-title {
+      font-family: var(--ff-display);
+      font-size: var(--step-4);
+      font-weight: 300;
+      line-height: 1;
+      letter-spacing: -0.01em;
+      color: var(--parchment);
+      max-width: 14ch;
+    }
+
+    .bakes-title em {
+      font-style: italic;
+      color: oklch(82% 0.06 75);
+    }
+
+    /* Two-column layout: description left, loaf list right */
+    .bakes-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: clamp(3rem, 6vw, 6rem);
+      align-items: start;
+    }
+
+    .bakes-intro {
+      font-size: var(--step-1);
+      font-family: var(--ff-display);
+      font-weight: 300;
+      font-style: italic;
+      line-height: 1.55;
+      color: oklch(88% 0.015 80);
+      max-width: 32ch;
+    }
+
+    .bakes-intro strong {
+      font-weight: 500;
+      font-style: normal;
+      color: var(--parchment);
+    }
+
+    .loaf-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .loaf-item {
+      display: grid;
+      grid-template-columns: 2.5rem 1fr;
+      gap: 0 1.25rem;
+      padding: 1.5rem 0;
+      border-top: 1px solid oklch(80% 0.01 80 / 0.15);
+      align-items: start;
+      transition: border-color 0.2s ease;
+    }
+    .loaf-item:last-child {
+      border-bottom: 1px solid oklch(80% 0.01 80 / 0.15);
+    }
+
+    .loaf-phase {
+      font-family: var(--ff-display);
+      font-size: var(--step-2);
+      font-weight: 300;
+      line-height: 1;
+      color: oklch(72% 0.06 75);
+      padding-top: 0.1em;
+      user-select: none;
+    }
+
+    .loaf-name {
+      font-family: var(--ff-display);
+      font-size: var(--step-1);
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      color: var(--parchment);
+      margin-bottom: 0.3em;
+    }
+
+    .loaf-desc {
+      font-size: var(--step--1);
+      font-weight: 300;
+      color: oklch(78% 0.015 80);
+      line-height: 1.55;
+    }
+
+    .loaf-timing {
+      grid-column: 2;
+      display: inline-block;
+      font-size: var(--step--1);
+      font-weight: 400;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--rust-light);
+      margin-top: 0.6em;
+    }
+
+    /* ── Schedule strip ─────────────────────────────────────────── */
+    .schedule-strip {
+      background-color: var(--parchment-2);
+      padding: clamp(3rem, 6vw, 5rem) clamp(1.5rem, 5vw, 4rem);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 2rem;
+    }
+
+    .schedule-text {
+      font-family: var(--ff-display);
+      font-size: var(--step-2);
+      font-weight: 300;
+      font-style: italic;
+      color: var(--ink);
+      max-width: 42ch;
+      line-height: 1.4;
+    }
+
+    .schedule-text strong {
+      font-style: normal;
+      font-weight: 600;
+      color: var(--rust);
+    }
+
+    .schedule-cta {
+      display: inline-block;
+      border: 1px solid var(--ink);
+      color: var(--ink);
+      font-family: var(--ff-body);
+      font-size: var(--step--1);
+      font-weight: 400;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      text-decoration: none;
+      padding: 0.9em 2.2em;
+      flex-shrink: 0;
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+    .schedule-cta:hover {
+      background-color: var(--ink);
+      color: var(--parchment);
+    }
+
+    /* ── Footer ─────────────────────────────────────────────────── */
+    footer {
+      background-color: var(--ink);
+      color: oklch(70% 0.015 80);
+      padding: 2.5rem clamp(1.5rem, 5vw, 4rem);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .footer-brand {
+      font-family: var(--ff-display);
+      font-size: var(--step-1);
+      font-weight: 300;
+      font-style: italic;
+      color: oklch(85% 0.02 80);
+    }
+
+    .footer-note {
+      font-size: var(--step--1);
+      font-weight: 300;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── Responsive ─────────────────────────────────────────────── */
+    @media (max-width: 720px) {
+      nav { mix-blend-mode: normal; background-color: var(--parchment); }
+
+      .hero {
+        grid-template-columns: 1fr;
+        padding-top: 7rem;
+        min-height: auto;
+        padding-bottom: 3rem;
+      }
+
+      .moon {
+        top: auto;
+        bottom: -10%;
+        right: -15%;
+        width: 280px;
+        opacity: 0.6;
+      }
+
+      .bakes-body {
+        grid-template-columns: 1fr;
+      }
+
+      .bakes-intro {
+        max-width: none;
+      }
+
+      .nav-links {
+        display: none;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .reveal, .reveal-slow, .moon { animation: none; opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav aria-label="Main navigation">
+    <a href="#" class="nav-logo">Hearth &amp; Moon</a>
+    <ul class="nav-links" role="list">
+      <li><a href="#bakes">The Bakes</a></li>
+      <li><a href="#schedule">Schedule</a></li>
+      <li><a href="#reserve">Reserve</a></li>
+    </ul>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero" aria-labelledby="hero-heading">
+
+    <!-- The moon element — CSS only, no image -->
+    <div class="moon" aria-hidden="true"></div>
+
+    <div class="hero-content">
+      <span class="hero-eyebrow reveal" style="animation-delay:0.1s">
+        Slow ferment · Moon-phase bakes
+      </span>
+
+      <h1 id="hero-heading" class="hero-title reveal" style="animation-delay:0.2s">
+        Hearth<br />&amp; <em>Moon</em>
+      </h1>
+
+      <p class="hero-tagline reveal" style="animation-delay:0.35s">
+        Bread baked at the tide of the month,<br />
+        ready Thursday at the gate.
+      </p>
+
+      <p class="hero-story reveal" style="animation-delay:0.5s">
+        Every loaf starts four days before it's baked —
+        flour and water and wild yeast left to talk to each other.
+        We follow the lunar calendar not for romance, but because
+        the wild culture responds. We've seen it with our own eyes.
+      </p>
+
+      <div class="cta-group reveal" style="animation-delay:0.65s">
+        <a href="#reserve" class="btn-primary" id="reserve">Reserve a loaf</a>
+        <a href="#bakes" class="btn-secondary">See this month's bakes</a>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- Bakes Section -->
+  <section class="bakes" id="bakes" aria-labelledby="bakes-heading">
+
+    <div class="bakes-header">
+      <span class="bakes-eyebrow">June 2026</span>
+      <h2 id="bakes-heading" class="bakes-title">
+        The <em>lunar</em><br />calendar
+      </h2>
+    </div>
+
+    <div class="bakes-body">
+      <p class="bakes-intro">
+        The moon doesn't hurry,
+        and neither does our starter.
+        <strong>Each phase draws a different loaf</strong> — open crumb
+        for the bright weeks, tight crumb for the dark ones,
+        crusts that sound like the season.
+      </p>
+
+      <ul class="loaf-list" role="list">
+
+        <li class="loaf-item">
+          <span class="loaf-phase" aria-label="New moon">●</span>
+          <div>
+            <div class="loaf-name">Dark Rye &amp; Caraway</div>
+            <p class="loaf-desc">
+              Dense, earthy, and long-lasting. A loaf for the start of the cycle —
+              cut thin and layer with anything sharp.
+            </p>
+            <span class="loaf-timing">New moon — 19 Jun</span>
+          </div>
+        </li>
+
+        <li class="loaf-item">
+          <span class="loaf-phase" aria-label="Waxing crescent">◑</span>
+          <div>
+            <div class="loaf-name">Country Miche</div>
+            <p class="loaf-desc">
+              The workhorse. 80% white, 20% whole wheat, forty-eight hours in the cold.
+              Open crumb, blistered crust, keeps for four days.
+            </p>
+            <span class="loaf-timing">Waxing — 26 Jun</span>
+          </div>
+        </li>
+
+        <li class="loaf-item">
+          <span class="loaf-phase" aria-label="Full moon">○</span>
+          <div>
+            <div class="loaf-name">Seeded Batard</div>
+            <p class="loaf-desc">
+              Sesame, sunflower, poppy. The full moon loaf is generous —
+              the dough's most elastic, the ear opens widest, the crumb sings.
+            </p>
+            <span class="loaf-timing">Full moon — 4 Jul</span>
+          </div>
+        </li>
+
+        <li class="loaf-item">
+          <span class="loaf-phase" aria-label="Waning">◐</span>
+          <div>
+            <div class="loaf-name">Einkorn &amp; Honey</div>
+            <p class="loaf-desc">
+              Ancient wheat, local honey, just a whisper of sweetness.
+              Fragile and beautiful. This one goes fast.
+            </p>
+            <span class="loaf-timing">Waning — 10 Jul</span>
+          </div>
+        </li>
+
+      </ul>
+    </div>
+
+  </section>
+
+  <!-- Schedule strip -->
+  <section class="schedule-strip" id="schedule" aria-label="Pickup schedule">
+    <p class="schedule-text">
+      Orders open <strong>Monday at noon</strong>.
+      Pickup is <strong>Thursday, 4–7 pm</strong>,
+      from the blue gate on Cove Lane.
+      Quantities are fixed. We never bake more than the oven holds.
+    </p>
+    <a href="mailto:hello@hearthandmoon.com" class="schedule-cta">
+      Reserve a loaf
+    </a>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <span class="footer-brand">Hearth &amp; Moon</span>
+    <span class="footer-note">Cove Lane, Pt. Reyes, CA &nbsp;·&nbsp; hello@hearthandmoon.com</span>
+  </footer>
+
+  <script>
+    // Intersection Observer for scroll-triggered reveals
+    const items = document.querySelectorAll('.loaf-item, .bakes-header, .bakes-intro, .schedule-strip');
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.style.animation = 'fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards';
+          entry.target.style.opacity = '0';
+          // Stagger loaf items
+          if (entry.target.classList.contains('loaf-item')) {
+            const items = [...document.querySelectorAll('.loaf-item')];
+            const idx = items.indexOf(entry.target);
+            entry.target.style.animationDelay = (idx * 0.12) + 's';
+          }
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15 });
+
+    items.forEach(el => {
+      el.style.opacity = '0';
+      observer.observe(el);
+    });
+
+    // Reduce motion check
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.querySelectorAll('[style*="opacity: 0"]').forEach(el => {
+        el.style.opacity = '1';
+        el.style.animation = 'none';
+      });
+    }
+  </script>
+
+</body>
+</html>

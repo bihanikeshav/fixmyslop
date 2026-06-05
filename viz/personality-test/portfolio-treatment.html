@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dr. Maya Okafor — Marine Biologist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,200..900;1,9..144,200..900&family=Azeret+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─── TOKENS ──────────────────────────────────────────────────── */
+    :root {
+      --bg:            #06090F;   /* hadal abyss — near-black, blue-shifted */
+      --bg-surface:    #090E18;   /* slightly lighter surface */
+      --text-primary:  #CDD8E3;   /* bioluminescent foam */
+      --text-secondary:#5E7A8C;   /* deep mid-ocean */
+      --text-meta:     #3D5468;   /* instrument readout, de-emphasized */
+      --bio:           #0096C7;   /* 470 nm — true bioluminescent blue-cyan */
+      --bio-glow:      rgba(0, 150, 199, 0.12); /* atmosphere only */
+      --bio-glow-strong: rgba(0, 150, 199, 0.22);
+      --rule:          rgba(205, 216, 227, 0.08); /* hairline dividers */
+      --depth-rail:    rgba(0, 150, 199, 0.18);
+
+      --f-display: 'Fraunces', Georgia, serif;
+      --f-mono:    'Azeret Mono', 'Courier New', monospace;
+
+      --sp-4:  4px;
+      --sp-8:  8px;
+      --sp-16: 16px;
+      --sp-24: 24px;
+      --sp-32: 32px;
+      --sp-48: 48px;
+      --sp-64: 64px;
+      --sp-96: 96px;
+
+      --radius-sm: 2px;
+
+      /* Depth zone positions — the whole scroll maps to ocean depth */
+      --zone-epipelagic:    0m;
+      --zone-mesopelagic:   200m;
+      --zone-bathypelagic:  1000m;
+      --zone-abyssopelagic: 4000m;
+    }
+
+    /* ─── RESET ───────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      scroll-behavior: smooth;
+      background: var(--bg);
+      color: var(--text-primary);
+    }
+
+    body {
+      font-family: var(--f-mono);
+      font-size: clamp(13px, 1.5vw, 15px);
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+      background: var(--bg);
+      overflow-x: hidden;
+    }
+
+    /* ─── DEPTH RAIL (the signature element) ─────────────────────── */
+    /*  A vertical wire on the left side of the page.
+        It reads as the CTD rosette cable being lowered into the ocean.
+        Depth labels anchor each section to a real meter reading.
+        A bioluminescent "position indicator" tracks scroll depth.        */
+
+    .depth-rail {
+      position: fixed;
+      left: clamp(12px, 3vw, 40px);
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        var(--depth-rail) 8%,
+        var(--depth-rail) 92%,
+        transparent 100%
+      );
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    /* The position indicator: the glowing organism riding the wire */
+    .depth-indicator {
+      position: fixed;
+      left: clamp(12px, 3vw, 40px);
+      top: 0;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--bio);
+      box-shadow: 0 0 10px 3px var(--bio-glow-strong), 0 0 24px 8px var(--bio-glow);
+      transform: translate(-3px, -3.5px);
+      z-index: 101;
+      pointer-events: none;
+      transition: top 0.12s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* Depth label beside the rail */
+    .depth-label {
+      position: fixed;
+      left: clamp(20px, 3vw + 12px, 56px);
+      font-family: var(--f-mono);
+      font-size: 10px;
+      letter-spacing: 0.05em;
+      color: var(--bio);
+      opacity: 0.7;
+      z-index: 100;
+      pointer-events: none;
+      transition: top 0.12s cubic-bezier(0.22, 1, 0.36, 1);
+      white-space: nowrap;
+    }
+
+    /* ─── PAGE LAYOUT ─────────────────────────────────────────────── */
+    .page {
+      margin-left: clamp(48px, 6vw, 96px);
+      max-width: 860px;
+      padding: 0 var(--sp-32) 0 var(--sp-32);
+    }
+
+    @media (max-width: 600px) {
+      .page { margin-left: 40px; padding: 0 var(--sp-16); }
+    }
+
+    /* ─── NAV ─────────────────────────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: var(--sp-16) var(--sp-32);
+      /* subtle fade top — so the rail wire reads as coming from behind */
+      background: linear-gradient(to bottom, var(--bg) 60%, transparent);
+      pointer-events: none;
+    }
+
+    nav ul {
+      display: flex;
+      gap: var(--sp-32);
+      list-style: none;
+      pointer-events: all;
+    }
+
+    nav a {
+      font-family: var(--f-mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+      text-decoration: none;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+
+    nav a:hover, nav a:focus-visible {
+      color: var(--text-primary);
+      outline: none;
+    }
+
+    nav a:focus-visible {
+      outline: 2px solid var(--bio);
+      outline-offset: 4px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* ─── HERO ────────────────────────────────────────────────────── */
+    #hero {
+      min-height: 100svh;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      padding-top: 96px;
+      padding-bottom: var(--sp-64);
+    }
+
+    .hero-main {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    /* Zone indicator — small instrument-style label */
+    .zone-chip {
+      font-family: var(--f-mono);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      color: var(--bio);
+      text-transform: uppercase;
+      margin-bottom: var(--sp-24);
+      display: flex;
+      align-items: center;
+      gap: var(--sp-8);
+      opacity: 0;
+      animation: fadeUp 0.6s ease-out 0.3s forwards;
+    }
+
+    .zone-chip::before {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 1px;
+      background: var(--bio);
+      opacity: 0.6;
+    }
+
+    h1 {
+      font-family: var(--f-display);
+      font-size: clamp(2.8rem, 7vw, 5.2rem);
+      font-weight: 300;
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      max-width: 14ch;
+      margin-bottom: var(--sp-24);
+      opacity: 0;
+      animation: fadeUp 0.8s ease-out 0.5s forwards;
+    }
+
+    h1 em {
+      font-style: italic;
+      font-weight: 200;
+      color: var(--text-secondary);
+    }
+
+    .hero-desc {
+      font-family: var(--f-mono);
+      font-size: clamp(12px, 1.4vw, 14px);
+      line-height: 1.8;
+      color: var(--text-secondary);
+      max-width: 52ch;
+      margin-bottom: var(--sp-48);
+      opacity: 0;
+      animation: fadeUp 0.8s ease-out 0.7s forwards;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: var(--sp-16);
+      flex-wrap: wrap;
+      opacity: 0;
+      animation: fadeUp 0.6s ease-out 0.9s forwards;
+    }
+
+    /* Primary action — NOT a pill, not rounded, not gradient */
+    .btn-primary {
+      font-family: var(--f-mono);
+      font-size: 12px;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--bg);
+      background: var(--bio);
+      border: none;
+      padding: var(--sp-16) var(--sp-32);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: opacity 0.2s, box-shadow 0.2s;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.85;
+      box-shadow: 0 0 16px 0 var(--bio-glow-strong);
+    }
+
+    .btn-primary:focus-visible {
+      outline: 2px solid var(--bio);
+      outline-offset: 4px;
+    }
+
+    .btn-secondary {
+      font-family: var(--f-mono);
+      font-size: 12px;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      background: transparent;
+      border: 1px solid var(--rule);
+      padding: var(--sp-16) var(--sp-32);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .btn-secondary:hover {
+      color: var(--text-primary);
+      border-color: rgba(205, 216, 227, 0.25);
+    }
+
+    .btn-secondary:focus-visible {
+      outline: 2px solid var(--bio);
+      outline-offset: 4px;
+    }
+
+    /* Hero field entry — anchors the hero to actual dive data */
+    .dive-log-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1px;
+      border-top: 1px solid var(--rule);
+      padding-top: var(--sp-16);
+      opacity: 0;
+      animation: fadeUp 0.6s ease-out 1.1s forwards;
+    }
+
+    .dive-entry {
+      padding: var(--sp-16) var(--sp-8) var(--sp-8);
+      border-right: 1px solid var(--rule);
+    }
+
+    .dive-entry:last-child { border-right: none; }
+
+    .dive-entry-label {
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-meta);
+      display: block;
+      margin-bottom: var(--sp-4);
+    }
+
+    .dive-entry-value {
+      font-size: clamp(14px, 2.2vw, 18px);
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .dive-entry-value sup {
+      font-size: 0.6em;
+      color: var(--text-secondary);
+    }
+
+    /* ─── SECTION SHELLS ──────────────────────────────────────────── */
+    section {
+      padding: var(--sp-96) 0;
+      border-top: 1px solid var(--rule);
+    }
+
+    .section-header {
+      margin-bottom: var(--sp-64);
+    }
+
+    .section-depth {
+      font-family: var(--f-mono);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      color: var(--bio);
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: var(--sp-8);
+      margin-bottom: var(--sp-16);
+    }
+
+    .section-depth::before {
+      content: '';
+      display: inline-block;
+      width: 12px;
+      height: 1px;
+      background: var(--bio);
+      opacity: 0.5;
+    }
+
+    h2 {
+      font-family: var(--f-display);
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 300;
+      line-height: 1.15;
+      letter-spacing: -0.015em;
+      color: var(--text-primary);
+      max-width: 22ch;
+    }
+
+    /* ─── SELECTED WORK ───────────────────────────────────────────── */
+    .work-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1px;
+      background: var(--rule);
+    }
+
+    /* Each paper / expedition entry — a horizontal instrument-log row */
+    .work-item {
+      background: var(--bg);
+      padding: var(--sp-32) 0;
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      gap: var(--sp-24);
+      align-items: start;
+      position: relative;
+      transition: background 0.25s;
+    }
+
+    .work-item:hover {
+      background: var(--bg-surface);
+    }
+
+    /* On hover, the bioluminescent "flash" — a single brief glow at the left edge */
+    .work-item::before {
+      content: '';
+      position: absolute;
+      left: -32px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 3px;
+      height: 0;
+      background: var(--bio);
+      border-radius: 1px;
+      transition: height 0.2s ease-out, box-shadow 0.2s;
+      box-shadow: none;
+    }
+
+    .work-item:hover::before {
+      height: 40px;
+      box-shadow: 0 0 12px 2px var(--bio-glow-strong);
+    }
+
+    .work-depth-tag {
+      font-family: var(--f-mono);
+      font-size: 11px;
+      color: var(--bio);
+      padding-top: 4px;
+      line-height: 1.4;
+    }
+
+    .work-depth-tag .unit {
+      font-size: 9px;
+      color: var(--text-meta);
+      display: block;
+    }
+
+    .work-body {}
+
+    .work-type {
+      font-family: var(--f-mono);
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-meta);
+      margin-bottom: var(--sp-8);
+    }
+
+    h3 {
+      font-family: var(--f-display);
+      font-size: clamp(1rem, 2.2vw, 1.25rem);
+      font-weight: 400;
+      line-height: 1.3;
+      color: var(--text-primary);
+      margin-bottom: var(--sp-8);
+      letter-spacing: -0.01em;
+    }
+
+    .work-meta {
+      font-family: var(--f-mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .work-venue {
+      font-style: italic;
+    }
+
+    /* ─── ABOUT ───────────────────────────────────────────────────── */
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--sp-64);
+      align-items: start;
+    }
+
+    @media (max-width: 680px) {
+      .about-grid { grid-template-columns: 1fr; gap: var(--sp-32); }
+    }
+
+    .about-text p {
+      font-family: var(--f-mono);
+      font-size: clamp(12px, 1.4vw, 14px);
+      line-height: 1.85;
+      color: var(--text-secondary);
+      max-width: 52ch;
+      margin-bottom: var(--sp-24);
+    }
+
+    .about-text p:last-child { margin-bottom: 0; }
+
+    .about-text strong {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    /* Field data sidebar — instrument readings from an actual dive */
+    .field-data {
+      font-family: var(--f-mono);
+      font-size: 11px;
+      border: 1px solid var(--rule);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    .field-data-header {
+      background: rgba(0, 150, 199, 0.06);
+      padding: var(--sp-8) var(--sp-16);
+      border-bottom: 1px solid var(--rule);
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--bio);
+    }
+
+    .field-data-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--sp-8) var(--sp-16);
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .field-data-row:last-child { border-bottom: none; }
+
+    .fd-key {
+      color: var(--text-meta);
+      font-size: 10px;
+    }
+
+    .fd-val {
+      color: var(--text-primary);
+      font-weight: 500;
+      text-align: right;
+    }
+
+    .fd-val.bio-val {
+      color: var(--bio);
+    }
+
+    /* ─── FOOTER ──────────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--rule);
+      padding: var(--sp-32) 0 var(--sp-64);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: var(--sp-24);
+    }
+
+    .footer-name {
+      font-family: var(--f-display);
+      font-size: clamp(0.9rem, 2vw, 1.1rem);
+      font-weight: 300;
+      color: var(--text-secondary);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: var(--sp-24);
+      list-style: none;
+    }
+
+    .footer-links a {
+      font-family: var(--f-mono);
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      color: var(--text-meta);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover { color: var(--text-primary); }
+    .footer-links a:focus-visible {
+      outline: 2px solid var(--bio);
+      outline-offset: 4px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* ─── ANIMATIONS ──────────────────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Scroll-reveal: elements below the fold start hidden */
+    .reveal {
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+    }
+
+    .reveal.in-view {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Stagger children */
+    .reveal-stagger > * {
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    }
+
+    .reveal-stagger.in-view > *:nth-child(1) { opacity: 1; transform: none; transition-delay: 0ms; }
+    .reveal-stagger.in-view > *:nth-child(2) { opacity: 1; transform: none; transition-delay: 60ms; }
+    .reveal-stagger.in-view > *:nth-child(3) { opacity: 1; transform: none; transition-delay: 120ms; }
+    .reveal-stagger.in-view > *:nth-child(4) { opacity: 1; transform: none; transition-delay: 180ms; }
+    .reveal-stagger.in-view > *:nth-child(5) { opacity: 1; transform: none; transition-delay: 240ms; }
+
+    /* Bioluminescent organism pulse — used ONCE on the depth indicator */
+    @keyframes bio-pulse {
+      0%, 100% { box-shadow: 0 0 8px 2px var(--bio-glow-strong), 0 0 20px 6px var(--bio-glow); }
+      50%       { box-shadow: 0 0 14px 5px var(--bio-glow-strong), 0 0 32px 12px var(--bio-glow); }
+    }
+
+    .depth-indicator {
+      animation: bio-pulse 3.2s ease-in-out infinite;
+    }
+
+    /* ─── REDUCED MOTION ──────────────────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+
+      .depth-indicator {
+        animation: none;
+        /* Still visible, just no pulse */
+        box-shadow: 0 0 8px 2px var(--bio-glow-strong);
+      }
+
+      .zone-chip, h1, .hero-desc, .hero-actions, .dive-log-strip {
+        opacity: 1;
+        animation: none;
+        transform: none;
+      }
+
+      .reveal, .reveal-stagger > * {
+        opacity: 1;
+        transform: none;
+        transition: none;
+      }
+
+      .depth-indicator { transition: none; }
+      .depth-label     { transition: none; }
+    }
+
+    /* ─── SKIP LINK (accessibility) ──────────────────────────────── */
+    .skip-link {
+      position: absolute;
+      top: -100%;
+      left: 0;
+      background: var(--bio);
+      color: var(--bg);
+      padding: var(--sp-8) var(--sp-16);
+      font-family: var(--f-mono);
+      font-size: 12px;
+      text-decoration: none;
+      z-index: 9999;
+      border-radius: var(--radius-sm);
+      transition: top 0.1s;
+    }
+
+    .skip-link:focus { top: var(--sp-8); left: var(--sp-8); }
+  </style>
+</head>
+<body>
+
+  <a href="#main-content" class="skip-link">Skip to content</a>
+
+  <!-- THE DESCENT WIRE — signature element -->
+  <!-- A fixed vertical rail representing the CTD cable lowered into the ocean.
+       A glowing orb (the bioluminescent organism riding the wire) tracks scroll depth.
+       Depth labels show your current meter reading as you descend. -->
+  <div class="depth-rail" aria-hidden="true"></div>
+  <div class="depth-indicator" id="depthDot" aria-hidden="true"></div>
+  <div class="depth-label" id="depthLabel" aria-hidden="true">0 m</div>
+
+  <nav aria-label="Primary navigation">
+    <ul>
+      <li><a href="#work">Selected work</a></li>
+      <li><a href="#about">About</a></li>
+      <li><a href="mailto:m.okafor@whoi.edu">Contact</a></li>
+    </ul>
+  </nav>
+
+  <main id="main-content">
+    <div class="page">
+
+      <!-- ── HERO ──────────────────────────────────────────────── -->
+      <section id="hero" aria-labelledby="hero-heading">
+        <div class="hero-main">
+
+          <div class="zone-chip" aria-hidden="true">Epipelagic · Surface</div>
+
+          <h1 id="hero-heading">
+            Light made<br />
+            <em>in total<br />darkness</em>
+          </h1>
+
+          <p class="hero-desc">
+            Dr. Maya Okafor studies bioluminescent organisms in the ocean's
+            midnight zone — depths where sunlight has never reached, where
+            creatures manufacture their own cold light to hunt, signal, and
+            survive at pressures exceeding 200 atmospheres.
+          </p>
+
+          <div class="hero-actions">
+            <a href="#work" class="btn-primary">Descend into the work</a>
+            <a href="#about" class="btn-secondary">About Maya</a>
+          </div>
+        </div>
+
+        <!-- Field instrument strip — anchors the hero in real science -->
+        <div class="dive-log-strip" role="complementary" aria-label="Research statistics">
+          <div class="dive-entry">
+            <span class="dive-entry-label">Deepest dive</span>
+            <span class="dive-entry-value">3,847<sup>m</sup></span>
+          </div>
+          <div class="dive-entry">
+            <span class="dive-entry-label">Species documented</span>
+            <span class="dive-entry-value">214</span>
+          </div>
+          <div class="dive-entry">
+            <span class="dive-entry-label">ROV hours logged</span>
+            <span class="dive-entry-value">1,104</span>
+          </div>
+          <div class="dive-entry">
+            <span class="dive-entry-label">Bioluminescent taxa</span>
+            <span class="dive-entry-value">89</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── SELECTED WORK ──────────────────────────────────────── -->
+      <section id="work" aria-labelledby="work-heading">
+        <div class="section-header reveal">
+          <div class="section-depth" aria-label="Depth: 1,200 metres">1,200 m · Bathypelagic</div>
+          <h2 id="work-heading">Selected work</h2>
+        </div>
+
+        <div class="work-grid reveal-stagger" role="list">
+
+          <article class="work-item" role="listitem">
+            <div class="work-depth-tag" aria-label="Collection depth: 1,847 metres">
+              1,847
+              <span class="unit">metres</span>
+            </div>
+            <div class="work-body">
+              <div class="work-type">Journal Article · 2024</div>
+              <h3>Ultraviolet photoreception in abyssal anglerfish lures: evidence for a dual-wavelength signalling system</h3>
+              <div class="work-meta">
+                <span class="work-venue">Nature — Deep-Sea Research I</span><br />
+                Okafor M., Tanaka S., Preira J., Widder E.A.
+              </div>
+            </div>
+          </article>
+
+          <article class="work-item" role="listitem">
+            <div class="work-depth-tag" aria-label="Collection depth: 2,400 metres">
+              2,400
+              <span class="unit">metres</span>
+            </div>
+            <div class="work-body">
+              <div class="work-type">Field Expedition Report · 2023</div>
+              <h3>Midwater bioluminescence survey of the Laurentian Abyss: spatial distribution and flash kinetics of 73 taxa</h3>
+              <div class="work-meta">
+                <span class="work-venue">Progress in Oceanography</span><br />
+                Okafor M., Herring P.J., Johnsen S.
+              </div>
+            </div>
+          </article>
+
+          <article class="work-item" role="listitem">
+            <div class="work-depth-tag" aria-label="Collection depth: 980 metres">
+              980
+              <span class="unit">metres</span>
+            </div>
+            <div class="work-body">
+              <div class="work-type">TED Talk · 2023</div>
+              <h3>What lives in the dark — and what they're saying with their light</h3>
+              <div class="work-meta">
+                <span class="work-venue">TED2023, Vancouver</span><br />
+                5.2M views
+              </div>
+            </div>
+          </article>
+
+          <article class="work-item" role="listitem">
+            <div class="work-depth-tag" aria-label="Collection depth: 3,200 metres">
+              3,200
+              <span class="unit">metres</span>
+            </div>
+            <div class="work-body">
+              <div class="work-type">Book Chapter · 2022</div>
+              <h3>The ecology of cold light: bioluminescence as predation, defense, and sexual selection in the aphotic zone</h3>
+              <div class="work-meta">
+                <span class="work-venue">In: Deep-Sea Biology (Cambridge University Press)</span><br />
+                Okafor M.
+              </div>
+            </div>
+          </article>
+
+          <article class="work-item" role="listitem">
+            <div class="work-depth-tag" aria-label="Collection depth: 1,560 metres">
+              1,560
+              <span class="unit">metres</span>
+            </div>
+            <div class="work-body">
+              <div class="work-type">Grant-Funded Research · Ongoing</div>
+              <h3>NSF CAREER: Quantum yield mapping of bioluminescent luciferins across abyssal taxa using hyperspectral ROV imagery</h3>
+              <div class="work-meta">
+                <span class="work-venue">NSF Ocean Sciences, 2022–2027</span><br />
+                Lead PI
+              </div>
+            </div>
+          </article>
+
+        </div>
+      </section>
+
+      <!-- ── ABOUT ──────────────────────────────────────────────── -->
+      <section id="about" aria-labelledby="about-heading">
+        <div class="section-header reveal">
+          <div class="section-depth" aria-label="Depth: 2,900 metres">2,900 m · Abyssopelagic</div>
+          <h2 id="about-heading">About Maya</h2>
+        </div>
+
+        <div class="about-grid">
+
+          <div class="about-text reveal">
+            <p>
+              I am a marine biologist at the <strong>Woods Hole Oceanographic
+              Institution</strong>, where I lead the Midwater Photobiology Lab.
+              My research addresses a basic question: in a zone without sunlight,
+              how do organisms use light — and what does that light reveal about
+              the evolution of vision, communication, and predation across four
+              kilometres of water column?
+            </p>
+            <p>
+              Before WHOI, I completed my doctorate at Scripps Institution of
+              Oceanography and a postdoctoral fellowship at the Monterey Bay
+              Aquarium Research Institute. I have participated in 34 deep-sea
+              expeditions, piloting ROVs and deploying custom hyperspectral
+              imaging instruments of my own design.
+            </p>
+            <p>
+              I also care about making this science legible. The midnight zone is
+              real but invisible to most people — not because it's inaccessible,
+              but because no one has taken them there yet. That's the work of the
+              public talks.
+            </p>
+          </div>
+
+          <!-- Field data block — a real CTD cast record, used as decorative marginalia -->
+          <aside class="field-data reveal" aria-label="Sample dive data from expedition CTD cast">
+            <div class="field-data-header">CTD Cast Log — Expedition AT50-11</div>
+            <div class="field-data-row">
+              <span class="fd-key">Station</span>
+              <span class="fd-val">LAB-09</span>
+            </div>
+            <div class="field-data-row">
+              <span class="fd-key">Max depth</span>
+              <span class="fd-val">3,847 m</span>
+            </div>
+            <div class="field-data-row">
+              <span class="fd-key">Temp (bottom)</span>
+              <span class="fd-val">2.4 °C</span>
+            </div>
+            <div class="field-data-row">
+              <span class="fd-key">Salinity</span>
+              <span class="fd-val">34.8 ‰</span>
+            </div>
+            <div class="field-data-row">
+              <span class="fd-key">Pressure (max)</span>
+              <span class="fd-val">387 dbar</span>
+            </div>
+            <div class="field-data-row">
+              <span class="fd-key">Biolum. events</span>
+              <span class="fd-val bio-val">214 flashes</span>
+            </div>
+            <div class="field-data-row">
+              <span class="fd-key">Peak wavelength</span>
+              <span class="fd-val bio-val">470 nm</span>
+            </div>
+            <div class="field-data-row">
+              <span class="fd-key">Dominant taxon</span>
+              <span class="fd-val">Vampyroteuthis infernalis</span>
+            </div>
+          </aside>
+
+        </div>
+      </section>
+
+      <!-- ── FOOTER ─────────────────────────────────────────────── -->
+      <footer>
+        <span class="footer-name">Dr. Maya Okafor</span>
+        <ul class="footer-links">
+          <li><a href="mailto:m.okafor@whoi.edu">m.okafor@whoi.edu</a></li>
+          <li><a href="#">WHOI Faculty Page</a></li>
+          <li><a href="#">Google Scholar</a></li>
+          <li><a href="#">ORCID</a></li>
+        </ul>
+      </footer>
+
+    </div><!-- /page -->
+  </main>
+
+  <script>
+    // ── DEPTH INDICATOR — the signature interactive element ──────────
+    // The small glowing orb tracks your scroll position and converts it
+    // to a depth reading in metres, anchoring the descent metaphor.
+
+    (function () {
+      var dot   = document.getElementById('depthDot');
+      var label = document.getElementById('depthLabel');
+
+      // Maximum depth mapped to the total page scroll height
+      var MAX_DEPTH_METRES = 4000;
+
+      function lerp(a, b, t) { return a + (b - a) * t; }
+
+      function formatDepth(d) {
+        if (d < 10) return Math.round(d) + ' m';
+        if (d < 1000) return Math.round(d) + ' m';
+        return (d / 1000).toFixed(2).replace(/\.?0+$/, '') + ' km';
+      }
+
+      function update() {
+        var scrollTop    = window.scrollY || document.documentElement.scrollTop;
+        var docHeight    = document.documentElement.scrollHeight - window.innerHeight;
+        var progress     = docHeight > 0 ? Math.min(scrollTop / docHeight, 1) : 0;
+
+        // Map progress to viewport Y position (between 5vh and 90vh)
+        var minY = window.innerHeight * 0.05;
+        var maxY = window.innerHeight * 0.92;
+        var posY = lerp(minY, maxY, progress);
+
+        dot.style.top   = posY + 'px';
+        label.style.top = posY + 'px';
+
+        var depth = progress * MAX_DEPTH_METRES;
+        label.textContent = formatDepth(depth);
+
+        // Zone label alongside the indicator — ephemeral, instrument-style
+        if (depth < 200) {
+          label.textContent = formatDepth(depth) + ' · Epipelagic';
+        } else if (depth < 1000) {
+          label.textContent = formatDepth(depth) + ' · Mesopelagic';
+        } else if (depth < 4000) {
+          label.textContent = formatDepth(depth) + ' · Bathypelagic';
+        } else {
+          label.textContent = formatDepth(depth) + ' · Abyssopelagic';
+        }
+      }
+
+      // Passive scroll listener — does not block paint
+      window.addEventListener('scroll', update, { passive: true });
+      update(); // initialise on load
+
+      // ── SCROLL REVEAL ─────────────────────────────────────────────
+      // IntersectionObserver — no layout thrash, respects reduced motion
+      var motionOk = window.matchMedia('(prefers-reduced-motion: no-preference)').matches;
+
+      if (motionOk) {
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('in-view');
+              io.unobserve(entry.target); // fire once
+            }
+          });
+        }, { threshold: 0.12 });
+
+        document.querySelectorAll('.reveal, .reveal-stagger').forEach(function (el) {
+          io.observe(el);
+        });
+      } else {
+        // Reduced motion: show everything immediately
+        document.querySelectorAll('.reveal, .reveal-stagger').forEach(function (el) {
+          el.classList.add('in-view');
+        });
+      }
+    })();
+  </script>
+
+</body>
+</html>

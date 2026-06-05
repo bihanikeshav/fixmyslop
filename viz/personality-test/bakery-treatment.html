@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hearth & Moon — Coastal Sourdough Bakery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─── Tokens ─── */
+    :root {
+      /* Primitives — crust palette derived from actual bread color science */
+      --crust-void:   #0d0d0b;   /* near-black, warm tint = crust in shadow */
+      --crust-dark:   #1a1810;   /* inner crumb in deep shadow */
+      --crust-mid:    #2c2419;   /* proofing basket rattan */
+      --crust-warm:   #7c4b2a;   /* mahogany Maillard crust */
+      --flour-pale:   #c4b5a0;   /* loaf before full bloom */
+      --flour-bright: #e8dfc8;   /* unbleached flour — text on dark */
+      --moon-full:    #f0e6c8;   /* reflected moonlight on flour */
+      --moon-new:     #4a4438;   /* new moon deep shadow */
+
+      /* Semantic */
+      --bg:           var(--crust-void);
+      --surface:      var(--crust-dark);
+      --surface-mid:  var(--crust-mid);
+      --text-primary: var(--flour-bright);
+      --text-secondary: var(--flour-pale);
+      --text-muted:   #7a6e5f;
+      --accent:       var(--crust-warm);
+      --accent-light: #a66040;
+      --moon-accent:  var(--moon-full);
+
+      /* Type scale — modular 1.333 (perfect fourth) */
+      --text-xs:   clamp(0.69rem,  0.65rem + 0.18vw, 0.75rem);
+      --text-sm:   clamp(0.85rem,  0.80rem + 0.22vw, 0.9rem);
+      --text-base: clamp(1rem,     0.95rem + 0.25vw, 1.0625rem);
+      --text-md:   clamp(1.15rem,  1.05rem + 0.5vw,  1.333rem);
+      --text-lg:   clamp(1.5rem,   1.2rem  + 1.2vw,  2rem);
+      --text-xl:   clamp(2rem,     1.4rem  + 2.6vw,  3.5rem);
+      --text-2xl:  clamp(2.8rem,   1.8rem  + 4vw,    5rem);
+
+      /* Space — 8pt scale */
+      --sp-1:  4px;
+      --sp-2:  8px;
+      --sp-3:  12px;
+      --sp-4:  16px;
+      --sp-5:  24px;
+      --sp-6:  32px;
+      --sp-7:  48px;
+      --sp-8:  64px;
+      --sp-9:  96px;
+      --sp-10: 128px;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      font-size: 100%;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-primary);
+      font-family: 'DM Mono', 'Courier New', monospace;
+      font-size: var(--text-base);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ─── Crumb texture overlay (SVG noise = open crumb structure) ─── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      opacity: 0.025;
+      pointer-events: none;
+      z-index: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      background-size: 300px 300px;
+    }
+
+    /* ─── Layout ─── */
+    .page-grid {
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 var(--sp-6);
+    }
+
+    /* ─── Nav ─── */
+    nav {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--sp-5) var(--sp-6);
+      border-bottom: 1px solid var(--surface-mid);
+    }
+
+    .nav-wordmark {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: var(--text-md);
+      font-weight: 500;
+      font-style: italic;
+      font-optical-sizing: auto;
+      color: var(--flour-bright);
+      letter-spacing: -0.01em;
+      text-decoration: none;
+    }
+
+    .nav-wordmark span {
+      color: var(--text-muted);
+      font-weight: 300;
+      font-style: normal;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: var(--sp-6);
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-size: var(--text-xs);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color 200ms ease-out;
+    }
+
+    .nav-links a:hover,
+    .nav-links a:focus-visible {
+      color: var(--text-primary);
+      outline: none;
+    }
+
+    /* ─── Hero section ─── */
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--sp-8);
+      align-items: start;
+      padding: var(--sp-10) var(--sp-6) var(--sp-8);
+      position: relative;
+    }
+
+    @media (max-width: 720px) {
+      .hero {
+        grid-template-columns: 1fr;
+        padding: var(--sp-7) var(--sp-4) var(--sp-6);
+      }
+    }
+
+    .hero-text {
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-5);
+      padding-top: var(--sp-5);
+    }
+
+    .hero-label {
+      font-size: var(--text-xs);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .hero-headline {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: var(--text-2xl);
+      font-weight: 300;
+      font-optical-sizing: auto;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      color: var(--flour-bright);
+      max-width: 14ch;
+    }
+
+    .hero-headline em {
+      font-style: italic;
+      font-weight: 200;
+      color: var(--flour-pale);
+    }
+
+    .hero-subtext {
+      font-size: var(--text-sm);
+      line-height: 1.7;
+      color: var(--text-secondary);
+      max-width: 44ch;
+      font-weight: 300;
+    }
+
+    .hero-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--sp-4);
+      border-top: 1px solid var(--surface-mid);
+      padding-top: var(--sp-5);
+      margin-top: var(--sp-3);
+    }
+
+    .hero-meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-1);
+    }
+
+    .hero-meta-label {
+      font-size: var(--text-xs);
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .hero-meta-value {
+      font-size: var(--text-sm);
+      color: var(--text-primary);
+      font-weight: 400;
+    }
+
+    /* ─── The Lunar Bake Wheel ─── */
+    .wheel-container {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--sp-4);
+      position: relative;
+    }
+
+    .wheel-caption {
+      font-size: var(--text-xs);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding-left: var(--sp-1);
+    }
+
+    #lunar-wheel {
+      width: 100%;
+      max-width: 460px;
+      aspect-ratio: 1;
+      display: block;
+    }
+
+    .wheel-legend {
+      display: flex;
+      gap: var(--sp-5);
+      padding-left: var(--sp-1);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-2);
+      font-size: var(--text-xs);
+      color: var(--text-secondary);
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .legend-dot--full { background: var(--moon-full); }
+    .legend-dot--new  { background: var(--moon-new); border: 1px solid var(--text-muted); }
+    .legend-dot--bake { background: var(--accent); }
+
+    /* ─── Second section: The loaves ─── */
+    .loaves-section {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--surface-mid);
+      padding: var(--sp-8) var(--sp-6);
+    }
+
+    .section-header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: baseline;
+      gap: var(--sp-4);
+      margin-bottom: var(--sp-7);
+    }
+
+    .section-title {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: var(--text-xl);
+      font-weight: 300;
+      font-optical-sizing: auto;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      color: var(--flour-bright);
+    }
+
+    .section-title em {
+      font-style: italic;
+      color: var(--flour-pale);
+    }
+
+    .section-note {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      text-align: right;
+      max-width: 20ch;
+    }
+
+    /* Loaf cards — deliberately NOT boxes; they're rows */
+    .loaves-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      border-top: 1px solid var(--surface-mid);
+    }
+
+    .loaf-row {
+      display: grid;
+      grid-template-columns: 64px 1fr auto;
+      gap: var(--sp-5);
+      align-items: start;
+      padding: var(--sp-5) 0;
+      border-bottom: 1px solid var(--surface-mid);
+      transition: background 200ms ease-out;
+    }
+
+    .loaf-row:hover {
+      background: linear-gradient(90deg, transparent 0%, var(--crust-dark) 10%, var(--crust-dark) 90%, transparent 100%);
+      padding-left: var(--sp-3);
+      padding-right: var(--sp-3);
+    }
+
+    /* Moon phase indicator for each loaf */
+    .loaf-moon {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--sp-2);
+      padding-top: 2px;
+    }
+
+    .loaf-moon-svg {
+      width: 40px;
+      height: 40px;
+    }
+
+    .loaf-moon-label {
+      font-size: 9px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      text-align: center;
+      line-height: 1.2;
+    }
+
+    .loaf-info {
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-2);
+    }
+
+    .loaf-name {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: var(--text-lg);
+      font-weight: 400;
+      font-optical-sizing: auto;
+      letter-spacing: -0.01em;
+      line-height: 1.1;
+      color: var(--flour-bright);
+    }
+
+    .loaf-desc {
+      font-size: var(--text-sm);
+      color: var(--text-secondary);
+      font-weight: 300;
+      line-height: 1.6;
+      max-width: 52ch;
+    }
+
+    .loaf-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--sp-2);
+      margin-top: var(--sp-2);
+    }
+
+    .loaf-tag {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      border: 1px solid var(--surface-mid);
+      padding: 2px var(--sp-2);
+      /* deliberately not rounded */
+      border-radius: 0;
+    }
+
+    .loaf-cta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: var(--sp-3);
+      padding-top: 4px;
+    }
+
+    .loaf-timing {
+      text-align: right;
+    }
+
+    .loaf-timing-value {
+      font-size: var(--text-md);
+      font-weight: 500;
+      color: var(--text-primary);
+      display: block;
+    }
+
+    .loaf-timing-sub {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .btn-order {
+      font-family: 'DM Mono', monospace;
+      font-size: var(--text-xs);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--bg);
+      background: var(--flour-bright);
+      border: none;
+      padding: var(--sp-2) var(--sp-4);
+      cursor: pointer;
+      border-radius: 0; /* no pill, no blob */
+      transition: background 150ms ease-out, color 150ms ease-out;
+      text-decoration: none;
+      display: inline-block;
+      white-space: nowrap;
+    }
+
+    .btn-order:hover,
+    .btn-order:focus-visible {
+      background: var(--moon-full);
+      color: var(--crust-void);
+      outline: none;
+    }
+
+    .btn-order:focus-visible {
+      outline: 2px solid var(--moon-full);
+      outline-offset: 3px;
+    }
+
+    /* ─── Footer ─── */
+    footer {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--surface-mid);
+      padding: var(--sp-6) var(--sp-6) var(--sp-7);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: end;
+      gap: var(--sp-5);
+    }
+
+    @media (max-width: 600px) {
+      footer { grid-template-columns: 1fr; }
+    }
+
+    .footer-tagline {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: var(--text-md);
+      font-weight: 300;
+      font-style: italic;
+      font-optical-sizing: auto;
+      color: var(--text-muted);
+      max-width: 40ch;
+      line-height: 1.4;
+    }
+
+    .footer-info {
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-2);
+    }
+
+    .footer-info p {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+
+    /* ─── Responsive adjustments ─── */
+    @media (max-width: 720px) {
+      nav { padding: var(--sp-4); }
+      .page-grid { padding: 0 var(--sp-4); }
+      .loaves-section { padding: var(--sp-6) var(--sp-4); }
+      footer { padding: var(--sp-5) var(--sp-4) var(--sp-6); }
+      .loaf-row {
+        grid-template-columns: 48px 1fr;
+        grid-template-rows: auto auto;
+      }
+      .loaf-cta {
+        grid-column: 2;
+        align-items: flex-start;
+        flex-direction: row;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .loaf-timing { text-align: left; }
+      .section-header { grid-template-columns: 1fr; }
+      .section-note { text-align: left; }
+    }
+
+    @media (max-width: 480px) {
+      .nav-links { display: none; }
+      .hero-meta { grid-template-columns: 1fr; }
+      #lunar-wheel { max-width: 320px; }
+    }
+
+    /* ─── Motion ─── */
+    @media (prefers-reduced-motion: no-preference) {
+      .hero-text > * {
+        opacity: 0;
+        transform: translateY(12px);
+        animation: fade-rise 500ms ease-out forwards;
+      }
+      .hero-text > *:nth-child(1) { animation-delay: 80ms; }
+      .hero-text > *:nth-child(2) { animation-delay: 160ms; }
+      .hero-text > *:nth-child(3) { animation-delay: 240ms; }
+      .hero-text > *:nth-child(4) { animation-delay: 320ms; }
+
+      .wheel-container {
+        opacity: 0;
+        animation: fade-in 600ms ease-out 200ms forwards;
+      }
+
+      .loaf-row {
+        opacity: 0;
+        animation: fade-rise 400ms ease-out forwards;
+      }
+      /* stagger set via JS */
+    }
+
+    @keyframes fade-rise {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fade-in {
+      to { opacity: 1; }
+    }
+
+    /* ─── Wheel tooltip ─── */
+    .wheel-tooltip {
+      position: absolute;
+      background: var(--crust-dark);
+      border: 1px solid var(--surface-mid);
+      padding: var(--sp-3) var(--sp-4);
+      font-size: var(--text-xs);
+      color: var(--text-secondary);
+      pointer-events: none;
+      z-index: 100;
+      display: none;
+      max-width: 180px;
+      line-height: 1.5;
+    }
+
+    .wheel-tooltip strong {
+      display: block;
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: var(--text-sm);
+      color: var(--flour-bright);
+      font-weight: 400;
+      margin-bottom: 2px;
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav aria-label="Site navigation">
+    <a href="#" class="nav-wordmark" aria-label="Hearth &amp; Moon home">
+      Hearth <span>&amp;</span> Moon
+    </a>
+    <ul class="nav-links">
+      <li><a href="#wheel">The wheel</a></li>
+      <li><a href="#loaves">Loaves</a></li>
+      <li><a href="#pickup">Pickup</a></li>
+    </ul>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero page-grid" aria-labelledby="hero-headline">
+    <div class="hero-text">
+      <p class="hero-label" aria-hidden="true">Coastal sourdough · Timed to the moon</p>
+
+      <h1 class="hero-headline" id="hero-headline">
+        Bread that waits <em>for the tide</em>
+      </h1>
+
+      <p class="hero-subtext">
+        We bake twice a month, on the new moon and the full moon.
+        Different phases, different loaves. Slow cold-ferment,
+        coastal salt, a starter that's been running since 2017.
+        Weekly pickup, Thursday mornings, from the harbor house.
+      </p>
+
+      <div class="hero-meta" role="list" aria-label="Bakery details">
+        <div class="hero-meta-item" role="listitem">
+          <span class="hero-meta-label">Ferment time</span>
+          <span class="hero-meta-value">48–72 hrs cold</span>
+        </div>
+        <div class="hero-meta-item" role="listitem">
+          <span class="hero-meta-label">Pickup</span>
+          <span class="hero-meta-value">Thu, 07:00–10:00</span>
+        </div>
+        <div class="hero-meta-item" role="listitem">
+          <span class="hero-meta-label">Order closes</span>
+          <span class="hero-meta-value">Mon midnight</span>
+        </div>
+        <div class="hero-meta-item" role="listitem">
+          <span class="hero-meta-label">Batches / month</span>
+          <span class="hero-meta-value">2 — new + full</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- The Lunar Bake Wheel -->
+    <div class="wheel-container" id="wheel" aria-label="Lunar bake calendar">
+      <p class="wheel-caption" aria-hidden="true">Lunar bake calendar — current cycle</p>
+      <svg id="lunar-wheel" viewBox="0 0 460 460" role="img" aria-labelledby="wheel-title wheel-desc">
+        <title id="wheel-title">Lunar Bake Wheel</title>
+        <desc id="wheel-desc">A circular calendar showing the 28-day lunar cycle. Bake days are marked with moon phase icons and loaf type labels. Today's position is highlighted.</desc>
+        <!-- Rendered by JS below -->
+      </svg>
+      <div class="wheel-legend" aria-label="Wheel legend">
+        <div class="legend-item">
+          <div class="legend-dot legend-dot--full" aria-hidden="true"></div>
+          <span>Full moon</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot legend-dot--new" aria-hidden="true"></div>
+          <span>New moon</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot legend-dot--bake" aria-hidden="true"></div>
+          <span>Bake day</span>
+        </div>
+      </div>
+      <div class="wheel-tooltip" id="wheel-tooltip" aria-live="polite" role="tooltip"></div>
+    </div>
+  </section>
+
+  <!-- Loaves section -->
+  <section class="loaves-section" id="loaves" aria-labelledby="loaves-title">
+    <div class="section-header">
+      <h2 class="section-title" id="loaves-title">
+        Two loaves,<br /><em>two moons</em>
+      </h2>
+      <p class="section-note" aria-label="Ordering note">
+        Order by Mon midnight for Thursday pickup
+      </p>
+    </div>
+
+    <ul class="loaves-list" role="list">
+
+      <!-- Full moon loaf -->
+      <li class="loaf-row" aria-label="Full moon loaf: High Country White">
+        <div class="loaf-moon" aria-hidden="true">
+          <svg class="loaf-moon-svg" viewBox="0 0 40 40" aria-hidden="true">
+            <circle cx="20" cy="20" r="17" fill="#f0e6c8" />
+          </svg>
+          <span class="loaf-moon-label">Full<br />moon</span>
+        </div>
+        <div class="loaf-info">
+          <h3 class="loaf-name">High Country White</h3>
+          <p class="loaf-desc">
+            Open crumb, blistered crust. High-hydration white flour
+            with a long overnight cold retard. The yeast is most active
+            at the full moon — we lean into it.
+          </p>
+          <div class="loaf-tags" aria-label="Loaf characteristics">
+            <span class="loaf-tag">White flour</span>
+            <span class="loaf-tag">High hydration</span>
+            <span class="loaf-tag">Cold retard 18h</span>
+            <span class="loaf-tag">~950g</span>
+          </div>
+        </div>
+        <div class="loaf-cta">
+          <div class="loaf-timing">
+            <span class="loaf-timing-value" id="full-moon-next">—</span>
+            <span class="loaf-timing-sub">next full moon</span>
+          </div>
+          <a href="#pickup" class="btn-order" aria-label="Order High Country White sourdough">
+            Reserve
+          </a>
+        </div>
+      </li>
+
+      <!-- New moon loaf -->
+      <li class="loaf-row" aria-label="New moon loaf: Dark Tide Rye">
+        <div class="loaf-moon" aria-hidden="true">
+          <svg class="loaf-moon-svg" viewBox="0 0 40 40" aria-hidden="true">
+            <circle cx="20" cy="20" r="17" fill="none" stroke="#7a6e5f" stroke-width="1.5" />
+            <circle cx="20" cy="20" r="17" fill="#0d0d0b" />
+            <!-- Dark moon: just the rim visible -->
+            <circle cx="20" cy="20" r="17" fill="none" stroke="#4a4438" stroke-width="1" />
+          </svg>
+          <span class="loaf-moon-label">New<br />moon</span>
+        </div>
+        <div class="loaf-info">
+          <h3 class="loaf-name">Dark Tide Rye</h3>
+          <p class="loaf-desc">
+            Dense, moist, deeply flavored. 40% dark rye, 60% whole wheat.
+            Seeded crust. On the new moon we slow everything down — 72-hour
+            cold ferment, low and slow bake.
+          </p>
+          <div class="loaf-tags" aria-label="Loaf characteristics">
+            <span class="loaf-tag">40% dark rye</span>
+            <span class="loaf-tag">Whole wheat</span>
+            <span class="loaf-tag">Cold retard 72h</span>
+            <span class="loaf-tag">~1.1kg</span>
+          </div>
+        </div>
+        <div class="loaf-cta">
+          <div class="loaf-timing">
+            <span class="loaf-timing-value" id="new-moon-next">—</span>
+            <span class="loaf-timing-sub">next new moon</span>
+          </div>
+          <a href="#pickup" class="btn-order" aria-label="Order Dark Tide Rye sourdough">
+            Reserve
+          </a>
+        </div>
+      </li>
+
+    </ul>
+  </section>
+
+  <!-- Footer -->
+  <footer id="pickup">
+    <p class="footer-tagline">
+      A harbor house on the north end of town.
+      Come Thursday morning with a cloth bag.
+      The starter has been running longer than most of our neighbors' marriages.
+    </p>
+    <div class="footer-info">
+      <p>Harbor Lane, north dock</p>
+      <p>Thu 07:00–10:00</p>
+      <p>hearth@moon.bread</p>
+    </div>
+  </footer>
+
+  <script>
+    /* ─── Moon phase math ─────────────────────────────────────────────
+       Julian date → synodic age → phase name + illumination fraction.
+       Ref: Meeus, "Astronomical Algorithms" (1991), ch. 49
+    ────────────────────────────────────────────────────────────────── */
+    function julianDate(date) {
+      const y = date.getUTCFullYear();
+      const m = date.getUTCMonth() + 1;
+      const d = date.getUTCDate() + date.getUTCHours()/24;
+      const a = Math.floor((14 - m) / 12);
+      const yr = y + 4800 - a;
+      const mo = m + 12 * a - 3;
+      return d + Math.floor((153*mo + 2)/5) + 365*yr +
+             Math.floor(yr/4) - Math.floor(yr/100) + Math.floor(yr/400) - 32045;
+    }
+
+    function moonPhase(date) {
+      const jd = julianDate(date);
+      // Known new moon: 2000-01-06 18:14 UTC → JD 2451550.259
+      const knownNew = 2451550.259;
+      const synodicMonth = 29.53058867;
+      const age = ((jd - knownNew) % synodicMonth + synodicMonth) % synodicMonth;
+      const fraction = (1 - Math.cos(2 * Math.PI * age / synodicMonth)) / 2;
+
+      let name;
+      if      (age < 1.85)                    name = 'New Moon';
+      else if (age < 7.38)                    name = 'Waxing Crescent';
+      else if (age < 9.22)                    name = 'First Quarter';
+      else if (age < 14.77)                   name = 'Waxing Gibbous';
+      else if (age < 16.61)                   name = 'Full Moon';
+      else if (age < 22.15)                   name = 'Waning Gibbous';
+      else if (age < 23.99)                   name = 'Last Quarter';
+      else if (age < 29.53)                   name = 'Waning Crescent';
+      else                                    name = 'New Moon';
+
+      return { age, fraction, name };
+    }
+
+    function daysToNextPhase(fromDate, targetAge) {
+      // targetAge: 0 = new moon, 14.77 = full moon
+      const { age } = moonPhase(fromDate);
+      const synodicMonth = 29.53058867;
+      let diff = targetAge - age;
+      if (diff < 0) diff += synodicMonth;
+      return Math.round(diff);
+    }
+
+    /* ─── Render the Lunar Bake Wheel SVG ──────────────────────────── */
+    function renderWheel() {
+      const svg = document.getElementById('lunar-wheel');
+      const cx = 230, cy = 230, R = 195, r_inner = 70;
+      const synodicMonth = 29.53058867;
+      const days = 28; // display window
+
+      const today = new Date();
+      const { age: todayAge, name: todayPhaseName } = moonPhase(today);
+
+      // Colors
+      const C = {
+        ring:    '#2c2419',
+        ringDim: '#1a1810',
+        text:    '#7a6e5f',
+        textBright: '#e8dfc8',
+        textMid: '#c4b5a0',
+        accent:  '#7c4b2a',
+        moonFull:'#f0e6c8',
+        moonNew: '#0d0d0b',
+        today:   '#a66040',
+        bg:      '#0d0d0b',
+      };
+
+      // Helper: draw SVG element
+      function el(tag, attrs, children) {
+        const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+        for (const [k,v] of Object.entries(attrs)) e.setAttribute(k, v);
+        if (children) {
+          if (typeof children === 'string') e.textContent = children;
+          else children.forEach(c => e.appendChild(c));
+        }
+        return e;
+      }
+
+      // Helper: point on circle
+      function pt(angle, radius) {
+        const rad = (angle - 90) * Math.PI / 180;
+        return [cx + radius * Math.cos(rad), cy + radius * Math.sin(rad)];
+      }
+
+      // Build the SVG
+      const g = el('g', {});
+
+      // Background circle (dark plate)
+      g.appendChild(el('circle', { cx, cy, r: R + 14, fill: C.ringDim }));
+      g.appendChild(el('circle', { cx, cy, r: R + 6,  fill: 'none', stroke: C.ring, 'stroke-width': '1' }));
+
+      // Day arcs
+      const dayAngle = 360 / days;
+
+      for (let i = 0; i < days; i++) {
+        const date = new Date(today);
+        date.setUTCDate(today.getUTCDate() + (i - Math.floor(todayAge)));
+        // day 0 in our wheel = "start of this lunar cycle"
+        // day i corresponds to moon age i
+        const moonAge = ((todayAge - Math.floor(todayAge) + i) % synodicMonth + synodicMonth) % synodicMonth;
+        const { fraction, name } = moonPhase(date);
+        const isToday = Math.round(todayAge) === i;
+        const isBakeDay = (name === 'New Moon' || name === 'Full Moon');
+        const isFullMoon = fraction > 0.85;
+        const isNewMoon  = fraction < 0.05;
+
+        const startAngle = i * dayAngle;
+        const endAngle   = (i + 1) * dayAngle;
+        const gapDeg = 1.5;
+
+        const [x1, y1] = pt(startAngle + gapDeg, r_inner + 2);
+        const [x2, y2] = pt(endAngle   - gapDeg, r_inner + 2);
+        const [x3, y3] = pt(endAngle   - gapDeg, R);
+        const [x4, y4] = pt(startAngle + gapDeg, R);
+
+        const large = dayAngle > 180 ? 1 : 0;
+
+        let fillColor = C.ring;
+        if (isToday)    fillColor = C.today;
+        else if (isBakeDay && isFullMoon) fillColor = '#3a3020';
+        else if (isBakeDay && isNewMoon)  fillColor = '#1e1810';
+
+        const arc = el('path', {
+          d: `M${x1},${y1} A${r_inner+2},${r_inner+2} 0 ${large} 1 ${x2},${y2} L${x3},${y3} A${R},${R} 0 ${large} 0 ${x4},${y4} Z`,
+          fill: fillColor,
+          'data-day': i,
+          'data-name': name,
+          'data-date': date.toLocaleDateString('en-US', { month:'short', day:'numeric' }),
+          'data-bake': isBakeDay ? (isFullMoon ? 'High Country White' : 'Dark Tide Rye') : '',
+          style: 'cursor: default;',
+        });
+        g.appendChild(arc);
+
+        // Bake day marker — small dot on the outer edge
+        if (isBakeDay) {
+          const midAngle = startAngle + dayAngle / 2;
+          const [dx, dy] = pt(midAngle, R + 10);
+          g.appendChild(el('circle', {
+            cx: dx, cy: dy, r: 3,
+            fill: isFullMoon ? C.moonFull : '#4a4438',
+            stroke: isFullMoon ? 'none' : C.text,
+            'stroke-width': '0.8',
+          }));
+        }
+
+        // Day number (every 7th day)
+        if (i % 7 === 0) {
+          const midAngle = startAngle + dayAngle / 2;
+          const [tx, ty] = pt(midAngle, R - 16);
+          const t = el('text', {
+            x: tx, y: ty,
+            'text-anchor': 'middle',
+            'dominant-baseline': 'middle',
+            'font-family': 'DM Mono, monospace',
+            'font-size': '9',
+            fill: C.text,
+          }, String(i + 1));
+          g.appendChild(t);
+        }
+      }
+
+      // Inner ring separator
+      g.appendChild(el('circle', { cx, cy, r: r_inner + 2, fill: C.ringDim, stroke: C.ring, 'stroke-width': '1' }));
+
+      // Center moon phase display
+      // Current phase illuminated circle
+      const { fraction: todayFraction } = moonPhase(today);
+      const moonR = 42;
+      const waxing = todayAge < synodicMonth / 2;
+
+      // Moon phase via path: trace lit limb (always right semicircle) +
+      // terminator ellipse (bulges right if waxing gibbous, left if crescent).
+      // The terminator x-radius: rx = moonR * cos(phase_angle)
+      //   illumination f = (1 - cos(phase_angle)) / 2
+      //   → cos(phase_angle) = 1 - 2f  (range -1..1)
+      // When waxing: lit half is right; shadow terminator sweeps left→right.
+      // When waning: lit half is left; shadow terminator sweeps right→left.
+      // We build the path as two arcs: the lit limb + the terminator arc.
+      {
+        // Phase angle from illumination
+        const cosPA = 1 - 2 * todayFraction;
+        // terminatorRx: positive means ellipse bulges toward dark side
+        // waxing crescent: terminatorRx > 0 on LEFT (shadow side right)
+        // waxing gibbous:  terminatorRx < 0 (ellipse reverses → gibbous)
+        // We encode the sign: terminatorRx signed, negative = gibbous direction
+        const terminatorRx = moonR * cosPA; // positive = crescent, negative = gibbous
+
+        // Build SVG path:
+        // Top of circle: (cx, cy - moonR)
+        // Bottom:        (cx, cy + moonR)
+        // Lit limb arc: always sweeps the "lit" side (right if waxing, left if waning)
+        // Terminator arc: connects top to bottom through the shadow side
+
+        // Waxing: lit side = right half, shadow = left.
+        //   Lit limb: arc from top→bottom, large arc on right (sweep=1 dir=right)
+        //   Terminator: ellipse from bottom→top, x-radius=|terminatorRx|,
+        //     direction depends on crescent/gibbous
+        // Waning: mirror horizontally (flip sweep directions + sign of terminatorRx)
+
+        const tx = cx, ty_top = cy - moonR, ty_bot = cy + moonR;
+        const trx = Math.abs(terminatorRx);
+
+        let pathD;
+        if (todayFraction < 0.01) {
+          // New moon: dark circle only, no path needed
+        } else if (todayFraction > 0.99) {
+          // Full moon: full circle
+        } else if (waxing) {
+          // Waxing: lit on right
+          // Lit limb: semicircle from top to bottom going right (large arc right)
+          // Terminator: from bottom to top going through the terminator
+          //   crescent (f<0.5): terminatorRx > 0 → ellipse sweeps right (same dir as lit = inside)
+          //   gibbous  (f>0.5): terminatorRx < 0 → ellipse sweeps left  (opposite = outside the crescent)
+          const termSweep = todayFraction < 0.5 ? 1 : 0;
+          pathD = `M ${tx} ${ty_top} A ${moonR} ${moonR} 0 1 1 ${tx} ${ty_bot} A ${trx} ${moonR} 0 0 ${termSweep} ${tx} ${ty_top} Z`;
+        } else {
+          // Waning: lit on left
+          const termSweep = todayFraction < 0.5 ? 0 : 1;
+          pathD = `M ${tx} ${ty_top} A ${moonR} ${moonR} 0 1 0 ${tx} ${ty_bot} A ${trx} ${moonR} 0 0 ${termSweep} ${tx} ${ty_top} Z`;
+        }
+
+        // Draw dark base
+        g.appendChild(el('circle', { cx, cy, r: moonR, fill: '#1a1810' }));
+
+        // Draw lit portion (if not fully new/dark)
+        if (todayFraction > 0.01 && todayFraction < 0.99 && pathD) {
+          g.appendChild(el('path', { d: pathD, fill: C.moonFull, opacity: '0.92' }));
+        } else if (todayFraction >= 0.99) {
+          g.appendChild(el('circle', { cx, cy, r: moonR, fill: C.moonFull, opacity: '0.92' }));
+        }
+      }
+
+      // Phase name text in center
+      const phaseParts = todayPhaseName.split(' ');
+      if (phaseParts.length === 1) {
+        g.appendChild(el('text', {
+          x: cx, y: cy + moonR + 18,
+          'text-anchor': 'middle',
+          'font-family': 'Fraunces, Georgia, serif',
+          'font-size': '13',
+          'font-style': 'italic',
+          fill: C.textMid,
+        }, todayPhaseName));
+      } else {
+        phaseParts.forEach((part, pi) => {
+          g.appendChild(el('text', {
+            x: cx,
+            y: cy + moonR + 14 + pi * 13,
+            'text-anchor': 'middle',
+            'font-family': 'Fraunces, Georgia, serif',
+            'font-size': '11',
+            'font-style': 'italic',
+            fill: C.textMid,
+          }, part));
+        });
+      }
+
+      // "Today" label at top of current-day arc
+      const todayAngle = Math.round(todayAge) * dayAngle + dayAngle / 2;
+      const [tlx, tly] = pt(todayAngle, R + 20);
+      g.appendChild(el('text', {
+        x: tlx, y: tly,
+        'text-anchor': 'middle',
+        'dominant-baseline': 'middle',
+        'font-family': 'DM Mono, monospace',
+        'font-size': '8',
+        'letter-spacing': '0.08em',
+        fill: C.today,
+      }, 'today'));
+
+      svg.appendChild(g);
+
+      // ─── Tooltip interactivity ───
+      const tooltip = document.getElementById('wheel-tooltip');
+      const wheelRect = svg.parentElement;
+
+      svg.querySelectorAll('path[data-day]').forEach(arc => {
+        arc.addEventListener('mouseenter', (e) => {
+          const name = arc.getAttribute('data-name');
+          const date = arc.getAttribute('data-date');
+          const bake = arc.getAttribute('data-bake');
+          tooltip.innerHTML = bake
+            ? `<strong>${name}</strong>${date}<br/>Bake: ${bake}`
+            : `<strong>${name}</strong>${date}`;
+          tooltip.style.display = 'block';
+          arc.style.opacity = '0.85';
+        });
+        arc.addEventListener('mousemove', (e) => {
+          const rect = svg.getBoundingClientRect();
+          tooltip.style.left = (e.clientX - rect.left + 12) + 'px';
+          tooltip.style.top  = (e.clientY - rect.top  + 12) + 'px';
+        });
+        arc.addEventListener('mouseleave', () => {
+          tooltip.style.display = 'none';
+          arc.style.opacity = '1';
+        });
+      });
+    }
+
+    /* ─── Fill in next-moon dates ───────────────────────────────────── */
+    function fillNextMoonDates() {
+      const today = new Date();
+      const synodicMonth = 29.53058867;
+      const { age } = moonPhase(today);
+
+      // Next full moon (age ≈ 14.77)
+      let daysToFull = 14.77 - age;
+      if (daysToFull < 0) daysToFull += synodicMonth;
+      const fullDate = new Date(today);
+      fullDate.setUTCDate(today.getUTCDate() + Math.ceil(daysToFull));
+
+      // Next new moon (age ≈ 0 / 29.53)
+      let daysToNew = synodicMonth - age;
+      if (daysToNew > synodicMonth) daysToNew -= synodicMonth;
+      const newDate = new Date(today);
+      newDate.setUTCDate(today.getUTCDate() + Math.ceil(daysToNew));
+
+      const fmtOpts = { month: 'short', day: 'numeric' };
+
+      const fullEl = document.getElementById('full-moon-next');
+      const newEl  = document.getElementById('new-moon-next');
+
+      if (fullEl) fullEl.textContent = fullDate.toLocaleDateString('en-US', fmtOpts);
+      if (newEl)  newEl.textContent  = newDate.toLocaleDateString('en-US', fmtOpts);
+    }
+
+    /* ─── Stagger loaf rows ─────────────────────────────────────────── */
+    function staggerLoafRows() {
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (prefersReducedMotion) return;
+      // CSS already handles opacity:0 + animation; just override delay per row
+      document.querySelectorAll('.loaf-row').forEach((row, i) => {
+        row.style.animationDelay = (120 + i * 100) + 'ms';
+      });
+    }
+
+    /* ─── Init ──────────────────────────────────────────────────────── */
+    document.addEventListener('DOMContentLoaded', () => {
+      renderWheel();
+      fillNextMoonDates();
+      staggerLoafRows();
+    });
+  </script>
+
+</body>
+</html>

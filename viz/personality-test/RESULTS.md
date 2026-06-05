@@ -44,6 +44,32 @@ three-stat hero-metric block — i.e. it improved on, but did not fully escape, 
 second-gen default. Motivates the manifest hardening below (and a re-run to confirm
 the hardened skill escapes the cream/serif register entirely).
 
+## Round 2 — two more briefs, with the hardened skill
+
+Briefs: a moon-phase sourdough bakery ("Hearth & Moon") and a deep-sea marine
+biologist's portfolio ("Dr. Maya Okafor"). A/B each; treatments used the hardened
+skill (with the second-gen-slop section). Screenshots: `*-control-full.png`,
+`*-treatment-full.png`.
+
+- **Both controls fell into second-gen slop again** — Cormorant Garamond italic on
+  cream/parchment, eyebrow chip, rust/gold accent. The "artisan" / "tasteful science"
+  reflex is robust and reproducible. (The bakery control's dark section also rendered
+  empty — a bug.)
+- **Both treatments escaped it decisively and invented a real signature concept:**
+  - Bakery: near-black *crust* ground (cream inverted to foreground), Fraunces + DM
+    Mono, mahogany Maillard accent, and **the Lunar Bake Wheel** — a JS-computed
+    28-day moon-phase calendar (Meeus algorithm) mapping each loaf to its phase.
+  - Portfolio: abyssal navy, Fraunces + Azeret Mono, accent = **470 nm** (the actual
+    wavelength of deep-sea bioluminescence), and **the Descent Wire** — a depth
+    indicator that turns scroll into a real metres-deep reading + ocean-zone name.
+  - Both explicitly cited and avoided the second-gen-slop section — the hardening worked.
+
+**Caveat (honest):** the portfolio treatment's lower sections rely on scroll-reveal
+and came back blank in a static full-page capture (content left at `opacity:0` until
+an IntersectionObserver fires). Distinctive heroes can over-lean on JS reveals;
+content should degrade gracefully (visible without JS / on reduced-motion). A real
+craft note for the skill, not just this build.
+
 ## Earned follow-up
 
 Add an explicit **second-generation slop** callout to the slop manifest (tasteful
