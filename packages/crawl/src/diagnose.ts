@@ -79,6 +79,12 @@ async function main(): Promise<void> {
         for (const s of swaps) console.log(`        ↳ try ${s.family.padEnd(20)} — ${s.reason}`);
         if (swaps.length === 0) console.log("        ↳ (no close fresh match found)");
       }
+      // Surface the closest indie (non-Google) option — the strongest anti-slop signal.
+      const sup = (i: string) => (recById.get(i) as { supplier?: string } | undefined)?.supplier;
+      const indie = (neighbors[id] ?? []).find((n) =>
+        sup(n.id) && sup(n.id) !== "google" && (displaySat.get(n.id) ?? 0) < SLOP_CUTOFF &&
+        recById.get(n.id)?.category === rec.category && !nbrs.some((x) => x.id === n.id));
+      if (indie) console.log(`        ↳ or go indie: ${indie.family} — visually similar (${indie.sim}), free [${sup(indie.id)}]`);
     }
   }
 

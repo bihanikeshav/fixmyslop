@@ -3,7 +3,7 @@
 // the visual embedding refines sub-style (Didone vs slab). Overwrites font-neighbors.json.
 import { readFile, writeFile } from "node:fs/promises";
 
-const WF = 0.5, WV = 0.5, K = 10;
+const WF = 0.5, WV = 0.5, K = 40;
 const VISUAL_PATH = process.argv[2] ?? "data/font-visual.json";
 const index = JSON.parse(await readFile("data/fonts.index.json", "utf8"));
 const visualRaw = JSON.parse(await readFile(VISUAL_PATH, "utf8"));
