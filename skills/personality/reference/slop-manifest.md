@@ -78,15 +78,15 @@ this made?"
 ## Measured tells (this repo's crawl of 44 AI-built sites)
 The fonts most likely to make a site read as generic, by how many crawled sites use them:
 - Inter — 45% of sites (20/44)
-- jetbrains mono — 20% of sites (9/44)
-- ui-sans-serif — 9% of sites (4/44)
-- plus jakarta sans — 9% of sites (4/44)
-- geist mono — 7% of sites (3/44)
-- -apple-system — 7% of sites (3/44)
-- playfair display — 5% of sites (2/44)
-- dm sans — 5% of sites (2/44)
-- ui-monospace — 5% of sites (2/44)
+- JetBrains Mono — 20% of sites (9/44)
+- Plus Jakarta Sans — 9% of sites (4/44)
+- Geist Mono — 7% of sites (3/44)
+- Playfair Display — 5% of sites (2/44)
+- DM Sans — 5% of sites (2/44)
 - Lato — 5% of sites (2/44)
+- Pacifico — 2% of sites (1/44)
+- Montserrat 7c84aa — 2% of sites (1/44)
+- Roboto 13b720 — 2% of sites (1/44)
 
 Detectors we flag deterministically: AI purple/violet gradient, gradient text,
 glassmorphism (backdrop-blur), pill buttons, extreme corner radius, tight hero

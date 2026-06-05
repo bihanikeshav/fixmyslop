@@ -57,16 +57,32 @@ const directions = intents.map((intent) => ({
 const avoidPalettes = paletteSlop.map((v) => ({ vibe: v.vibe, slopAccent: v.slopAccent, bg: v.bg, examples: v.examples }));
 
 // --- Data tells from the real crawl ---
+// Crawl-profile font fields are space-lowercased ("playfair display") while the
+// index is hyphen-keyed ("playfair-display"); normalize before resolving, drop
+// generic CSS/system stack tokens, and title-case any real font not in the index.
+const norm = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const GENERIC = new Set([
+  "ui-sans-serif", "ui-serif", "ui-monospace", "ui-rounded", "system-ui",
+  "sans-serif", "serif", "monospace", "cursive", "fantasy",
+  "apple-system", "blinkmacsystemfont", "segoe-ui", "roboto-flex", "inherit", "initial",
+]);
+const titleCase = (s) => String(s).split(/[\s-]+/).filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1)).join(" ");
 const siteCount = crawl.length;
-const fontSites = new Map();
-for (const p of crawl) {
-  const fams = new Set([p.heroFont, p.headingFont, p.bodyFont, ...((p.allFonts ?? []).map((a) => a.family))].filter(Boolean));
-  for (const f of fams) fontSites.set(f, (fontSites.get(f) ?? 0) + 1);
-}
+const fontSites = new Map();   // normalized id -> Set of site indices (dedupe per site)
+crawl.forEach((p, i) => {
+  const fams = [p.heroFont, p.headingFont, p.bodyFont, ...((p.allFonts ?? []).map((a) => a.family))].filter(Boolean);
+  for (const f of fams) {
+    const id = norm(f);
+    if (!id || GENERIC.has(id)) continue;
+    if (!fontSites.has(id)) fontSites.set(id, new Set());
+    fontSites.get(id).add(i);
+  }
+});
 const topCrawl = [...fontSites.entries()]
-  .sort((a, b) => b[1] - a[1])
+  .map(([id, sites]) => ({ id, n: sites.size }))
+  .sort((a, b) => b.n - a.n)
   .slice(0, 10)
-  .map(([f, n]) => ({ font: famById(f), pct: siteCount ? Math.round((100 * n) / siteCount) : 0, n }));
+  .map(({ id, n }) => ({ font: byId.get(id)?.family ?? titleCase(id), pct: siteCount ? Math.round((100 * n) / siteCount) : 0, n }));
 
 // --- Render type-and-color.md ---
 const fmtFresh = (arr) => arr.map((f) => `${f.family}${f.supplier !== "google" ? ` (${f.supplier})` : ""}`).join(", ");

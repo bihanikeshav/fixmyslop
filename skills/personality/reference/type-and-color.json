@@ -627,42 +627,27 @@
         "n": 20
       },
       {
-        "font": "jetbrains mono",
+        "font": "JetBrains Mono",
         "pct": 20,
         "n": 9
       },
       {
-        "font": "ui-sans-serif",
+        "font": "Plus Jakarta Sans",
         "pct": 9,
         "n": 4
       },
       {
-        "font": "plus jakarta sans",
-        "pct": 9,
-        "n": 4
-      },
-      {
-        "font": "geist mono",
+        "font": "Geist Mono",
         "pct": 7,
         "n": 3
       },
       {
-        "font": "-apple-system",
-        "pct": 7,
-        "n": 3
-      },
-      {
-        "font": "playfair display",
+        "font": "Playfair Display",
         "pct": 5,
         "n": 2
       },
       {
-        "font": "dm sans",
-        "pct": 5,
-        "n": 2
-      },
-      {
-        "font": "ui-monospace",
+        "font": "DM Sans",
         "pct": 5,
         "n": 2
       },
@@ -670,6 +655,21 @@
         "font": "Lato",
         "pct": 5,
         "n": 2
+      },
+      {
+        "font": "Pacifico",
+        "pct": 2,
+        "n": 1
+      },
+      {
+        "font": "Montserrat 7c84aa",
+        "pct": 2,
+        "n": 1
+      },
+      {
+        "font": "Roboto 13b720",
+        "pct": 2,
+        "n": 1
       }
     ]
   }
