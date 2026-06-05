@@ -1,0 +1,7 @@
+# Python deps for the deep visual font embedding (scripts/embed_visual.py).
+# For Blackwell / RTX 50-series GPUs install the CUDA 12.8 torch wheel first:
+#   pip install torch==2.9.1 --index-url https://download.pytorch.org/whl/cu128
+# (CPU-only also works for inference, just slower.)
+torch>=2.9
+pillow>=11
+numpy>=1.26

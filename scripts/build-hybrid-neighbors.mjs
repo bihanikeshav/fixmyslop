@@ -4,8 +4,12 @@
 import { readFile, writeFile } from "node:fs/promises";
 
 const WF = 0.5, WV = 0.5, K = 10;
+const VISUAL_PATH = process.argv[2] ?? "data/font-visual.json";
 const index = JSON.parse(await readFile("data/fonts.index.json", "utf8"));
-const visual = JSON.parse(await readFile("data/font-visual.json", "utf8"));
+const visualRaw = JSON.parse(await readFile(VISUAL_PATH, "utf8"));
+// Accept either {id: {family, v}} (grid) or {id: [floats]} (deep) shape.
+const visual = Object.fromEntries(Object.entries(visualRaw).map(([k, val]) => [k, Array.isArray(val) ? { v: val } : val]));
+console.log(`Visual source: ${VISUAL_PATH}`);
 
 const ATTRS = ["strong", "bold", "delicate", "thin", "elegant", "friendly", "professional", "playful", "dramatic", "calm", "formal", "technical"];
 const CATS = ["serif", "sans-serif", "display", "handwriting", "monospace"];

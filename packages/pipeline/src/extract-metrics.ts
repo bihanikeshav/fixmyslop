@@ -15,7 +15,7 @@
  */
 
 import { readFile, writeFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, resolve } from "node:path";
 import opentype from "opentype.js";
 import { objectiveQuality, compositeQuality, type FontMetrics } from "@ai-slop-font/core";
@@ -74,19 +74,21 @@ async function main(): Promise<void> {
   }
 }
 
-async function extractFor(family: string): Promise<Partial<FontMetrics>> {
-  const ttfUrl = await resolveTtfUrl(family);
-  const buf = await (await fetch(ttfUrl, { headers: { "user-agent": LEGACY_UA } })).arrayBuffer();
+/** Compute glyph metrics from a raw font buffer (works for any TTF/OTF, local or remote). */
+export function metricsFromBuffer(buf: ArrayBuffer): Partial<FontMetrics> {
   const font = opentype.parse(buf);
-
   const xH = glyphBBoxHeight(font, "x");
   const capH = glyphBBoxHeight(font, "H");
   const xHeightRatio = xH && capH ? clamp01(xH / capH) : 0.5;
-
   const { strokeContrast, counterSize } = measureO(font);
   const charsetCompleteness = cmapCoverage(font);
-
   return { xHeightRatio, strokeContrast, counterSize, charsetCompleteness };
+}
+
+async function extractFor(family: string): Promise<Partial<FontMetrics>> {
+  const ttfUrl = await resolveTtfUrl(family);
+  const buf = await (await fetch(ttfUrl, { headers: { "user-agent": LEGACY_UA } })).arrayBuffer();
+  return metricsFromBuffer(buf);
 }
 
 async function resolveTtfUrl(family: string): Promise<string> {
@@ -232,7 +234,9 @@ function cmapCoverage(font: opentype.Font): number {
 const clamp01 = (n: number): number => (Number.isFinite(n) ? (n < 0 ? 0 : n > 1 ? 1 : n) : 0.5);
 const r = (n: number): number => Math.round(n * 100) / 100;
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+  main().catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
+}
