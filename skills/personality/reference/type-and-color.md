@@ -22,7 +22,13 @@ defaulting to one of these is how the next Inter is born.
 - **monospace**: Lab Mono (uncut), Max Hana (uncut), New Heterodox Mono (uncut), Uncut Plan8 (uncut), Whois (uncut), Anonymous Pro, Azeret Mono, B612 Mono, Chivo Mono, Courier Prime, Cousine, Cutive Mono, Datatype, DM Mono
 - **handwriting**: Britney (fontshare), Comico (fontshare), Pencerio (fontshare), Rosaline (fontshare), Telma (fontshare), Aguafina Script, Alex Brush, Allison, Allura, Amatic SC, Amita, Annie Use Your Telescope, Architects Daughter, Are You Serious
 
-## Fresh directions by intent (heading / body · accent · move)
+## Escape directions by intent (heading / body · accent · move)
+These are curated escape moves, not a "fresh fonts" list — some deliberately reuse a
+common body font (e.g. Inter) as a neutral workhorse under a distinctive heading and
+the style move. **The move is what escapes the slop, not the body font.** If a body
+font here is in the AVOID list above, pair the heading with a fresh body from the
+lists instead, or lean on the style move to carry the distinction.
+
 ### premium
 - Playfair Display / Inter · #1A1A1A · High-contrast serif headlines on flat near-black
 - Cormorant Garamond / DM Sans · #C9A84C · Editorial serif headings with gold ink

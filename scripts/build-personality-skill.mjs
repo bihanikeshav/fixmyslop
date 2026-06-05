@@ -101,7 +101,13 @@ ${avoidFonts.map((f) => `- ${f.family} — saturation ${f.sat}`).join("\n")}
 ## Fresh fonts to pick from (under-used; indie marked)
 ${CATS.map((c) => `- **${c}**: ${fmtFresh(freshByCat[c])}`).join("\n")}
 
-## Fresh directions by intent (heading / body · accent · move)
+## Escape directions by intent (heading / body · accent · move)
+These are curated escape moves, not a "fresh fonts" list — some deliberately reuse a
+common body font (e.g. Inter) as a neutral workhorse under a distinctive heading and
+the style move. **The move is what escapes the slop, not the body font.** If a body
+font here is in the AVOID list above, pair the heading with a fresh body from the
+lists instead, or lean on the style move to carry the distinction.
+
 ${directions.map((d) => `### ${d.intent}\n${d.options.map((o) => `- ${o.heading} / ${o.body} · ${o.accent} · ${o.move}`).join("\n")}`).join("\n\n")}
 
 ## Palettes to AVOID by vibe
