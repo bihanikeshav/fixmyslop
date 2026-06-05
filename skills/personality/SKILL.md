@@ -25,9 +25,10 @@ from a process. Follow it.
    visitor will remember.
 4. **Constrain.** Re-read `reference/slop-manifest.md` and name the specific
    defaults you are forbidding yourself on this build (e.g. "no gradient text, no
-   pill CTA, no centered hero, not Inter").
-5. **Build.** Now write production code, executing `reference/craft-principles.md`
-   and choosing type/color from `reference/type-and-color.md`.
+   pill CTA, no centered hero, not Inter"). Read `reference/tensions.md` so the
+   constraints don't contradict the craft rules.
+5. **Build.** Now write production code, pulling in the references the task needs
+   (see the map below) and choosing type/color from `reference/type-and-color.md`.
 
 ## Personality ≠ slop
 
@@ -43,8 +44,20 @@ When you think you're done: *"If I showed this to someone and said an AI made th
 would they instantly believe me?"* If yes, that's the problem. A distinctive
 interface makes people ask "how was this made?", not "which AI made this?"
 
-## References
-- `reference/personality-moves.md` — types of signature moves to instantiate.
-- `reference/slop-manifest.md` — the anti-patterns (your constraints) + the data behind them.
-- `reference/craft-principles.md` — spacing, hierarchy, contrast, motion so distinctive ≠ broken.
-- `reference/type-and-color.md` — fonts/palettes: what to avoid, what to pick from (rotate; never default).
+## Reference map (read what the task needs)
+
+Three depths: this file (always) → a `reference/` cheat-sheet (read on demand) →
+the full cited essay in `docs/design-research/` (when you want the reasoning). Pull
+in only what the current step needs — don't read everything every time.
+
+| When you're… | Read |
+|---|---|
+| **Always, before building** | `reference/slop-manifest.md` (what to avoid) + `reference/tensions.md` (resolve conflicting rules) |
+| Inventing the signature element & voice | `reference/personality-moves.md` (moves + Voice & delight) |
+| Choosing fonts & color | `reference/type-and-color.md` (avoid-list + fresh option-sets) |
+| Composing visuals — hierarchy, type, color, layout, spacing, gestalt, motion, accessibility, responsive, tokens | `reference/craft-principles.md` |
+| Designing behavior — affordances, UX laws, cognitive load, IA/nav, forms, onboarding | `reference/ux-principles.md` |
+| Going deeper on any single topic | `docs/design-research/<topic>.md` (full cited essays; index at `docs/design-research/README.md`) |
+
+**If two rules seem to conflict, `reference/tensions.md` is the tie-breaker** — never
+ship guidance you haven't reconciled.

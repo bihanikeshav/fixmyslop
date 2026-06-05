@@ -15,10 +15,13 @@ describe("personality skill", () => {
     expect(s).toMatch(/name: personality/);
     expect(s).toContain("## The Process");
     expect(s.toLowerCase()).toContain("ai made this");
+    // the hierarchical router + the conflict tie-breaker must be wired in
+    expect(s).toContain("Reference map");
+    expect(s).toContain("reference/tensions.md");
   });
 
   it("ships all non-empty reference files", () => {
-    for (const f of ["personality-moves.md", "slop-manifest.md", "craft-principles.md", "type-and-color.md"]) {
+    for (const f of ["personality-moves.md", "slop-manifest.md", "craft-principles.md", "type-and-color.md", "ux-principles.md", "tensions.md"]) {
       expect(existsSync(resolve(SKILL, "reference", f)), `${f} exists`).toBe(true);
       expect(read(`reference/${f}`).trim().length, `${f} non-empty`).toBeGreaterThan(200);
     }

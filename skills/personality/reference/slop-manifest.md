@@ -70,6 +70,24 @@ which is exactly why they read as generic.
 - Letter-spacing above 0.05em on body text.
 - Broken/placeholder images shipping as broken boxes.
 
+## Deceptive patterns (never — these are unethical, increasingly illegal)
+- Confirmshaming — guilt-trip decline copy ("No, I hate saving money"). Use a neutral decline.
+- Hidden costs / drip pricing — fees appear only at checkout. Show the full price at the first pricing screen.
+- Hidden subscription — free trial silently converts to recurring charge. State amount, frequency, and renewal date in the CTA.
+- Hard to cancel (roach motel) — sign-up is one click; cancellation requires a phone call. Match cancellation steps to sign-up steps.
+- Fake urgency — countdown timer that resets on reload. Use timers only for real, verifiable deadlines.
+- Fake scarcity — fabricated "Only 2 left!" Stock messages must reflect real inventory.
+- Fake social proof — invented testimonials or activity feeds. Show verified reviews from authenticated purchasers only.
+- Trick questions — double-negatives or ambiguous toggles that produce unintended consent. Use affirmative, single-polarity language.
+- Preselection — opt-in boxes pre-ticked for marketing, insurance, or data-sharing. All opt-ins must start unchecked (GDPR Article 7).
+- Disguised ads — paid placements styled as organic content. Label every sponsored unit with a legible "Ad" or "Sponsored" badge.
+- Misdirection — "Cancel subscription" is gray and tiny; "Keep plan" is large and primary. Apply equal visual weight to both directions.
+- Obstruction / friction asymmetry — privacy settings or account deletion buried in nested menus. Two steps from account home, maximum.
+- Forced action — require account creation to view a price. Allow guest browsing and guest checkout wherever feasible.
+- Privacy Zuckering — default settings expose maximum data. Default all sharing to off; users opt in to more.
+
+→ deep dive: docs/design-research/dark-patterns.md
+
 ## The AI-slop test
 If someone would instantly believe "an AI made this," it's slop. Aim for "how was
 this made?"

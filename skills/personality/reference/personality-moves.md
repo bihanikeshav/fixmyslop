@@ -44,3 +44,21 @@ For each move: what it is · when it earns its place · how to keep it craft, no
 If a chosen move appears in the slop manifest (e.g. hand-drawn SVG, image hover),
 that is allowed — but only when it is specific, crafted, and load-bearing per the
 "Personality ≠ slop" rule. Generic instances are still slop.
+
+## Voice & delight (how personality reads, not just looks)
+- Build the hierarchy first — functional → reliable → usable → then pleasurable; delight bolted onto dysfunction amplifies frustration.
+- Deep delight before surface delight — flow and effortless reliability outlast any witty loading message.
+- Identify the peak emotional moment in the journey and concentrate your best personality work there (peak-end rule).
+- Ground signature moments in the product's actual subject — typographic wit for a font tool, calm precision for a tax app; generic warmth is invisible.
+- Voice is constant; tone shifts by context — quieter on errors, warmer on success, neutral on system info.
+- Write to what the user just accomplished, not a generalized emotion — "Your first invoice — nice" beats "Great job!"
+- Button labels: verb + outcome from the user's perspective ("Send invoice," "Delete account") — never "Submit," "OK," or "Proceed."
+- Error messages: state what happened + what to do next; no blame words ("invalid," "illegal," "incorrect"); passive constructions soften attribution ("This email isn't registered").
+- Empty states teach — explain why it's empty, prompt the first action, hint at the payoff; silence reads as broken.
+- No marketing buzzwords in interface copy — streamline, supercharge, world-class, seamless, innovative signal insincerity and add no information.
+- Delight must never block the primary path — any animation that must complete before the user can proceed is a bug, not a feature.
+- Audit repeated microdelights — novelty on day one becomes a 200 ms tax by week two; gate, skip after N exposures, or make it optional.
+- Respect `prefers-reduced-motion` — personality is voice, specificity, and timing, not animation; vestibular disorders affect tens of millions.
+
+→ deep dive: docs/design-research/emotional-design-delight.md
+→ deep dive: docs/design-research/ux-writing-microcopy.md
