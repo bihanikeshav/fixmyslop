@@ -88,6 +88,23 @@ which is exactly why they read as generic.
 
 → deep dive: docs/design-research/dark-patterns.md
 
+## Second-generation slop (the new "tasteful AI" default — watch for this one)
+Last year's *escape* from slop has become this year's slop. A capable model now
+avoids indigo/Inter/glassmorphism on its own — and reflexively reaches for this
+"tasteful editorial" template instead. It is just as generic. Caught in live A/B
+testing (an unguided build fell straight into it). Avoid the cluster, not one item:
+- Oversized **italic serif hero** (Playfair Display, Cormorant) — both on the font avoid-list.
+- **Cream/beige paper background** + a single **gold/amber/brass "ink"** accent.
+- Tiny uppercase tracked **eyebrow chip** above the headline.
+- **01 / 02 / 03** numbered editorial step markers.
+- **Three-stat hero-metric block** (big number, small label, ×3).
+- Vibe: "we're the calm, human, anti-AI tool" — signalled by warm serif + ruled paper.
+The tell: this look says *"tasteful"* without any connection to the actual subject.
+Escaping slop is NOT picking the current fashionable alternative — it is grounding
+the choice in THIS subject's world (see `distinctiveness.md` → "name the category
+default and refuse it"). If your serif-on-cream could belong to any other product,
+it's slop.
+
 ## The AI-slop test
 If someone would instantly believe "an AI made this," it's slop. Aim for "how was
 this made?"
