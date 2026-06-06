@@ -17,7 +17,9 @@ which is exactly why they read as generic.
 - Repeated section kicker labels — tracked uppercase labels above every section.
 - Oversized hero headline that eats the whole viewport.
 - Crushed letter spacing past where glyphs keep their shape.
-- Overused fonts — Inter, Geist, Space Grotesk, Instrument Serif feel generic now.
+- Overused fonts — Inter, Geist, Space Grotesk feel generic now. Also the "tasteful"
+  darlings reached for by reflex: Playfair, Cormorant, Fraunces, Instrument Serif,
+  Clash Display, General Sans. Distinctive a year ago, default now.
 - One font for the entire page.
 - All-caps body text (we read by word shape; caps removes it).
 
@@ -69,6 +71,11 @@ which is exactly why they read as generic.
 - Body text below 14px (16px ideal).
 - Letter-spacing above 0.05em on body text.
 - Broken/placeholder images shipping as broken boxes.
+- Core content invisible until scroll — `opacity:0` + IntersectionObserver gating the
+  hero, headings, or body. It reads as blank/broken without JS and to crawlers. Reveal
+  effects are for secondary polish only, and must respect `prefers-reduced-motion`.
+- The standout that doesn't render — a "signature" component that needs JS or scroll to
+  appear. An invisible standout is a failed standout (→ `hero-artifacts.md`).
 
 ## Deceptive patterns (never — these are unethical, increasingly illegal)
 - Confirmshaming — guilt-trip decline copy ("No, I hate saving money"). Use a neutral decline.

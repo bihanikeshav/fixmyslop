@@ -18,10 +18,16 @@ describe("personality skill", () => {
     // the hierarchical router + the conflict tie-breaker must be wired in
     expect(s).toContain("Reference map");
     expect(s).toContain("reference/tensions.md");
+    // the hard structure: mandatory reads, the required functional standout, hard gates
+    expect(s).toContain("Mandatory reads");
+    expect(s).toMatch(/hero[- ]artifact/i);
+    expect(s).toContain("slop-colors.md");
+    expect(s.toLowerCase()).toContain("render gate");
+    expect(s.toLowerCase()).toContain("self-check");
   });
 
   it("ships all non-empty reference files", () => {
-    for (const f of ["personality-moves.md", "slop-manifest.md", "craft-principles.md", "type-and-color.md", "ux-principles.md", "tensions.md", "distinctiveness.md"]) {
+    for (const f of ["personality-moves.md", "slop-manifest.md", "craft-principles.md", "type-and-color.md", "ux-principles.md", "tensions.md", "distinctiveness.md", "hero-artifacts.md", "slop-colors.md"]) {
       expect(existsSync(resolve(SKILL, "reference", f)), `${f} exists`).toBe(true);
       expect(read(`reference/${f}`).trim().length, `${f} non-empty`).toBeGreaterThan(200);
     }
