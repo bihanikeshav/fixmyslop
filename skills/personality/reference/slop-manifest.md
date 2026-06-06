@@ -55,6 +55,11 @@ which is exactly why they read as generic.
 - Extreme border-radius (24px+ on a small card) — everything becomes a soft blob.
 - Rounded rectangles with generic drop shadows — safe, forgettable.
 - Sparklines / tiny charts as decoration that convey nothing.
+- Claude-drawn illustrative SVG — figures, objects, scenes, mascots, spot illustration.
+  Reads amateur every time. Use an icon library + real components; custom SVG only for a
+  precise data-driven instrument (chart/ring/gauge/curve/map). See components-and-assets.
+- Hand-drawn / bespoke icon glyphs — use one consistent icon library (Lucide / Phosphor /
+  Heroicons / Tabler), never doodled icons.
 - Modals when anything else would do.
 
 ## Motion

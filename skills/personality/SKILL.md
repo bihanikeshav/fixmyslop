@@ -26,6 +26,8 @@ sameness ship.
 - `reference/hero-artifacts.md` — what a real standout is, and its bar.
 - `reference/composition-and-boldness.md` — layout archetypes, bold type moves, the
   boldness dial, and the forbid-the-median variety engine.
+- `reference/components-and-assets.md` — use premade components/icons, never hand-drawn
+  illustrative SVG; accessible component + layout patterns; contrast pairing. Hard gate.
 - `reference/tensions.md` — the tie-breaker when rules seem to conflict.
 
 ## The Process (before any code)
@@ -52,7 +54,9 @@ sameness ship.
 5. **Constrain.** Name the slop defaults you forbid (palette, gradient text, pill
    CTAs, dark+glow) plus the median from step 3.
 6. **Build.** Type/color from `reference/type-and-color.md`, obeying `slop-colors.md`.
-   Choose a **characterful** display face — not a default grotesque.
+   Choose a **characterful** display face — not a default grotesque. Build the UI from
+   **premade components + an icon library** (`components-and-assets.md`); never hand-draw
+   illustrative SVG. Custom SVG/canvas only for a data-driven instrument.
 7. **Polish & motion pass.** Before you call it done, read `reference/polish.md` and
    `reference/motion.md` and work both: the finishing-craft checklist (spacing rhythm,
    optical alignment, type micro-craft, interactive states, detail finish) AND
@@ -110,6 +114,16 @@ shipping — details in `reference/polish.md` and `reference/motion.md`:
   Fraunces, Instrument Serif, Clash Display), and not the new safe grotesques becoming
   defaults (Inter, Geist, Space Grotesk, Outfit, Cabinet Grotesk, General Sans,
   Sentient). Pick a characterful display face and vary it per build.
+- **Assets gate.** Never hand-draw illustrative SVG (figures, objects, scenes, mascots,
+  spot illustrations) — it reads amateur. Use **premade components**: an icon library
+  (Lucide / Phosphor / Heroicons / Tabler via CDN) for every glyph, accessible UI
+  component patterns, optionally a CSS component layer — all restyled to your palette/
+  type, never shipped as defaults (`components-and-assets.md`). Custom SVG/canvas is
+  allowed ONLY for precise, *data-driven* instruments (charts, rings, gauges, curves,
+  maps generated from data) — never to draw a *thing*.
+- **Contrast gate.** Every text/background pair meets WCAG AA (4.5:1 body, 3:1 large/UI)
+  — computed, not eyeballed. Beware warm-text-on-warm-dark grounds (the low-contrast
+  trap): raise text lightness or desaturate the ground until it passes.
 
 ## The final self-check (answer all before you ship)
 1. **Name the standout** in three words. _(none → not done)_
@@ -122,18 +136,27 @@ shipping — details in `reference/polish.md` and `reference/motion.md`:
    grotesque? _(no → fail)_
 8. **Did I forbid the median, and would another of my outputs look the same?** _(same → fail)_
 9. **Polished?** One spacing scale, aligned edges, type micro-craft, every control has
-   hover + `:focus-visible` + active, AA contrast, works at 390px. _(accidental detail → fail)_
-10. **Purposeful motion + reduced-motion?** A defined easing/duration vocabulary, one
+   hover + `:focus-visible` + active, works at 390px. _(accidental detail → fail)_
+10. **Contrast computed?** Every text/bg pair ≥ AA (4.5:1 / 3:1), checked with numbers —
+    especially warm-on-warm-dark. _(eyeballed / any pair below → fail)_
+11. **Premade assets, no drawn illustration?** Icons from a library; components/patterns
+    restyled (not defaults); any custom SVG is a data-driven instrument, not a drawing.
+    _(hand-drawn illustration → fail)_
+12. **Purposeful motion + reduced-motion?** A defined easing/duration vocabulary, one
     signature gesture, transform/opacity only, `prefers-reduced-motion` shipped. _(static,
     or decorative/janky motion → fail)_
-11. **The AI-slop test:** would someone instantly believe an AI made this? _(yes → fail)_
+13. **The AI-slop test:** would someone instantly believe an AI made this? _(yes → fail)_
 
-## Personality ≠ slop (and ≠ timid sameness)
-The slop manifest flags "amateurish hand-drawn SVG." Your crafted, load-bearing SVG
-is also hand-drawn SVG. The difference is **specificity + craft + load-bearing
-function**, not the technique. The opposite trap is just as real: a *mood* dressed in
-a subject story, or a safe template that passes every gate and bores. The test is
-always the artifact and the boldness, never the explanation.
+## Personality ≠ slop (and ≠ amateur, ≠ timid sameness)
+Personality comes from the **concept**, a **data-driven instrument**, **bold
+composition**, and **premade components used with identity** — NOT from Claude drawing
+pictures. Hand-drawn illustrative SVG (figures, scenes, objects, mascots) reads
+amateur every time; that's why icons come from a library and visuals from real
+components. The crafted-SVG exception is narrow: a *precise, data-driven instrument*
+(a chart, ring, gauge, curve, map computed from data) is craft; a doodled scene is
+slop. Two other traps are just as real: a *mood* dressed in a subject story, and a
+safe template that passes every gate and bores. The test is always the artifact, its
+polish, and its boldness — never the explanation.
 
 ## Reference map
 Mandatory reads are in Step 0. Read the rest on demand.
@@ -144,6 +167,7 @@ Mandatory reads are in Step 0. Read the rest on demand.
 | Inventing the standout | `reference/hero-artifacts.md` (functional archetypes) · `reference/personality-moves.md` |
 | Choosing layout, type expression, boldness | `reference/composition-and-boldness.md` |
 | Polishing & adding motion (final pass) | `reference/polish.md` + `reference/motion.md` |
+| Components, icons, layout patterns, contrast | `reference/components-and-assets.md` |
 | A proven distinctiveness move | `reference/distinctiveness.md` (steal the method, not the tokens) |
 | Choosing fonts & color | `reference/type-and-color.md` + `reference/slop-colors.md` |
 | Composing visuals — hierarchy, spacing, gestalt, motion, a11y, responsive, tokens | `reference/craft-principles.md` |

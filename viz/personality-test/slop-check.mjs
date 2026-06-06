@@ -113,6 +113,10 @@ function check(file) {
   });
   const bounce = overshoot || /\b(bounce|elastic)\b/.test(lc);
 
+  // --- assets: icon-library usage (good) vs heavy literal/hand-drawn SVG paths (caution) ---
+  const iconLib = /lucide|phosphor|@phosphor|heroicons|tabler-icons|feathericons|data-lucide|\bph-[a-z]/i.test(css);
+  const drawnSvgPaths = (css.match(/<path\b[^>]*\bd="[^"]{60,}"/gi) || []).length;
+
   // --- fonts (only look inside Google-Fonts URLs and font-family declarations, so
   //     "Inter" can't false-match "IntersectionObserver") ---
   const fontCtx = [
@@ -153,7 +157,8 @@ function check(file) {
   if (bounce) fails.push("bounce/elastic/overshoot easing");
 
   const motion = { hasMotion, reducedMotion };
-  return { file, pass: fails.length === 0, fails, signals, interactive, motion };
+  const assets = { iconLib, drawnSvgPaths };
+  return { file, pass: fails.length === 0, fails, signals, interactive, motion, assets };
 }
 
 let anyFail = false;
@@ -164,6 +169,7 @@ for (const file of process.argv.slice(2)) {
   console.log(`\n${tag}  ${file}`);
   console.log(`  functional signals: ${r.interactive} ${JSON.stringify(r.signals)}`);
   console.log(`  motion: ${r.motion.hasMotion ? "yes" : "NONE"}, reduced-motion: ${r.motion.reducedMotion ? "yes" : "no"}`);
+  console.log(`  assets: icon-lib ${r.assets.iconLib ? "yes" : "no"}, large-literal-svg-paths ${r.assets.drawnSvgPaths}`);
   if (r.fails.length) for (const f of r.fails) console.log(`  ✗ ${f}`);
 }
 process.exit(anyFail ? 1 : 0);
