@@ -93,7 +93,9 @@ shipping — details in `reference/polish.md` and `reference/motion.md`:
   interaction gesture, microinteraction feedback proportional to the trigger.
   **transform/opacity only**, ease-out entrances, 150–400ms, staggered lists. Animate
   from a *present* state (render-safe), and ship `prefers-reduced-motion`. No bounce on
-  functional UI, no scroll-jacking, no animating layout props.
+  functional UI, no scroll-jacking, no animating layout props. Use `motion.md`'s safe
+  recipes: bars use `scaleX` (not width), hover uses `translate` (not padding), and a
+  reveal must NOT put `opacity:0` on content in base CSS (gate it behind `html.js`).
 
 ## Hard gates (objective — not subject to your judgment)
 - **Color gate.** Nothing from `reference/slop-colors.md`. Darkness is a trap, not a

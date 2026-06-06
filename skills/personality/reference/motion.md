@@ -13,6 +13,24 @@ hides content until JS fires. Entrances enhance content that is already there; w
 off or `prefers-reduced-motion`, the final (visible) state must show. Never gate the
 hero/standout/headings behind a scroll observer.
 
+## Safe recipes (use these exact patterns — don't hand-roll the unsafe version)
+The unsafe idioms are the *reflex* ones; reach for these instead.
+- **Entrance reveal — content visible by default, animation only when JS is present.**
+  Never put `opacity:0` on content in base CSS.
+  ```html
+  <script>document.documentElement.classList.add('js')</script>  <!-- in <head> -->
+  ```
+  ```css
+  .reveal { transition: opacity .45s ease-out, transform .45s ease-out; }
+  html.js .reveal { opacity: 0; transform: translateY(16px); }   /* hidden ONLY if JS ran */
+  html.js .reveal.in { opacity: 1; transform: none; }
+  ```
+  An IntersectionObserver (or a load timeout) only *adds* `.in`. JS off / reduced-motion → content shows.
+- **Bar / progress / underline grow:** `transform: scaleX()` + `transform-origin:left`, never `width`.
+- **Hover nudge / indent:** `transform: translateX(6px)`, never `padding`/`margin`/`left`.
+- **List stagger:** toggle `.in`, then `transition-delay: calc(var(--i) * 40ms)` (transform+opacity only).
+- **Press feedback:** `transform: scale(.97)` on `:active`, ~120ms.
+
 ## The vocabulary
 - **Easing.** Entrances → **ease-out** `cubic-bezier(0,0,0.2,1)` (arrive fast, settle).
   Exits → **ease-in** `cubic-bezier(0.4,0,1,1)` (accelerate away). On-screen moves →
