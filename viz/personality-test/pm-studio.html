@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio Mira — Motion Design</title>
+<meta name="description" content="Studio Mira crafts title sequences, brand animations, and music videos. Motion is our material.">
+
+<!-- Fonts: Syne (display bold) + Azeret Mono (tabular counter) + Source Serif 4 (body) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Azeret+Mono:wght@300;400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;1,8..60,300&display=swap" rel="stylesheet">
+
+<!-- RENDER-SAFE: JS class added BEFORE any CSS that hides content -->
+<script>document.documentElement.classList.add('js')</script>
+
+<style>
+/* ─── TOKENS ─── */
+:root {
+  --white:   #F0EDE8;  /* off-white, barely warm — NOT cream slop */
+  --ink:     #1A1614;  /* near-black, tiny warmth */
+  --red:     #E8220A;  /* record-red: in-point marker, grounded in NLE tooling */
+  --red-dim: #A01807;  /* hover/active state of red */
+  --grey:    #7A746E;  /* mid-grey for secondary labels */
+  --rule:    #D4D0CB;  /* hairline border */
+
+  /* Spacing scale: 4 8 12 16 24 32 48 64 96 */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+  --sp-24: 96px;
+
+  /* Motion vocabulary: 2 curves + 2 durations */
+  --ease-out:    cubic-bezier(0,0,0.2,1);
+  --ease-in-out: cubic-bezier(0.4,0,0.2,1);
+  --dur-fast:  180ms;
+  --dur-med:   360ms;
+}
+
+/* ─── RESET ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--white);
+  color: var(--ink);
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: var(--red); color: var(--white); }
+
+/* ─── MOTION: RENDER-SAFE REVEALS ─── */
+/* Base CSS: content is VISIBLE. JS class gates the animation-starting state. */
+.reveal {
+  transition: opacity var(--dur-med) var(--ease-out),
+              transform var(--dur-med) var(--ease-out);
+}
+html.js .reveal     { opacity: 0; transform: translateY(12px); }
+html.js .reveal.in  { opacity: 1; transform: none; }
+html.js .reveal     { transition-delay: calc(var(--stagger, 0) * 40ms); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* Ensure content is always visible regardless of JS state */
+  html.js .reveal,
+  html.js .reveal.in { opacity: 1 !important; transform: none !important; }
+}
+
+/* ─── TYPOGRAPHY ─── */
+.t-label {
+  font-family: 'Azeret Mono', monospace;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--grey);
+}
+
+/* ─── LAYOUT ─── */
+.site-wrap {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── NAV ── */
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-6) var(--sp-8);
+  border-bottom: 1px solid var(--rule);
+}
+
+.nav-wordmark {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+  text-decoration: none;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.nav-wordmark:hover { color: var(--red); }
+.nav-wordmark:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+
+.nav-links {
+  display: flex;
+  gap: var(--sp-8);
+  list-style: none;
+}
+.nav-links a {
+  font-family: 'Azeret Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--grey);
+  text-decoration: none;
+  display: inline-block;
+  transition: color var(--dur-fast) var(--ease-out),
+              transform var(--dur-fast) var(--ease-out);
+}
+.nav-links a:hover { color: var(--ink); transform: translateX(2px); }
+.nav-links a:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+
+/* ── HERO ── */
+.hero {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-12) var(--sp-8);
+  gap: var(--sp-8);
+}
+
+/* ── THE FRAME ADVANCE (standout) ── */
+.comp-window {
+  position: relative;
+  width: min(640px, 100%);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Toolbar strip: mimics NLE interface language */
+.comp-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-2) var(--sp-4);
+  background: var(--ink);
+  color: var(--white);
+  border-radius: 4px 4px 0 0;
+}
+.comp-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.comp-title-text {
+  font-family: 'Azeret Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: rgba(240,237,232,0.65);
+}
+.comp-rec-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--red);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+/* Rec dot pulse — CSS-only animation, reduced-motion kills it */
+@keyframes pulse-rec {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+.comp-rec-dot { animation: pulse-rec 1.2s ease-in-out infinite; }
+
+/* Frame canvas area */
+.frame-canvas {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #1A1614;
+  border-left: 1px solid var(--ink);
+  border-right: 1px solid var(--ink);
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+.frame-canvas:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: -2px;
+}
+
+/* Individual frame scenes */
+.frame-scene {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  /* Scene swaps are intentionally fast — they ARE the mechanic */
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+.frame-scene.active { opacity: 1; }
+
+/* Scanline overlay — craft texture, lightweight, pointer-events off */
+.frame-canvas::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 3px,
+    rgba(0,0,0,0.04) 3px,
+    rgba(0,0,0,0.04) 4px
+  );
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* ─── FRAME SCENE BACKGROUNDS ─── */
+.frame-0 { background: #0D0A08; }
+.frame-1 { background: #F5F2EE; }
+.frame-2 { background: #E8220A; }
+.frame-3 { background: #0A1020; }
+.frame-4 { background: #1A1614; }
+
+/* ─── SCRUB BAR — scaleX, never width ─── */
+.scrub-bar-wrap {
+  height: 4px;
+  background: #2A2420;
+  cursor: pointer;
+  border-left: 1px solid var(--ink);
+  border-right: 1px solid var(--ink);
+}
+.scrub-bar-fill {
+  height: 100%;
+  background: var(--red);
+  transform-origin: left center;
+  transform: scaleX(0.2);
+  transition: transform var(--dur-fast) var(--ease-out);
+  pointer-events: none;
+}
+
+/* ─── CONTROLS STRIP ─── */
+.comp-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  background: #2A2420;
+  border-radius: 0 0 4px 4px;
+  border: 1px solid #3A342E;
+  border-top: 1px solid #3A342E;
+}
+
+.frame-counter-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  flex: 1;
+}
+.frame-num {
+  font-family: 'Azeret Mono', monospace;
+  font-size: clamp(28px, 5vw, 40px);
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: #F0EDE8;
+}
+.frame-total {
+  font-family: 'Azeret Mono', monospace;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: #5A5450;
+  letter-spacing: 0.02em;
+}
+.timecode {
+  font-family: 'Azeret Mono', monospace;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--red);
+  letter-spacing: 0.04em;
+  margin-left: auto;
+}
+
+/* Frame advance buttons */
+.btn-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #3A342E;
+  border-radius: 3px;
+  background: transparent;
+  color: #F0EDE8;
+  cursor: pointer;
+  font-family: 'Azeret Mono', monospace;
+  font-size: 16px;
+  flex-shrink: 0;
+  transition: background var(--dur-fast) var(--ease-out),
+              transform var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out);
+}
+.btn-frame:hover  { background: #3A342E; transform: translateY(-1px); }
+.btn-frame:active { transform: scale(0.96); }
+.btn-frame:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+
+/* ─── HERO HEADER ─── */
+.hero-header {
+  text-align: center;
+  width: min(640px, 100%);
+}
+.hero-eyebrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-4);
+}
+.eyebrow-rule {
+  flex: 1;
+  max-width: 48px;
+  height: 1px;
+  background: var(--rule);
+}
+.hero-studio-name {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: clamp(64px, 14vw, 112px);
+  letter-spacing: -0.04em;
+  line-height: 0.9;
+  text-transform: uppercase;
+  color: var(--ink);
+  text-wrap: balance;
+}
+.discipline-name { text-wrap: balance; }
+.discipline-desc { text-wrap: pretty; }
+.hero-sub {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: clamp(15px, 2vw, 18px);
+  font-style: italic;
+  color: var(--grey);
+  font-weight: 300;
+  margin-top: var(--sp-3);
+  text-wrap: pretty;
+}
+
+/* Frame caption below comp */
+.frame-caption {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: min(640px, 100%);
+  padding-top: var(--sp-3);
+}
+.frame-project-label {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: clamp(12px, 1.8vw, 14px);
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+
+/* ─── SUPPORT SECTION ─── */
+.support {
+  border-top: 1px solid var(--rule);
+  padding: var(--sp-24) var(--sp-8);
+}
+.support-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--sp-8);
+}
+
+.discipline-item {
+  padding: var(--sp-8) 0;
+  border-top: 2px solid var(--ink);
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+.discipline-item:hover { border-color: var(--red); }
+
+.discipline-num {
+  font-family: 'Azeret Mono', monospace;
+  font-size: clamp(56px, 7vw, 80px);
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+  display: block;
+  margin-bottom: var(--sp-4);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.discipline-item:hover .discipline-num { color: var(--red); }
+
+.discipline-name {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+  display: block;
+  margin-bottom: var(--sp-3);
+}
+.discipline-desc {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--grey);
+  font-weight: 300;
+  max-width: 38ch;
+}
+
+/* ─── FOOTER ─── */
+.footer {
+  border-top: 1px solid var(--rule);
+  padding: var(--sp-6) var(--sp-8);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.footer-copy {
+  font-family: 'Azeret Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--grey);
+}
+.footer-cta {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--white);
+  background: var(--ink);
+  padding: var(--sp-2) var(--sp-4);
+  text-decoration: none;
+  border-radius: 2px;
+  display: inline-block;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  transition: background var(--dur-fast) var(--ease-out),
+              transform var(--dur-fast) var(--ease-out);
+}
+.footer-cta:hover  { background: var(--red); transform: translateX(2px); }
+.footer-cta:active { transform: scale(0.97); }
+.footer-cta:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 600px) {
+  .nav { padding: var(--sp-4); }
+  .nav-links { gap: var(--sp-4); }
+  .hero { padding: var(--sp-8) var(--sp-4); gap: var(--sp-6); }
+  .support { padding: var(--sp-12) var(--sp-4); }
+  .support-inner { grid-template-columns: 1fr; }
+  .footer { flex-direction: column; gap: var(--sp-4); text-align: center; }
+  .frame-caption { flex-direction: column; align-items: flex-start; gap: var(--sp-2); }
+}
+</style>
+</head>
+
+<body>
+<div class="site-wrap">
+
+  <!-- NAV -->
+  <nav class="nav" aria-label="Primary navigation">
+    <a href="/" class="nav-wordmark" aria-label="Studio Mira home">Studio Mira</a>
+    <ul class="nav-links" role="list">
+      <li><a href="#work">Work</a></li>
+      <li><a href="#approach">Approach</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </nav>
+
+  <!-- HERO -->
+  <main id="work">
+  <div class="hero">
+
+    <!-- Studio name -->
+    <header class="hero-header reveal" style="--stagger:0">
+      <div class="hero-eyebrow">
+        <span class="eyebrow-rule" aria-hidden="true"></span>
+        <span class="t-label">Motion Design Studio</span>
+        <span class="eyebrow-rule" aria-hidden="true"></span>
+      </div>
+      <h1 class="hero-studio-name">Mira</h1>
+      <p class="hero-sub">We make things move with intention.</p>
+    </header>
+
+    <!-- THE FRAME ADVANCE — standout component -->
+    <!--
+      The Frame Advance: a frame-by-frame NLE comp viewer grounded in motion design.
+      Each click advances one "frame" — a different SVG scene from a real studio discipline.
+      Standout name: "The Frame Advance".
+      Swap test: this fails immediately for any non-motion-design studio.
+      Renders fully without JS: all 5 frames in DOM, frame-0 visible, counter shows 01.
+    -->
+    <div
+      class="comp-window reveal"
+      style="--stagger:2"
+      role="region"
+      aria-label="The Frame Advance — click or use arrow keys to step through studio work"
+    >
+      <!-- Toolbar: NLE chrome, ink background -->
+      <div class="comp-toolbar" aria-hidden="true">
+        <div class="comp-toolbar-left">
+          <span class="comp-rec-dot" id="recDot"></span>
+          <span class="comp-title-text">Studio_Mira_Showreel.aep</span>
+        </div>
+        <span class="comp-title-text">24 fps</span>
+      </div>
+
+      <!-- Canvas: 5 SVG scenes, frame-0 active by default (visible without JS) -->
+      <div
+        class="frame-canvas"
+        id="frameCanvas"
+        tabindex="0"
+        role="button"
+        aria-label="Click to advance to next frame"
+        title="Click or press → to advance frame"
+      >
+
+        <!-- Frame 0: Title sequence — stark typographic study on near-black -->
+        <div class="frame-scene frame-0 active" id="scene-0" aria-hidden="true">
+          <svg width="100%" height="100%" viewBox="0 0 640 360" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+            <text x="320" y="158" text-anchor="middle"
+              font-family="'Azeret Mono', monospace" font-size="10" fill="#5A5450" letter-spacing="7">TITLE SEQUENCE</text>
+            <line x1="100" y1="175" x2="540" y2="175" stroke="#2A2420" stroke-width="0.5"/>
+            <text x="320" y="240" text-anchor="middle"
+              font-family="'Syne', sans-serif" font-weight="800" font-size="84" fill="#F0EDE8" letter-spacing="-3">NOIR</text>
+            <text x="24" y="32" font-family="'Azeret Mono', monospace" font-size="9" fill="#E8220A" letter-spacing="2">IN 00:00:00:01</text>
+            <rect x="52" y="38" width="536" height="284" fill="none" stroke="#222" stroke-width="0.5" stroke-dasharray="4,3"/>
+            <path d="M24,46 L24,54 M20,50 L28,50" stroke="#3A342E" stroke-width="1" fill="none"/>
+            <path d="M616,46 L616,54 M612,50 L620,50" stroke="#3A342E" stroke-width="1" fill="none"/>
+          </svg>
+        </div>
+
+        <!-- Frame 1: Brand animation — geometric logoform under construction -->
+        <div class="frame-scene frame-1" id="scene-1" aria-hidden="true">
+          <svg width="100%" height="100%" viewBox="0 0 640 360" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+            <line x1="320" y1="0"   x2="320" y2="360" stroke="#D4D0CB" stroke-width="0.5"/>
+            <line x1="0"   y1="180" x2="640" y2="180" stroke="#D4D0CB" stroke-width="0.5"/>
+            <circle cx="320" cy="180" r="88" fill="none" stroke="#D4D0CB" stroke-width="0.5"/>
+            <circle cx="320" cy="180" r="60" fill="none" stroke="#E8E4E0" stroke-width="0.5"/>
+            <path d="M258,116 L320,116 L382,180 L320,244 L258,244 Z" fill="none" stroke="#1A1614" stroke-width="2"/>
+            <path d="M282,116 L320,180 L282,244" fill="none" stroke="#E8220A" stroke-width="2"/>
+            <circle cx="320" cy="116" r="4" fill="#E8220A"/>
+            <circle cx="382" cy="180" r="3" fill="#1A1614"/>
+            <text x="24"  y="34" font-family="'Azeret Mono', monospace" font-size="9" fill="#E8220A" letter-spacing="2">IN 00:00:00:12</text>
+            <text x="24" y="342" font-family="'Azeret Mono', monospace" font-size="9" fill="#7A746E" letter-spacing="2">BRAND ANIMATION — FRAME 12</text>
+          </svg>
+        </div>
+
+        <!-- Frame 2: Music video — saturated high-contrast cutup -->
+        <div class="frame-scene frame-2" id="scene-2" aria-hidden="true">
+          <svg width="100%" height="100%" viewBox="0 0 640 360" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0"   y="0" width="88"  height="360" fill="#C81A06"/>
+            <rect x="98"  y="0" width="10"  height="360" fill="#F0EDE8"/>
+            <rect x="118" y="0" width="5"   height="360" fill="#1A1614"/>
+            <rect x="133" y="0" width="40"  height="360" fill="#C81A06"/>
+            <rect x="183" y="0" width="2"   height="360" fill="#F0EDE8"/>
+            <text x="340" y="275" text-anchor="middle"
+              font-family="'Syne', sans-serif" font-weight="800" font-size="240" fill="#1A1614" opacity="0.85">M</text>
+            <text x="24"  y="32" font-family="'Azeret Mono', monospace" font-size="9" fill="#1A1614" letter-spacing="2">IN 00:00:02:08</text>
+            <text x="616" y="342" text-anchor="end" font-family="'Azeret Mono', monospace" font-size="9" fill="#F0EDE8" letter-spacing="2" opacity="0.7">MV — CUT 03</text>
+          </svg>
+        </div>
+
+        <!-- Frame 3: Broadcast ident — signal field, deep blue ground -->
+        <div class="frame-scene frame-3" id="scene-3" aria-hidden="true">
+          <svg width="100%" height="100%" viewBox="0 0 640 360" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+            <line x1="0" y1="60"  x2="640" y2="60"  stroke="#1A2540" stroke-width="1"/>
+            <line x1="0" y1="120" x2="640" y2="120" stroke="#1A2540" stroke-width="1"/>
+            <line x1="0" y1="180" x2="640" y2="180" stroke="#1A2540" stroke-width="1"/>
+            <line x1="0" y1="240" x2="640" y2="240" stroke="#1A2540" stroke-width="1"/>
+            <line x1="0" y1="300" x2="640" y2="300" stroke="#1A2540" stroke-width="1"/>
+            <path d="M0,180 C40,120 80,120 120,180 S200,240 240,180 S320,120 360,180 S440,240 480,180 S560,120 600,180 L640,180"
+              fill="none" stroke="#3A5070" stroke-width="1.5"/>
+            <circle cx="320" cy="180" r="36" fill="none" stroke="#4A6888" stroke-width="1"/>
+            <circle cx="320" cy="180" r="5" fill="#E8220A"/>
+            <text x="24"  y="32" font-family="'Azeret Mono', monospace" font-size="9" fill="#E8220A" letter-spacing="2">IN 00:00:04:00</text>
+            <text x="320" y="336" text-anchor="middle" font-family="'Azeret Mono', monospace" font-size="9" fill="#3A5070" letter-spacing="6">BROADCAST IDENT</text>
+          </svg>
+        </div>
+
+        <!-- Frame 4: End card — the held moment, sparse -->
+        <div class="frame-scene frame-4" id="scene-4" aria-hidden="true">
+          <svg width="100%" height="100%" viewBox="0 0 640 360" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+            <text x="320" y="188" text-anchor="middle"
+              font-family="'Syne', sans-serif" font-weight="800" font-size="30" fill="#F0EDE8" letter-spacing="8">STUDIO MIRA</text>
+            <line x1="236" y1="200" x2="404" y2="200" stroke="#3A342E" stroke-width="0.5"/>
+            <text x="320" y="220" text-anchor="middle"
+              font-family="'Azeret Mono', monospace" font-size="9" fill="#5A5450" letter-spacing="4">MOTION DESIGN</text>
+            <text x="24"  y="32"  font-family="'Azeret Mono', monospace" font-size="9" fill="#5A5450" letter-spacing="2">OUT 00:00:08:00</text>
+            <text x="616" y="342" text-anchor="end"   font-family="'Azeret Mono', monospace" font-size="9" fill="#E8220A" letter-spacing="2">END</text>
+          </svg>
+        </div>
+
+      </div><!-- /frame-canvas -->
+
+      <!-- Scrub bar — scaleX, not width -->
+      <div class="scrub-bar-wrap" id="scrubWrap" aria-hidden="true">
+        <div class="scrub-bar-fill" id="scrubFill"></div>
+      </div>
+
+      <!-- Controls strip -->
+      <div class="comp-controls">
+        <div class="frame-counter-wrap">
+          <span
+            class="frame-num"
+            id="frameNum"
+            aria-live="polite"
+            aria-atomic="true"
+            aria-label="Frame 1 of 5"
+          >01</span>
+          <span class="frame-total" aria-hidden="true">/ 05</span>
+        </div>
+        <button class="btn-frame" id="btnPrev" aria-label="Previous frame">‹</button>
+        <button class="btn-frame" id="btnNext" aria-label="Next frame">›</button>
+        <span class="timecode" id="timecode" aria-hidden="true">00:00:00:01</span>
+      </div>
+
+    </div><!-- /comp-window -->
+
+    <!-- Frame caption row -->
+    <div class="frame-caption reveal" style="--stagger:3" aria-live="polite" aria-atomic="true">
+      <span class="frame-project-label" id="frameLabel">Title Sequence — Noir</span>
+      <span class="t-label">← → or click to advance</span>
+    </div>
+
+  </div><!-- /hero -->
+  </main>
+
+  <!-- SUPPORTING SECTION: disciplines -->
+  <section class="support" id="approach" aria-labelledby="approach-head">
+    <div class="support-inner">
+
+      <article class="discipline-item reveal" style="--stagger:0">
+        <span class="discipline-num" aria-hidden="true">01</span>
+        <h2 class="discipline-name" id="approach-head">Title Sequences</h2>
+        <p class="discipline-desc">
+          The first impression a story makes. We build the moment before the story begins —
+          typographic, temporal, unmistakable.
+        </p>
+      </article>
+
+      <article class="discipline-item reveal" style="--stagger:1">
+        <span class="discipline-num" aria-hidden="true">02</span>
+        <h2 class="discipline-name">Brand Animation</h2>
+        <p class="discipline-desc">
+          A mark that moves is a mark that lives. We give brands a motion language —
+          from logoforms to full design systems in time.
+        </p>
+      </article>
+
+      <article class="discipline-item reveal" style="--stagger:2">
+        <span class="discipline-num" aria-hidden="true">03</span>
+        <h2 class="discipline-name">Music Videos</h2>
+        <p class="discipline-desc">
+          Sound made visible. We work with directors and artists to find the frame
+          that feels like the note — frame-precise, beat-honest.
+        </p>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer" id="contact">
+    <span class="footer-copy">© 2025 Studio Mira</span>
+    <a href="mailto:hello@studiomira.com" class="footer-cta">Start a project</a>
+  </footer>
+
+</div><!-- /site-wrap -->
+
+<script>
+(function () {
+  'use strict';
+
+  /* ── Frame data ── */
+  var frames = [
+    { label: 'Title Sequence — Noir',          timecode: '00:00:00:01' },
+    { label: 'Brand Animation — Logoform Build', timecode: '00:00:00:12' },
+    { label: 'Music Video — Cut 03',            timecode: '00:00:02:08' },
+    { label: 'Broadcast Ident',                 timecode: '00:00:04:00' },
+    { label: 'End Card',                        timecode: '00:00:08:00' }
+  ];
+  var total   = frames.length;
+  var current = 0;
+
+  /* ── DOM refs ── */
+  var numEl   = document.getElementById('frameNum');
+  var tcEl    = document.getElementById('timecode');
+  var labelEl = document.getElementById('frameLabel');
+  var fillEl  = document.getElementById('scrubFill');
+  var canvas  = document.getElementById('frameCanvas');
+  var btnPrev = document.getElementById('btnPrev');
+  var btnNext = document.getElementById('btnNext');
+  var scenes  = document.querySelectorAll('.frame-scene');
+
+  function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+
+  function render() {
+    var f = frames[current];
+    numEl.textContent   = pad2(current + 1);
+    tcEl.textContent    = f.timecode;
+    labelEl.textContent = f.label;
+    numEl.setAttribute('aria-label', 'Frame ' + (current + 1) + ' of ' + total + ': ' + f.label);
+    /* Scrub bar: scaleX, not width */
+    fillEl.style.transform = 'scaleX(' + ((current + 1) / total) + ')';
+    /* Swap scene */
+    scenes.forEach(function (s, i) {
+      s.classList.toggle('active', i === current);
+    });
+  }
+
+  function advance() { current = (current + 1) % total; render(); }
+  function retreat() { current = (current - 1 + total) % total; render(); }
+
+  /* Button clicks */
+  btnNext.addEventListener('click', function (e) { e.stopPropagation(); advance(); });
+  btnPrev.addEventListener('click', function (e) { e.stopPropagation(); retreat(); });
+
+  /* Canvas click → advance */
+  canvas.addEventListener('click', advance);
+
+  /* Keyboard */
+  canvas.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); advance(); }
+    if (e.key === 'ArrowLeft')                   { e.preventDefault(); retreat(); }
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.target === canvas || e.target === btnNext || e.target === btnPrev) return;
+    if (e.key === 'ArrowRight') advance();
+    if (e.key === 'ArrowLeft')  retreat();
+  });
+
+  /* Touch swipe */
+  var touchX = 0;
+  canvas.addEventListener('touchstart', function (e) {
+    touchX = e.changedTouches[0].clientX;
+  }, { passive: true });
+  canvas.addEventListener('touchend', function (e) {
+    var dx = e.changedTouches[0].clientX - touchX;
+    if (Math.abs(dx) > 40) { dx > 0 ? retreat() : advance(); }
+  });
+
+  /* Scrub bar click */
+  document.getElementById('scrubWrap').addEventListener('click', function (e) {
+    var rect  = this.getBoundingClientRect();
+    var ratio = (e.clientX - rect.left) / rect.width;
+    current   = Math.min(total - 1, Math.floor(ratio * total));
+    render();
+  });
+
+  /* ── SIGNATURE LOAD GESTURE: staggered entrance reveals ──
+     Content is already visible in base CSS.
+     html.js set opacity:0 (in <head>, before CSS).
+     We add .in to trigger entrance. prefers-reduced-motion: show immediately. */
+  var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* Hero reveals: on load with stagger */
+  var heroReveals = document.querySelectorAll('.hero .reveal');
+  heroReveals.forEach(function (el) {
+    if (prefersReduced) {
+      el.classList.add('in');
+    } else {
+      var delay = parseInt(el.style.getPropertyValue('--stagger') || '0', 10) * 40;
+      setTimeout(function () { el.classList.add('in'); }, 80 + delay);
+    }
+  });
+
+  /* Section reveals: IntersectionObserver */
+  var sectionReveals = document.querySelectorAll('.support .reveal');
+  if (prefersReduced) {
+    sectionReveals.forEach(function (el) { el.classList.add('in'); });
+  } else if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15 });
+    sectionReveals.forEach(function (el) { io.observe(el); });
+  } else {
+    sectionReveals.forEach(function (el) { el.classList.add('in'); });
+  }
+
+  /* Initial render to sync with default markup state */
+  render();
+
+}());
+</script>
+</body>
+</html>
