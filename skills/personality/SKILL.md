@@ -60,7 +60,11 @@ Every page ships exactly ONE nameable, subject-grounded standout the page is
 remembered for — see `hero-artifacts.md` for the full bar and the **swap test**
 (swapping the subject should break it). It must render on load and degrade without JS.
 A palette, a font pairing, a mood, a product screenshot, or a generic scroll-reveal
-do NOT count. **And the slider→number widget is now itself a cliché — vary it.**
+do NOT count. **And the input→number widget (calculator / clock / gauge) is now the
+reflexive default — only pick it if the subject's number is genuinely central.
+Otherwise prefer a more expressive archetype** (generative visual, spatial/map,
+simulation, explorable diagram, before↔after). Not every subject has a number; don't
+invent one to justify a calculator.
 
 ## Boldness (restraint ≠ timidity)
 Restraint means precision in service of a bold idea — not safeness, not blandness. A
@@ -77,7 +81,10 @@ character**, and **standout kind**. The forbid-the-median step (3) is how you do
 
 ## Hard gates (objective — not subject to your judgment)
 - **Color gate.** Nothing from `reference/slop-colors.md`. Darkness is a trap, not a
-  license. Derive the accent from the subject's real material.
+  license. Derive the accent from the subject's real material OR its genuine energy —
+  and note that muted-earthy accents (terracotta / ochre / oxblood / crust) have
+  themselves become the safe default. If the subject has energy, commit to a bold,
+  bright, or unexpected hue (saturation is not slop — only the banned bands are).
 - **Render gate.** Core content (standout, headings, copy) visible on load and without
   JS. Never gate primary content behind `opacity:0`-until-scroll. Reveal-on-scroll is
   secondary polish only, and respects `prefers-reduced-motion`.

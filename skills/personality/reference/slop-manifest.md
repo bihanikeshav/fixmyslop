@@ -122,7 +122,7 @@ out near-identical). The cluster:
 - Light warm off-white ground + one earthy accent (terracotta/ochre/crust-brown).
 - A neutral grotesque doing everything (Outfit, Cabinet Grotesk, General Sans).
 - One italic-serif accent word in the headline.
-- A bordered "tool" widget card (usually a slider that outputs a number).
+- A bordered "tool" widget card — the input→number reflex (calculator / clock / gauge).
 - Monospace micro-labels; left-aligned; a calm two-column split (headline left, card right).
 It passes every slop gate and is still forgettable, because it is *safe*. The tells:
 timidity (nothing is loud or at scale), and sameness (it could be any of a dozen

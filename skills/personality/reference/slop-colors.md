@@ -42,13 +42,20 @@ glows. Better: **invert** — luminous type on a paper ground says "deep/serious
 the tell. If dark is truly needed, give the ground a real hue (deep teal/ochre), not near-black.
 
 ## Positive guidance
-1. **Name the subject's real material** and take the accent from the actual *stuff*
-   (ink, crust-brown, server metal, clay), not the domain's *vibe* (fintech→blue).
-2. **Check it against the bans;** if it lands in a banned band, shift hue 20–30° away.
-3. **Prefer under-used hues:** ochre/raw-umber, oxblood, moss/sage, terracotta/clay,
-   ink-ultramarine (dark, L<40 — reads as ink not "AI blue"), brick/rust, low-chroma verdigris.
-4. **One accent, sparingly** — interactive elements + one callout per viewport; neutrals
-   tinted toward the accent at very low chroma.
+1. **Derive the accent from the subject — its real material OR its genuine energy/
+   spirit** — never the category *vibe* (fintech→blue). Material gives grounded, often
+   muted hues (ink, crust-brown, server metal, clay). Spirit can justify a **bold,
+   bright, saturated, or unexpected** hue (a hot-sauce brand's electric red-orange, a
+   kids' label's primary yellow, a club's acid green). Pick whichever fits the brief's
+   actual energy.
+2. **Don't default to muted-earthy.** Terracotta / ochre / oxblood / crust have
+   themselves become the safe "tasteful anti-slop" accent. Saturation is NOT slop —
+   only the banned bands are. If the subject has energy, use a committed hue, loud.
+3. **Check against the bans;** if it lands in a banned band, shift hue 20–30° away.
+   Under-used hues if you want grounded-quiet: ochre, oxblood, moss, clay,
+   ink-ultramarine (L<40), brick, verdigris — but these are options, not the mandate.
+4. **One accent, committed** — bold or quiet, used decisively (interactive elements +
+   one callout per viewport), not five soft ones; neutrals tinted toward it at low chroma.
 5. **WCAG AA** — text 4.5:1, UI/large 3:1, against every surface incl. gradient stops.
 
 → deep dive (full hex tables, OKLCH coords, sources, the unexpected-hue palette):

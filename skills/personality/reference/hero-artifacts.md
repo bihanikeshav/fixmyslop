@@ -36,11 +36,21 @@ a product screenshot; a parallax/scroll-reveal; an animated blob/gradient; a log
 - **Live feed / ticker** — a stream of the subject's real recent activity.
 - **A small genuinely-useful tool** — bookmark-bait the exact audience reuses.
 
+**The numeric widget is the new default.** Calculator / clock / gauge (input→number)
+is now the reflexive standout — it's the *easiest* functional thing, so it's where
+everyone lands. Only pick it if the subject's number is genuinely central. Most
+subjects are better served by an **expressive** archetype — generative visual,
+spatial/map, simulation, mini-game, explorable diagram, before↔after, live feed.
+
 ## How to find it (start at mechanism, never at mood)
 1. Name the subject's core **mechanic or data** in one sentence (what it does/measures/runs on).
-2. Find where that mechanic produces a **number, state, or change** (phase angle, tide
-   height, BPM, refund $). Can't find one? Dig deeper into the subject — don't retreat to mood.
-3. Pick the archetype that fits that data shape (the list above is a lookup table).
+2. Find where that mechanic produces a **number, state, change, space, or sequence**
+   (phase angle, tide height, a transformation, a map of places, an ordered set). If
+   there's no natural *number*, that's fine — don't force a calculator; a state/space/
+   sequence points to an expressive archetype (generative, spatial, simulation, diagram).
+3. Pick the archetype that fits that data shape (the list above is a lookup table). If
+   the obvious fit is calculator/clock/gauge, deliberately consider an expressive
+   alternative before committing.
 4. Build the **smallest working version, real on load**; layer interaction on top; then name it.
 5. Apply the five tests + the swap test. Fails "could belong to another site"? You grounded
    in a generic mechanic — go more specific.
