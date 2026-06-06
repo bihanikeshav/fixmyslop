@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Field Notes — Quarterly Poetry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Big Shoulders Display: ultra-condensed, weights 300–900 — the spine label -->
+<!-- Newsreader: a true editorial serif with optical size axis, for body/editorial -->
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@400;700;900&family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..700&display=swap" rel="stylesheet">
+<style>
+  /* ─────────────────────────────────────────────
+     TOKENS
+  ───────────────────────────────────────────── */
+  :root {
+    --ground:       #ECEAE5;   /* cold near-white newsprint, not cream-warm */
+    --ground-2:     #E2DFD9;   /* slightly deeper for column rule contrast */
+    --ink:          #1C1B18;   /* off-black, warm tint, never pure #000 */
+    --ink-mid:      #4A4840;   /* mid tone for subheads */
+    --ink-light:    #7A7772;   /* captions, labels */
+    --red:          #CC2200;   /* print-red: stamp ink / submission seal; hue ~8°, not banned */
+    --rule:         #C8C5BE;   /* hairline column rules */
+    --spine-bg:     #1C1B18;   /* spine strip: off-black, same as ink */
+
+    --ff-display:   'Big Shoulders Display', sans-serif;
+    --ff-editorial: 'Newsreader', Georgia, serif;
+
+    --step--1: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+    --step-0:  clamp(0.9375rem, 0.875rem + 0.3125vw, 1rem);
+    --step-1:  clamp(1.125rem, 1rem + 0.625vw, 1.25rem);
+    --step-2:  clamp(1.5rem, 1.25rem + 1.25vw, 1.875rem);
+    --step-3:  clamp(2.25rem, 1.75rem + 2.5vw, 3rem);
+    --step-4:  clamp(3.5rem, 2.5rem + 5vw, 5.5rem);
+    --step-5:  clamp(5rem, 3rem + 10vw, 10rem);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { font-size: 16px; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--ff-editorial);
+    font-size: var(--step-0);
+    line-height: 1.65;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─────────────────────────────────────────────
+     OUTER WRAPPER — spine + main
+  ───────────────────────────────────────────── */
+  .page-wrapper {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    min-height: 100vh;
+  }
+
+  /* ─────────────────────────────────────────────
+     SPINE — ultra-condensed stacked label
+     The TYPE MOVE: Big Shoulders Display 900,
+     writing-mode vertical, white on near-black.
+     This IS the structural element.
+  ───────────────────────────────────────────── */
+  .spine {
+    background: var(--spine-bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+
+  .spine-title {
+    font-family: var(--ff-display);
+    font-weight: 900;
+    font-size: clamp(0.75rem, 0.6rem + 0.75vw, 0.9375rem);
+    letter-spacing: 0.08em;
+    color: var(--ground);
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    text-transform: uppercase;
+    transform: rotate(180deg);
+    line-height: 1;
+  }
+
+  .spine-issue {
+    font-family: var(--ff-editorial);
+    font-size: 0.625rem;
+    letter-spacing: 0.15em;
+    color: var(--rule);
+    writing-mode: vertical-rl;
+    text-transform: uppercase;
+    transform: rotate(180deg);
+  }
+
+  .spine-mark {
+    width: 8px;
+    height: 8px;
+    background: var(--red);
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ─────────────────────────────────────────────
+     MAIN CONTENT
+  ───────────────────────────────────────────── */
+  .main {
+    display: grid;
+    grid-template-rows: auto 1fr;
+  }
+
+  /* ─────────────────────────────────────────────
+     MASTHEAD — newspaper-style horizontal banner
+  ───────────────────────────────────────────── */
+  .masthead {
+    border-bottom: 2px solid var(--ink);
+    padding: 1.25rem 2rem 1.25rem;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: end;
+    gap: 1rem;
+  }
+
+  .masthead-left {
+    font-family: var(--ff-editorial);
+    font-size: var(--step--1);
+    color: var(--ink-light);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .masthead-left span {
+    display: block;
+    color: var(--red);
+    font-style: italic;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: var(--step-0);
+    font-optical-sizing: auto;
+    font-variation-settings: "opsz" 18;
+  }
+
+  .masthead-center {
+    text-align: center;
+  }
+
+  .masthead-title {
+    font-family: var(--ff-display);
+    font-weight: 900;
+    font-size: var(--step-5);
+    letter-spacing: -0.02em;
+    line-height: 0.87;
+    text-transform: uppercase;
+    color: var(--ink);
+    display: block;
+  }
+
+  .masthead-subtitle {
+    font-family: var(--ff-editorial);
+    font-size: var(--step--1);
+    color: var(--ink-light);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 0.5rem;
+    font-optical-sizing: auto;
+    font-variation-settings: "opsz" 8;
+  }
+
+  .masthead-right {
+    text-align: right;
+    font-family: var(--ff-editorial);
+    font-size: var(--step--1);
+    color: var(--ink-light);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    line-height: 1.8;
+  }
+
+  .masthead-right strong {
+    display: block;
+    font-size: var(--step-1);
+    font-weight: 400;
+    color: var(--ink);
+    text-transform: none;
+    letter-spacing: 0;
+    font-optical-sizing: auto;
+    font-variation-settings: "opsz" 24;
+  }
+
+  /* ─────────────────────────────────────────────
+     HERO — EDITORIAL MULTI-COLUMN with RULES
+     Layout archetype: disciplined newspaper grid,
+     visible hairline rules, real column discipline
+  ───────────────────────────────────────────── */
+  .hero {
+    padding: 0 2rem;
+    display: grid;
+    grid-template-columns: 2fr 1px 1.4fr 1px 1.4fr;
+    gap: 0;
+    min-height: 70vh;
+    align-items: start;
+  }
+
+  .col-rule {
+    background: var(--rule);
+    align-self: stretch;
+    margin: 0 0;
+  }
+
+  /* Column 1 — the lead editorial statement */
+  .col-lead {
+    padding: 2.5rem 2rem 2.5rem 0;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .col-lead h1 {
+    font-family: var(--ff-display);
+    font-weight: 900;
+    font-size: var(--step-4);
+    line-height: 0.9;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    color: var(--ink);
+    margin-bottom: 1.5rem;
+  }
+
+  .col-lead h1 em {
+    font-style: normal;
+    color: var(--red);
+    /* not italic-serif accent — this is weight/color emphasis in a display condensed face */
+  }
+
+  .col-lead p {
+    font-size: var(--step-1);
+    line-height: 1.6;
+    color: var(--ink);
+    max-width: 46ch;
+    font-optical-sizing: auto;
+    font-variation-settings: "opsz" 24;
+    margin-bottom: 1.25rem;
+  }
+
+  .col-lead p + p {
+    margin-bottom: 0;
+  }
+
+  .issue-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--ff-editorial);
+    font-size: var(--step--1);
+    color: var(--ink-light);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    font-optical-sizing: auto;
+    font-variation-settings: "opsz" 8;
+  }
+
+  .issue-tag::before {
+    content: '';
+    display: block;
+    width: 20px;
+    height: 1px;
+    background: var(--red);
+  }
+
+  /* Column 2 & 3 — the Translation Split standout */
+  .col-translation {
+    padding: 2.5rem 2rem;
+  }
+
+  .section-label {
+    font-family: var(--ff-editorial);
+    font-size: var(--step--1);
+    color: var(--ink-light);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    font-optical-sizing: auto;
+    font-variation-settings: "opsz" 8;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--rule);
+  }
+
+  .translation-head {
+    font-family: var(--ff-display);
+    font-weight: 700;
+    font-size: var(--step-2);
+    line-height: 1.05;
+    text-transform: uppercase;
+    color: var(--ink);
+    margin-bottom: 0.375rem;
+  }
+
+  .translation-byline {
+    font-family: var(--ff-editorial);
+    font-size: var(--step--1);
+    color: var(--ink-mid);
+    font-style: italic;
+    margin-bottom: 1.5rem;
+    font-optical-sizing: auto;
+    font-variation-settings: "opsz" 12, "ital" 1;
+  }
+
+  /* ─────────────────────────────────────────────
+     THE TRANSLATION SPLIT — the standout
+     Named: "The Translation Split"
+     Mechanic: two poem versions (source + translation)
+     in dual columns; a draggable pivot line controls
+     how much of each version is revealed.
+     Renders on load at 50/50; JS enables the drag.
+  ───────────────────────────────────────────── */
+  .translation-instrument {
+    position: relative;
+    user-select: none;
+    touch-action: none;
+  }
+
+  /* The poem container: two poem texts clipped by pivot */
+  .poem-stage {
+    position: relative;
+    overflow: hidden;
+    cursor: col-resize;
+    min-height: 220px;
+  }
+
+  /* Source language (left half) */
+  .poem-source {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .poem-text {
+    padding: 0;
+  }
+
+  .poem-text.source {
+    padding-right: 1rem;
+  }
+
+  .poem-text.target {
+    padding-left: 1rem;
+    border-left: 1px solid var(--rule);
+  }
+
+  /* Clip: source text clipped to left of pivot */
+  .poem-clipped-source {
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow: hidden;
+    height: 100%;
+    /* width controlled by JS; defaults to 50% */
+    width: 50%;
+    background: var(--ground);
+    z-index: 2;
+  }
+
+  .poem-clipped-source .poem-lines {
+    width: 200%; /* double-wide so lines are full width inside clip */
+    padding-right: 1rem;
+  }
+
+  /* Translation text (full width, behind clip) */
+  .poem-full-target {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    padding-left: calc(50% + 1px);
+    z-index: 1;
+    /* Left padding shifts target text to right half initially */
+    transition: none;
+  }
+
+  /* When JS updates: padding-left tracks pivot position */
+
+  /* Pivot handle */
+  .pivot-handle {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 3px;
+    height: 100%;
+    background: var(--red);
+    z-index: 10;
+    cursor: col-resize;
+  }
+
+  .pivot-handle::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    background: var(--red);
+    border-radius: 50%;
+    border: 2px solid var(--ground);
+    box-shadow: none; /* no glow */
+  }
+
+  .poem-lines {
+    font-family: var(--ff-editorial);
+    font-size: var(--step-0);
+    line-height: 1.9;
+    color: var(--ink);
+    font-optical-sizing: auto;
+    font-variation-settings: "opsz" 14;
+    white-space: nowrap; /* prevent wrapping for clipping effect */
+  }
+
+  .poem-lines .lang-label {
+    display: block;
+    font-family: var(--ff-editorial);
+    font-size: var(--step--1);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--red);
+    margin-bottom: 0.5rem;
+    font-optical-sizing: auto;
+    font-variation-settings: "opsz" 8;
+    font-style: normal;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .poem-lines .line { display: block; }
+  .poem-lines .stanza-gap { display: block; height: 0.75rem; }
+
+  /* target-only text rendered without clip */
+  .poem-target-lines {
+    font-family: var(--ff-editorial);
+    font-size: var(--step-0);
+    line-height: 1.9;
+    color: var(--ink-mid);
+    font-optical-sizing: auto;
+    font-variation-settings: "opsz" 14;
+    white-space: nowrap;
+  }
+
+  .poem-target-lines .lang-label {
+    display: block;
+    font-family: var(--ff-editorial);
+    font-size: var(--step--1);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-mid);
+    margin-bottom: 0.5rem;
+    font-optical-sizing: auto;
+    font-variation-settings: "opsz" 8;
+    font-style: normal;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .poem-target-lines .line { display: block; }
+  .poem-target-lines .stanza-gap { display: block; height: 0.75rem; }
+
+  /* Instruction hint */
+  .pivot-hint {
+    margin-top: 1rem;
+    font-family: var(--ff-editorial);
+    font-size: var(--step--1);
+    color: var(--ink-light);
+    font-style: italic;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-optical-sizing: auto;
+    font-variation-settings: "opsz" 10;
+  }
+
+  .pivot-hint svg {
+    flex-shrink: 0;
+    opacity: 0.55;
+  }
+
+  /* No-JS fallback: show both columns side by side */
+  .noscript-poem {
+    display: none;
+  }
+
+  /* ─────────────────────────────────────────────
+     SUPPORTING SECTION — craft essay teasers
+  ───────────────────────────────────────────── */
+  .support-section {
+    border-top: 2px solid var(--ink);
+    padding: 2rem 2rem 2rem calc(56px + 2rem); /* account for spine width */
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+  }
+
+  .essay-item {
+    padding: 1.5rem 2rem 1.5rem 0;
+    border-right: 1px solid var(--rule);
+  }
+
+  .essay-item:last-child {
+    border-right: none;
+    padding-right: 0;
+  }
+
+  .essay-item:not(:first-child) {
+    padding-left: 2rem;
+  }
+
+  .essay-num {
+    font-family: var(--ff-display);
+    font-weight: 900;
+    font-size: var(--step-3);
+    color: var(--ground-2);
+    line-height: 1;
+    margin-bottom: 0.25rem;
+    /* oversized numerals as structural element — NOT a hero metric block */
+  }
+
+  .essay-category {
+    font-family: var(--ff-editorial);
+    font-size: var(--step--1);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--red);
+    margin-bottom: 0.5rem;
+    font-optical-sizing: auto;
+    font-variation-settings: "opsz" 8;
+  }
+
+  .essay-title {
+    font-family: var(--ff-display);
+    font-weight: 700;
+    font-size: var(--step-1);
+    line-height: 1.1;
+    text-transform: uppercase;
+    color: var(--ink);
+    margin-bottom: 0.625rem;
+  }
+
+  .essay-body {
+    font-family: var(--ff-editorial);
+    font-size: var(--step-0);
+    line-height: 1.6;
+    color: var(--ink-mid);
+    max-width: 42ch;
+    font-optical-sizing: auto;
+    font-variation-settings: "opsz" 14;
+  }
+
+  .essay-link {
+    display: inline-block;
+    margin-top: 0.875rem;
+    font-family: var(--ff-editorial);
+    font-size: var(--step--1);
+    color: var(--red);
+    text-decoration: none;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--red);
+    padding-bottom: 1px;
+    font-optical-sizing: auto;
+    font-variation-settings: "opsz" 8;
+  }
+
+  .essay-link:hover {
+    color: var(--ink);
+    border-color: var(--ink);
+  }
+
+  .essay-link:focus-visible {
+    outline: 2px solid var(--red);
+    outline-offset: 3px;
+  }
+
+  /* ─────────────────────────────────────────────
+     RESPONSIVE
+  ───────────────────────────────────────────── */
+  @media (max-width: 900px) {
+    .page-wrapper {
+      grid-template-columns: 1fr;
+    }
+
+    .spine {
+      position: static;
+      height: auto;
+      flex-direction: row;
+      padding: 0.75rem 1rem;
+      writing-mode: horizontal-tb;
+    }
+
+    .spine-title {
+      writing-mode: horizontal-tb;
+      transform: none;
+      font-size: 0.875rem;
+    }
+
+    .spine-issue {
+      writing-mode: horizontal-tb;
+      transform: none;
+      font-size: 0.625rem;
+    }
+
+    .hero {
+      grid-template-columns: 1fr;
+      padding: 0 1rem;
+    }
+
+    .col-rule { display: none; }
+
+    .col-lead, .col-translation {
+      padding: 1.5rem 0;
+    }
+
+    .col-translation + .col-translation {
+      border-top: 1px solid var(--rule);
+    }
+
+    .masthead {
+      grid-template-columns: 1fr;
+      text-align: left;
+      padding: 1rem;
+      gap: 0.5rem;
+    }
+
+    .masthead-center { text-align: left; }
+    .masthead-right { text-align: left; }
+
+    .support-section {
+      grid-template-columns: 1fr;
+      padding: 1.5rem 1rem;
+    }
+
+    .essay-item {
+      border-right: none;
+      border-bottom: 1px solid var(--rule);
+      padding: 1.25rem 0;
+    }
+
+    .essay-item:last-child { border-bottom: none; }
+    .essay-item:not(:first-child) { padding-left: 0; }
+
+    .poem-lines, .poem-target-lines { white-space: normal; }
+  }
+
+  @media (max-width: 600px) {
+    .masthead-title {
+      font-size: clamp(3.5rem, 16vw, 7rem);
+    }
+  }
+
+  /* ─────────────────────────────────────────────
+     REDUCED MOTION
+  ───────────────────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-wrapper">
+
+  <!-- SPINE: the type move — ultra-condensed vertical label -->
+  <aside class="spine" aria-hidden="true">
+    <span class="spine-title">Field Notes</span>
+    <span class="spine-mark"></span>
+    <span class="spine-issue">Vol. VII · No. 2</span>
+  </aside>
+
+  <div class="main">
+
+    <!-- MASTHEAD: newspaper-register banner -->
+    <header class="masthead">
+      <div class="masthead-left">
+        <span>Quarterly poetry</span>
+        <span>Print &amp; online</span>
+        <span style="margin-top:0.25rem;">New voices &amp; translation</span>
+      </div>
+
+      <div class="masthead-center">
+        <span class="masthead-title" aria-label="Field Notes">Field<br>Notes</span>
+        <p class="masthead-subtitle">A journal of contemporary poetry</p>
+      </div>
+
+      <div class="masthead-right">
+        <span aria-hidden="true">Issue No.</span>
+        <strong>Spring 2026</strong>
+        <span aria-hidden="true">Volume VII · No. 2</span>
+        <span aria-hidden="true">Since 2019</span>
+      </div>
+    </header>
+
+    <!-- HERO: editorial multi-column grid with rules -->
+    <section class="hero" aria-label="Current issue">
+
+      <!-- Column 1: editorial statement -->
+      <div class="col-lead">
+        <p class="issue-tag">Spring issue — open now</p>
+        <h1>
+          New<br>
+          voices<br>
+          <em>find</em><br>
+          form.
+        </h1>
+        <p>
+          Thirty-one poets. Eight translators. Four essays on the practice of craft.
+          This issue turns on the question every translator carries: what survives the crossing?
+        </p>
+        <p>
+          Open submissions for the Autumn issue close 15 August.
+          We read every manuscript.
+        </p>
+      </div>
+
+      <div class="col-rule" role="presentation"></div>
+
+      <!-- Columns 2–3: THE TRANSLATION SPLIT standout -->
+      <div class="col-translation" style="grid-column: 3 / 6;">
+        <p class="section-label">Translation feature</p>
+
+        <div class="translation-instrument" id="translationInstrument">
+          <p class="translation-head">La notte in cui</p>
+          <p class="translation-byline">
+            Camilla Ardenti — tr. James Whitmore
+          </p>
+
+          <!--
+            THE TRANSLATION SPLIT
+            Source (Italian) on the left of the pivot.
+            Translation (English) on the right.
+            Dragging the pivot reveals more of one or the other —
+            the visual metaphor: translation as negotiation of space.
+            Renders at 50/50 split on load. JS enables dragging.
+          -->
+          <div class="poem-stage" id="poemStage"
+               role="img"
+               aria-label="Poem: La notte in cui by Camilla Ardenti (Italian), translated as The Night in Which by James Whitmore (English). Drag the red line to compare the original and translation.">
+
+            <!-- Target (English translation) — full width, sits behind the clip -->
+            <div class="poem-full-target" id="poemTarget">
+              <div class="poem-target-lines">
+                <span class="lang-label">English</span>
+                <span class="line">The night in which you left</span>
+                <span class="line">carried the smell of oregano—</span>
+                <span class="line">I didn't know yet what leaving meant.</span>
+                <span class="stanza-gap"></span>
+                <span class="line">There is a kind of silence</span>
+                <span class="line">that comes after a door closes</span>
+                <span class="line">and fills the room like water.</span>
+                <span class="stanza-gap"></span>
+                <span class="line">I have been learning to name</span>
+                <span class="line">the things that do not need naming:</span>
+                <span class="line">this cup. this window. this hour.</span>
+              </div>
+            </div>
+
+            <!-- Source (Italian original) — clipped to left of pivot -->
+            <div class="poem-clipped-source" id="poemClip">
+              <div class="poem-lines" id="poemSourceLines">
+                <span class="lang-label">Italiano</span>
+                <span class="line">La notte in cui sei andato</span>
+                <span class="line">aveva l'odore dell'origano—</span>
+                <span class="line">non sapevo ancora cosa significasse andare.</span>
+                <span class="stanza-gap"></span>
+                <span class="line">C'è un tipo di silenzio</span>
+                <span class="line">che arriva dopo che una porta si chiude</span>
+                <span class="line">e riempie la stanza come acqua.</span>
+                <span class="stanza-gap"></span>
+                <span class="line">Ho imparato a nominare</span>
+                <span class="line">le cose che non hanno bisogno di nome:</span>
+                <span class="line">questa tazza. questa finestra. quest'ora.</span>
+              </div>
+            </div>
+
+            <!-- Pivot handle -->
+            <div class="pivot-handle" id="pivotHandle" aria-hidden="true"></div>
+
+          </div><!-- /poem-stage -->
+
+          <p class="pivot-hint" id="pivotHint">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M2 7h10M2 7l3-3M2 7l3 3M12 7l-3-3M12 7l-3 3" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Drag the red line to read the original beside the translation
+          </p>
+
+        </div><!-- /translation-instrument -->
+
+      </div><!-- /col-translation -->
+
+    </section><!-- /hero -->
+
+  </div><!-- /main -->
+
+</div><!-- /page-wrapper -->
+
+<!-- SUPPORTING SECTION: craft essays -->
+<section class="support-section" aria-label="Essays in this issue">
+
+  <article class="essay-item">
+    <div class="essay-num" aria-hidden="true">01</div>
+    <p class="essay-category">Essay on craft</p>
+    <h2 class="essay-title">The Unfinished Line</h2>
+    <p class="essay-body">
+      On caesura as a compositional act — why the break matters more than the words on either side of it.
+    </p>
+    <a href="#" class="essay-link">Read in this issue</a>
+  </article>
+
+  <article class="essay-item">
+    <div class="essay-num" aria-hidden="true">02</div>
+    <p class="essay-category">On translation</p>
+    <h2 class="essay-title">Against Equivalence</h2>
+    <p class="essay-body">
+      A translator's account of choosing mistranslation deliberately — and why fidelity to sound sometimes means abandoning meaning.
+    </p>
+    <a href="#" class="essay-link">Read in this issue</a>
+  </article>
+
+  <article class="essay-item">
+    <div class="essay-num" aria-hidden="true">03</div>
+    <p class="essay-category">New voices</p>
+    <h2 class="essay-title">First Publications: Spring Cohort</h2>
+    <p class="essay-body">
+      Fourteen poets publishing for the first time. Brief notes on where they came from and what they risked.
+    </p>
+    <a href="#" class="essay-link">Read in this issue</a>
+  </article>
+
+</section>
+
+<noscript>
+  <style>
+    /* No-JS: hide the JS-driven pivot, show both texts statically */
+    #poemClip { width: 50% !important; }
+    #poemTarget { padding-left: calc(50% + 1px) !important; }
+    #pivotHint { display: none; }
+    .pivot-handle { display: none; }
+    .noscript-poem { display: block !important; }
+  </style>
+</noscript>
+
+<script>
+(function() {
+  'use strict';
+
+  var stage    = document.getElementById('poemStage');
+  var clip     = document.getElementById('poemClip');
+  var target   = document.getElementById('poemTarget');
+  var handle   = document.getElementById('pivotHandle');
+  var hint     = document.getElementById('pivotHint');
+
+  if (!stage || !clip || !target || !handle) return;
+
+  var isDragging = false;
+  var pivotPct = 50; // start at 50%
+
+  function applyPivot(pct) {
+    pct = Math.max(8, Math.min(92, pct));
+    pivotPct = pct;
+    var pctStr = pct + '%';
+    clip.style.width = pctStr;
+    target.style.paddingLeft = 'calc(' + pctStr + ' + 1px)';
+    handle.style.left = pctStr;
+    // Update aria-label with rough description
+    if (pct < 20) {
+      stage.setAttribute('aria-label', 'Showing mostly English translation. Drag red line left to see more Italian original.');
+    } else if (pct > 80) {
+      stage.setAttribute('aria-label', 'Showing mostly Italian original. Drag red line right to see more English translation.');
+    } else {
+      stage.setAttribute('aria-label', 'Showing Italian original (left) and English translation (right). Drag red line to adjust.');
+    }
+  }
+
+  function getPctFromEvent(e) {
+    var rect = stage.getBoundingClientRect();
+    var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    return ((clientX - rect.left) / rect.width) * 100;
+  }
+
+  function onPointerDown(e) {
+    isDragging = true;
+    hint.style.opacity = '0';
+    if (e.pointerId != null) {
+      stage.setPointerCapture(e.pointerId);
+    }
+    applyPivot(getPctFromEvent(e));
+    e.preventDefault();
+  }
+
+  function onPointerMove(e) {
+    if (!isDragging) return;
+    applyPivot(getPctFromEvent(e));
+    e.preventDefault();
+  }
+
+  function onPointerUp() {
+    isDragging = false;
+  }
+
+  // Pointer events (mouse + touch unified)
+  stage.addEventListener('pointerdown', onPointerDown, { passive: false });
+  stage.addEventListener('pointermove', onPointerMove, { passive: false });
+  stage.addEventListener('pointerup',   onPointerUp);
+  stage.addEventListener('pointercancel', onPointerUp);
+
+  // Keyboard: left/right arrow to adjust pivot
+  stage.setAttribute('tabindex', '0');
+  stage.setAttribute('role', 'slider');
+  stage.setAttribute('aria-valuemin', '8');
+  stage.setAttribute('aria-valuemax', '92');
+  stage.setAttribute('aria-valuenow', '50');
+  stage.setAttribute('aria-label', 'Translation split: drag or use arrow keys to compare Italian original and English translation');
+
+  stage.addEventListener('keydown', function(e) {
+    var step = e.shiftKey ? 10 : 5;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+      applyPivot(pivotPct - step);
+      stage.setAttribute('aria-valuenow', Math.round(pivotPct));
+      e.preventDefault();
+    } else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+      applyPivot(pivotPct + step);
+      stage.setAttribute('aria-valuenow', Math.round(pivotPct));
+      e.preventDefault();
+    }
+  });
+
+  // Animate the pivot on load to signal interactivity
+  // Respects prefers-reduced-motion
+  var motionOK = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (motionOK) {
+    // Brief 3-beat hint: slide left → right → center
+    var t0 = null;
+    var hintPlaying = true;
+    function playHint(ts) {
+      if (!t0) t0 = ts;
+      var elapsed = ts - t0;
+      var dur = 1400; // ms total
+      if (elapsed < dur && hintPlaying) {
+        // ease in-out across 40→60→50
+        var frac = elapsed / dur;
+        var pct;
+        if (frac < 0.5) {
+          // 50 → 35
+          pct = 50 - 15 * easeInOut(frac * 2);
+        } else {
+          // 35 → 50
+          pct = 35 + 15 * easeInOut((frac - 0.5) * 2);
+        }
+        applyPivot(pct);
+        requestAnimationFrame(playHint);
+      } else {
+        applyPivot(50);
+        hintPlaying = false;
+      }
+    }
+    function easeInOut(t) {
+      return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    }
+    // Delay hint animation 600ms after load
+    setTimeout(function() {
+      if (!isDragging) requestAnimationFrame(playHint);
+    }, 600);
+  }
+
+})();
+</script>
+
+</body>
+</html>

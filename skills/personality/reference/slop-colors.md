@@ -58,5 +58,13 @@ the tell. If dark is truly needed, give the ground a real hue (deep teal/ochre),
    one callout per viewport), not five soft ones; neutrals tinted toward it at low chroma.
 5. **WCAG AA** — text 4.5:1, UI/large 3:1, against every surface incl. gradient stops.
 
+## Multi-color / categorical palettes
+When a subject needs a *set* of colors (panels, grade tapes, book spines, category
+tags, charts), the slop bans still apply to **every swatch** — never reach for the
+Tailwind defaults as "the blue/purple/cyan" of the set (`#2563eb`, `#6366f1`,
+`#22d3ee`). Derive the whole set intentionally from the subject's real colors (the
+actual grade-tape colors, the real product hues) and shift any swatch that lands in a
+banned band. A bright categorical color is fine; the *default* one is not.
+
 → deep dive (full hex tables, OKLCH coords, sources, the unexpected-hue palette):
 docs/design-research/slop-colors.md

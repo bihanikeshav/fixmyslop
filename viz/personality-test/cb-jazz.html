@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Blue Room — Live Jazz, Six Nights</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;900&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─── Reset & tokens ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --paper:   #F6F2EB;   /* warm off-white — paper stock, not cream+gold */
+      --ink:     #1A1714;   /* tinted near-black, not pure #000 */
+      --red:     #D42613;   /* vermillion — jazz poster / neon sign energy */
+      --mid:     #6B655D;   /* tinted mid-tone for secondary copy */
+      --rule:    #C8C2BA;   /* hairline rule color */
+
+      --f-display: 'Barlow Condensed', sans-serif;
+      --f-body:    'Courier Prime', 'Courier New', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--f-body);
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── Night Board — hero / standout ─────────────────────────────── */
+    /*  Layout archetype: FULL-BLEED TYPE POSTER                         */
+    /*  The board fills the page; type IS the layout.                    */
+
+    .night-board {
+      min-height: 100svh;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      padding: clamp(1.5rem, 4vw, 3.5rem) clamp(1.25rem, 5vw, 4rem);
+      border-bottom: 2px solid var(--ink);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ── Header row ── */
+    .board-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      border-bottom: 1px solid var(--rule);
+      padding-bottom: 0.75rem;
+      margin-bottom: 2rem;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .board-header__venue {
+      font-family: var(--f-body);
+      font-size: 0.75rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--mid);
+    }
+
+    .board-header__date {
+      font-family: var(--f-body);
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      color: var(--mid);
+    }
+
+    /* ── Main body: the CONDENSED DISPLAY poster ── */
+    /*  Type move: CONDENSED/COMPRESSED DISPLAY — ultra-narrow stacked   */
+    /*  Bold type move: 900-weight condensed, line-height ≤0.9           */
+
+    .board-body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 0;
+    }
+
+    /* "TONIGHT" kicker — small, not a pill, not a chip */
+    .board-kicker {
+      font-family: var(--f-body);
+      font-size: clamp(0.7rem, 1.2vw, 0.85rem);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 0.5rem;
+    }
+
+    /* The band name — poster condensed, one word per line concept */
+    .board-name {
+      font-family: var(--f-display);
+      font-weight: 900;
+      font-size: clamp(4.5rem, 17vw, 14rem);
+      line-height: 0.88;
+      letter-spacing: -0.01em;
+      text-transform: uppercase;
+      color: var(--ink);
+      hyphens: none;
+    }
+
+    /* Feature tune — red inline at reduced size */
+    .board-tune {
+      margin-top: clamp(1rem, 2.5vw, 1.75rem);
+      display: flex;
+      align-items: baseline;
+      gap: 1ch;
+      flex-wrap: wrap;
+    }
+
+    .board-tune__label {
+      font-family: var(--f-body);
+      font-size: 0.75rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--mid);
+    }
+
+    .board-tune__title {
+      font-family: var(--f-display);
+      font-weight: 700;
+      font-size: clamp(1.25rem, 3vw, 2rem);
+      color: var(--red);
+      letter-spacing: 0.01em;
+    }
+
+    /* ── Footer row: sets grid ── */
+    .board-footer {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1.25rem 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--rule);
+      margin-top: 2rem;
+    }
+
+    .set-slot {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .set-slot__time {
+      font-family: var(--f-display);
+      font-weight: 900;
+      font-size: clamp(1.5rem, 4vw, 2.25rem);
+      line-height: 1;
+      color: var(--ink);
+    }
+
+    .set-slot__note {
+      font-family: var(--f-body);
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--mid);
+    }
+
+    /* Cover-charge indicator — THE NIGHT BOARD's live element */
+    /*  JS upgrades this from static to real-time; static fallback shows */
+    /*  the earlier-in-day state ("Free before 7" message).              */
+    .cover-state {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 0.6ch;
+    }
+
+    .cover-state__amount {
+      font-family: var(--f-display);
+      font-weight: 900;
+      font-size: clamp(1.5rem, 4vw, 2.25rem);
+      line-height: 1;
+      /* JS will toggle .is-free / .is-paid */
+    }
+
+    .cover-state__amount.is-free { color: var(--ink); }
+    .cover-state__amount.is-paid { color: var(--red); }
+
+    .cover-state__qualifier {
+      font-family: var(--f-body);
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--mid);
+    }
+
+    /* ─── Supporting section: The Room ─────────────────────────────── */
+    .room-section {
+      padding: clamp(3rem, 8vw, 6rem) clamp(1.25rem, 5vw, 4rem);
+    }
+
+    .room-section__header {
+      border-bottom: 2px solid var(--ink);
+      padding-bottom: 0.5rem;
+      margin-bottom: 2.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .room-section__title {
+      font-family: var(--f-display);
+      font-weight: 900;
+      font-size: clamp(1.75rem, 4vw, 2.75rem);
+      text-transform: uppercase;
+      letter-spacing: -0.01em;
+      line-height: 1;
+    }
+
+    .room-section__tag {
+      font-family: var(--f-body);
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--mid);
+    }
+
+    /* Two-column editorial grid — asymmetric: 2fr / 1fr */
+    .room-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2.5rem;
+    }
+
+    @media (min-width: 640px) {
+      .room-grid {
+        grid-template-columns: 2fr 1fr;
+        gap: 3rem;
+      }
+    }
+
+    .room-fact {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .room-fact__number {
+      font-family: var(--f-display);
+      font-weight: 900;
+      font-size: clamp(3rem, 9vw, 6.5rem);
+      line-height: 0.9;
+      color: var(--ink);
+      letter-spacing: -0.02em;
+    }
+
+    .room-fact__number span.accent { color: var(--red); }
+
+    .room-fact__label {
+      font-family: var(--f-body);
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--mid);
+      padding-top: 0.25rem;
+      border-top: 1px solid var(--rule);
+    }
+
+    .room-copy {
+      font-family: var(--f-body);
+      font-size: 0.9rem;
+      line-height: 1.7;
+      color: var(--ink);
+      max-width: 60ch;
+    }
+
+    .room-copy p + p { margin-top: 1em; }
+
+    .room-copy strong {
+      font-weight: 700;
+      color: var(--red);
+    }
+
+    /* Schedule strip — horizontal rule list */
+    .schedule-strip {
+      margin-top: 3rem;
+      border-top: 2px solid var(--ink);
+    }
+
+    .schedule-strip__row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .schedule-strip__day {
+      font-family: var(--f-display);
+      font-weight: 700;
+      font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      min-width: 120px;
+    }
+
+    .schedule-strip__day.is-tonight {
+      color: var(--red);
+    }
+
+    .schedule-strip__info {
+      font-family: var(--f-body);
+      font-size: 0.78rem;
+      color: var(--mid);
+      flex: 1;
+      text-align: right;
+    }
+
+    .schedule-strip__cover {
+      font-family: var(--f-body);
+      font-weight: 700;
+      font-size: 0.78rem;
+      min-width: 60px;
+      text-align: right;
+    }
+
+    .schedule-strip__cover.free { color: var(--ink); }
+    .schedule-strip__cover.paid { color: var(--red); }
+
+    /* ─── Footer ──────────────────────────────────────────────────── */
+    footer {
+      padding: 1.5rem clamp(1.25rem, 5vw, 4rem);
+      border-top: 1px solid var(--rule);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    footer span {
+      font-family: var(--f-body);
+      font-size: 0.68rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--mid);
+    }
+
+    /* ─── Accessibility ────────────────────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--red);
+      outline-offset: 3px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ════════════════════════════════════════════════════════════
+       THE NIGHT BOARD — hero standout
+       A date-seeded generative set list: tonight's band, tune,
+       and set times computed from the calendar date.
+       Static markup = tonight's lineup; JS upgrades to live date.
+       Swap test: fails on a restaurant, gym, or SaaS product.
+  ════════════════════════════════════════════════════════════ -->
+  <main>
+    <section class="night-board" aria-label="Tonight's set">
+
+      <div class="board-header">
+        <span class="board-header__venue">The Blue Room · Basement · 312 Canal St.</span>
+        <span class="board-header__date" id="board-date">Friday, 6 June 2025</span>
+      </div>
+
+      <div class="board-body">
+        <p class="board-kicker" aria-label="Tonight's performers">On stage tonight</p>
+
+        <!-- Band name — condensed display at poster scale -->
+        <h1 class="board-name" id="board-name" aria-live="polite">
+          Marcus<br>Veil<br>Trio
+        </h1>
+
+        <div class="board-tune">
+          <span class="board-tune__label">Opening standard —</span>
+          <span class="board-tune__title" id="board-tune">"Autumn Leaves"</span>
+        </div>
+      </div>
+
+      <!-- Set times + cover charge state -->
+      <div class="board-footer">
+        <div class="set-slot">
+          <span class="set-slot__time">8 PM</span>
+          <span class="set-slot__note">First set</span>
+        </div>
+        <div class="set-slot">
+          <span class="set-slot__time">9:30</span>
+          <span class="set-slot__note">Second set</span>
+        </div>
+        <div class="set-slot">
+          <span class="set-slot__time">11 PM</span>
+          <span class="set-slot__note">Late set</span>
+        </div>
+        <div class="set-slot">
+          <!-- Static fallback — JS replaces with live state -->
+          <div class="cover-state" id="cover-state">
+            <span class="cover-state__amount is-free" id="cover-amount">FREE</span>
+            <span class="cover-state__qualifier" id="cover-qualifier">before 7 pm</span>
+          </div>
+          <span class="set-slot__note">Cover charge</span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════
+         THE ROOM — supporting section
+    ════════════════════════════════════════════════════════════ -->
+    <section class="room-section" aria-label="About the room">
+
+      <div class="room-section__header">
+        <h2 class="room-section__title">The Room</h2>
+        <span class="room-section__tag">Since 1961</span>
+      </div>
+
+      <div class="room-grid">
+        <div>
+          <div class="room-fact" style="margin-bottom: 2rem;">
+            <div class="room-fact__number">
+              6<span class="accent"> nights</span>
+            </div>
+            <div class="room-fact__label">Live music every week — doors at 6</div>
+          </div>
+          <p class="room-copy">
+            The Blue Room has been downstairs since 1961.
+            Forty seats. No sight lines to the street. The sound stays in the room.
+          </p>
+          <p class="room-copy">
+            <strong>No cover before 7 pm</strong> — come early, order a drink, hear the soundcheck bleed into the first tune. Serious about the music; loose about the rest.
+          </p>
+        </div>
+
+        <div>
+          <div class="schedule-strip" aria-label="Weekly schedule">
+            <div class="schedule-strip__row" id="row-mon">
+              <span class="schedule-strip__day">Mon</span>
+              <span class="schedule-strip__info">Open jam</span>
+              <span class="schedule-strip__cover free">free / $10</span>
+            </div>
+            <div class="schedule-strip__row" id="row-tue">
+              <span class="schedule-strip__day">Tue</span>
+              <span class="schedule-strip__info">Quartet residency</span>
+              <span class="schedule-strip__cover free">free / $15</span>
+            </div>
+            <div class="schedule-strip__row" id="row-wed">
+              <span class="schedule-strip__day">Wed</span>
+              <span class="schedule-strip__info">Duo — piano &amp; bass</span>
+              <span class="schedule-strip__cover free">free / $10</span>
+            </div>
+            <div class="schedule-strip__row" id="row-thu">
+              <span class="schedule-strip__day">Thu</span>
+              <span class="schedule-strip__info">Vocal standards</span>
+              <span class="schedule-strip__cover free">free / $15</span>
+            </div>
+            <div class="schedule-strip__row" id="row-fri">
+              <span class="schedule-strip__day">Fri</span>
+              <span class="schedule-strip__info">Booked trio</span>
+              <span class="schedule-strip__cover paid">free / $20</span>
+            </div>
+            <div class="schedule-strip__row" id="row-sat">
+              <span class="schedule-strip__day">Sat</span>
+              <span class="schedule-strip__info">Headliner</span>
+              <span class="schedule-strip__cover paid">free / $25</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <footer>
+    <span>The Blue Room · 312 Canal St. · Basement</span>
+    <span>Doors 6 pm · Free before 7</span>
+  </footer>
+
+
+  <!-- ════════════════════════════════════════════════════════════
+       THE NIGHT BOARD — JS: date-seeded generative set list
+       Renders on load. If JS fails, static markup is correct fallback.
+       prefers-reduced-motion respected (no animation runs here anyway).
+  ════════════════════════════════════════════════════════════ -->
+  <script>
+    (function () {
+      'use strict';
+
+      /* ── Data pools (seeded, not random) ── */
+      const FIRST_NAMES = [
+        'Marcus', 'Lena', 'Sol', 'Chet', 'Ida', 'Ray', 'Nora', 'Bilal',
+        'Vera', 'Amos', 'June', 'Theo', 'Faye', 'Reuben', 'Alma', 'Miles'
+      ];
+      const LAST_NAMES = [
+        'Veil', 'Cross', 'Strand', 'Finch', 'Oaks', 'Flood', 'Holt', 'Birch',
+        'Moon', 'Vale', 'Cord', 'Rush', 'Lake', 'Stone', 'Crane', 'Ash'
+      ];
+      const FORMATS = ['Trio', 'Quartet', 'Quintet', 'Duo', 'Group', 'Ensemble'];
+      const STANDARDS = [
+        '"Autumn Leaves"', '"Blue in Green"', '"Round Midnight"',
+        '"Misty"', '"So What"', '"My Funny Valentine"',
+        '"Stella by Starlight"', '"All the Things You Are"',
+        '"Softly, as in a Morning Sunrise"', '"Body and Soul"',
+        '"Invitation"', '"Nardis"', '"Waltz for Debby"',
+        '"Naima"', '"Summertime"', '"The Nearness of You"'
+      ];
+
+      /* ── Deterministic seeder from date ── */
+      function seed(n) {
+        // Simple hash-ish from day-of-year
+        const d = new Date();
+        const dayOfYear = Math.floor(
+          (d - new Date(d.getFullYear(), 0, 0)) / 86400000
+        );
+        return (dayOfYear * 37 + n * 13 + d.getFullYear() * 7) % (n);
+      }
+
+      function pick(arr, offset) {
+        return arr[seed(arr.length + offset) % arr.length];
+      }
+
+      /* ── Generate tonight's lineup ── */
+      const fn = pick(FIRST_NAMES, 0);
+      const ln = pick(LAST_NAMES, 1);
+      const fmt = pick(FORMATS, 2);
+      const tune = pick(STANDARDS, 3);
+
+      /* Band name — one word per line for the condensed poster effect */
+      const bandEl = document.getElementById('board-name');
+      if (bandEl) {
+        bandEl.innerHTML = fn + '<br>' + ln + '<br>' + fmt;
+      }
+
+      /* Tonight's standard */
+      const tuneEl = document.getElementById('board-tune');
+      if (tuneEl) tuneEl.textContent = tune;
+
+      /* ── Live date display ── */
+      const dateEl = document.getElementById('board-date');
+      if (dateEl) {
+        const now = new Date();
+        dateEl.textContent = now.toLocaleDateString('en-US', {
+          weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+        });
+      }
+
+      /* ── Live cover-charge state ── */
+      /*  The real "no cover before 7" rule from the brief, computed live */
+      const amountEl  = document.getElementById('cover-amount');
+      const qualEl    = document.getElementById('cover-qualifier');
+      const now       = new Date();
+      const hour      = now.getHours();
+      const isFree    = hour < 19; /* before 7 pm = 19:00 */
+
+      if (amountEl && qualEl) {
+        if (isFree) {
+          amountEl.textContent = 'FREE';
+          amountEl.className   = 'cover-state__amount is-free';
+          qualEl.textContent   = 'until 7 pm tonight';
+        } else {
+          amountEl.textContent = '$20';
+          amountEl.className   = 'cover-state__amount is-paid';
+          qualEl.textContent   = 'cover charge active';
+        }
+      }
+
+      /* ── Highlight tonight in the schedule ── */
+      const DAY_IDS = ['row-sun', 'row-mon', 'row-tue', 'row-wed',
+                       'row-thu', 'row-fri', 'row-sat'];
+      const todayRow = DAY_IDS[now.getDay()];
+      const rowEl = document.getElementById(todayRow);
+      if (rowEl) {
+        const dayLabel = rowEl.querySelector('.schedule-strip__day');
+        if (dayLabel) dayLabel.classList.add('is-tonight');
+      }
+
+    }());
+  </script>
+
+</body>
+</html>

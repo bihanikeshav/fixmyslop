@@ -21,6 +21,9 @@ which is exactly why they read as generic.
   darlings reached for by reflex: Playfair, Cormorant, Fraunces, Instrument Serif,
   Clash Display. And the new safe grotesques becoming the next default: Outfit,
   Cabinet Grotesk, General Sans, Sentient. Distinctive a year ago, default now.
+- Bold-by-condensed reflex — Big Shoulders Display, Bebas Neue, Barlow Condensed, Dela
+  Gothic One are becoming the default "bold" face. Condensed display is ONE bold move;
+  also reach for black weight, serif×grotesque clash, gigantic numerals, or type-as-image.
 - One italic-serif accent word in the headline ("the *moon*") — once fresh, now the
   reflex personality move. Retired; use a different type move (see composition-and-boldness).
 - One font for the entire page.
