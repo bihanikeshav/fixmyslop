@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Riverside Movers — Local Moving, Done Right</title>
+
+<!-- Cabinet Grotesk via Fontshare -->
+<link rel="preconnect" href="https://api.fontshare.com">
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@400,500,700,800&display=swap">
+
+<!-- DM Mono via Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500&display=swap">
+
+<style>
+  /* ── Reset & base ─────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #F7F5F2;   /* barely-warm off-white; NOT cream slop */
+    --ink:       #1E1A16;   /* warm near-black; tinted toward amber */
+    --ink-mid:   #5A5148;   /* mid-tone ink for secondary text */
+    --ink-light: #9A9088;   /* light ink for labels */
+    --accent:    #B5732A;   /* kraft-tape amber — derived from cardboard box material */
+    --accent-dim:#E8C98A;   /* accent at low chroma for fills */
+    --rule:      #D8D4CE;   /* hairline rule color */
+    --font-head: 'Cabinet Grotesk', system-ui, sans-serif;
+    --font-mono: 'DM Mono', 'Courier New', monospace;
+    --max-w:     1060px;
+    --pad-x:     clamp(1.25rem, 5vw, 3rem);
+  }
+
+  html { font-size: 16px; scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-head);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Layout helpers ───────────────────────────────────────── */
+  .container {
+    max-width: var(--max-w);
+    margin: 0 auto;
+    padding: 0 var(--pad-x);
+  }
+
+  /* ── NAV ──────────────────────────────────────────────────── */
+  nav {
+    border-bottom: 1px solid var(--rule);
+    padding: 1rem var(--pad-x);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 100%;
+  }
+
+  .nav-logo {
+    font-family: var(--font-head);
+    font-weight: 800;
+    font-size: 1.1rem;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+  }
+
+  .nav-logo-mark {
+    display: inline-flex;
+    width: 28px;
+    height: 28px;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0;
+  }
+
+  nav a {
+    color: var(--ink-mid);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  nav a:hover { color: var(--ink); }
+
+  .nav-links {
+    display: flex;
+    gap: 1.75rem;
+    align-items: center;
+  }
+
+  .nav-cta {
+    background: var(--ink);
+    color: var(--bg) !important;
+    padding: 0.45rem 1rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+  }
+
+  .nav-cta:hover { background: var(--accent) !important; }
+
+  /* ── HERO ─────────────────────────────────────────────────── */
+  .hero {
+    padding: 4rem var(--pad-x) 0;
+    max-width: var(--max-w);
+    margin: 0 auto;
+  }
+
+  .hero-label {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1rem;
+    font-weight: 400;
+  }
+
+  .hero-headline {
+    font-family: var(--font-head);
+    font-size: clamp(2.75rem, 6vw, 4.5rem);
+    font-weight: 800;
+    line-height: 1.0;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    max-width: 14ch;
+    margin-bottom: 1.25rem;
+  }
+
+  .hero-headline em {
+    font-style: normal;
+    color: var(--accent);
+  }
+
+  .hero-sub {
+    font-size: 1.0625rem;
+    color: var(--ink-mid);
+    max-width: 48ch;
+    line-height: 1.65;
+    margin-bottom: 2rem;
+  }
+
+  .hero-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 3.5rem;
+  }
+
+  .badge {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--ink-mid);
+    border: 1px solid var(--rule);
+    padding: 0.28rem 0.65rem;
+    letter-spacing: 0.03em;
+  }
+
+  /* ── THE DAY PLANNER (hero artifact) ─────────────────────── */
+  /*
+     The Moving Day Planner: given bedrooms + start time, computes
+     a real moving day schedule with time blocks.
+     Renders on load in its default state (2BR, 8:00 AM).
+     JS enhances it; the default state is fully visible without JS.
+  */
+
+  .planner-section {
+    border-top: 2px solid var(--ink);
+    padding-top: 0;
+  }
+
+  .planner-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    padding: 1.25rem 0 1.25rem;
+    border-bottom: 1px solid var(--rule);
+    gap: 1rem;
+  }
+
+  .planner-title {
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: 0.875rem;
+    letter-spacing: 0.01em;
+    color: var(--ink);
+  }
+
+  .planner-subtitle {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--ink-light);
+    margin-top: 0.15rem;
+    letter-spacing: 0.03em;
+  }
+
+  /* Controls row */
+  .planner-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    padding: 1.25rem 0;
+    border-bottom: 1px solid var(--rule);
+    align-items: flex-end;
+  }
+
+  .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .control-label {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-light);
+  }
+
+  .control-group select,
+  .control-group input[type="time"] {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--rule);
+    padding: 0.45rem 0.65rem;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    outline-offset: 2px;
+    min-width: 9rem;
+  }
+
+  .control-group select:focus,
+  .control-group input[type="time"]:focus {
+    outline: 2px solid var(--accent);
+    border-color: var(--accent);
+  }
+
+  .select-wrap {
+    position: relative;
+    display: inline-block;
+  }
+
+  .select-wrap::after {
+    content: '▾';
+    position: absolute;
+    right: 0.65rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.7rem;
+    color: var(--ink-mid);
+    pointer-events: none;
+  }
+
+  /* Distance toggle */
+  .distance-toggle {
+    display: flex;
+    gap: 0;
+  }
+
+  .dist-btn {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 400;
+    border: 1px solid var(--rule);
+    background: var(--bg);
+    color: var(--ink-mid);
+    padding: 0.45rem 0.8rem;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+    margin-left: -1px;
+  }
+
+  .dist-btn:first-child { margin-left: 0; }
+  .dist-btn:hover { background: var(--accent-dim); color: var(--ink); }
+  .dist-btn.active {
+    background: var(--ink);
+    color: var(--bg);
+    border-color: var(--ink);
+    z-index: 1;
+    position: relative;
+  }
+
+  /* Schedule timeline */
+  .schedule-grid {
+    padding: 0;
+  }
+
+  .schedule-row {
+    display: grid;
+    grid-template-columns: 6rem 1fr auto;
+    align-items: stretch;
+    border-bottom: 1px solid var(--rule);
+    min-height: 3.5rem;
+  }
+
+  .schedule-row:last-child { border-bottom: none; }
+
+  .sched-time {
+    font-family: var(--font-mono);
+    font-size: 0.825rem;
+    font-weight: 500;
+    color: var(--ink);
+    padding: 1rem 0;
+    padding-right: 1.25rem;
+    border-right: 1px solid var(--rule);
+    display: flex;
+    align-items: center;
+    letter-spacing: 0.02em;
+  }
+
+  .sched-content {
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.2rem;
+  }
+
+  .sched-event {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--ink);
+    line-height: 1.3;
+  }
+
+  .sched-detail {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--ink-light);
+    letter-spacing: 0.02em;
+  }
+
+  .sched-bar-col {
+    padding: 0.75rem 0;
+    padding-left: 0;
+    display: flex;
+    align-items: center;
+    min-width: 5rem;
+    padding-right: 0;
+  }
+
+  .sched-bar {
+    height: 6px;
+    background: var(--accent-dim);
+    position: relative;
+    min-width: 1rem;
+  }
+
+  .sched-bar-fill {
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    background: var(--accent);
+    transition: width 0.35s ease-out;
+  }
+
+  /* Highlight row: done/wrap-up */
+  .schedule-row.is-done {
+    background: color-mix(in srgb, var(--accent) 7%, var(--bg) 93%);
+  }
+
+  .schedule-row.is-done .sched-event {
+    color: var(--accent);
+  }
+
+  /* Duration badges inside timeline */
+  .dur-chip {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--ink-light);
+    letter-spacing: 0.04em;
+    padding: 0.15rem 0.4rem;
+    border: 1px solid var(--rule);
+    white-space: nowrap;
+    align-self: center;
+    margin-right: 1rem;
+    flex-shrink: 0;
+  }
+
+  /* Summary bar below timeline */
+  .planner-summary {
+    display: flex;
+    gap: 0;
+    border-top: 2px solid var(--ink);
+    margin-top: 0;
+  }
+
+  .summary-cell {
+    flex: 1;
+    padding: 1.1rem 1.25rem;
+    border-right: 1px solid var(--rule);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .summary-cell:last-child { border-right: none; }
+
+  .summary-label {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-light);
+  }
+
+  .summary-value {
+    font-family: var(--font-mono);
+    font-size: 1.35rem;
+    font-weight: 500;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  .summary-value.accent { color: var(--accent); }
+
+  /* ── PRICING SECTION ──────────────────────────────────────── */
+  .pricing-section {
+    padding: 5rem var(--pad-x) 5rem;
+    max-width: var(--max-w);
+    margin: 0 auto;
+  }
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 2px solid var(--ink);
+  }
+
+  .section-head h2 {
+    font-family: var(--font-head);
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    line-height: 1.1;
+  }
+
+  .section-head-note {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--ink-light);
+    letter-spacing: 0.03em;
+  }
+
+  /* Pricing table */
+  .pricing-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .pricing-table th {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-light);
+    font-weight: 400;
+    text-align: left;
+    padding: 0.6rem 1.25rem;
+    border-bottom: 1px solid var(--rule);
+    white-space: nowrap;
+  }
+
+  .pricing-table td {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--rule);
+    font-size: 0.9375rem;
+    line-height: 1.4;
+  }
+
+  .pricing-table tr:last-child td { border-bottom: none; }
+
+  .pricing-table tr:hover td { background: color-mix(in srgb, var(--accent) 5%, var(--bg) 95%); }
+
+  .pt-size {
+    font-weight: 700;
+    font-size: 0.9375rem;
+  }
+
+  .pt-rooms {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--ink-mid);
+  }
+
+  .pt-price {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: 1.0rem;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  .pt-time {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--ink-mid);
+    white-space: nowrap;
+  }
+
+  .pt-includes {
+    font-size: 0.8125rem;
+    color: var(--ink-mid);
+    line-height: 1.45;
+  }
+
+  .pt-pop {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    background: var(--accent);
+    color: #fff;
+    padding: 0.15rem 0.45rem;
+    letter-spacing: 0.04em;
+    vertical-align: middle;
+    margin-left: 0.4rem;
+  }
+
+  /* Pricing footnote */
+  .pricing-note {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--ink-light);
+    margin-top: 1.25rem;
+    letter-spacing: 0.02em;
+    line-height: 1.7;
+    border-top: 1px solid var(--rule);
+    padding-top: 1rem;
+  }
+
+  /* ── CTA BAR ──────────────────────────────────────────────── */
+  .cta-bar {
+    background: var(--ink);
+    color: var(--bg);
+    padding: 3rem var(--pad-x);
+  }
+
+  .cta-inner {
+    max-width: var(--max-w);
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+  }
+
+  .cta-text h3 {
+    font-family: var(--font-head);
+    font-size: clamp(1.25rem, 3vw, 1.75rem);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+    color: var(--bg);
+  }
+
+  .cta-text p {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: #9A9088;
+    margin-top: 0.4rem;
+    letter-spacing: 0.02em;
+  }
+
+  .cta-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-family: var(--font-head);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: background 0.12s;
+  }
+
+  .btn-primary:hover { background: #96601F; }
+
+  .btn-ghost {
+    background: transparent;
+    color: #D8D4CE;
+    border: 1px solid #5A5148;
+    padding: 0.75rem 1.5rem;
+    font-family: var(--font-head);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: border-color 0.12s, color 0.12s;
+  }
+
+  .btn-ghost:hover { border-color: #9A9088; color: var(--bg); }
+
+  /* ── FOOTER ───────────────────────────────────────────────── */
+  footer {
+    border-top: 1px solid var(--rule);
+    padding: 1.5rem var(--pad-x);
+    max-width: var(--max-w);
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .footer-copy {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--ink-light);
+    letter-spacing: 0.03em;
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 1.25rem;
+  }
+
+  .footer-links a {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--ink-light);
+    text-decoration: none;
+    letter-spacing: 0.03em;
+  }
+
+  .footer-links a:hover { color: var(--ink); }
+
+  /* ── Reduced motion ───────────────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .sched-bar-fill { transition: none; }
+  }
+
+  /* ── Responsive ───────────────────────────────────────────── */
+  @media (max-width: 680px) {
+    .schedule-row {
+      grid-template-columns: 5rem 1fr;
+    }
+    .sched-bar-col { display: none; }
+
+    .planner-summary {
+      flex-direction: column;
+    }
+    .summary-cell {
+      border-right: none;
+      border-bottom: 1px solid var(--rule);
+      flex-direction: row;
+      align-items: baseline;
+      gap: 0.75rem;
+      justify-content: space-between;
+    }
+    .summary-cell:last-child { border-bottom: none; }
+
+    .nav-links { display: none; }
+
+    .section-head { flex-direction: column; gap: 0.25rem; }
+
+    .pricing-table .pt-includes { display: none; }
+
+    .cta-inner { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">
+    <span class="nav-logo-mark">RM</span>
+    Riverside Movers
+  </a>
+  <div class="nav-links">
+    <a href="#pricing">Pricing</a>
+    <a href="#">About</a>
+    <a href="#" class="nav-cta">Get a Quote</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <p class="hero-label">Residential &amp; small-office moves · Serving the Riverside area</p>
+  <h1 class="hero-headline">Moving day,<br><em>planned out.</em></h1>
+  <p class="hero-sub">
+    We tell you exactly when your crew arrives, when the truck rolls, and when
+    you're done — before we ever show up. No guesswork. No surprise charges.
+  </p>
+  <div class="hero-badges">
+    <span class="badge">Upfront flat pricing</span>
+    <span class="badge">2-person crew minimum</span>
+    <span class="badge">Fully insured</span>
+    <span class="badge">No fuel surcharges</span>
+    <span class="badge">Weekend availability</span>
+  </div>
+</header>
+
+<!-- THE DAY PLANNER — hero artifact -->
+<section class="container" aria-label="Moving Day Planner" id="day-planner">
+  <div class="planner-section">
+
+    <div class="planner-header">
+      <div>
+        <div class="planner-title">The Moving Day Planner</div>
+        <div class="planner-subtitle">Enter your move details — see your full day, hour by hour.</div>
+      </div>
+    </div>
+
+    <!-- Controls: render in default state immediately; JS updates -->
+    <div class="planner-controls">
+
+      <div class="control-group">
+        <label class="control-label" for="sel-bedrooms">Bedrooms</label>
+        <div class="select-wrap">
+          <select id="sel-bedrooms" aria-label="Number of bedrooms">
+            <option value="studio">Studio / 1 room</option>
+            <option value="1br">1 bedroom</option>
+            <option value="2br" selected>2 bedrooms</option>
+            <option value="3br">3 bedrooms</option>
+            <option value="4br">4 bedrooms</option>
+            <option value="office">Small office</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label" for="sel-starttime">Crew arrives at</label>
+        <input type="time" id="sel-starttime" value="08:00" aria-label="Start time">
+      </div>
+
+      <div class="control-group">
+        <span class="control-label" id="dist-label">Distance</span>
+        <div class="distance-toggle" role="group" aria-labelledby="dist-label">
+          <button class="dist-btn active" data-dist="local" type="button">Local (&lt;5 mi)</button>
+          <button class="dist-btn" data-dist="medium" type="button">Medium (5–20 mi)</button>
+          <button class="dist-btn" data-dist="long" type="button">Long (20–50 mi)</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Schedule rows: default state = 2BR, 8:00 AM, local -->
+    <div class="schedule-grid" id="schedule-grid" aria-live="polite" aria-label="Your moving day schedule">
+      <!-- Populated by JS; initial HTML is the default 2BR/8AM/local state -->
+
+      <div class="schedule-row" data-phase="arrive">
+        <div class="sched-time" id="t-arrive">8:00 AM</div>
+        <div class="sched-content">
+          <div class="sched-event">Crew arrives &amp; walkthrough</div>
+          <div class="sched-detail">2-person crew · protective wrap &amp; floor runners laid</div>
+        </div>
+        <div class="sched-bar-col">
+          <div class="sched-bar" style="width:60px"><div class="sched-bar-fill" style="width:100%"></div></div>
+          <span class="dur-chip">30 min</span>
+        </div>
+      </div>
+
+      <div class="schedule-row" data-phase="load">
+        <div class="sched-time" id="t-load">8:30 AM</div>
+        <div class="sched-content">
+          <div class="sched-event">Loading</div>
+          <div class="sched-detail" id="d-load">2 bedrooms · estimated 80 boxes + furniture</div>
+        </div>
+        <div class="sched-bar-col">
+          <div class="sched-bar" style="width:60px"><div class="sched-bar-fill" id="bar-load" style="width:100%"></div></div>
+          <span class="dur-chip" id="chip-load">90 min</span>
+        </div>
+      </div>
+
+      <div class="schedule-row" data-phase="drive">
+        <div class="sched-time" id="t-drive">10:00 AM</div>
+        <div class="sched-content">
+          <div class="sched-event">Drive to new address</div>
+          <div class="sched-detail" id="d-drive">Local route · under 5 miles</div>
+        </div>
+        <div class="sched-bar-col">
+          <div class="sched-bar" style="width:60px"><div class="sched-bar-fill" id="bar-drive" style="width:30%"></div></div>
+          <span class="dur-chip" id="chip-drive">20 min</span>
+        </div>
+      </div>
+
+      <div class="schedule-row" data-phase="unload">
+        <div class="sched-time" id="t-unload">10:20 AM</div>
+        <div class="sched-content">
+          <div class="sched-event">Unloading &amp; room placement</div>
+          <div class="sched-detail" id="d-unload">Boxes to labeled rooms · furniture reassembled on request</div>
+        </div>
+        <div class="sched-bar-col">
+          <div class="sched-bar" style="width:60px"><div class="sched-bar-fill" id="bar-unload" style="width:100%"></div></div>
+          <span class="dur-chip" id="chip-unload">75 min</span>
+        </div>
+      </div>
+
+      <div class="schedule-row is-done" data-phase="done">
+        <div class="sched-time" id="t-done">11:35 AM</div>
+        <div class="sched-content">
+          <div class="sched-event">You're home. We're done.</div>
+          <div class="sched-detail">Truck clears, walkthrough with you, invoice settled on-site</div>
+        </div>
+        <div class="sched-bar-col">
+          <div class="sched-bar" style="width:60px"><div class="sched-bar-fill" style="width:0%"></div></div>
+          <span class="dur-chip">&nbsp;</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Summary bar -->
+    <div class="planner-summary" id="planner-summary">
+      <div class="summary-cell">
+        <span class="summary-label">Total time</span>
+        <span class="summary-value" id="sum-total">~3h 35m</span>
+      </div>
+      <div class="summary-cell">
+        <span class="summary-label">Crew size</span>
+        <span class="summary-value" id="sum-crew">2 movers</span>
+      </div>
+      <div class="summary-cell">
+        <span class="summary-label">Done by</span>
+        <span class="summary-value accent" id="sum-done">11:35 AM</span>
+      </div>
+      <div class="summary-cell">
+        <span class="summary-label">Est. price</span>
+        <span class="summary-value" id="sum-price">$420–$490</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing-section" id="pricing">
+  <div class="section-head">
+    <h2>What you pay,<br>upfront.</h2>
+    <span class="section-head-note">All prices include labor, truck, &amp; basic protection wrap.</span>
+  </div>
+
+  <table class="pricing-table" aria-label="Move pricing by size">
+    <thead>
+      <tr>
+        <th>Move size</th>
+        <th>Rooms</th>
+        <th>Flat rate</th>
+        <th>Typical time</th>
+        <th class="hide-sm">Includes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="pt-size">Studio</td>
+        <td class="pt-rooms">1 room</td>
+        <td class="pt-price">$280–$320</td>
+        <td class="pt-time">2–3 hrs</td>
+        <td class="pt-includes">2 movers, 1 truck, moving blankets, basic wrap</td>
+      </tr>
+      <tr>
+        <td class="pt-size">1-Bedroom</td>
+        <td class="pt-rooms">1 BR + common</td>
+        <td class="pt-price">$340–$400</td>
+        <td class="pt-time">3–4 hrs</td>
+        <td class="pt-includes">2 movers, 1 truck, moving blankets, basic wrap</td>
+      </tr>
+      <tr>
+        <td class="pt-size">
+          2-Bedroom
+          <span class="pt-pop">Most common</span>
+        </td>
+        <td class="pt-rooms">2 BR + common</td>
+        <td class="pt-price">$420–$490</td>
+        <td class="pt-time">4–5 hrs</td>
+        <td class="pt-includes">2 movers, 1 truck, moving blankets, basic wrap</td>
+      </tr>
+      <tr>
+        <td class="pt-size">3-Bedroom</td>
+        <td class="pt-rooms">3 BR + common</td>
+        <td class="pt-price">$520–$620</td>
+        <td class="pt-time">5–6 hrs</td>
+        <td class="pt-includes">3 movers, 1 truck, moving blankets, basic wrap</td>
+      </tr>
+      <tr>
+        <td class="pt-size">4-Bedroom</td>
+        <td class="pt-rooms">4 BR + common</td>
+        <td class="pt-price">$680–$800</td>
+        <td class="pt-time">6–8 hrs</td>
+        <td class="pt-includes">3 movers, 1–2 trucks, moving blankets, basic wrap</td>
+      </tr>
+      <tr>
+        <td class="pt-size">Small Office</td>
+        <td class="pt-rooms">Up to 10 desks</td>
+        <td class="pt-price">$540–$680</td>
+        <td class="pt-time">5–7 hrs</td>
+        <td class="pt-includes">3 movers, 1 truck, equipment dollies, basic wrap</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="pricing-note">
+    Prices above are for local moves under 5 miles. Medium-distance (5–20 mi) adds $60–$100.
+    Long-distance (20–50 mi) adds $120–$200. No fuel surcharges, no stair fees on the first
+    flight, no weekend premiums. We quote the full number before we book the date.
+  </p>
+</section>
+
+<!-- CTA BAR -->
+<div class="cta-bar">
+  <div class="cta-inner">
+    <div class="cta-text">
+      <h3>Ready to book<br>your moving day?</h3>
+      <p>Call or text 555-RIVERSIDE · reply within the hour</p>
+    </div>
+    <div class="cta-actions">
+      <a href="tel:5557483727" class="btn-primary">Call us now</a>
+      <a href="#day-planner" class="btn-ghost">Plan your day first</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span class="footer-copy">© 2025 Riverside Movers · Licensed &amp; Insured · Serving the Riverside area since 2011</span>
+  <div class="footer-links">
+    <a href="#">Reviews</a>
+    <a href="#">FAQ</a>
+    <a href="#">Contact</a>
+  </div>
+</footer>
+
+<script>
+/* ── The Moving Day Planner ───────────────────────────────────────────────────
+   Computes a real moving day schedule given:
+     - number of bedrooms (studio, 1br, 2br, 3br, 4br, office)
+     - start time (time input)
+     - distance band (local / medium / long)
+
+   Times are based on industry-standard per-room loading rates:
+     arrive/walkthrough: 30 min (fixed)
+     load: per_room_load_min × rooms (adjusted for # of movers)
+     drive: 20 / 40 / 70 min (local / medium / long)
+     unload: per_room_unload_min × rooms (typically 85% of load time)
+
+   The default HTML state (2BR / 8:00 AM / local) is rendered on load.
+   JS only enhances when inputs change.
+──────────────────────────────────────────────────────────────────────────── */
+
+(function () {
+  'use strict';
+
+  // ── Move profiles ──────────────────────────────────────────────────────────
+  const PROFILES = {
+    studio: { label: 'Studio', rooms: 1,  boxes: '~30 boxes + small furniture', loadMin: 55,  crew: 2, priceRange: '$280–$320' },
+    '1br':  { label: '1 bed',  rooms: 1.5,boxes: '~50 boxes + furniture',       loadMin: 70,  crew: 2, priceRange: '$340–$400' },
+    '2br':  { label: '2 bed',  rooms: 2,  boxes: '~80 boxes + furniture',       loadMin: 90,  crew: 2, priceRange: '$420–$490' },
+    '3br':  { label: '3 bed',  rooms: 3,  boxes: '~120 boxes + furniture',      loadMin: 130, crew: 3, priceRange: '$520–$620' },
+    '4br':  { label: '4 bed',  rooms: 4,  boxes: '~160 boxes + furniture',      loadMin: 175, crew: 3, priceRange: '$680–$800' },
+    office: { label: 'Sm. office', rooms: 3, boxes: '~100 boxes + workstations', loadMin: 150, crew: 3, priceRange: '$540–$680' },
+  };
+
+  const DRIVE = {
+    local:  { label: 'Local route · under 5 miles',       min: 20 },
+    medium: { label: 'Medium route · 5–20 miles',          min: 40 },
+    long:   { label: 'Long route · 20–50 miles',           min: 70 },
+  };
+
+  // distance add to price
+  const DRIVE_PRICE_ADD = { local: 0, medium: 75, long: 160 };
+
+  const ARRIVE_MIN = 30; // fixed walkthrough
+
+  // ── Elements ───────────────────────────────────────────────────────────────
+  const selBed   = document.getElementById('sel-bedrooms');
+  const selTime  = document.getElementById('sel-starttime');
+  const distBtns = document.querySelectorAll('.dist-btn');
+
+  let currentDist = 'local';
+
+  // ── Time helpers ───────────────────────────────────────────────────────────
+  function parseTime(str) {
+    // "HH:MM" → minutes since midnight
+    const [h, m] = str.split(':').map(Number);
+    return h * 60 + m;
+  }
+
+  function formatTime(minFromMidnight) {
+    const h24 = Math.floor(minFromMidnight / 60) % 24;
+    const m   = minFromMidnight % 60;
+    const ampm = h24 >= 12 ? 'PM' : 'AM';
+    const h12  = h24 % 12 === 0 ? 12 : h24 % 12;
+    return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+  }
+
+  function formatDuration(totalMin) {
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    if (h === 0) return `${m} min`;
+    if (m === 0) return `${h}h`;
+    return `${h}h ${m}m`;
+  }
+
+  // ── Max bar width for proportional fill ───────────────────────────────────
+  function computeBarWidth(durationMin, maxDurationMin) {
+    const ratio = Math.min(durationMin / maxDurationMin, 1);
+    // minimum visible bar: 12%
+    return Math.max(ratio * 100, 12);
+  }
+
+  // ── Render schedule ────────────────────────────────────────────────────────
+  function render() {
+    const profile = PROFILES[selBed.value] || PROFILES['2br'];
+    const drive   = DRIVE[currentDist]     || DRIVE['local'];
+    const driveAdd = DRIVE_PRICE_ADD[currentDist] || 0;
+
+    const startMin = parseTime(selTime.value || '08:00');
+
+    const arriveStart  = startMin;
+    const loadStart    = arriveStart + ARRIVE_MIN;
+    const driveStart   = loadStart + profile.loadMin;
+    const unloadStart  = driveStart + drive.min;
+    const unloadMin    = Math.round(profile.loadMin * 0.85);
+    const doneStart    = unloadStart + unloadMin;
+
+    const totalMin = doneStart - startMin;
+
+    // Proportional bars: normalize to longest phase
+    const maxPhase = Math.max(ARRIVE_MIN, profile.loadMin, drive.min, unloadMin);
+
+    // Update time cells
+    document.getElementById('t-arrive').textContent  = formatTime(arriveStart);
+    document.getElementById('t-load').textContent    = formatTime(loadStart);
+    document.getElementById('t-drive').textContent   = formatTime(driveStart);
+    document.getElementById('t-unload').textContent  = formatTime(unloadStart);
+    document.getElementById('t-done').textContent    = formatTime(doneStart);
+
+    // Update detail text
+    document.getElementById('d-load').textContent =
+      `${profile.label} · ${profile.boxes}`;
+    document.getElementById('d-drive').textContent = drive.label;
+    document.getElementById('d-unload').textContent =
+      'Boxes to labeled rooms · furniture reassembled on request';
+
+    // Update duration chips
+    document.getElementById('chip-load').textContent   = formatDuration(profile.loadMin);
+    document.getElementById('chip-drive').textContent  = formatDuration(drive.min);
+    document.getElementById('chip-unload').textContent = formatDuration(unloadMin);
+
+    // Update bar fills
+    document.getElementById('bar-load').style.width   = computeBarWidth(profile.loadMin, maxPhase) + '%';
+    document.getElementById('bar-drive').style.width  = computeBarWidth(drive.min, maxPhase) + '%';
+    document.getElementById('bar-unload').style.width = computeBarWidth(unloadMin, maxPhase) + '%';
+
+    // Update summary
+    document.getElementById('sum-total').textContent = '~' + formatDuration(totalMin);
+    document.getElementById('sum-crew').textContent  = profile.crew + ' movers';
+    document.getElementById('sum-done').textContent  = formatTime(doneStart);
+
+    // Price: add distance surcharge
+    const [lo, hi] = profile.priceRange.replace(/\$/g, '').split('–').map(Number);
+    document.getElementById('sum-price').textContent =
+      '$' + (lo + driveAdd) + '–$' + (hi + driveAdd);
+  }
+
+  // ── Event listeners ────────────────────────────────────────────────────────
+  selBed.addEventListener('change', render);
+  selTime.addEventListener('input', render);
+
+  distBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      distBtns.forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      currentDist = btn.dataset.dist;
+      render();
+    });
+  });
+
+  // ── Initial render (updates the default HTML state from JS) ───────────────
+  render();
+
+}());
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sentinel — API Threat Detection</title>
+  <link rel="preconnect" href="https://api.fontshare.com" />
+  <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@400,500,700,800&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─── Tokens ──────────────────────────────────────────────────────── */
+    :root {
+      --amber:      #C8820A;   /* managed-switch caution LED */
+      --amber-mid:  #E09A1C;   /* lighter: hover states */
+      --amber-pale: #FDF3DE;   /* tinted surface behind tuner */
+      --amber-dim:  #6B4405;   /* dark amber for secondary text on pale bg */
+
+      --ink:        #1A1612;   /* near-black with warm tint — not pure #000 */
+      --ink-mid:    #3D3226;   /* secondary text */
+      --ink-light:  #7A6A58;   /* tertiary / labels */
+
+      --paper:      #F8F5F0;   /* off-white — warm tinted, not cream+gold combo */
+      --paper-rule: #E8E2D8;   /* ruled lines */
+      --paper-deep: #EDE7DD;   /* slightly darker surface */
+
+      --danger:     #B83E2A;   /* brick-red for "missed attacks" side */
+      --safe:       #2E6E4A;   /* forest green for "covered" side */
+
+      --radius-sm:  3px;
+      --radius-md:  6px;
+
+      font-family: 'Cabinet Grotesk', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--ink);
+      background: var(--paper);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ─── Layout shell ────────────────────────────────────────────────── */
+    body { min-height: 100vh; }
+
+    .page-wrapper {
+      max-width: 1060px;
+      margin: 0 auto;
+      padding: 0 32px;
+    }
+
+    /* ─── Nav ─────────────────────────────────────────────────────────── */
+    nav {
+      border-bottom: 1px solid var(--paper-rule);
+      padding: 18px 0;
+    }
+    nav .inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .wordmark {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    /* The "sentinel dot" — the amber LED that inspired the color */
+    .sentinel-led {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--amber);
+      flex-shrink: 0;
+    }
+    .nav-links {
+      display: flex;
+      gap: 28px;
+      list-style: none;
+      align-items: center;
+    }
+    .nav-links a {
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--ink-mid);
+      text-decoration: none;
+    }
+    .nav-links a:hover { color: var(--ink); }
+    .nav-cta {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--paper) !important;
+      background: var(--ink);
+      padding: 7px 16px;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+    }
+    .nav-cta:hover { background: var(--amber); color: var(--ink) !important; }
+
+    /* ─── Hero section ────────────────────────────────────────────────── */
+    .hero {
+      padding: 72px 0 64px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: center;
+    }
+
+    .hero-text {}
+
+    .hero-overline {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--amber);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .hero-overline::before {
+      content: '';
+      display: block;
+      width: 24px;
+      height: 1px;
+      background: var(--amber);
+    }
+
+    h1 {
+      font-size: clamp(32px, 4vw, 48px);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+      margin-bottom: 20px;
+    }
+    h1 em {
+      font-style: normal;
+      color: var(--amber);
+    }
+
+    .hero-body {
+      font-size: 16px;
+      line-height: 1.65;
+      color: var(--ink-mid);
+      max-width: 44ch;
+      margin-bottom: 32px;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 22px;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: inherit;
+      background: var(--amber);
+      color: var(--ink);
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .btn-primary:hover { background: var(--amber-mid); }
+    .btn-ghost {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--ink-mid);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .btn-ghost:hover { color: var(--ink); }
+
+    /* ─── The Threshold Tuner ─────────────────────────────────────────── */
+    /*
+      This is the hero artifact. It computes:
+        - false_alerts_per_week = baseline_traffic × (1 - threshold/100)^1.8 × noise_factor
+        - missed_attacks_per_week = attack_rate × (threshold/100)^2.4
+      These are simplified models of precision–recall trade-off, grounded in
+      the anomaly-detection domain. The engineer drags the threshold and reads
+      the live trade-off — this IS the product's central decision surface.
+    */
+    .tuner-card {
+      background: var(--paper);
+      border: 1.5px solid var(--paper-rule);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      position: relative;
+    }
+    .tuner-header {
+      padding: 16px 20px 14px;
+      border-bottom: 1px solid var(--paper-rule);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .tuner-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-light);
+    }
+    .tuner-live-badge {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--safe);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .tuner-live-badge::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--safe);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .tuner-live-badge::before { animation: none; }
+    }
+
+    /* ── Miniature sparkline (ambient, not a competing standout) ── */
+    .tuner-sparkline-area {
+      padding: 12px 20px 0;
+      height: 56px;
+      position: relative;
+    }
+    .sparkline-label {
+      font-size: 10px;
+      color: var(--ink-light);
+      position: absolute;
+      top: 12px;
+      left: 20px;
+      letter-spacing: 0.05em;
+    }
+    .sparkline-svg {
+      width: 100%;
+      height: 44px;
+      display: block;
+      margin-top: 14px;
+    }
+
+    /* ── The actual tuner controls ── */
+    .tuner-body {
+      padding: 20px 20px 20px;
+    }
+
+    /* Threshold track */
+    .threshold-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+    .threshold-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-light);
+      white-space: nowrap;
+      width: 72px;
+      flex-shrink: 0;
+    }
+    .threshold-value-display {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--amber);
+      letter-spacing: -0.03em;
+      width: 52px;
+      flex-shrink: 0;
+      text-align: right;
+    }
+
+    /* Custom range slider */
+    .threshold-track {
+      flex: 1;
+      position: relative;
+      height: 24px;
+      display: flex;
+      align-items: center;
+    }
+    input[type="range"].tuner-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 4px;
+      background: transparent;
+      outline: none;
+      cursor: pointer;
+      position: relative;
+      z-index: 2;
+    }
+    .tuner-slider-track {
+      position: absolute;
+      inset: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      height: 4px;
+      background: var(--paper-rule);
+      border-radius: 2px;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .tuner-slider-fill {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      height: 4px;
+      background: var(--amber);
+      border-radius: 2px;
+      pointer-events: none;
+      z-index: 1;
+      transition: width 0.05s;
+    }
+    input[type="range"].tuner-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--amber);
+      border: 2px solid var(--paper);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+      cursor: grab;
+      transition: background 0.1s;
+    }
+    input[type="range"].tuner-slider:active::-webkit-slider-thumb {
+      cursor: grabbing;
+      background: var(--amber-mid);
+    }
+    input[type="range"].tuner-slider::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--amber);
+      border: 2px solid var(--paper);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+      cursor: grab;
+    }
+
+    /* The output meters — the two numbers the artifact computes */
+    .tuner-outputs {
+      margin-top: 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .output-cell {
+      padding: 14px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--paper-rule);
+    }
+    .output-cell.danger-side {
+      background: #FDF0EC;
+      border-color: #E8C4B8;
+    }
+    .output-cell.safe-side {
+      background: #EEF6F1;
+      border-color: #BAD8C5;
+    }
+    .output-cell-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-light);
+      margin-bottom: 6px;
+    }
+    .output-cell.danger-side .output-cell-label { color: #8B3220; }
+    .output-cell.safe-side .output-cell-label { color: #1E5E3A; }
+    .output-number {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+    .output-cell.danger-side .output-number { color: var(--danger); }
+    .output-cell.safe-side .output-number { color: var(--safe); }
+    .output-unit {
+      font-size: 12px;
+      font-weight: 500;
+      opacity: 0.7;
+    }
+    .output-sub {
+      font-size: 11px;
+      color: var(--ink-light);
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+    .output-cell.danger-side .output-sub { color: #8B3220; opacity: 0.75; }
+    .output-cell.safe-side .output-sub { color: #1E5E3A; opacity: 0.75; }
+
+    /* The zone indicator under the slider */
+    .threshold-zone {
+      margin-top: 12px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--ink-light);
+      min-height: 18px;
+      transition: color 0.2s;
+    }
+
+    /* The bar graph below the outputs */
+    .coverage-bar-area {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--paper-rule);
+    }
+    .coverage-bar-label {
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-light);
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+    .coverage-bar {
+      height: 8px;
+      border-radius: 2px;
+      background: var(--paper-rule);
+      overflow: hidden;
+    }
+    .coverage-bar-fill {
+      height: 100%;
+      background: var(--safe);
+      border-radius: 2px;
+      transition: width 0.18s ease-out;
+    }
+    .coverage-bar-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10.5px;
+      color: var(--ink-light);
+      margin-top: 5px;
+    }
+    .coverage-bar-footer strong { color: var(--ink); }
+
+    /* Footnote under card */
+    .tuner-footnote {
+      font-size: 11px;
+      color: var(--ink-light);
+      padding: 10px 20px;
+      border-top: 1px solid var(--paper-rule);
+      background: var(--paper-deep);
+    }
+
+    /* ─── Supporting section — How Sentinel watches ───────────────────── */
+    .support-section {
+      padding: 72px 0 80px;
+      border-top: 1px solid var(--paper-rule);
+    }
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--amber);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-label::before {
+      content: '';
+      display: block;
+      width: 24px;
+      height: 1px;
+      background: var(--amber);
+    }
+
+    h2 {
+      font-size: clamp(24px, 3vw, 36px);
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      line-height: 1.15;
+      color: var(--ink);
+      margin-bottom: 16px;
+      max-width: 26ch;
+    }
+
+    .support-intro {
+      font-size: 16px;
+      color: var(--ink-mid);
+      line-height: 1.65;
+      max-width: 52ch;
+      margin-bottom: 48px;
+    }
+
+    /* Three-column anatomy grid (NOT the icon-tile slop pattern — these are */
+    /* process steps with a deliberately asymmetric layout and real detail)  */
+    .anatomy-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0;
+      border: 1.5px solid var(--paper-rule);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+    .anatomy-cell {
+      padding: 28px 24px;
+      border-right: 1px solid var(--paper-rule);
+    }
+    .anatomy-cell:last-child { border-right: none; }
+    .anatomy-cell:nth-child(2) { background: var(--paper-deep); }
+
+    .anatomy-step {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--amber);
+      margin-bottom: 12px;
+    }
+    .anatomy-cell h3 {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      color: var(--ink);
+      margin-bottom: 10px;
+      line-height: 1.3;
+    }
+    .anatomy-cell p {
+      font-size: 14px;
+      color: var(--ink-mid);
+      line-height: 1.6;
+    }
+    .anatomy-code {
+      margin-top: 14px;
+      font-family: 'DM Mono', 'Courier New', monospace;
+      font-size: 11px;
+      color: var(--ink-light);
+      background: var(--paper-rule);
+      padding: 8px 10px;
+      border-radius: 3px;
+      letter-spacing: 0.01em;
+      line-height: 1.5;
+    }
+    .anatomy-code span.hi { color: var(--amber); font-weight: 600; }
+    .anatomy-code span.ok { color: var(--safe); }
+    .anatomy-code span.bad { color: var(--danger); }
+
+    /* Alert strip at the bottom of the support section */
+    .alert-strip {
+      margin-top: 36px;
+      border: 1px solid var(--paper-rule);
+      border-left: 3px solid var(--amber);
+      padding: 16px 20px;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      background: var(--amber-pale);
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    .alert-strip-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--amber);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .alert-strip-icon svg { display: block; }
+    .alert-strip-body {}
+    .alert-strip-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--amber-dim);
+      margin-bottom: 4px;
+    }
+    .alert-strip-text {
+      font-size: 13px;
+      color: var(--amber-dim);
+      line-height: 1.55;
+    }
+    .alert-strip-text code {
+      font-family: 'DM Mono', 'Courier New', monospace;
+      font-size: 11.5px;
+      background: rgba(200,130,10,0.12);
+      padding: 1px 4px;
+      border-radius: 2px;
+    }
+
+    /* ─── Footer ──────────────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--paper-rule);
+      padding: 24px 0;
+    }
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--ink-light);
+    }
+    .footer-inner a {
+      color: var(--ink-light);
+      text-decoration: none;
+    }
+    .footer-inner a:hover { color: var(--ink); }
+
+    /* ─── Responsive ──────────────────────────────────────────────────── */
+    @media (max-width: 760px) {
+      .hero { grid-template-columns: 1fr; gap: 40px; padding: 48px 0 40px; }
+      .anatomy-grid { grid-template-columns: 1fr; }
+      .anatomy-cell { border-right: none; border-bottom: 1px solid var(--paper-rule); }
+      .anatomy-cell:last-child { border-bottom: none; }
+      nav .nav-links { display: none; }
+      .tuner-outputs { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 480px) {
+      .page-wrapper { padding: 0 20px; }
+      .tuner-outputs { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- ═══════════════════════════ NAV ═══════════════════════════ -->
+<nav>
+  <div class="page-wrapper">
+    <div class="inner">
+      <a href="#" class="wordmark">
+        <span class="sentinel-led" aria-hidden="true"></span>
+        Sentinel
+      </a>
+      <ul class="nav-links">
+        <li><a href="#">How it works</a></li>
+        <li><a href="#">Integrations</a></li>
+        <li><a href="#">Pricing</a></li>
+        <li><a href="#" class="nav-cta">Start free trial</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════ HERO ══════════════════════════ -->
+<main>
+  <div class="page-wrapper">
+    <section class="hero" aria-labelledby="hero-heading">
+
+      <!-- Left: copy -->
+      <div class="hero-text">
+        <p class="hero-overline" aria-hidden="true">Real-time API security</p>
+        <h1 id="hero-heading">
+          Know when to<br/>
+          page the team.<br/>
+          <em>Not before.</em>
+        </h1>
+        <p class="hero-body">
+          Sentinel watches every API request in flight, scores anomalies against your baseline, and fires the exact alert — at the exact threshold — that keeps your on-call rotation sane.
+        </p>
+        <div class="hero-actions">
+          <a href="#" class="btn-primary">
+            Connect your first API
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M3 7h8M7.5 3.5L11 7l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+          <a href="#" class="btn-ghost">See a live demo</a>
+        </div>
+      </div>
+
+      <!-- Right: The Threshold Tuner — the hero artifact -->
+      <div role="region" aria-labelledby="tuner-title">
+        <div class="tuner-card">
+
+          <div class="tuner-header">
+            <span class="tuner-title" id="tuner-title">The Threshold Tuner</span>
+            <span class="tuner-live-badge" aria-live="polite">Live model</span>
+          </div>
+
+          <!-- Ambient sparkline — supporting move, not competing standout -->
+          <div class="tuner-sparkline-area" aria-hidden="true">
+            <span class="sparkline-label">Requests / sec — last 60 s</span>
+            <svg class="sparkline-svg" id="sparklineSvg" viewBox="0 0 400 30" preserveAspectRatio="none">
+              <!-- Rendered by JS; static fallback below via <noscript>-friendly inline path -->
+              <polyline id="sparklineLine"
+                points="0,22 20,20 40,18 60,22 80,15 100,12 120,16 140,19 160,10 180,14 200,18 220,21 240,15 260,8 280,5 300,10 320,16 340,20 360,18 380,14 400,17"
+                fill="none"
+                stroke="#C8820A"
+                stroke-width="1.5"
+                stroke-linejoin="round"
+                opacity="0.5"
+              />
+              <polyline id="sparklineAnomaly"
+                points="260,8 280,5 300,10"
+                fill="none"
+                stroke="#B83E2A"
+                stroke-width="2"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </div>
+
+          <div class="tuner-body">
+            <!-- The threshold control -->
+            <div class="threshold-row">
+              <span class="threshold-label">Threshold</span>
+              <div class="threshold-track">
+                <div class="tuner-slider-track"></div>
+                <div class="tuner-slider-fill" id="sliderFill" style="width:62%"></div>
+                <input
+                  type="range"
+                  class="tuner-slider"
+                  id="thresholdSlider"
+                  min="10" max="99" value="62"
+                  step="1"
+                  aria-label="Alert threshold (10–99)"
+                  aria-valuetext="62 — balanced zone"
+                />
+              </div>
+              <span class="threshold-value-display" id="thresholdDisplay" aria-live="polite">62</span>
+            </div>
+
+            <!-- Zone label -->
+            <p class="threshold-zone" id="thresholdZone" aria-live="polite">
+              Balanced zone — some noise, few gaps
+            </p>
+
+            <!-- The computed outputs — this is what the artifact reveals -->
+            <div class="tuner-outputs">
+              <div class="output-cell danger-side" aria-live="polite">
+                <div class="output-cell-label">False alerts / week</div>
+                <div class="output-number">
+                  <span id="falseAlertsNum">4</span>
+                  <span class="output-unit">pages</span>
+                </div>
+                <div class="output-sub" id="falseAlertsSub">~1 per working day</div>
+              </div>
+              <div class="output-cell safe-side" aria-live="polite">
+                <div class="output-cell-label">Missed attacks / week</div>
+                <div class="output-number">
+                  <span id="missedAttacksNum">0.3</span>
+                  <span class="output-unit">slips</span>
+                </div>
+                <div class="output-sub" id="missedAttacksSub">1 in 3 weeks undetected</div>
+              </div>
+            </div>
+
+            <!-- Coverage bar -->
+            <div class="coverage-bar-area">
+              <div class="coverage-bar-label">Attack coverage at this threshold</div>
+              <div class="coverage-bar" role="progressbar" aria-valuenow="87" aria-valuemin="0" aria-valuemax="100" id="coverageBarOuter">
+                <div class="coverage-bar-fill" id="coverageBarFill" style="width:87%"></div>
+              </div>
+              <div class="coverage-bar-footer">
+                <span>Coverage: <strong id="coveragePct">87%</strong></span>
+                <span>Noise: <strong id="noisePct">4 pages</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="tuner-footnote">
+            Model uses your team's trailing 30-day traffic baseline. Drag the threshold to see how Sentinel's alerts would have changed last week.
+          </div>
+        </div><!-- /tuner-card -->
+      </div><!-- /tuner region -->
+
+    </section><!-- /hero -->
+  </div><!-- /page-wrapper -->
+
+  <!-- ═══════════════ SUPPORTING SECTION ═══════════════ -->
+  <div class="page-wrapper">
+    <section class="support-section" aria-labelledby="how-heading">
+
+      <p class="section-label" aria-hidden="true">Inside the engine</p>
+      <h2 id="how-heading">Three signals. One score. One alert.</h2>
+      <p class="support-intro">
+        Sentinel doesn't alert on individual thresholds for rate, latency, or errors. It correlates all three into a single anomaly score — then surfaces the threshold your team actually wants to act on.
+      </p>
+
+      <div class="anatomy-grid">
+
+        <div class="anatomy-cell">
+          <div class="anatomy-step">Signal 1</div>
+          <h3>Traffic envelope</h3>
+          <p>Sentinel learns your endpoint-by-endpoint request cadence over 30 days. A spike is only anomalous if it breaks the learned pattern — not a global rate limit.</p>
+          <div class="anatomy-code">
+POST <span class="hi">/api/v2/login</span>
+<span class="ok">baseline:</span>  4.2 rps ± 1.1
+<span class="ok">now:     </span>  4.8 rps
+<span class="ok">status:  </span>  within envelope
+          </div>
+        </div>
+
+        <div class="anatomy-cell">
+          <div class="anatomy-step">Signal 2</div>
+          <h3>Error-rate correlation</h3>
+          <p>A rate spike that correlates with rising 401s or 403s is the fingerprint of a brute-force or credential-stuffing run. Traffic alone is not enough.</p>
+          <div class="anatomy-code">
+<span class="bad">401 rate: </span> +340% vs baseline
+<span class="bad">source:   </span> 3 CIDR clusters
+<span class="bad">pattern:  </span> auth brute-force
+<span class="hi">score:    </span> <span class="bad">91 / 100 → ALERT</span>
+          </div>
+        </div>
+
+        <div class="anatomy-cell">
+          <div class="anatomy-step">Signal 3</div>
+          <h3>Canary endpoint guard</h3>
+          <p>Unused endpoints that should never receive real traffic. A single hit is scored at maximum anomaly weight — the quietest signal, the clearest evidence of reconnaissance.</p>
+          <div class="anatomy-code">
+<span class="bad">GET /api/internal/</span>
+<span class="bad">   admin/dump</span>
+<span class="ok">expected:</span>  0 req / ever
+<span class="bad">received:</span>  1 req
+<span class="hi">score:   </span>  <span class="bad">100 / 100 → PAGE</span>
+          </div>
+        </div>
+
+      </div><!-- /anatomy-grid -->
+
+      <!-- Alert strip: a real example of what the engineer receives -->
+      <div class="alert-strip" role="note">
+        <div class="alert-strip-icon" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 2L2 13h12L8 2z" fill="none" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+            <path d="M8 7v3" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+            <circle cx="8" cy="11.5" r="0.75" fill="white"/>
+          </svg>
+        </div>
+        <div class="alert-strip-body">
+          <div class="alert-strip-title">Example alert — sent at threshold 62, score 91</div>
+          <div class="alert-strip-text">
+            <strong>SENTINEL ALERT</strong> · <code>api.yourco.com</code> · Auth brute-force detected on <code>POST /api/v2/login</code>. Score 91/100. 1,240 401s in last 90s from 3 IP clusters. Baseline: 4.2 rps. Current: 48.7 rps. Suggested block: <code>198.51.100.0/24</code>. — Sentinel #4471
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </div>
+</main>
+
+<!-- ═══════════════════════════ FOOTER ════════════════════════ -->
+<footer>
+  <div class="page-wrapper">
+    <div class="footer-inner">
+      <span>© 2026 Sentinel Security, Inc.</span>
+      <nav aria-label="Footer links">
+        <a href="#">Privacy</a> &nbsp;·&nbsp;
+        <a href="#">Status</a> &nbsp;·&nbsp;
+        <a href="#">Docs</a>
+      </nav>
+    </div>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════ JS ════════════════════════════ -->
+<script>
+(function () {
+  'use strict';
+
+  /* ── Threshold Tuner computation model ──────────────────────────────
+     Grounded in the precision-recall trade-off of anomaly detection:
+     - As threshold rises: stricter → more missed attacks, fewer false alerts
+     - As threshold falls: looser → fewer missed attacks, more false alerts
+     These are calibrated to a representative B2B API surface:
+       • ~8 genuine attack attempts/week (industry avg for mid-market SaaS)
+       • ~22 borderline events/week that COULD trigger false pages at low thresholds
+  ── */
+
+  var BASELINE_EVENTS_PER_WEEK = 22;   // borderline events that could page
+  var ATTACK_RATE_PER_WEEK     = 8;    // genuine attacks per week
+
+  function computeModel(t) {
+    // t = 10..99; normalize to 0..1
+    var tn = (t - 10) / 89;
+
+    // False alerts: fall steeply as threshold rises (exponential-ish decay)
+    // At t=10: almost all borderline events page. At t=99: nearly 0.
+    var falseAlerts = BASELINE_EVENTS_PER_WEEK * Math.pow(1 - tn, 1.9);
+
+    // Missed attacks: rise as threshold gets stricter
+    // At t=10: almost nothing slips through. At t=99: most attacks missed.
+    var missedAttacks = ATTACK_RATE_PER_WEEK * Math.pow(tn, 2.3);
+
+    // Coverage: fraction of attacks the threshold would catch
+    var coverage = 1 - (missedAttacks / ATTACK_RATE_PER_WEEK);
+
+    return {
+      falseAlerts:   Math.max(0, falseAlerts),
+      missedAttacks: Math.max(0, missedAttacks),
+      coverage:      Math.min(1, Math.max(0, coverage))
+    };
+  }
+
+  function fmt(n) {
+    if (n < 0.1) return '0';
+    if (n < 1)   return n.toFixed(1);
+    if (n < 10)  return n.toFixed(1);
+    return Math.round(n).toString();
+  }
+
+  function falseAlertLabel(n) {
+    if (n < 0.5)  return 'Near-silent — very few interruptions';
+    if (n < 2)    return '~1 per week — manageable';
+    if (n < 5)    return '~1 per working day';
+    if (n < 10)   return 'Multiple per day — team fatigue risk';
+    return 'Alert fatigue territory — reconsider';
+  }
+
+  function missedLabel(n) {
+    if (n < 0.1)  return 'Essentially full coverage';
+    if (n < 0.5)  return '1 in many weeks could slip by';
+    if (n < 1)    return '1 in 3 weeks undetected';
+    if (n < 2)    return 'Roughly 1 attack/week missed';
+    return 'Significant coverage gaps';
+  }
+
+  function zoneLabel(t) {
+    if (t < 30)  return 'Sensitive zone — maximum coverage, higher noise';
+    if (t < 50)  return 'Low-noise zone — few false alerts, good coverage';
+    if (t < 70)  return 'Balanced zone — some noise, few gaps';
+    if (t < 85)  return 'Conservative zone — quiet rotation, watch for gaps';
+    return 'Strict zone — near-silent, but attacks may slip through';
+  }
+
+  function updateTuner(t) {
+    var m = computeModel(t);
+
+    // Threshold display
+    document.getElementById('thresholdDisplay').textContent = t;
+
+    // Slider fill width
+    var pct = ((t - 10) / 89) * 100;
+    document.getElementById('sliderFill').style.width = pct + '%';
+
+    // Zone label
+    document.getElementById('thresholdZone').textContent = zoneLabel(t);
+
+    // False alerts
+    document.getElementById('falseAlertsNum').textContent = fmt(m.falseAlerts);
+    document.getElementById('falseAlertsSub').textContent = falseAlertLabel(m.falseAlerts);
+
+    // Missed attacks
+    document.getElementById('missedAttacksNum').textContent = fmt(m.missedAttacks);
+    document.getElementById('missedAttacksSub').textContent = missedLabel(m.missedAttacks);
+
+    // Coverage bar
+    var covPct = Math.round(m.coverage * 100);
+    document.getElementById('coverageBarFill').style.width = covPct + '%';
+    document.getElementById('coveragePct').textContent = covPct + '%';
+    document.getElementById('noisePct').textContent = fmt(m.falseAlerts) + ' pages';
+    document.getElementById('coverageBarOuter').setAttribute('aria-valuenow', covPct);
+  }
+
+  var slider = document.getElementById('thresholdSlider');
+  if (slider) {
+    slider.addEventListener('input', function () {
+      updateTuner(parseInt(this.value, 10));
+    });
+    // Run on load to sync with default value
+    updateTuner(parseInt(slider.value, 10));
+  }
+
+  /* ── Sparkline animation (ambient) ─────────────────────────────────
+     Gently shifts points to simulate live traffic. Low contrast,
+     secondary role — the Tuner is the standout, not this.
+  ── */
+  var sparkPoints = [22,20,18,22,15,12,16,19,10,14,18,21,15,8,5,10,16,20,18,14,17];
+  var anomalyRange = [12, 14]; // indices of the spike
+
+  function updateSparkline() {
+    // Drift each point slightly
+    sparkPoints = sparkPoints.map(function (v, i) {
+      var isAnomaly = (i >= anomalyRange[0] && i <= anomalyRange[1]);
+      var drift = (Math.random() - 0.5) * (isAnomaly ? 1.5 : 2.5);
+      var base = isAnomaly ? 6 : 16;
+      var newV = v + drift;
+      return Math.max(base - 3, Math.min(isAnomaly ? 12 : 27, newV));
+    });
+
+    var pts = sparkPoints.map(function (v, i) {
+      return (i * 20) + ',' + v;
+    }).join(' ');
+
+    var anomalyPts = sparkPoints
+      .slice(anomalyRange[0], anomalyRange[1] + 1)
+      .map(function (v, j) {
+        return ((anomalyRange[0] + j) * 20) + ',' + v;
+      }).join(' ');
+
+    var line = document.getElementById('sparklineLine');
+    var anom = document.getElementById('sparklineAnomaly');
+    if (line) line.setAttribute('points', pts);
+    if (anom) anom.setAttribute('points', anomalyPts);
+  }
+
+  // Only animate if motion is acceptable
+  var motionOK = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (motionOK) {
+    setInterval(updateSparkline, 900);
+  }
+
+})();
+</script>
+
+</body>
+</html>

@@ -59,14 +59,23 @@ function check(file) {
   const uniqHex = [...new Set(hexes)];
   const explicitSlop = uniqHex.filter((h) => SLOP_HEXES.includes(h.length === 4
     ? "#" + h.slice(1).split("").map((c) => c + c).join("") : h));
-  const hueSlop = [];
+  const bluePurple = [], cyan = [];
   for (const h of uniqHex) {
     const label = classifyHue(rgbToHsl(hexToRgb(h)));
-    if (label) hueSlop.push(`${h} → ${label}`);
+    if (!label) continue;
+    if (label.startsWith("blue-purple")) bluePurple.push(h);
+    else cyan.push(h);                                       // cyan/teal: gated only on dark ground
   }
 
-  // --- dark + glow: any near-black ground AND a saturated shadow/glow ---
-  const darkGround = uniqHex.some((h) => rgbToHsl(hexToRgb(h))[2] <= 14);
+  // --- dark + glow: a near-black GROUND (not just near-black ink text) AND a sat. glow ---
+  // Only count dark hexes used in a background declaration or a bg-named CSS variable,
+  // so near-black body text on a light page doesn't read as a dark ground.
+  const bgCtx = [
+    ...lc.matchAll(/background(?:-color)?\s*:\s*([^;{}]+)/g),
+    ...lc.matchAll(/--[\w-]*(?:bg|background|surface|canvas|base|ground|night|abyss|dark)[\w-]*\s*:\s*([^;{}]+)/g),
+  ].map((m) => m[1]).join("  ");
+  const bgHexes = [...bgCtx.matchAll(/#[0-9a-f]{3}(?:[0-9a-f]{3})?\b/g)].map((m) => m[0]);
+  const darkGround = bgHexes.some((h) => rgbToHsl(hexToRgb(h))[2] <= 14);
   const shadowDecls = [...lc.matchAll(/(box-shadow|text-shadow|drop-shadow)[^;{}]*/g)].map((m) => m[0]);
   const glow = shadowDecls.some((d) => {
     const hs = [...d.matchAll(/#[0-9a-f]{3}(?:[0-9a-f]{3})?\b/g)].map((m) => m[0]);
@@ -111,7 +120,11 @@ function check(file) {
   //     no flagged font, and at least one interactivity signal ---
   const fails = [];
   if (explicitSlop.length) fails.push(`explicit slop hex: ${explicitSlop.join(", ")}`);
-  if (hueSlop.length) fails.push(`slop-hue color: ${hueSlop.join("; ")}`);
+  // 1A/1E: indigo/violet/fintech-blue is slop regardless of ground.
+  if (bluePurple.length) fails.push(`blue-purple AI band: ${bluePurple.join(", ")}`);
+  // 1B: cyan/teal is only a violation as a glow or fill on a DARK ground (muted teal on
+  // a light ground is explicitly allowed by slop-colors.md).
+  if (cyan.length && darkGround) fails.push(`cyan/teal on dark ground: ${cyan.join(", ")}`);
   if (darkGlow) fails.push("dark ground + saturated glow shadow");
   if (renderRisk) fails.push(`opacity:0 (${opacityZero}) gated by IntersectionObserver`);
   if (fontFlags.length) fails.push(`flagged font: ${fontFlags.join(", ")}`);

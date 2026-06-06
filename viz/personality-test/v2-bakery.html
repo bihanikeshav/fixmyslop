@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hearth & Moon — Sourdough Bakery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@300;400;500&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,500;1,6..72,300;1,6..72,400&display=swap" rel="stylesheet">
+
+<style>
+  /* ─── Reset & tokens ──────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ground:    #E8E5DE;   /* flour-sack: dry warm neutral, not cream */
+    --ground-2:  #DDDAD2;   /* one step darker for sections */
+    --ink:       #1C1A17;   /* tinted near-black; never pure #000 */
+    --ink-mid:   #4A4540;   /* body / secondary text */
+    --ink-light: #7C7670;   /* captions, meta */
+    --crust:     #6B3C22;   /* Maillard crust brown — the accent */
+    --crust-2:   #8B4E2E;   /* lighter crust for hover states */
+    --moon-face: #F0EDE5;   /* moon disc: cooler than ground */
+    --rule:      #C5C1B8;   /* hairline borders */
+    --font-head: 'Newsreader', Georgia, serif;
+    --font-mono: 'Chivo Mono', 'Courier New', monospace;
+  }
+
+  html { font-size: 16px; }
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-mono);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ─── Typography ─────────────────────────────────────────────── */
+  h1, h2, h3 {
+    font-family: var(--font-head);
+    font-weight: 300;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+  }
+
+  /* ─── Layout scaffolding ──────────────────────────────────────── */
+  .site-header {
+    padding: 1.5rem 2.5rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1.5rem;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .wordmark {
+    font-family: var(--font-head);
+    font-size: 1.25rem;
+    font-weight: 300;
+    letter-spacing: 0.02em;
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  .wordmark span {
+    color: var(--crust);
+  }
+
+  .nav-meta {
+    font-size: 0.75rem;
+    color: var(--ink-light);
+    font-family: var(--font-mono);
+    letter-spacing: 0.04em;
+    margin-left: auto;
+  }
+
+  /* ─── Hero layout ────────────────────────────────────────────── */
+  .hero {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: calc(100vh - 4rem);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  /* Left column: copy */
+  .hero-copy {
+    padding: 4rem 3rem 4rem 2.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-right: 1px solid var(--rule);
+  }
+
+  .bake-label {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    color: var(--crust);
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero-headline {
+    font-family: var(--font-head);
+    font-size: clamp(2.4rem, 4.5vw, 3.8rem);
+    font-weight: 300;
+    line-height: 1.1;
+    color: var(--ink);
+    margin-bottom: 1.5rem;
+    max-width: 18ch;
+  }
+
+  .hero-headline em {
+    font-style: italic;
+    color: var(--crust);
+  }
+
+  .hero-body {
+    font-size: 0.9rem;
+    line-height: 1.75;
+    color: var(--ink-mid);
+    max-width: 44ch;
+    margin-bottom: 2.5rem;
+  }
+
+  .pickup-cta {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ground);
+    background: var(--crust);
+    padding: 0.75rem 1.5rem;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    /* no pill — hard corners */
+  }
+
+  .pickup-cta:hover {
+    background: var(--crust-2);
+  }
+
+  /* Right column: the Lunar Bake Clock */
+  .hero-artifact {
+    padding: 3rem 2.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    position: relative;
+  }
+
+  .artifact-label {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    color: var(--ink-light);
+    text-transform: uppercase;
+    margin-bottom: 1.75rem;
+  }
+
+  /* ─── LUNAR BAKE CLOCK ───────────────────────────────────────── */
+  .lunar-clock {
+    width: 100%;
+    max-width: 480px;
+  }
+
+  /* Moon disc + phase ring */
+  .moon-stage {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    margin-bottom: 2rem;
+  }
+
+  .moon-svg {
+    width: 200px;
+    height: 200px;
+  }
+
+  /* Phase ring: 29.5-segment arc, current position marked */
+  .phase-orbit {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    margin-bottom: 2rem;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+
+  .phase-tick {
+    width: 6px;
+    height: 14px;
+    background: var(--rule);
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+
+  .phase-tick.active {
+    background: var(--crust);
+    height: 20px;
+  }
+
+  .phase-tick.past {
+    background: var(--ink-mid);
+  }
+
+  /* Loaf readout */
+  .loaf-readout {
+    border-top: 1px solid var(--rule);
+    padding-top: 1.5rem;
+  }
+
+  .loaf-phase-name {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--crust);
+    margin-bottom: 0.5rem;
+  }
+
+  .loaf-name {
+    font-family: var(--font-head);
+    font-size: 1.8rem;
+    font-weight: 300;
+    font-style: italic;
+    color: var(--ink);
+    margin-bottom: 0.5rem;
+    line-height: 1.2;
+  }
+
+  .loaf-note {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--ink-mid);
+    line-height: 1.6;
+    max-width: 36ch;
+  }
+
+  /* Phase data strip */
+  .phase-data-strip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    border-top: 1px solid var(--rule);
+    border-left: 1px solid var(--rule);
+    margin-top: 1.5rem;
+  }
+
+  .phase-data-cell {
+    border-right: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    padding: 0.75rem 1rem;
+  }
+
+  .phase-data-label {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    font-weight: 500;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-light);
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+
+  .phase-data-value {
+    font-family: var(--font-mono);
+    font-size: 1.05rem;
+    font-weight: 400;
+    color: var(--ink);
+    display: block;
+  }
+
+  /* ─── Phase explorer (browse all 8 loaves) ──────────────────── */
+  .phase-nav {
+    display: flex;
+    gap: 0;
+    margin-top: 1.5rem;
+    border: 1px solid var(--rule);
+    overflow: hidden;
+  }
+
+  .phase-btn {
+    flex: 1;
+    border: none;
+    background: transparent;
+    border-right: 1px solid var(--rule);
+    padding: 0.6rem 0.4rem;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: background 0.15s;
+  }
+
+  .phase-btn:last-child { border-right: none; }
+
+  .phase-btn:hover { background: var(--ground-2); }
+
+  .phase-btn.active-phase {
+    background: var(--crust);
+  }
+
+  .phase-btn.active-phase .phase-icon-svg path,
+  .phase-btn.active-phase .phase-icon-svg circle { stroke: var(--ground); fill: var(--ground); }
+
+  .phase-btn.active-phase .phase-btn-label { color: var(--ground); }
+
+  .phase-icon-svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .phase-btn-label {
+    font-family: var(--font-mono);
+    font-size: 0.55rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-mid);
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  /* ─── Supporting section: process ───────────────────────────── */
+  .process-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .process-left {
+    padding: 4rem 3rem 4rem 2.5rem;
+    border-right: 1px solid var(--rule);
+  }
+
+  .section-heading {
+    font-family: var(--font-head);
+    font-size: clamp(1.8rem, 2.8vw, 2.6rem);
+    font-weight: 300;
+    line-height: 1.15;
+    color: var(--ink);
+    margin-bottom: 1.5rem;
+    max-width: 20ch;
+  }
+
+  .section-body {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    line-height: 1.75;
+    color: var(--ink-mid);
+    max-width: 42ch;
+  }
+
+  .process-right {
+    padding: 4rem 2.5rem;
+  }
+
+  /* Timeline: fermentation steps */
+  .ferment-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .ferment-step {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 0;
+    border-top: 1px solid var(--rule);
+    padding: 1.1rem 0;
+    align-items: start;
+  }
+
+  .ferment-step:last-child {
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .ferment-time {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--crust);
+    padding-right: 1rem;
+    padding-top: 2px;
+  }
+
+  .ferment-label {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--ink);
+    line-height: 1.5;
+    font-weight: 400;
+  }
+
+  .ferment-note {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--ink-light);
+    line-height: 1.5;
+    margin-top: 2px;
+  }
+
+  /* ─── Footer ────────────────────────────────────────────────── */
+  .site-footer {
+    padding: 2rem 2.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .footer-locale {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--ink-light);
+    letter-spacing: 0.04em;
+  }
+
+  .footer-schedule {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--ink-mid);
+  }
+
+  /* ─── Motion ────────────────────────────────────────────────── */
+  @media (prefers-reduced-motion: no-preference) {
+    .moon-svg .moon-shadow {
+      transition: d 0.6s ease-in-out;
+    }
+  }
+
+  /* ─── Responsive ────────────────────────────────────────────── */
+  @media (max-width: 768px) {
+    .hero,
+    .process-section {
+      grid-template-columns: 1fr;
+    }
+
+    .hero-copy {
+      border-right: none;
+      border-bottom: 1px solid var(--rule);
+      padding: 3rem 1.5rem;
+    }
+
+    .hero-artifact {
+      padding: 3rem 1.5rem;
+    }
+
+    .process-left {
+      border-right: none;
+      border-bottom: 1px solid var(--rule);
+      padding: 2.5rem 1.5rem;
+    }
+
+    .process-right {
+      padding: 2.5rem 1.5rem;
+    }
+
+    .site-header {
+      padding: 1.25rem 1.5rem;
+    }
+
+    .site-footer {
+      padding: 1.5rem;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+
+  /* ─── Noscript fallback ─────────────────────────────────────── */
+  .noscript-loaf {
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<!-- ─── Header ──────────────────────────────────────────────────── -->
+<header class="site-header">
+  <a href="#" class="wordmark">Hearth <span>&</span> Moon</a>
+  <nav class="nav-meta">Weekly pickup · Coastal sourdough</nav>
+</header>
+
+<!-- ─── Hero ────────────────────────────────────────────────────── -->
+<main>
+  <section class="hero" aria-label="Hero">
+
+    <!-- Left: copy -->
+    <div class="hero-copy">
+      <p class="bake-label">Small-batch · Natural ferment · Moon-timed</p>
+      <h1 class="hero-headline">
+        Each loaf answers to the <em>moon.</em>
+      </h1>
+      <p class="hero-body">
+        We bake once a week, on a schedule set by the lunar cycle. New moon
+        brings a high-hydration open crumb. Full moon gets our low-and-slow
+        seeded crust. The dough decides the rest.
+      </p>
+      <a href="#pickup" class="pickup-cta">See this week's pickup</a>
+    </div>
+
+    <!-- Right: the Lunar Bake Clock -->
+    <div class="hero-artifact" aria-label="Lunar Bake Clock">
+      <p class="artifact-label">Lunar Bake Clock — live phase</p>
+
+      <div class="lunar-clock" id="lunarClock">
+
+        <!-- Moon disc: SVG, rendered immediately, updated by JS -->
+        <div class="moon-stage" aria-label="Current moon phase illustration">
+          <svg class="moon-svg" viewBox="0 0 200 200" fill="none"
+               xmlns="http://www.w3.org/2000/svg"
+               role="img" aria-labelledby="moonTitle moonDesc">
+            <title id="moonTitle">Moon phase diagram</title>
+            <desc id="moonDesc">Illustration of the current lunar phase</desc>
+            <!-- Base disc -->
+            <circle cx="100" cy="100" r="80" fill="var(--moon-face)" stroke="var(--rule)" stroke-width="1"/>
+            <!-- Shadow overlay: clipped to disc, updated by JS -->
+            <clipPath id="discClip">
+              <circle cx="100" cy="100" r="80"/>
+            </clipPath>
+            <g clip-path="url(#discClip)">
+              <!-- Dark shadow half — shape controlled by JS path -->
+              <path id="moonShadow" class="moon-shadow" fill="var(--ground-2)" d="M100,20 A80,80 0 0 0 100,180 A80,80 0 0 1 100,20"/>
+            </g>
+            <!-- Terminator ring hint -->
+            <circle cx="100" cy="100" r="80" fill="none" stroke="var(--rule)" stroke-width="0.5"/>
+            <!-- Phase label inside disc -->
+            <text x="100" y="108" text-anchor="middle"
+                  font-family="'Chivo Mono', monospace"
+                  font-size="11" fill="var(--ink-mid)"
+                  id="moonPhaseLabel">—</text>
+          </svg>
+        </div>
+
+        <!-- 29.5-day orbit strip -->
+        <div class="phase-orbit" aria-label="Days elapsed in lunar cycle" id="phaseOrbit">
+          <!-- Generated by JS; static fallback below -->
+          <noscript>
+            <span style="font-family:monospace;font-size:0.75rem;color:var(--ink-mid)">
+              (Enable JS to see today's position in the lunar cycle)
+            </span>
+          </noscript>
+        </div>
+
+        <!-- Phase data cells -->
+        <div class="phase-data-strip">
+          <div class="phase-data-cell">
+            <span class="phase-data-label">Phase</span>
+            <span class="phase-data-value" id="pdPhase">—</span>
+          </div>
+          <div class="phase-data-cell">
+            <span class="phase-data-label">Illumination</span>
+            <span class="phase-data-value" id="pdIllum">—</span>
+          </div>
+          <div class="phase-data-cell">
+            <span class="phase-data-label">Day in cycle</span>
+            <span class="phase-data-value" id="pdDay">—</span>
+          </div>
+        </div>
+
+        <!-- Browse all 8 phases -->
+        <div class="phase-nav" role="tablist" aria-label="Browse loaves by moon phase" id="phaseNav">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Loaf readout -->
+        <div class="loaf-readout">
+          <p class="loaf-phase-name" id="loafPhaseName">This bake</p>
+          <p class="loaf-name" id="loafName">—</p>
+          <p class="loaf-note" id="loafNote">—</p>
+        </div>
+
+      </div><!-- /lunar-clock -->
+
+      <!-- noscript static fallback for the loaf itself -->
+      <noscript>
+        <div style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--rule)">
+          <p style="font-family:monospace;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:#6B3C22;margin-bottom:0.4rem">This bake (JS off)</p>
+          <p style="font-family:Georgia,serif;font-size:1.6rem;font-style:italic;color:#1C1A17">Open-crumb Country White</p>
+          <p style="font-family:monospace;font-size:0.78rem;color:#4A4540;margin-top:0.3rem">
+            New moon: high hydration (85%), long cold retard, fennel-sea-salt crust.
+            Pickup: Saturday 10–12.
+          </p>
+        </div>
+      </noscript>
+
+    </div><!-- /hero-artifact -->
+  </section>
+
+  <!-- ─── Process section ──────────────────────────────────────── -->
+  <section class="process-section" id="pickup" aria-label="Process and pickup">
+
+    <div class="process-left">
+      <h2 class="section-heading">Slow is the only speed that works.</h2>
+      <p class="section-body">
+        Every loaf starts three days before pickup. Flour and water are left to
+        rest overnight, then folded through a long bulk ferment, shaped, and
+        held cold until bake morning. No shortcuts — the timeline is the recipe.
+      </p>
+    </div>
+
+    <div class="process-right">
+      <div class="ferment-timeline" aria-label="Fermentation timeline">
+        <div class="ferment-step">
+          <span class="ferment-time">Day 0</span>
+          <div>
+            <div class="ferment-label">Autolyse — flour + water rest</div>
+            <div class="ferment-note">2–4 hr · 76°F · hydration 80–85%</div>
+          </div>
+        </div>
+        <div class="ferment-step">
+          <span class="ferment-time">Day 0</span>
+          <div>
+            <div class="ferment-label">Starter added · stretch and fold sets</div>
+            <div class="ferment-note">4× over 2 hr · builds gluten network</div>
+          </div>
+        </div>
+        <div class="ferment-step">
+          <span class="ferment-time">Day 0–1</span>
+          <div>
+            <div class="ferment-label">Bulk ferment</div>
+            <div class="ferment-note">10–14 hr · 70°F · dough doubles</div>
+          </div>
+        </div>
+        <div class="ferment-step">
+          <span class="ferment-time">Day 1</span>
+          <div>
+            <div class="ferment-label">Shape · score · into banneton</div>
+            <div class="ferment-note">Cold retard begins · 38°F</div>
+          </div>
+        </div>
+        <div class="ferment-step">
+          <span class="ferment-time">Day 2</span>
+          <div>
+            <div class="ferment-label">Cold retard · 12–16 hr</div>
+            <div class="ferment-note">Flavour development · slow acid build</div>
+          </div>
+        </div>
+        <div class="ferment-step">
+          <span class="ferment-time">Day 3</span>
+          <div>
+            <div class="ferment-label">Bake — 500°F Dutch oven · steam burst</div>
+            <div class="ferment-note">20 min lid-on · 25 min open · Maillard crust</div>
+          </div>
+        </div>
+        <div class="ferment-step">
+          <span class="ferment-time">Sat</span>
+          <div>
+            <div class="ferment-label">Pickup window · 10:00 – 12:00</div>
+            <div class="ferment-note">Order closes Wednesday 8 pm</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+</main>
+
+<!-- ─── Footer ───────────────────────────────────────────────────── -->
+<footer class="site-footer">
+  <span class="footer-locale">Hearth & Moon · Coastal sourdough · Small town, Pacific coast</span>
+  <span class="footer-schedule">Pickup Saturdays · Orders close Wed 8 pm</span>
+</footer>
+
+<!-- ─── THE LUNAR BAKE CLOCK — computation ────────────────────── -->
+<script>
+(function () {
+  'use strict';
+
+  // ── Moon phase astronomy ──────────────────────────────────────
+  // Julian date of a known new moon: Jan 6, 2000 18:14 UTC = JD 2451550.259722
+  var KNOWN_NEW_MOON_JD = 2451550.259722;
+  var SYNODIC_MONTH     = 29.530588853; // days
+
+  function julianDate(date) {
+    // Date → Julian Day Number (continuous day count from noon 4713 BC Jan 1)
+    var y = date.getUTCFullYear();
+    var m = date.getUTCMonth() + 1;
+    var d = date.getUTCDate();
+    var h = date.getUTCHours();
+    var mn = date.getUTCMinutes();
+    var s = date.getUTCSeconds();
+    var dayFrac = d + (h + mn / 60 + s / 3600) / 24;
+    if (m <= 2) { y -= 1; m += 12; }
+    var A = Math.floor(y / 100);
+    var B = 2 - A + Math.floor(A / 4);
+    return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + dayFrac + B - 1524.5;
+  }
+
+  function moonAge(date) {
+    // Age in days since last new moon (0 = new, ~14.76 = full, ~29.5 = next new)
+    var jd = julianDate(date);
+    var diff = jd - KNOWN_NEW_MOON_JD;
+    var age = ((diff % SYNODIC_MONTH) + SYNODIC_MONTH) % SYNODIC_MONTH;
+    return age;
+  }
+
+  function moonIllumination(age) {
+    // Approximate illumination fraction 0–1
+    var angle = (age / SYNODIC_MONTH) * 2 * Math.PI;
+    return (1 - Math.cos(angle)) / 2;
+  }
+
+  // ── Phase buckets (8 named phases + the loaf mapping) ────────
+  var PHASES = [
+    {
+      id: 'new',
+      name: 'New Moon',
+      ageMin: 0,
+      ageMax: 1.85,
+      loaf: 'Open-crumb Country White',
+      note: 'High hydration (85%), long cold retard, fennel & sea-salt crust. The dough rests the longest this cycle — patience shows in the holes.',
+      icon: 'new'
+    },
+    {
+      id: 'waxing-crescent',
+      name: 'Waxing Crescent',
+      ageMin: 1.85,
+      ageMax: 7.38,
+      loaf: 'Rosemary & Olive Oil Fougasse',
+      note: 'Pulled into branches before the final proof. Herb oil folded at shaping, olive brine in the levain. A looser dough that rewards a hot stone.',
+      icon: 'waxing-crescent'
+    },
+    {
+      id: 'first-quarter',
+      name: 'First Quarter',
+      ageMin: 7.38,
+      ageMax: 11.0,
+      loaf: 'Toasted Einkorn Miche',
+      note: 'Whole einkorn toasted, soaked overnight. Dense, nutty, short oven spring. Slice thinner — the flavour is in the crumb density.',
+      icon: 'first-quarter'
+    },
+    {
+      id: 'waxing-gibbous',
+      name: 'Waxing Gibbous',
+      ageMin: 11.0,
+      ageMax: 14.77,
+      loaf: 'Seaweed & Black Sesame Rye',
+      note: 'Wakame flakes, black sesame, 40% dark rye. Sourness rounds out as the moon fills. Suits sharp aged cheese or nothing at all.',
+      icon: 'waxing-gibbous'
+    },
+    {
+      id: 'full',
+      name: 'Full Moon',
+      ageMin: 14.77,
+      ageMax: 16.61,
+      loaf: 'Low-and-Slow Miso Honey Boule',
+      note: 'White miso and buckwheat honey brushed before scoring, then slow-baked at 450°F. Deep Maillard crust, close crumb, long minerality.',
+      icon: 'full'
+    },
+    {
+      id: 'waning-gibbous',
+      name: 'Waning Gibbous',
+      ageMin: 16.61,
+      ageMax: 22.15,
+      loaf: 'Charcoal & Flaxseed Batard',
+      note: 'Activated charcoal in the final mix — grey crumb, charcoal-grey crust, not a trick. Flaxseed soak adds slow pull to the slice.',
+      icon: 'waning-gibbous'
+    },
+    {
+      id: 'last-quarter',
+      name: 'Last Quarter',
+      ageMin: 22.15,
+      ageMax: 25.92,
+      loaf: 'Overnight Porridge Loaf',
+      note: 'Oat groats cooked overnight in the residual oven heat, folded cold into a stiff levain. Tight, springy crumb. Slices clean.',
+      icon: 'last-quarter'
+    },
+    {
+      id: 'waning-crescent',
+      name: 'Waning Crescent',
+      ageMin: 25.92,
+      ageMax: 29.53,
+      loaf: 'End-of-Cycle Sourdough Crackers',
+      note: 'The starter at its most active before refresh — excess levain rolled paper-thin with caraway and smoked salt. No second chance to use it.',
+      icon: 'waning-crescent'
+    }
+  ];
+
+  function phaseFromAge(age) {
+    for (var i = 0; i < PHASES.length; i++) {
+      if (age >= PHASES[i].ageMin && age < PHASES[i].ageMax) return PHASES[i];
+    }
+    return PHASES[0];
+  }
+
+  // ── SVG moon-shadow path computation ─────────────────────────
+  // We draw the unlit half as a path on the disc.
+  // For ages 0–14.76 (waxing): shadow on LEFT side
+  // For ages 14.76–29.5 (waning): shadow on RIGHT side
+  // The terminator is an ellipse: semi-axis along Y = r, semi-axis along X
+  // = r * |cos(phase_angle)| where phase_angle = (age/synodic) * 2π
+  function moonShadowPath(age) {
+    var r = 80;
+    var cx = 100;
+    var cy = 100;
+    var phaseAngle = (age / SYNODIC_MONTH) * 2 * Math.PI;
+    // cos of phase angle: +1 at new (full shadow), -1 at full (no shadow), +1 at new again
+    var cosAngle = Math.cos(phaseAngle);
+    // terminatorX semi-axis: abs(cosAngle) * r, ranges 0 (full/new) → r (quarters)
+    var tx = Math.abs(cosAngle) * r;
+
+    // Waxing (age 0–14.76): shadow occupies left half + terminator curves right
+    // Waning (age 14.76–29.5): shadow occupies right half + terminator curves left
+    var waxing = age < (SYNODIC_MONTH / 2);
+
+    if (age < 0.3 || age > SYNODIC_MONTH - 0.3) {
+      // Nearly new moon: full disc is shadow (just show a thin sliver lit)
+      return 'M' + cx + ',' + (cy - r) + ' A' + r + ',' + r + ' 0 1 0 ' + cx + ',' + (cy + r) + ' A' + r + ',' + r + ' 0 1 0 ' + cx + ',' + (cy - r);
+    }
+
+    if (Math.abs(age - SYNODIC_MONTH / 2) < 0.3) {
+      // Nearly full moon: disc has almost no shadow
+      return 'M' + cx + ',' + (cy - r) + ' L' + cx + ',' + (cy + r) + ' L' + cx + ',' + (cy - r);
+    }
+
+    // Path: shadow half
+    // We draw: top of disc → arc around the shadow half → terminator ellipse → close
+    if (waxing) {
+      // Shadow is on the left: arc from top to bottom going LEFT, then terminator ellipse from bottom to top on right side
+      var sweep = cosAngle > 0 ? 0 : 1;
+      return [
+        'M', cx, cy - r,                                          // top of disc
+        'A', r, r, '0 0 0', cx, cy + r,                           // arc left half
+        'A', tx, r, '0 0', sweep, cx, cy - r,                     // terminator ellipse back to top
+        'Z'
+      ].join(' ');
+    } else {
+      // Shadow is on the right: arc from top to bottom going RIGHT, then terminator ellipse from bottom to top
+      var sweep2 = cosAngle < 0 ? 0 : 1;
+      return [
+        'M', cx, cy - r,
+        'A', r, r, '0 0 1', cx, cy + r,                           // arc right half
+        'A', tx, r, '0 0', sweep2, cx, cy - r,                    // terminator ellipse
+        'Z'
+      ].join(' ');
+    }
+  }
+
+  // ── Mini moon SVG icons for phase nav ─────────────────────────
+  function phaseIconPath(id) {
+    // Returns a tiny 20×20 SVG path string for each phase
+    var paths = {
+      'new':             '<circle cx="10" cy="10" r="8" fill="#C5C1B8"/>',
+      'waxing-crescent': '<circle cx="10" cy="10" r="8" fill="#C5C1B8"/><path d="M10,2 A8,8 0 0 0 10,18 A4,8 0 0 1 10,2" fill="var(--ground)"/>',
+      'first-quarter':   '<circle cx="10" cy="10" r="8" fill="#C5C1B8"/><path d="M10,2 L10,18 A8,8 0 0 1 10,2Z" fill="var(--ground)"/>',
+      'waxing-gibbous':  '<circle cx="10" cy="10" r="8" fill="#C5C1B8"/><path d="M10,2 A8,8 0 0 0 10,18 A3,8 0 0 0 10,2" fill="var(--ground)"/>',
+      'full':            '<circle cx="10" cy="10" r="8" fill="var(--moon-face)" stroke="var(--rule)" stroke-width="0.5"/>',
+      'waning-gibbous':  '<circle cx="10" cy="10" r="8" fill="#C5C1B8"/><path d="M10,2 A8,8 0 0 1 10,18 A3,8 0 0 1 10,2" fill="var(--ground)"/>',
+      'last-quarter':    '<circle cx="10" cy="10" r="8" fill="#C5C1B8"/><path d="M10,2 L10,18 A8,8 0 0 0 10,2Z" fill="var(--ground)"/>',
+      'waning-crescent': '<circle cx="10" cy="10" r="8" fill="#C5C1B8"/><path d="M10,2 A8,8 0 0 1 10,18 A4,8 0 0 0 10,2" fill="var(--ground)"/>'
+    };
+    return paths[id] || paths['new'];
+  }
+
+  // ── Render ────────────────────────────────────────────────────
+  var today = new Date();
+  var age = moonAge(today);
+  var illum = moonIllumination(age);
+  var phase = phaseFromAge(age);
+  var currentPhaseId = phase.id;
+  var selectedPhase = phase;
+
+  // Moon SVG shadow
+  var shadowEl = document.getElementById('moonShadow');
+  if (shadowEl) {
+    shadowEl.setAttribute('d', moonShadowPath(age));
+  }
+
+  // Moon phase label in disc
+  var moonLabel = document.getElementById('moonPhaseLabel');
+  if (moonLabel) {
+    // Short label: emoji-free, just a brief state word
+    var shortLabel = phase.name.replace(' Moon', '').replace(' Quarter', ' Qtr');
+    moonLabel.textContent = shortLabel;
+  }
+
+  // Data strip
+  var pdPhase = document.getElementById('pdPhase');
+  var pdIllum = document.getElementById('pdIllum');
+  var pdDay   = document.getElementById('pdDay');
+  if (pdPhase) pdPhase.textContent = phase.name;
+  if (pdIllum) pdIllum.textContent = Math.round(illum * 100) + '%';
+  if (pdDay)   pdDay.textContent   = Math.round(age * 10) / 10 + 'd';
+
+  // Orbit strip: 30 ticks for 29.5 days
+  var orbitEl = document.getElementById('phaseOrbit');
+  if (orbitEl) {
+    var total = 30;
+    var currentDay = Math.floor(age);
+    var html = '';
+    for (var i = 0; i < total; i++) {
+      var cls = 'phase-tick';
+      if (i === currentDay)      cls += ' active';
+      else if (i < currentDay)   cls += ' past';
+      var title = 'Day ' + i + ' of lunar cycle';
+      html += '<div class="' + cls + '" title="' + title + '" role="presentation"></div>';
+    }
+    orbitEl.innerHTML = html;
+  }
+
+  // Phase nav buttons
+  var navEl = document.getElementById('phaseNav');
+  if (navEl) {
+    var navHtml = '';
+    for (var j = 0; j < PHASES.length; j++) {
+      var p = PHASES[j];
+      var isActive = p.id === currentPhaseId;
+      navHtml += '<button class="phase-btn' + (isActive ? ' active-phase' : '') + '"' +
+        ' data-phase-id="' + p.id + '"' +
+        ' role="tab"' +
+        ' aria-selected="' + (isActive ? 'true' : 'false') + '"' +
+        ' aria-label="' + p.name + ': ' + p.loaf + '"' +
+        ' title="' + p.name + '"' +
+        '>' +
+        '<svg class="phase-icon-svg" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+        phaseIconPath(p.id) +
+        '</svg>' +
+        '<span class="phase-btn-label">' + p.name.replace(' Moon', '').replace(' Quarter', '') + '</span>' +
+        '</button>';
+    }
+    navEl.innerHTML = navHtml;
+
+    // Interaction: click a phase to preview its loaf
+    navEl.addEventListener('click', function (e) {
+      var btn = e.target.closest('.phase-btn');
+      if (!btn) return;
+      var pid = btn.getAttribute('data-phase-id');
+      var found = null;
+      for (var k = 0; k < PHASES.length; k++) {
+        if (PHASES[k].id === pid) { found = PHASES[k]; break; }
+      }
+      if (!found) return;
+      selectedPhase = found;
+
+      // Update active button
+      var allBtns = navEl.querySelectorAll('.phase-btn');
+      for (var m = 0; m < allBtns.length; m++) {
+        var isNowActive = allBtns[m].getAttribute('data-phase-id') === pid;
+        allBtns[m].classList.toggle('active-phase', isNowActive);
+        allBtns[m].setAttribute('aria-selected', isNowActive ? 'true' : 'false');
+      }
+
+      // Update loaf readout
+      updateLoafReadout(found, found.id === currentPhaseId);
+
+      // Update moon illustration for the selected phase
+      if (shadowEl) {
+        // Compute a representative age for this phase (midpoint)
+        var repAge = (found.ageMin + found.ageMax) / 2;
+        shadowEl.setAttribute('d', moonShadowPath(repAge));
+      }
+      if (moonLabel) {
+        moonLabel.textContent = found.name.replace(' Moon', '').replace(' Quarter', ' Qtr');
+      }
+    });
+  }
+
+  function updateLoafReadout(p, isCurrent) {
+    var nameEl = document.getElementById('loafPhaseName');
+    var loafEl = document.getElementById('loafName');
+    var noteEl = document.getElementById('loafNote');
+    if (nameEl) nameEl.textContent = isCurrent ? 'This bake · ' + p.name : p.name;
+    if (loafEl) loafEl.textContent = p.loaf;
+    if (noteEl) noteEl.textContent = p.note;
+  }
+
+  // Initial loaf readout
+  updateLoafReadout(phase, true);
+
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dr. Maya Okafor — Marine Biologist, Midnight Zone</title>
+
+  <!-- Sentient (serif, fresh/Fontshare) + Cabinet Grotesk (sans, fresh/Fontshare) + DM Mono (data) -->
+  <link rel="preconnect" href="https://api.fontshare.com" />
+  <link
+    rel="stylesheet"
+    href="https://api.fontshare.com/v2/css?f[]=sentient@400,400i,600,700&f[]=cabinet-grotesk@400,500,600&display=swap"
+  />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    /* ── Tokens ─────────────────────────────────────────────────────── */
+    :root {
+      /* Accent derived from bioluminescent emission spectrum of Vibrio fischeri (~490nm)
+         rendered as a dark, low-chroma sea-teal — NOT electric cyan */
+      --accent:        #1D6B5C;
+      --accent-mid:    #2A8A74;
+      --accent-faint:  #D4EAE6;
+      --accent-dim:    #9FCFC7;
+
+      --ink:           #1A1F21;   /* tinted near-black, not pure #000 */
+      --ink-secondary: #4A5254;
+      --ink-tertiary:  #7A8688;
+
+      /* Cool near-white — NOT warm cream (that's 1F cluster) */
+      --ground:        #F2F4F5;
+      --ground-mid:    #E6EAEB;
+      --ground-warm:   #DCE3E4;
+
+      --font-display:  'Sentient', Georgia, serif;
+      --font-body:     'Cabinet Grotesk', system-ui, sans-serif;
+      --font-data:     'DM Mono', 'Courier New', monospace;
+    }
+
+    /* ── Reset ──────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { font-size: 16px; scroll-behavior: smooth; }
+
+    body {
+      background: var(--ground);
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 1rem;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    /* ── Utility ────────────────────────────────────────────────────── */
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; overflow: hidden;
+      clip: rect(0,0,0,0); white-space: nowrap;
+    }
+
+    /* ── ═══════════════════════════════════════════════════════════════
+       HERO
+    ═══════════════════════════════════════════════════════════════ */
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 100vh;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      gap: 4rem;
+      align-items: center;
+    }
+
+    .hero__text {
+      padding: 5rem 0 5rem 1rem;
+      max-width: 540px;
+    }
+
+    .hero__dept {
+      font-family: var(--font-data);
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      color: var(--ink-secondary);
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+      /* NOT a pill/eyebrow chip — just a plain text label in mono */
+    }
+
+    .hero__name {
+      font-family: var(--font-display);
+      font-size: clamp(2.4rem, 4vw, 3.6rem);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.025em;
+      color: var(--ink);
+      margin-bottom: 0.75rem;
+    }
+
+    .hero__title {
+      font-family: var(--font-display);
+      font-size: clamp(1rem, 1.5vw, 1.2rem);
+      font-weight: 400;
+      font-style: italic;
+      color: var(--accent);
+      margin-bottom: 1.75rem;
+    }
+
+    .hero__bio {
+      font-size: 1.05rem;
+      line-height: 1.7;
+      color: var(--ink-secondary);
+      max-width: 46ch;
+      margin-bottom: 2.5rem;
+    }
+
+    .hero__bio strong {
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    .hero__actions {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    /* Hard-edge button — no pill, no gradient, no glow */
+    .btn-primary {
+      display: inline-block;
+      padding: 0.7rem 1.5rem;
+      background: var(--accent);
+      color: #F2F4F5;
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .btn-primary:hover, .btn-primary:focus-visible {
+      background: var(--accent-mid);
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .btn-ghost {
+      display: inline-block;
+      padding: 0.7rem 1.5rem;
+      background: transparent;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      font-weight: 500;
+      text-decoration: none;
+      border: 1.5px solid var(--ground-warm);
+      border-radius: 3px;
+      cursor: pointer;
+      transition: border-color 0.15s ease, color 0.15s ease;
+    }
+    .btn-ghost:hover, .btn-ghost:focus-visible {
+      border-color: var(--accent);
+      color: var(--accent);
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* ── ═══════════════════════════════════════════════════════════════
+       THE DEPTH WINDOW — Hero Artifact
+       ─────────────────────────────────────────────────────────────────
+       User drags a depth slider (0–4000m).
+       Computes:
+         • Ambient light (Beer-Lambert attenuation through real ocean zones)
+         • Pressure (1 atm per 10m)
+         • Zone name + description
+         • Which of Maya's study organisms are present at this depth
+       Renders fully on load (no JS required for initial state).
+       Interaction refines it; degraded state = readable static at 1000m.
+    ═══════════════════════════════════════════════════════════════ */
+    .depth-window {
+      position: relative;
+      background: var(--ground);
+      border: 1.5px solid var(--ground-warm);
+      border-radius: 4px;
+      padding: 2rem 2rem 2rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      /* Subtle left rule in accent — not a thick decorative border on a card */
+      border-left: 3px solid var(--accent);
+    }
+
+    .depth-window__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+    }
+
+    .depth-window__label {
+      font-family: var(--font-data);
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-tertiary);
+    }
+
+    .depth-window__instrument {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem 1.5rem;
+    }
+
+    /* ── Depth readout ── */
+    .dw-depth {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .dw-depth__value {
+      font-family: var(--font-data);
+      font-size: 3rem;
+      font-weight: 400;
+      color: var(--ink);
+      line-height: 1;
+      letter-spacing: -0.02em;
+      min-width: 5ch;
+    }
+
+    .dw-depth__unit {
+      font-family: var(--font-data);
+      font-size: 1rem;
+      color: var(--ink-secondary);
+    }
+
+    /* ── Gauge bar — light vs dark ── */
+    .dw-gauges {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .dw-gauge {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .dw-gauge__name {
+      font-family: var(--font-data);
+      font-size: 0.68rem;
+      color: var(--ink-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      min-width: 7ch;
+    }
+
+    .dw-gauge__track {
+      flex: 1;
+      height: 6px;
+      background: var(--ground-mid);
+      border-radius: 1px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .dw-gauge__fill {
+      position: absolute;
+      top: 0; left: 0;
+      height: 100%;
+      background: var(--accent);
+      border-radius: 1px;
+      transition: width 0.2s ease-out;
+    }
+
+    .dw-gauge__fill--pressure {
+      background: var(--ink-secondary);
+    }
+
+    .dw-gauge__val {
+      font-family: var(--font-data);
+      font-size: 0.75rem;
+      color: var(--ink-secondary);
+      min-width: 7ch;
+      text-align: right;
+    }
+
+    /* ── Zone indicator ── */
+    .dw-zone {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem 0.75rem;
+      background: var(--accent-faint);
+      border-radius: 2px;
+    }
+
+    .dw-zone__dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+      transition: background 0.2s ease;
+    }
+
+    .dw-zone__name {
+      font-family: var(--font-data);
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .dw-zone__desc {
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      color: var(--ink-secondary);
+      border-left: 1px solid var(--accent-dim);
+      padding-left: 0.75rem;
+      margin-left: 0.25rem;
+      line-height: 1.4;
+    }
+
+    /* ── Organisms ── */
+    .dw-organisms {
+      grid-column: 1 / -1;
+    }
+
+    .dw-org-title {
+      font-family: var(--font-data);
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--ink-tertiary);
+      margin-bottom: 0.6rem;
+    }
+
+    .dw-org-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      min-height: 2.5rem;
+    }
+
+    .dw-org {
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      color: var(--ink-secondary);
+      background: var(--ground-mid);
+      border: 1px solid var(--ground-warm);
+      border-radius: 2px;
+      padding: 0.2rem 0.55rem;
+      line-height: 1.4;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .dw-org--study {
+      color: var(--accent);
+      border-color: var(--accent-dim);
+      background: var(--accent-faint);
+    }
+
+    /* ── Slider ── */
+    .dw-slider-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .dw-slider-label {
+      font-family: var(--font-data);
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--ink-tertiary);
+    }
+
+    /* Custom range input — the main control */
+    input[type="range"].dw-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 4px;
+      background: var(--ground-warm);
+      border-radius: 1px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"].dw-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid var(--ground);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    input[type="range"].dw-slider::-moz-range-thumb {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid var(--ground);
+      cursor: pointer;
+    }
+
+    input[type="range"].dw-slider:focus-visible::-webkit-slider-thumb {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .dw-slider-scale {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-data);
+      font-size: 0.62rem;
+      color: var(--ink-tertiary);
+    }
+
+    /* ── Emission wavelength note ── */
+    .dw-emission {
+      grid-column: 1 / -1;
+      border-top: 1px solid var(--ground-mid);
+      padding-top: 0.75rem;
+      font-family: var(--font-data);
+      font-size: 0.7rem;
+      color: var(--ink-tertiary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .dw-emission__swatch {
+      width: 20px; height: 8px;
+      border-radius: 1px;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    /* ── ═══════════════════════════════════════════════════════════════
+       SUPPORTING SECTION — Research & Talks
+    ═══════════════════════════════════════════════════════════════ */
+    .section-research {
+      background: #fff;
+      border-top: 1px solid var(--ground-mid);
+    }
+
+    .section-research__inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 5rem 3rem;
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 4rem;
+      align-items: start;
+    }
+
+    .section-label {
+      font-family: var(--font-data);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ink-tertiary);
+      margin-bottom: 1rem;
+    }
+
+    .section-heading {
+      font-family: var(--font-display);
+      font-size: clamp(1.6rem, 2.5vw, 2.2rem);
+      font-weight: 600;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+    }
+
+    /* Not a card grid — a prose-first list */
+    .research-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .research-item {
+      display: grid;
+      grid-template-columns: 4.5rem 1fr;
+      gap: 0 1.5rem;
+      padding: 1.5rem 0;
+      border-bottom: 1px solid var(--ground-mid);
+      align-items: start;
+    }
+    .research-item:first-child {
+      border-top: 1px solid var(--ground-mid);
+    }
+
+    .research-item__depth {
+      font-family: var(--font-data);
+      font-size: 0.72rem;
+      color: var(--accent);
+      padding-top: 0.2rem;
+      line-height: 1.4;
+    }
+
+    .research-item__title {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 0.35rem;
+      line-height: 1.3;
+    }
+
+    .research-item__meta {
+      font-size: 0.82rem;
+      color: var(--ink-secondary);
+      line-height: 1.5;
+    }
+
+    .research-item__tag {
+      display: inline-block;
+      font-family: var(--font-data);
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 0.1rem 0.45rem;
+      border: 1px solid var(--ground-warm);
+      border-radius: 2px;
+      color: var(--ink-tertiary);
+      margin-top: 0.4rem;
+    }
+
+    /* ── Talks callout ── */
+    .talks-callout {
+      margin-top: 3rem;
+      padding: 1.5rem;
+      background: var(--accent-faint);
+      border-left: 3px solid var(--accent);
+      border-radius: 2px;
+    }
+
+    .talks-callout__heading {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 0.5rem;
+    }
+
+    .talks-callout__body {
+      font-size: 0.88rem;
+      color: var(--ink-secondary);
+      line-height: 1.6;
+      margin-bottom: 1rem;
+      max-width: 46ch;
+    }
+
+    /* ── ═══════════════════════════════════════════════════════════════
+       RESPONSIVE
+    ═══════════════════════════════════════════════════════════════ */
+    @media (max-width: 860px) {
+      .hero {
+        grid-template-columns: 1fr;
+        min-height: auto;
+        padding: 3rem 1.5rem 2rem;
+        gap: 2rem;
+      }
+      .hero__text {
+        padding: 0;
+        max-width: 100%;
+      }
+      .depth-window {
+        padding: 1.5rem 1.25rem;
+      }
+      .section-research__inner {
+        grid-template-columns: 1fr;
+        padding: 3rem 1.5rem;
+        gap: 2rem;
+      }
+      .depth-window__instrument {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ── Reduced motion ── */
+    @media (prefers-reduced-motion: reduce) {
+      .dw-gauge__fill,
+      .dw-zone__dot,
+      .dw-org { transition: none; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       HERO
+  ═══════════════════════════════════════════════════════════════ -->
+  <main>
+    <section class="hero" aria-labelledby="hero-name">
+      <!-- Left: identity -->
+      <div class="hero__text">
+        <p class="hero__dept">Scripps Institution of Oceanography · Deep Pelagic Lab</p>
+
+        <h1 class="hero__name" id="hero-name">Dr. Maya<br>Okafor</h1>
+        <p class="hero__title">Marine Biologist — Bioluminescence & Midnight Zone Ecology</p>
+
+        <p class="hero__bio">
+          I descend to where the sun never reaches —
+          <strong>1,000 metres and deeper</strong> — to study the organisms that
+          make their own light. My lab investigates how bioluminescence evolved
+          as a language: luring, warning, hiding, signalling species identity in
+          permanent darkness.
+        </p>
+
+        <div class="hero__actions">
+          <a href="#contact" class="btn-primary">Get in touch</a>
+          <a href="#research" class="btn-ghost">Research &amp; publications</a>
+        </div>
+      </div>
+
+      <!-- Right: The Depth Window (hero artifact) -->
+      <div class="depth-window" role="region" aria-label="Depth Window — interactive ocean depth explorer">
+        <div class="depth-window__header">
+          <span class="depth-window__label">The Depth Window</span>
+          <span class="depth-window__label" id="dw-live-label" aria-live="polite" aria-atomic="true"></span>
+        </div>
+
+        <div class="depth-window__instrument">
+
+          <!-- Current depth readout -->
+          <div class="dw-depth" aria-live="polite">
+            <span class="dw-depth__value" id="dw-depth-val">1000</span>
+            <span class="dw-depth__unit">m</span>
+          </div>
+
+          <!-- Light + pressure gauges -->
+          <div class="dw-gauges">
+            <div class="dw-gauge">
+              <span class="dw-gauge__name">Light</span>
+              <div class="dw-gauge__track" role="progressbar" aria-label="Ambient sunlight remaining"
+                   aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" id="dw-light-bar-wrapper">
+                <div class="dw-gauge__fill" id="dw-light-fill" style="width:0%"></div>
+              </div>
+              <span class="dw-gauge__val" id="dw-light-val">0%</span>
+            </div>
+
+            <div class="dw-gauge">
+              <span class="dw-gauge__name">Pressure</span>
+              <div class="dw-gauge__track" role="progressbar" aria-label="Water pressure"
+                   aria-valuenow="25" aria-valuemin="0" aria-valuemax="100" id="dw-pres-bar-wrapper">
+                <div class="dw-gauge__fill dw-gauge__fill--pressure" id="dw-pres-fill" style="width:25%"></div>
+              </div>
+              <span class="dw-gauge__val" id="dw-pres-val">100 atm</span>
+            </div>
+          </div>
+
+          <!-- Zone -->
+          <div class="dw-zone" id="dw-zone">
+            <span class="dw-zone__dot" id="dw-zone-dot"></span>
+            <span class="dw-zone__name" id="dw-zone-name">Midnight Zone</span>
+            <span class="dw-zone__desc" id="dw-zone-desc">No sunlight. Only bioluminescent light.</span>
+          </div>
+
+          <!-- Organisms at this depth -->
+          <div class="dw-organisms">
+            <p class="dw-org-title">Organisms at this depth</p>
+            <div class="dw-org-list" id="dw-org-list" aria-live="polite">
+              <!-- populated by JS; static fallback already shows the default 1000m state below via noscript -->
+            </div>
+          </div>
+
+          <!-- Emission wavelength note -->
+          <div class="dw-emission" aria-label="Bioluminescent emission spectrum">
+            <span class="dw-emission__swatch" id="dw-emission-swatch"
+              style="background:linear-gradient(to right, #1a5c8c 0%, #0e9b7a 50%, #6dbf7e 100%)"></span>
+            <span id="dw-emission-text">
+              Most organisms here emit ~480–510 nm — deep blue-green, invisible to the unaided eye above water
+            </span>
+          </div>
+
+        </div><!-- /.depth-window__instrument -->
+
+        <!-- The actual control -->
+        <div class="dw-slider-row">
+          <label class="dw-slider-label" for="dw-slider">
+            Drag to explore depth (0 – 4000 m)
+          </label>
+          <input
+            type="range"
+            id="dw-slider"
+            class="dw-slider"
+            min="0" max="4000" step="10"
+            value="1000"
+            aria-label="Ocean depth in metres"
+            aria-valuetext="1000 metres depth"
+          />
+          <div class="dw-slider-scale" aria-hidden="true">
+            <span>0 m</span>
+            <span>Surface</span>
+            <span style="text-align:center">1000 m<br>midnight zone</span>
+            <span style="text-align:right">4000 m<br>abyssal</span>
+          </div>
+        </div>
+
+      </div><!-- /.depth-window -->
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         SUPPORTING SECTION
+    ═══════════════════════════════════════════════════════════════ -->
+    <section class="section-research" id="research" aria-labelledby="research-heading">
+      <div class="section-research__inner">
+        <div>
+          <p class="section-label">Research</p>
+          <h2 class="section-heading" id="research-heading">Where the work happens</h2>
+
+          <div class="talks-callout" style="margin-top:2rem">
+            <p class="talks-callout__heading">Public talks &amp; lectures</p>
+            <p class="talks-callout__body">
+              Available for keynotes, science festivals, and university seminars.
+              I bring ROV footage, spectral data, and the question I get asked most:
+              <em>why do animals make light in a place where no one can see it?</em>
+            </p>
+            <a href="mailto:maya.okafor@scripps.edu" class="btn-primary">Request a talk</a>
+          </div>
+        </div>
+
+        <ul class="research-list">
+          <li class="research-item">
+            <div class="research-item__depth">
+              <div>1 200 m</div>
+              <div style="margin-top:0.3rem; font-size:0.62rem; color:var(--ink-tertiary)">midnight zone</div>
+            </div>
+            <div>
+              <h3 class="research-item__title">Spectral tuning in deep-sea counterillumination</h3>
+              <p class="research-item__meta">
+                How firefly squid (<em>Watasenia scintillans</em>) modulate emission wavelength
+                to match downwelling moonlight at depth — a camouflage mechanism operating at
+                the detection threshold of predator visual systems.
+              </p>
+              <span class="research-item__tag">Journal of Experimental Biology · 2024</span>
+            </div>
+          </li>
+
+          <li class="research-item">
+            <div class="research-item__depth">
+              <div>2 800 m</div>
+              <div style="margin-top:0.3rem; font-size:0.62rem; color:var(--ink-tertiary)">abyssal zone</div>
+            </div>
+            <div>
+              <h3 class="research-item__title">Flash-rate encoding in anglerfish lure signals</h3>
+              <p class="research-item__meta">
+                ROV-deployed high-sensitivity cameras recording <em>Melanocetus johnsonii</em>
+                esca pulse sequences. Analysis suggests species-specific signature patterns
+                persist across 40°C temperature gradients.
+              </p>
+              <span class="research-item__tag">Deep-Sea Research I · 2023</span>
+            </div>
+          </li>
+
+          <li class="research-item">
+            <div class="research-item__depth">
+              <div>1 050 m</div>
+              <div style="margin-top:0.3rem; font-size:0.62rem; color:var(--ink-tertiary)">midnight zone</div>
+            </div>
+            <div>
+              <h3 class="research-item__title">Ctenophore photophore mapping via structured light</h3>
+              <p class="research-item__meta">
+                First complete 3D map of the photophore distribution in <em>Mnemiopsis leidyi</em>,
+                using a custom ROV-mounted structured-light scanner at operational depth.
+              </p>
+              <span class="research-item__tag">Current Biology · 2023</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       NO-JS fallback note inside the widget (reads naturally without script)
+  ═══════════════════════════════════════════════════════════════ -->
+  <noscript>
+    <style>
+      .dw-slider-row { display: none; }
+      #dw-live-label::after { content: "Showing: 1000 m (midnight zone)"; }
+    </style>
+  </noscript>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       THE DEPTH WINDOW — Logic
+       ─────────────────────────────────────────────────────────────
+       Real physics:
+       • Light attenuation: Beer-Lambert, extinction coeff k ≈ 0.04–0.06 /m
+         for clear open ocean (Kirk 1994). We use k=0.05 for deep clear water.
+         I(z) = I₀ · e^(-k·z)  where I₀=1 at surface.
+       • Below 200m the exponential is effectively 0 but organisms can detect
+         single photons; we use the formula down to 200m then clamp to 0.
+       • Pressure: P(atm) = 1 + depth/10 (hydrostatic; 1 atm per 10m of seawater)
+       ─────────────────────────────────────────────────────────────
+  ═══════════════════════════════════════════════════════════════ -->
+  <script>
+  (function() {
+    'use strict';
+
+    // ── Zone definitions ──────────────────────────────────────────
+    const ZONES = [
+      {
+        name: 'Sunlight Zone',
+        range: [0, 200],
+        desc: 'Full photosynthesis. Rich, warm, crowded.',
+        dotColor: '#B8860B',
+        emission: { text: 'Most organisms do not bioluminesce here — sunlight is plentiful', swatch: 'linear-gradient(to right, #f9e74b 0%, #f8d648 100%)' }
+      },
+      {
+        name: 'Twilight Zone',
+        range: [200, 1000],
+        desc: 'Sunlight fades to pure blue. Vertical migrants cross this nightly.',
+        dotColor: '#4A6FA5',
+        emission: { text: 'Bioluminescence appears — emission peaks 470–490 nm (blue)', swatch: 'linear-gradient(to right, #2c4a8c 0%, #1a6b9a 100%)' }
+      },
+      {
+        name: 'Midnight Zone',
+        range: [1000, 4000],
+        desc: 'No sunlight. Only bioluminescent light.',
+        dotColor: '#1D6B5C',
+        emission: { text: 'Most organisms here emit ~480–510 nm — deep blue-green, invisible to the unaided eye above water', swatch: 'linear-gradient(to right, #1a5c8c 0%, #0e9b7a 50%, #6dbf7e 100%)' }
+      }
+    ];
+
+    // ── Organism database — depth ranges, Maya's study species flagged ──
+    // "study" = in Dr. Okafor's primary research domain
+    const ORGANISMS = [
+      { name: 'Phytoplankton', range: [0, 200], study: false },
+      { name: 'Jellyfish', range: [0, 500], study: false },
+      { name: 'Tuna', range: [0, 400], study: false },
+      { name: 'Dolphins', range: [0, 300], study: false },
+      { name: 'Sea turtles', range: [0, 350], study: false },
+      { name: 'Lanternfish', range: [200, 1200], study: true },
+      { name: 'Hatchetfish', range: [200, 1000], study: true },
+      { name: 'Siphonophores', range: [200, 1000], study: true },
+      { name: 'Firefly squid', range: [400, 1400], study: true },
+      { name: 'Comb jellies', range: [200, 2000], study: true },
+      { name: 'Vampire squid', range: [600, 1200], study: true },
+      { name: 'Anglerfish', range: [1000, 4000], study: true },
+      { name: 'Viperfish', range: [800, 2000], study: true },
+      { name: 'Dragonfish', range: [700, 2500], study: true },
+      { name: 'Sea spiders', range: [1000, 4000], study: false },
+      { name: 'Deep-sea shrimp', range: [500, 4000], study: false },
+      { name: 'Rattail fish', range: [800, 3500], study: false },
+      { name: 'Stalked sea lilies', range: [1500, 4000], study: false },
+      { name: 'Giant isopods', range: [2000, 4000], study: false },
+    ];
+
+    // ── Beer-Lambert light attenuation ────────────────────────────
+    // k ≈ 0.05 m⁻¹ for clear oceanic water (Kirk 1994)
+    function lightPercent(depthM) {
+      if (depthM <= 0) return 100;
+      const k = 0.05;
+      const pct = Math.exp(-k * depthM) * 100;
+      return Math.max(0, Math.round(pct * 10) / 10);
+    }
+
+    function pressureAtm(depthM) {
+      return 1 + depthM / 10;
+    }
+
+    function getZone(depthM) {
+      return ZONES.find(z => depthM >= z.range[0] && depthM < z.range[1]) || ZONES[ZONES.length - 1];
+    }
+
+    function getOrganisms(depthM) {
+      return ORGANISMS.filter(o => depthM >= o.range[0] && depthM <= o.range[1]);
+    }
+
+    // ── DOM refs ──────────────────────────────────────────────────
+    const slider    = document.getElementById('dw-slider');
+    const depthVal  = document.getElementById('dw-depth-val');
+    const lightFill = document.getElementById('dw-light-fill');
+    const lightVal  = document.getElementById('dw-light-val');
+    const presFill  = document.getElementById('dw-pres-fill');
+    const presVal   = document.getElementById('dw-pres-val');
+    const zoneName  = document.getElementById('dw-zone-name');
+    const zoneDesc  = document.getElementById('dw-zone-desc');
+    const zoneDot   = document.getElementById('dw-zone-dot');
+    const orgList   = document.getElementById('dw-org-list');
+    const emSwatch  = document.getElementById('dw-emission-swatch');
+    const emText    = document.getElementById('dw-emission-text');
+    const liveLabel = document.getElementById('dw-live-label');
+    const lightBar  = document.getElementById('dw-light-bar-wrapper');
+    const presBar   = document.getElementById('dw-pres-bar-wrapper');
+
+    // ── Update ────────────────────────────────────────────────────
+    function update(depth) {
+      const light = lightPercent(depth);
+      const pres  = pressureAtm(depth);
+      const zone  = getZone(depth);
+      const orgs  = getOrganisms(depth);
+
+      // depth display
+      depthVal.textContent = depth.toLocaleString();
+      slider.setAttribute('aria-valuetext', `${depth} metres depth`);
+
+      // light gauge (log scale for visual legibility — linear collapses to nothing past 100m)
+      // display: 0–200m linear 0–100%, below that shows 0 (already ~0)
+      const lightDisplay = Math.min(100, light);
+      lightFill.style.width = lightDisplay + '%';
+      lightVal.textContent = light < 0.1 ? '< 0.1%' : light.toFixed(1) + '%';
+      lightBar.setAttribute('aria-valuenow', Math.round(lightDisplay));
+
+      // pressure gauge (scale: 0–400 atm → 0–100%)
+      const presDisplay = Math.min(100, (pres / 400) * 100);
+      presFill.style.width = presDisplay + '%';
+      presVal.textContent = Math.round(pres) + ' atm';
+      presBar.setAttribute('aria-valuenow', Math.round(presDisplay));
+
+      // zone
+      zoneName.textContent = zone.name;
+      zoneDesc.textContent = zone.desc;
+      zoneDot.style.background = zone.dotColor;
+
+      // organisms
+      orgList.innerHTML = '';
+      if (orgs.length === 0) {
+        const empty = document.createElement('span');
+        empty.className = 'dw-org';
+        empty.textContent = 'No documented fauna at this depth';
+        orgList.appendChild(empty);
+      } else {
+        orgs.forEach(o => {
+          const tag = document.createElement('span');
+          tag.className = 'dw-org' + (o.study ? ' dw-org--study' : '');
+          tag.textContent = o.name;
+          if (o.study) tag.setAttribute('title', "In Dr. Okafor's primary research");
+          orgList.appendChild(tag);
+        });
+      }
+
+      // emission
+      emSwatch.style.background = zone.emission.swatch;
+      emText.textContent = zone.emission.text;
+
+      // live label
+      liveLabel.textContent = zone.name + ' · ' + depth + ' m';
+    }
+
+    // ── Init (render on load — no JS gate) ───────────────────────
+    update(parseInt(slider.value, 10));
+
+    // ── Events ───────────────────────────────────────────────────
+    slider.addEventListener('input', function() {
+      update(parseInt(this.value, 10));
+    });
+
+    // Keyboard: arrow keys already handled by range input natively
+  })();
+  </script>
+
+</body>
+</html>

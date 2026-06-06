@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cadence — AI notetaker for video meetings</title>
+
+  <!-- Google Fonts: Outfit (display/body) + DM Mono (numeric output) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─── Tokens ─────────────────────────────────────────────── */
+    :root {
+      --ink:       #1C1917;        /* near-black, warm not pure */
+      --ink-mid:   #57534E;        /* mid stone */
+      --ink-faint: #A8A29E;        /* quiet label */
+      --ground:    #F7F5F3;        /* off-white, very low chroma warm */
+      --rule:      #E0DAD4;        /* ruled-line gray */
+      --accent:    #B04832;        /* terracotta — derived from the "ASSIGNED" rubber-stamp / action-item ink */
+      --accent-dim:#D9806A;        /* lighter terracotta for hover / non-focus */
+      --mono-bg:   #EFEBE7;        /* slightly darker than ground — number wells */
+      --radius-sm: 3px;
+      --radius-md: 6px;
+    }
+
+    /* ─── Reset ──────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      font-size: 16px;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Outfit', system-ui, sans-serif;
+      background: var(--ground);
+      color: var(--ink);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── Utility ────────────────────────────────────────────── */
+    .visually-hidden {
+      position: absolute; width: 1px; height: 1px;
+      overflow: hidden; clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
+    /* ─── Nav ────────────────────────────────────────────────── */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 2.5rem;
+      border-bottom: 1px solid var(--rule);
+      background: var(--ground);
+    }
+
+    .nav-wordmark {
+      font-size: 1.125rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      text-decoration: none;
+    }
+
+    .nav-wordmark span {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      margin-left: 3px;
+      vertical-align: middle;
+      position: relative;
+      top: -1px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-size: 0.875rem;
+      font-weight: 400;
+      color: var(--ink-mid);
+      text-decoration: none;
+    }
+
+    .nav-links a:hover { color: var(--ink); }
+
+    .nav-cta {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--ground);
+      background: var(--accent);
+      padding: 0.5rem 1.25rem;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      transition: background 0.15s ease;
+    }
+
+    .nav-cta:hover { background: #8F3A26; }
+
+    /* ─── Hero ───────────────────────────────────────────────── */
+    .hero {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 5rem 2.5rem 4rem;
+    }
+
+    .hero-label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1.25rem;
+    }
+
+    .hero-headline {
+      font-size: clamp(2.25rem, 5vw, 3.75rem);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+      max-width: 18ch;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-sub {
+      font-size: 1.125rem;
+      font-weight: 400;
+      color: var(--ink-mid);
+      max-width: 52ch;
+      line-height: 1.65;
+      margin-bottom: 3rem;
+    }
+
+    /* ─── The Time Reclaimed Calculator ─────────────────────── */
+    /*
+      Hero artifact: computes minutes of note-taking time Cadence
+      saves a team per meeting and per year. Inputs: meeting length
+      (minutes) + number of attendees. Real on load, no JS required
+      for structure; JS updates the live outputs.
+    */
+    .calculator {
+      background: #fff;
+      border: 1px solid var(--rule);
+      border-radius: var(--radius-md);
+      padding: 2.5rem;
+      max-width: 680px;
+    }
+
+    .calc-title {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      margin-bottom: 2rem;
+      border-bottom: 1px solid var(--rule);
+      padding-bottom: 0.875rem;
+    }
+
+    .calc-inputs {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .calc-field label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--ink-mid);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    .calc-field input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 3px;
+      background: var(--rule);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+      margin-bottom: 0.375rem;
+    }
+
+    .calc-field input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .calc-field input[type="range"]:hover::-webkit-slider-thumb {
+      background: #8F3A26;
+    }
+
+    .calc-field input[type="range"]::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border: none;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+    }
+
+    .calc-value {
+      font-family: 'DM Mono', monospace;
+      font-size: 1.5rem;
+      font-weight: 400;
+      color: var(--ink);
+      letter-spacing: -0.01em;
+    }
+
+    .calc-value-unit {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--ink-faint);
+      font-weight: 300;
+    }
+
+    /* Outputs row */
+    .calc-outputs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--rule);
+      border: 1px solid var(--rule);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    .calc-output {
+      background: var(--mono-bg);
+      padding: 1.375rem 1.5rem;
+      position: relative;
+    }
+
+    .calc-output-label {
+      font-size: 0.6875rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--ink-faint);
+      margin-bottom: 0.5rem;
+    }
+
+    .calc-output-number {
+      font-family: 'DM Mono', monospace;
+      font-size: 2.25rem;
+      font-weight: 500;
+      color: var(--ink);
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+
+    .calc-output-number.accent { color: var(--accent); }
+
+    .calc-output-sub {
+      font-size: 0.75rem;
+      color: var(--ink-mid);
+      margin-top: 0.375rem;
+      line-height: 1.4;
+    }
+
+    .calc-footnote {
+      margin-top: 1rem;
+      font-size: 0.75rem;
+      color: var(--ink-faint);
+      line-height: 1.5;
+    }
+
+    /* ─── Section divider ────────────────────────────────────── */
+    .section-rule {
+      border: none;
+      border-top: 1px solid var(--rule);
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    /* ─── Pipeline section ───────────────────────────────────── */
+    .pipeline-section {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 4.5rem 2.5rem 5rem;
+    }
+
+    .pipeline-header {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      align-items: end;
+      margin-bottom: 3rem;
+    }
+
+    .pipeline-headline {
+      font-size: clamp(1.5rem, 3vw, 2.25rem);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.15;
+      color: var(--ink);
+    }
+
+    .pipeline-desc {
+      font-size: 0.9375rem;
+      color: var(--ink-mid);
+      line-height: 1.7;
+      max-width: 42ch;
+    }
+
+    /* Pipeline visual — the meeting → notes flow */
+    .pipeline-track {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      border: 1px solid var(--rule);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .pipeline-stage {
+      padding: 1.75rem 1.5rem;
+      border-right: 1px solid var(--rule);
+      position: relative;
+      background: #fff;
+    }
+
+    .pipeline-stage:last-child {
+      border-right: none;
+    }
+
+    /* Arrow connector between stages */
+    .pipeline-stage::after {
+      content: '→';
+      position: absolute;
+      right: -0.6rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.875rem;
+      color: var(--ink-faint);
+      background: #fff;
+      padding: 0 2px;
+      z-index: 1;
+      line-height: 1;
+    }
+
+    .pipeline-stage:last-child::after { display: none; }
+
+    .stage-status {
+      display: inline-block;
+      font-size: 0.625rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.5rem;
+      border-radius: 2px;
+      margin-bottom: 1rem;
+    }
+
+    .status-waiting  { background: var(--mono-bg); color: var(--ink-faint); }
+    .status-live     { background: #FEE2DC; color: var(--accent); }
+    .status-writing  { background: #FEF3C7; color: #92400E; }
+    .status-done     { background: #D1FAE5; color: #065F46; }
+
+    .stage-name {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.01em;
+    }
+
+    .stage-detail {
+      font-size: 0.8125rem;
+      color: var(--ink-mid);
+      line-height: 1.55;
+    }
+
+    .stage-time {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.6875rem;
+      color: var(--ink-faint);
+      margin-top: 1rem;
+      font-weight: 300;
+    }
+
+    /* Action items in the final stage */
+    .action-list {
+      margin-top: 0.875rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .action-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      line-height: 1.4;
+      color: var(--ink-mid);
+    }
+
+    .action-assignee {
+      display: inline-block;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.625rem;
+      font-weight: 500;
+      padding: 0.1rem 0.375rem;
+      background: var(--mono-bg);
+      border-radius: 2px;
+      color: var(--ink);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .action-text {
+      color: var(--ink-mid);
+    }
+
+    /* ─── Footer bar ─────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--rule);
+      padding: 1.5rem 2.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 1100px;
+      margin: 0 auto;
+      font-size: 0.8125rem;
+      color: var(--ink-faint);
+    }
+
+    footer a {
+      color: var(--ink-faint);
+      text-decoration: none;
+    }
+
+    footer a:hover { color: var(--ink-mid); }
+
+    /* ─── Responsive ─────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      nav { padding: 1rem 1.25rem; }
+      .nav-links { display: none; }
+      .hero { padding: 3rem 1.25rem 2.5rem; }
+      .calc-inputs { grid-template-columns: 1fr; }
+      .calc-outputs { grid-template-columns: 1fr; }
+      .pipeline-header { grid-template-columns: 1fr; gap: 1rem; }
+      .pipeline-track {
+        grid-template-columns: 1fr 1fr;
+      }
+      .pipeline-stage::after { display: none; }
+      .pipeline-section { padding: 3rem 1.25rem 3.5rem; }
+    }
+
+    @media (max-width: 480px) {
+      .pipeline-track { grid-template-columns: 1fr; }
+    }
+
+    /* ─── Reduced motion ─────────────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      .calc-output-number { transition: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav>
+    <a href="#" class="nav-wordmark" aria-label="Cadence home">cadence<span aria-hidden="true"></span></a>
+    <ul class="nav-links" role="list">
+      <li><a href="#">Product</a></li>
+      <li><a href="#">Integrations</a></li>
+      <li><a href="#">Pricing</a></li>
+    </ul>
+    <a href="#" class="nav-cta">Request access</a>
+  </nav>
+
+  <!-- Hero + The Time Reclaimed Calculator -->
+  <main>
+    <section class="hero" aria-labelledby="hero-heading">
+      <p class="hero-label" aria-label="Product category">AI meeting notes</p>
+      <h1 id="hero-heading" class="hero-headline">
+        Your meeting ends.<br>
+        The notes are already done.
+      </h1>
+      <p class="hero-sub">
+        Cadence joins your video calls, writes structured notes in real time, and assigns every action item to the right person — before you close your laptop.
+      </p>
+
+      <!-- ═══════════════════════════════════════════════════════
+           THE TIME RECLAIMED CALCULATOR
+           Computes: minutes saved per meeting + hours saved per year
+           Inputs:   meeting duration · attendees · meetings per week
+           Grounded: note-taking time = 0.35× meeting duration per attendee
+                     (industry estimate: ~20 min/hr for notes + follow-up)
+           Renders:  fully on load with JS-off fallback values in markup
+      ══════════════════════════════════════════════════════════ -->
+      <div class="calculator" role="region" aria-label="Time Reclaimed Calculator">
+        <p class="calc-title">Time Reclaimed Calculator</p>
+
+        <div class="calc-inputs">
+          <div class="calc-field">
+            <label for="input-duration">Meeting length</label>
+            <input
+              type="range"
+              id="input-duration"
+              min="15"
+              max="120"
+              step="15"
+              value="60"
+              aria-valuemin="15"
+              aria-valuemax="120"
+              aria-valuenow="60"
+            />
+            <span class="calc-value" id="display-duration" aria-live="polite">60</span>
+            <span class="calc-value-unit"> min</span>
+          </div>
+          <div class="calc-field">
+            <label for="input-attendees">Attendees</label>
+            <input
+              type="range"
+              id="input-attendees"
+              min="2"
+              max="20"
+              step="1"
+              value="6"
+              aria-valuemin="2"
+              aria-valuemax="20"
+              aria-valuenow="6"
+            />
+            <span class="calc-value" id="display-attendees" aria-live="polite">6</span>
+            <span class="calc-value-unit"> people</span>
+          </div>
+          <div class="calc-field">
+            <label for="input-frequency">Meetings / week</label>
+            <input
+              type="range"
+              id="input-frequency"
+              min="1"
+              max="25"
+              step="1"
+              value="8"
+              aria-valuemin="1"
+              aria-valuemax="25"
+              aria-valuenow="8"
+            />
+            <span class="calc-value" id="display-frequency" aria-live="polite">8</span>
+            <span class="calc-value-unit"> / wk</span>
+          </div>
+        </div>
+
+        <div class="calc-outputs" role="group" aria-label="Estimated time saved">
+          <div class="calc-output">
+            <p class="calc-output-label">Minutes saved per meeting</p>
+            <!-- Default (JS-off): 60 min × 6 people × 0.35 = 126 min -->
+            <p class="calc-output-number" id="output-per-meeting" aria-live="polite">126</p>
+            <p class="calc-output-sub">
+              <span id="output-per-meeting-hrs" aria-live="polite">2.1</span> hrs of collective note-writing
+            </p>
+          </div>
+          <div class="calc-output">
+            <p class="calc-output-label">Hours saved per year</p>
+            <!-- Default: 126 min/meeting × 8 meetings/wk × 50 wks / 60 -->
+            <p class="calc-output-number accent" id="output-annual" aria-live="polite">840</p>
+            <p class="calc-output-sub">
+              across <span id="output-annual-days" aria-live="polite">105</span> working days worth of focus time
+            </p>
+          </div>
+        </div>
+
+        <p class="calc-footnote">
+          Based on 20 min of note-writing per hour of meeting per person, plus follow-up assignment overhead.
+          Industry average from State of Meetings 2024.
+        </p>
+      </div>
+    </section>
+
+    <hr class="section-rule" />
+
+    <!-- Pipeline section: what Cadence does, meeting → action items -->
+    <section class="pipeline-section" aria-labelledby="pipeline-heading">
+      <div class="pipeline-header">
+        <h2 id="pipeline-heading" class="pipeline-headline">
+          From call to<br>assigned tasks<br>in four minutes.
+        </h2>
+        <p class="pipeline-desc">
+          Cadence reads the calendar, joins before you do, and writes while you talk.
+          By the time the call ends, every decision has an owner and a deadline.
+        </p>
+      </div>
+
+      <div class="pipeline-track" role="list">
+
+        <article class="pipeline-stage" role="listitem">
+          <span class="stage-status status-waiting">Scheduled</span>
+          <p class="stage-name">Bot joins the call</p>
+          <p class="stage-detail">
+            Cadence reads your calendar and joins 30 seconds early.
+            No invite forwarding, no manual start.
+          </p>
+          <p class="stage-time">T − 00:30</p>
+        </article>
+
+        <article class="pipeline-stage" role="listitem">
+          <span class="stage-status status-live">Live</span>
+          <p class="stage-name">Real-time transcript</p>
+          <p class="stage-detail">
+            Speaker-attributed transcript streams as the meeting runs.
+            Decisions and open questions flagged in-line.
+          </p>
+          <p class="stage-time">T + 00:00 → end</p>
+        </article>
+
+        <article class="pipeline-stage" role="listitem">
+          <span class="stage-status status-writing">Writing</span>
+          <p class="stage-name">Notes generated</p>
+          <p class="stage-detail">
+            Structured summary, key decisions, and open loops —
+            drafted while attendees are still on the call.
+          </p>
+          <p class="stage-time">T + end → +2 min</p>
+        </article>
+
+        <article class="pipeline-stage" role="listitem">
+          <span class="stage-status status-done">Assigned</span>
+          <p class="stage-name">Action items routed</p>
+          <p class="stage-detail">Items go to the right person, based on who spoke them.</p>
+          <div class="action-list" aria-label="Example action items">
+            <div class="action-item">
+              <span class="action-assignee">Maya</span>
+              <span class="action-text">Update pricing deck by Friday</span>
+            </div>
+            <div class="action-item">
+              <span class="action-assignee">Raj</span>
+              <span class="action-text">Ship the API fix to staging</span>
+            </div>
+            <div class="action-item">
+              <span class="action-assignee">Dana</span>
+              <span class="action-text">Schedule user research for Q3</span>
+            </div>
+          </div>
+          <p class="stage-time">T + end → +4 min</p>
+        </article>
+
+      </div>
+    </section>
+  </main>
+
+  <div style="border-top: 1px solid var(--rule)">
+    <footer>
+      <span>© 2025 Cadence</span>
+      <nav aria-label="Footer links">
+        <a href="#">Privacy</a>&ensp;·&ensp;<a href="#">Terms</a>
+      </nav>
+    </footer>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       CALCULATOR LOGIC
+       Degrades cleanly: markup contains correct JS-off defaults.
+       No invisible-until-scroll; outputs are in markup from load.
+  ══════════════════════════════════════════════════════════════ -->
+  <script>
+    (function () {
+      // Model: note-writing time = 20 min per person-hour of meeting
+      // i.e. 0.333 × duration (min) per attendee
+      const NOTE_RATE = 20 / 60; // minutes saved per attendee per minute of meeting
+
+      const sliderDuration   = document.getElementById('input-duration');
+      const sliderAttendees  = document.getElementById('input-attendees');
+      const sliderFrequency  = document.getElementById('input-frequency');
+
+      const displayDuration  = document.getElementById('display-duration');
+      const displayAttendees = document.getElementById('display-attendees');
+      const displayFrequency = document.getElementById('display-frequency');
+
+      const outPerMeeting    = document.getElementById('output-per-meeting');
+      const outPerMeetingHrs = document.getElementById('output-per-meeting-hrs');
+      const outAnnual        = document.getElementById('output-annual');
+      const outAnnualDays    = document.getElementById('output-annual-days');
+
+      function compute() {
+        const duration   = parseInt(sliderDuration.value,   10);
+        const attendees  = parseInt(sliderAttendees.value,  10);
+        const frequency  = parseInt(sliderFrequency.value,  10);
+
+        // Minutes of collective note-writing Cadence eliminates per meeting
+        const minsPerMeeting = Math.round(duration * attendees * NOTE_RATE);
+        // Annual hours: minsPerMeeting × meetings/wk × 50 working weeks / 60
+        const annualHours    = Math.round(minsPerMeeting * frequency * 50 / 60);
+        const annualDays     = (annualHours / 8).toFixed(1);
+        const hrsPerMeeting  = (minsPerMeeting / 60).toFixed(1);
+
+        // Update slider display values
+        displayDuration.textContent  = duration;
+        displayAttendees.textContent = attendees;
+        displayFrequency.textContent = frequency;
+
+        // Update ARIA
+        sliderDuration.setAttribute('aria-valuenow',  duration);
+        sliderAttendees.setAttribute('aria-valuenow', attendees);
+        sliderFrequency.setAttribute('aria-valuenow', frequency);
+
+        // Update outputs
+        outPerMeeting.textContent    = minsPerMeeting;
+        outPerMeetingHrs.textContent = hrsPerMeeting;
+        outAnnual.textContent        = annualHours;
+        outAnnualDays.textContent    = annualDays;
+      }
+
+      sliderDuration.addEventListener('input',  compute);
+      sliderAttendees.addEventListener('input', compute);
+      sliderFrequency.addEventListener('input', compute);
+
+      // Run once on load to sync with slider defaults
+      compute();
+    })();
+  </script>
+
+</body>
+</html>
