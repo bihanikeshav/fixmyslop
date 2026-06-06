@@ -53,7 +53,11 @@ sameness ship.
    CTAs, dark+glow) plus the median from step 3.
 6. **Build.** Type/color from `reference/type-and-color.md`, obeying `slop-colors.md`.
    Choose a **characterful** display face — not a default grotesque.
-7. **Self-check (gate).** Run the checklist below. Weak answer → not done.
+7. **Polish & motion pass.** Before you call it done, read `reference/polish.md` and
+   `reference/motion.md` and work both: the finishing-craft checklist (spacing rhythm,
+   optical alignment, type micro-craft, interactive states, detail finish) AND
+   purposeful, render-safe motion. A static, unpolished page is not done.
+8. **Self-check (gate).** Run the checklist below. Weak answer → not done.
 
 ## The standout requirement (non-negotiable)
 Every page ships exactly ONE nameable, subject-grounded standout the page is
@@ -79,6 +83,18 @@ If your output could be swapped with the last anti-slop page you built, you
 converged. Each build must differ in **layout archetype**, **type move**, **font
 character**, and **standout kind**. The forbid-the-median step (3) is how you do it.
 
+## Polish & motion (every page earns this)
+A unique concept still has to feel *finished* and *alive*. Two requirements before
+shipping — details in `reference/polish.md` and `reference/motion.md`:
+- **Polish** — one spacing scale, optical alignment, type micro-craft (measure, leading,
+  `tabular-nums`, balanced headings), every interactive with hover + `:focus-visible` +
+  active, AA contrast, responsive at 390/1440, real content. The squint test passes.
+- **Motion** — a small vocabulary (2–3 curves, 2–3 durations), ONE signature load/
+  interaction gesture, microinteraction feedback proportional to the trigger.
+  **transform/opacity only**, ease-out entrances, 150–400ms, staggered lists. Animate
+  from a *present* state (render-safe), and ship `prefers-reduced-motion`. No bounce on
+  functional UI, no scroll-jacking, no animating layout props.
+
 ## Hard gates (objective — not subject to your judgment)
 - **Color gate.** Nothing from `reference/slop-colors.md`. Darkness is a trap, not a
   license. Derive the accent from the subject's real material OR its genuine energy —
@@ -103,7 +119,12 @@ character**, and **standout kind**. The forbid-the-median step (3) is how you do
 7. **A real type move** beyond an italic accent word? Characterful font, not a default
    grotesque? _(no → fail)_
 8. **Did I forbid the median, and would another of my outputs look the same?** _(same → fail)_
-9. **The AI-slop test:** would someone instantly believe an AI made this? _(yes → fail)_
+9. **Polished?** One spacing scale, aligned edges, type micro-craft, every control has
+   hover + `:focus-visible` + active, AA contrast, works at 390px. _(accidental detail → fail)_
+10. **Purposeful motion + reduced-motion?** A defined easing/duration vocabulary, one
+    signature gesture, transform/opacity only, `prefers-reduced-motion` shipped. _(static,
+    or decorative/janky motion → fail)_
+11. **The AI-slop test:** would someone instantly believe an AI made this? _(yes → fail)_
 
 ## Personality ≠ slop (and ≠ timid sameness)
 The slop manifest flags "amateurish hand-drawn SVG." Your crafted, load-bearing SVG
@@ -120,6 +141,7 @@ Mandatory reads are in Step 0. Read the rest on demand.
 | **Always, before building (Step 0)** | `slop-manifest.md` · `slop-colors.md` · `hero-artifacts.md` · `composition-and-boldness.md` · `tensions.md` |
 | Inventing the standout | `reference/hero-artifacts.md` (functional archetypes) · `reference/personality-moves.md` |
 | Choosing layout, type expression, boldness | `reference/composition-and-boldness.md` |
+| Polishing & adding motion (final pass) | `reference/polish.md` + `reference/motion.md` |
 | A proven distinctiveness move | `reference/distinctiveness.md` (steal the method, not the tokens) |
 | Choosing fonts & color | `reference/type-and-color.md` + `reference/slop-colors.md` |
 | Composing visuals — hierarchy, spacing, gestalt, motion, a11y, responsive, tokens | `reference/craft-principles.md` |

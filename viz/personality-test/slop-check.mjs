@@ -96,6 +96,18 @@ function check(file) {
   const hasIO = /intersectionobserver/i.test(css);
   const renderRisk = opacityZero > 0 && hasIO;
 
+  // --- motion quality ---
+  const hasMotion = (/transition\s*:/.test(lc) && !/transition\s*:\s*none/.test(lc)) ||
+    /@keyframes|animation\s*:/.test(lc);
+  const reducedMotion = /prefers-reduced-motion/.test(lc);
+  const transitionAll = /transition\s*:\s*all\b/.test(lc);
+  const animatesLayout = /transition\s*:[^;{}]*\b(width|height|top|left|right|bottom|margin|padding)\b/.test(lc);
+  const overshoot = [...lc.matchAll(/cubic-bezier\(([^)]+)\)/g)].some((m) => {
+    const p = m[1].split(",").map((x) => parseFloat(x));
+    return p.length === 4 && (p[1] > 1.001 || p[1] < -0.001 || p[3] > 1.001 || p[3] < -0.001);
+  });
+  const bounce = overshoot || /\b(bounce|elastic)\b/.test(lc);
+
   // --- fonts (only look inside Google-Fonts URLs and font-family declarations, so
   //     "Inter" can't false-match "IntersectionObserver") ---
   const fontCtx = [
@@ -129,8 +141,14 @@ function check(file) {
   if (renderRisk) fails.push(`opacity:0 (${opacityZero}) gated by IntersectionObserver`);
   if (fontFlags.length) fails.push(`flagged font: ${fontFlags.join(", ")}`);
   if (interactive === 0) fails.push("no functional-component signal (no listeners/raf/time/canvas/inputs)");
+  // motion gate (polish round)
+  if (hasMotion && !reducedMotion) fails.push("animation without prefers-reduced-motion");
+  if (transitionAll) fails.push("transition: all (sweeps in layout props → reflow)");
+  if (animatesLayout) fails.push("animates layout props (width/height/top/left/margin/padding)");
+  if (bounce) fails.push("bounce/elastic/overshoot easing");
 
-  return { file, pass: fails.length === 0, fails, signals, interactive };
+  const motion = { hasMotion, reducedMotion };
+  return { file, pass: fails.length === 0, fails, signals, interactive, motion };
 }
 
 let anyFail = false;
@@ -140,6 +158,7 @@ for (const file of process.argv.slice(2)) {
   const tag = r.pass ? "PASS" : "FAIL";
   console.log(`\n${tag}  ${file}`);
   console.log(`  functional signals: ${r.interactive} ${JSON.stringify(r.signals)}`);
+  console.log(`  motion: ${r.motion.hasMotion ? "yes" : "NONE"}, reduced-motion: ${r.motion.reducedMotion ? "yes" : "no"}`);
   if (r.fails.length) for (const f of r.fails) console.log(`  ✗ ${f}`);
 }
 process.exit(anyFail ? 1 : 0);

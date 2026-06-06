@@ -28,10 +28,14 @@ describe("personality skill", () => {
     expect(s).toContain("Forbid the median");
     expect(s.toLowerCase()).toContain("boldness");
     expect(s).toContain("composition-and-boldness.md");
+    // polish + motion pass
+    expect(s).toContain("Polish & motion");
+    expect(s).toContain("motion.md");
+    expect(s).toContain("polish.md");
   });
 
   it("ships all non-empty reference files", () => {
-    for (const f of ["personality-moves.md", "slop-manifest.md", "craft-principles.md", "type-and-color.md", "ux-principles.md", "tensions.md", "distinctiveness.md", "hero-artifacts.md", "slop-colors.md", "composition-and-boldness.md"]) {
+    for (const f of ["personality-moves.md", "slop-manifest.md", "craft-principles.md", "type-and-color.md", "ux-principles.md", "tensions.md", "distinctiveness.md", "hero-artifacts.md", "slop-colors.md", "composition-and-boldness.md", "motion.md", "polish.md"]) {
       expect(existsSync(resolve(SKILL, "reference", f)), `${f} exists`).toBe(true);
       expect(read(`reference/${f}`).trim().length, `${f} non-empty`).toBeGreaterThan(200);
     }
