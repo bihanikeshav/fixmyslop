@@ -17,9 +17,12 @@ which is exactly why they read as generic.
 - Repeated section kicker labels — tracked uppercase labels above every section.
 - Oversized hero headline that eats the whole viewport.
 - Crushed letter spacing past where glyphs keep their shape.
-- Overused fonts — Inter, Geist, Space Grotesk feel generic now. Also the "tasteful"
+- Overused fonts — Inter, Geist, Space Grotesk feel generic now. The "tasteful"
   darlings reached for by reflex: Playfair, Cormorant, Fraunces, Instrument Serif,
-  Clash Display, General Sans. Distinctive a year ago, default now.
+  Clash Display. And the new safe grotesques becoming the next default: Outfit,
+  Cabinet Grotesk, General Sans, Sentient. Distinctive a year ago, default now.
+- One italic-serif accent word in the headline ("the *moon*") — once fresh, now the
+  reflex personality move. Retired; use a different type move (see composition-and-boldness).
 - One font for the entire page.
 - All-caps body text (we read by word shape; caps removes it).
 
@@ -111,6 +114,20 @@ Escaping slop is NOT picking the current fashionable alternative — it is groun
 the choice in THIS subject's world (see `distinctiveness.md` → "name the category
 default and refuse it"). If your serif-on-cream could belong to any other product,
 it's slop.
+
+## Third-generation slop (the "tasteful anti-slop" template — the newest trap)
+What a model converges to once it's avoiding indigo AND avoiding Playfair-on-cream:
+one safe, uniform, timid template. Caught in live A/B (five different briefs all came
+out near-identical). The cluster:
+- Light warm off-white ground + one earthy accent (terracotta/ochre/crust-brown).
+- A neutral grotesque doing everything (Outfit, Cabinet Grotesk, General Sans).
+- One italic-serif accent word in the headline.
+- A bordered "tool" widget card (usually a slider that outputs a number).
+- Monospace micro-labels; left-aligned; a calm two-column split (headline left, card right).
+It passes every slop gate and is still forgettable, because it is *safe*. The tells:
+timidity (nothing is loud or at scale), and sameness (it could be any of a dozen
+other products). Escape via `composition-and-boldness.md`: forbid the median, pick a
+different layout archetype + bold type move + characterful font + standout kind each time.
 
 ## The AI-slop test
 If someone would instantly believe "an AI made this," it's slop. Aim for "how was

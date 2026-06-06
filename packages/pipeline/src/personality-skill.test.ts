@@ -24,10 +24,14 @@ describe("personality skill", () => {
     expect(s).toContain("slop-colors.md");
     expect(s.toLowerCase()).toContain("render gate");
     expect(s.toLowerCase()).toContain("self-check");
+    // anti-convergence + boldness machinery (the v2 fix)
+    expect(s).toContain("Forbid the median");
+    expect(s.toLowerCase()).toContain("boldness");
+    expect(s).toContain("composition-and-boldness.md");
   });
 
   it("ships all non-empty reference files", () => {
-    for (const f of ["personality-moves.md", "slop-manifest.md", "craft-principles.md", "type-and-color.md", "ux-principles.md", "tensions.md", "distinctiveness.md", "hero-artifacts.md", "slop-colors.md"]) {
+    for (const f of ["personality-moves.md", "slop-manifest.md", "craft-principles.md", "type-and-color.md", "ux-principles.md", "tensions.md", "distinctiveness.md", "hero-artifacts.md", "slop-colors.md", "composition-and-boldness.md"]) {
       expect(existsSync(resolve(SKILL, "reference", f)), `${f} exists`).toBe(true);
       expect(read(`reference/${f}`).trim().length, `${f} non-empty`).toBeGreaterThan(200);
     }
