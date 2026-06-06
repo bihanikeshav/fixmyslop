@@ -92,9 +92,14 @@ function check(file) {
   const darkGlow = darkGround && glow;
 
   // --- render gate: opacity:0 gated by IntersectionObserver ---
-  const opacityZero = (lc.match(/opacity\s*:\s*0(?!\.)/g) || []).length;
+  // opacity:0 is only a render risk when it hides content WITHOUT a JS gate. The safe
+  // recipe scopes the hidden state under an html.js/.js class (content visible if JS off),
+  // so count only opacity:0 rules whose selector is NOT gated by a js-presence class.
+  const ungatedOpacityZero = [...lc.matchAll(/([^{}]*)\{([^{}]*)\}/g)].filter((r) =>
+    /opacity\s*:\s*0(?!\.)/.test(r[2]) && !/html\.js|\.js[\s.,:>+~]|\bno-?js\b/.test(r[1])
+  ).length;
   const hasIO = /intersectionobserver/i.test(css);
-  const renderRisk = opacityZero > 0 && hasIO;
+  const renderRisk = ungatedOpacityZero > 0 && hasIO;
 
   // --- motion quality ---
   const hasMotion = (/transition\s*:/.test(lc) && !/transition\s*:\s*none/.test(lc)) ||
@@ -138,7 +143,7 @@ function check(file) {
   // a light ground is explicitly allowed by slop-colors.md).
   if (cyan.length && darkGround) fails.push(`cyan/teal on dark ground: ${cyan.join(", ")}`);
   if (darkGlow) fails.push("dark ground + saturated glow shadow");
-  if (renderRisk) fails.push(`opacity:0 (${opacityZero}) gated by IntersectionObserver`);
+  if (renderRisk) fails.push(`ungated opacity:0 (${ungatedOpacityZero} rule(s)) + IntersectionObserver — content hidden without JS`);
   if (fontFlags.length) fails.push(`flagged font: ${fontFlags.join(", ")}`);
   if (interactive === 0) fails.push("no functional-component signal (no listeners/raf/time/canvas/inputs)");
   // motion gate (polish round)
