@@ -27,7 +27,7 @@ The unsafe idioms are the *reflex* ones; reach for these instead.
   ```
   An IntersectionObserver (or a load timeout) only *adds* `.in`. JS off / reduced-motion → content shows.
 - **Bar / progress / underline grow:** `transform: scaleX()` + `transform-origin:left`, never `width`.
-- **Hover nudge / indent:** `transform: translateX(6px)`, never `padding`/`margin`/`left`.
+- **Hover nudge / indent:** `transform: translateX(6px)`, never `padding`/`margin` or inset (`top`/`left`/`right`/`bottom`).
 - **List stagger:** toggle `.in`, then `transition-delay: calc(var(--i) * 40ms)` (transform+opacity only).
 - **Press feedback:** `transform: scale(.97)` on `:active`, ~120ms.
 

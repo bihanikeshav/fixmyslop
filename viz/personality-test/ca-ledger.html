@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ledger — Freelance Invoicing</title>
+  <meta name="description" content="Simple invoicing for freelancers. Create invoices, track payments, see what's overdue.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;900&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <script>document.documentElement.classList.add('js')</script>
+  <style>
+    /* ─── Tokens ─────────────────────────────────────────────── */
+    :root {
+      --ground:   #F0F2F5;      /* cool off-white ledger paper */
+      --ground-2: #E5E8ED;      /* second surface */
+      --text:     #141416;      /* near-black, ink */
+      --text-2:   #4A4D54;      /* secondary text */
+      --text-3:   #696C78;      /* tertiary / placeholders — 4.65:1 on ground */
+      --accent:   #C63020;      /* overdue stamp red — 4.89:1 on ground (passes AA body) */
+      --accent-tx:#B8321F;      /* red for body text — 5.33:1 on ground */
+      --accent-bg:#FAE8E5;      /* red tinted wash */
+      --paid:     #2D6A4F;      /* credit ink green (5.49:1 on ground) */
+      --paid-bg:  #E4F2EC;
+      --pending:  #7A5C00;      /* amber-brown for pending (passes on ground) */
+      --pending-bg:#FFF3CC;
+      --draft:    #4A4D54;
+      --draft-bg: #EAECF0;
+      --sidebar:  #1C1E21;      /* dark ink sidebar */
+      --sidebar-text: #E8EAF0;
+      --sidebar-text-2: #9DA0A8;
+      --sidebar-active: #2C2F34;
+      --border:   #D2D5DC;      /* structural separators (decorative) */
+      --border-ui:#767A87;      /* interactive element borders ≥3:1 on ground (3.79:1) */
+      --border-strong: #B0B4BE;
+      --rule:     #141416;      /* table rule color */
+      /* spacing scale: 4 8 12 16 24 32 48 64 96 */
+      --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+      --sp-5: 24px; --sp-6: 32px; --sp-7: 48px; --sp-8: 64px; --sp-9: 96px;
+      /* type scale */
+      --fs-xs:  0.75rem;  /* 12px */
+      --fs-sm:  0.875rem; /* 14px */
+      --fs-md:  1rem;     /* 16px */
+      --fs-lg:  1.25rem;  /* 20px */
+      --fs-xl:  1.5rem;   /* 24px */
+      --fs-2xl: 2rem;     /* 32px */
+      --fs-3xl: 3rem;     /* 48px */
+      --fs-4xl: 4rem;     /* 64px */
+      /* easing */
+      --ease-out: cubic-bezier(0,0,0.2,1);
+      --ease-in:  cubic-bezier(0.4,0,1,1);
+      --ease-io:  cubic-bezier(0.4,0,0.2,1);
+    }
+
+    /* ─── Reset ──────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: 'DM Mono', 'Courier Prime', monospace;
+      background: var(--ground);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ─── App shell ──────────────────────────────────────────── */
+    .app {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      grid-template-rows: auto 1fr;
+      min-height: 100vh;
+    }
+
+    /* ─── Sidebar nav ────────────────────────────────────────── */
+    .sidebar {
+      grid-row: 1 / -1;
+      background: var(--sidebar);
+      color: var(--sidebar-text);
+      display: flex;
+      flex-direction: column;
+      padding: var(--sp-5) 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    .sidebar-logo {
+      font-family: 'Archivo', sans-serif;
+      font-weight: 900;
+      font-size: var(--fs-xl);
+      letter-spacing: -0.04em;
+      color: var(--sidebar-text);
+      padding: 0 var(--sp-5) var(--sp-6);
+      border-bottom: 1px solid #2C2F34;
+      display: flex;
+      align-items: center;
+      gap: var(--sp-2);
+      text-decoration: none;
+    }
+
+    .sidebar-logo .logo-mark {
+      display: inline-flex;
+      width: 28px;
+      height: 28px;
+      background: var(--accent);
+      color: #fff;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--fs-sm);
+      font-weight: 900;
+      flex-shrink: 0;
+    }
+
+    nav[aria-label="Main navigation"] {
+      padding: var(--sp-5) 0;
+      flex: 1;
+    }
+
+    .nav-label {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--sidebar-text-2);
+      padding: var(--sp-3) var(--sp-5) var(--sp-2);
+    }
+
+    .nav-list { list-style: none; }
+
+    .nav-list a {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+      padding: var(--sp-2) var(--sp-5);
+      color: var(--sidebar-text-2);
+      text-decoration: none;
+      font-size: var(--fs-sm);
+      font-family: 'DM Mono', monospace;
+      font-weight: 400;
+      transition: color 180ms var(--ease-out), background 180ms var(--ease-out);
+      cursor: pointer;
+      position: relative;
+    }
+
+    .nav-list a:hover {
+      color: var(--sidebar-text);
+      background: var(--sidebar-active);
+    }
+
+    .nav-list a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: -2px;
+    }
+
+    .nav-list a[aria-current="page"] {
+      color: var(--sidebar-text);
+      background: var(--sidebar-active);
+    }
+
+    .nav-list a[aria-current="page"]::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 4px;
+      bottom: 4px;
+      width: 3px;
+      background: var(--accent);
+    }
+
+    .nav-list .nav-badge {
+      margin-left: auto;
+      background: var(--accent);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      font-family: 'Archivo', sans-serif;
+      min-width: 20px;
+      text-align: center;
+    }
+
+    .sidebar-meta {
+      padding: var(--sp-5);
+      border-top: 1px solid #2C2F34;
+      font-size: var(--fs-xs);
+      color: var(--sidebar-text-2);
+      font-family: 'DM Mono', monospace;
+    }
+
+    .sidebar-meta strong {
+      display: block;
+      color: var(--sidebar-text);
+      font-size: var(--fs-sm);
+      font-weight: 500;
+      margin-bottom: var(--sp-1);
+    }
+
+    /* ─── Top bar ────────────────────────────────────────────── */
+    .topbar {
+      grid-column: 2;
+      background: var(--ground);
+      border-bottom: 2px solid var(--rule);
+      padding: 0 var(--sp-7);
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .topbar-title {
+      font-family: 'Archivo', sans-serif;
+      font-weight: 900;
+      font-size: var(--fs-lg);
+      letter-spacing: -0.03em;
+      color: var(--text);
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+    }
+
+    .btn {
+      font-family: 'Archivo', sans-serif;
+      font-weight: 700;
+      font-size: var(--fs-sm);
+      letter-spacing: 0.01em;
+      padding: var(--sp-2) var(--sp-4);
+      cursor: pointer;
+      transition: transform 150ms var(--ease-out), background 150ms var(--ease-out), color 150ms var(--ease-out);
+      border: 2px solid var(--rule);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: var(--sp-2);
+      min-height: 44px;
+      background: none;
+    }
+
+    .btn:active { transform: scale(0.97); }
+
+    .btn-primary {
+      background: var(--text);
+      color: var(--ground);
+      border-color: var(--text);
+    }
+    .btn-primary:hover { background: #2A2C30; border-color: #2A2C30; }
+    .btn-primary:focus-visible {
+      outline: 3px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text);
+      border-color: var(--border-ui);
+    }
+    .btn-ghost:hover { background: var(--ground-2); }
+    .btn-ghost:focus-visible {
+      outline: 3px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* ─── Main content ───────────────────────────────────────── */
+    .main {
+      grid-column: 2;
+      padding: var(--sp-7);
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-7);
+    }
+
+    /* ─── THE AGING LEDGER — standout instrument ─────────────── */
+    .aging-instrument {
+      border: 2px solid var(--rule);
+      background: var(--ground);
+    }
+
+    .aging-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: var(--sp-5) var(--sp-6);
+      border-bottom: 1px solid var(--border);
+      gap: var(--sp-4);
+    }
+
+    .aging-heading {
+      font-family: 'Archivo', sans-serif;
+      font-weight: 900;
+      font-size: var(--fs-2xl);
+      letter-spacing: -0.04em;
+      line-height: 1;
+      color: var(--text);
+    }
+
+    .aging-subhead {
+      font-size: var(--fs-xs);
+      font-weight: 400;
+      color: var(--text-2);
+      margin-top: var(--sp-2);
+      letter-spacing: 0.04em;
+    }
+
+    .aging-total-block {
+      text-align: right;
+    }
+
+    .aging-total-label {
+      font-size: var(--fs-xs);
+      color: var(--text-2);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .aging-total-amount {
+      font-family: 'Archivo', sans-serif;
+      font-weight: 900;
+      font-size: var(--fs-3xl);
+      letter-spacing: -0.05em;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      color: var(--accent-tx);
+    }
+
+    .aging-total-note {
+      font-size: var(--fs-xs);
+      color: var(--text-3);
+      margin-top: var(--sp-1);
+    }
+
+    /* Aging buckets */
+    .aging-buckets {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border-top: 1px solid var(--border);
+    }
+
+    .aging-bucket {
+      padding: var(--sp-5) var(--sp-5) var(--sp-4);
+      border-right: 1px solid var(--border);
+      position: relative;
+    }
+
+    .aging-bucket:last-child { border-right: none; }
+
+    .bucket-label {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-2);
+      margin-bottom: var(--sp-3);
+    }
+
+    .bucket-amount {
+      font-family: 'Archivo', sans-serif;
+      font-weight: 900;
+      font-size: var(--fs-2xl);
+      letter-spacing: -0.04em;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      margin-bottom: var(--sp-3);
+    }
+
+    .bucket-count {
+      font-size: var(--fs-xs);
+      color: var(--text-2);
+      margin-bottom: var(--sp-4);
+    }
+
+    /* Bar track */
+    .bucket-bar-track {
+      height: 6px;
+      background: var(--ground-2);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .bucket-bar-fill {
+      height: 100%;
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 600ms var(--ease-out);
+    }
+
+    .aging-bucket[data-state="current"] .bucket-amount { color: var(--text); }
+    .aging-bucket[data-state="current"] .bucket-bar-fill { background: var(--text); }
+
+    .aging-bucket[data-state="30"] .bucket-amount { color: var(--pending); }
+    .aging-bucket[data-state="30"] .bucket-bar-fill { background: var(--pending); }
+
+    .aging-bucket[data-state="60"] .bucket-amount { color: var(--accent-tx); }
+    .aging-bucket[data-state="60"] .bucket-bar-fill { background: var(--accent-tx); }
+
+    .aging-bucket[data-state="90"] .bucket-amount { color: var(--accent); }
+    .aging-bucket[data-state="90"] .bucket-bar-fill { background: var(--accent); }
+
+    /* Total outstanding bar */
+    .aging-summary-bar {
+      padding: var(--sp-4) var(--sp-6);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: var(--sp-5);
+    }
+
+    .summary-bar-label {
+      font-size: var(--fs-xs);
+      color: var(--text-2);
+      white-space: nowrap;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      width: 120px;
+      flex-shrink: 0;
+    }
+
+    .summary-bar-track {
+      flex: 1;
+      height: 8px;
+      background: var(--ground-2);
+      border: 1px solid var(--border);
+      display: flex;
+      overflow: hidden;
+    }
+
+    .summary-bar-segment {
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .summary-bar-segment::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: inherit;
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 700ms var(--ease-out);
+    }
+
+    .summary-bar-segment.bar-in::after { transform: scaleX(1); }
+
+    .summary-bar-segment + .summary-bar-segment::after { transition-delay: 80ms; }
+    .summary-bar-segment:nth-child(3)::after { transition-delay: 160ms; }
+    .summary-bar-segment:nth-child(4)::after { transition-delay: 240ms; }
+
+    .seg-current  { background: var(--paid); }
+    .seg-30       { background: var(--pending); }
+    .seg-60       { background: var(--accent-tx); }
+    .seg-90       { background: var(--accent); }
+
+    .summary-bar-legend {
+      display: flex;
+      gap: var(--sp-4);
+      flex-shrink: 0;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-2);
+      font-size: var(--fs-xs);
+      color: var(--text-2);
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      flex-shrink: 0;
+    }
+
+    /* ─── Status filter row ──────────────────────────────────── */
+    .filter-row {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+      flex-wrap: wrap;
+    }
+
+    .filter-label {
+      font-size: var(--fs-xs);
+      color: var(--text-2);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-right: var(--sp-2);
+    }
+
+    .filter-chip {
+      font-family: 'DM Mono', monospace;
+      font-size: var(--fs-xs);
+      font-weight: 500;
+      padding: var(--sp-1) var(--sp-3);
+      border: 1.5px solid var(--border-ui);
+      background: transparent;
+      color: var(--text-2);
+      cursor: pointer;
+      transition: background 150ms var(--ease-out), color 150ms var(--ease-out), border-color 150ms var(--ease-out);
+      display: inline-flex;
+      align-items: center;
+      gap: var(--sp-2);
+      min-height: 32px;
+    }
+
+    .filter-chip:hover { background: var(--ground-2); color: var(--text); border-color: var(--text); }
+    .filter-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .filter-chip[aria-pressed="true"] {
+      background: var(--text);
+      color: var(--ground);
+      border-color: var(--text);
+    }
+
+    .filter-chip .chip-count {
+      font-weight: 700;
+      opacity: 0.7;
+    }
+
+    /* ─── Invoice table ──────────────────────────────────────── */
+    .invoice-section {}
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--sp-4);
+    }
+
+    .section-heading {
+      font-family: 'Archivo', sans-serif;
+      font-weight: 900;
+      font-size: var(--fs-lg);
+      letter-spacing: -0.03em;
+      color: var(--text);
+    }
+
+    .section-count {
+      font-size: var(--fs-xs);
+      color: var(--text-3);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Table */
+    .invoice-table-wrap {
+      border: 2px solid var(--rule);
+      overflow-x: auto;
+    }
+
+    table.invoice-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: 'DM Mono', monospace;
+      font-size: var(--fs-sm);
+    }
+
+    caption.sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .invoice-table thead tr {
+      border-bottom: 2px solid var(--rule);
+      background: var(--text);
+    }
+
+    .invoice-table thead th {
+      font-family: 'Archivo', sans-serif;
+      font-weight: 700;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ground);
+      padding: var(--sp-3) var(--sp-4);
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .invoice-table thead th.num { text-align: right; }
+
+    .invoice-table tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 120ms var(--ease-out);
+    }
+
+    .invoice-table tbody tr:last-child { border-bottom: none; }
+
+    .invoice-table tbody tr:hover { background: var(--ground-2); }
+
+    .invoice-table tbody tr:focus-within { background: var(--ground-2); }
+
+    .invoice-table td {
+      padding: var(--sp-3) var(--sp-4);
+      vertical-align: middle;
+      color: var(--text);
+    }
+
+    .invoice-table td.num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+    }
+
+    .invoice-table td.amount-cell {
+      text-align: right;
+      font-family: 'Archivo', sans-serif;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      font-size: var(--fs-md);
+    }
+
+    .invoice-num {
+      font-weight: 500;
+      color: var(--text-2);
+      font-size: var(--fs-xs);
+      letter-spacing: 0.04em;
+    }
+
+    .client-name {
+      font-weight: 500;
+      color: var(--text);
+      display: block;
+    }
+
+    .invoice-desc {
+      font-size: var(--fs-xs);
+      color: var(--text-3);
+      display: block;
+    }
+
+    .date-cell { color: var(--text-2); }
+
+    .days-overdue {
+      font-family: 'Archivo', sans-serif;
+      font-weight: 700;
+      font-size: var(--fs-xs);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .days-overdue.over { color: var(--accent-tx); }
+    .days-overdue.current { color: var(--text-3); }
+
+    /* Status badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-family: 'Archivo', sans-serif;
+      font-weight: 700;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border: 1.5px solid;
+      white-space: nowrap;
+    }
+
+    .badge-paid {
+      color: var(--paid);
+      background: var(--paid-bg);
+      border-color: var(--paid);
+    }
+
+    .badge-overdue {
+      color: var(--accent-tx);
+      background: var(--accent-bg);
+      border-color: var(--accent-tx);
+    }
+
+    .badge-pending {
+      color: var(--pending);
+      background: var(--pending-bg);
+      border-color: var(--pending);
+    }
+
+    .badge-draft {
+      color: var(--draft);
+      background: var(--draft-bg);
+      border-color: var(--draft);
+    }
+
+    /* Action column */
+    .action-btn {
+      background: none;
+      border: 1.5px solid var(--border-ui);
+      cursor: pointer;
+      color: var(--text-2);
+      padding: 5px 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: var(--sp-1);
+      font-size: var(--fs-xs);
+      font-family: 'DM Mono', monospace;
+      transition: background 140ms var(--ease-out), color 140ms var(--ease-out), border-color 140ms var(--ease-out);
+      min-height: 32px;
+    }
+
+    .action-btn:hover { background: var(--ground-2); color: var(--text); border-color: var(--text); }
+    .action-btn:active { transform: scale(0.97); }
+    .action-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    /* ─── Reveal animation ───────────────────────────────────── */
+    .reveal { transition: opacity .45s var(--ease-out), transform .45s var(--ease-out); }
+    html.js .reveal { opacity: 0; transform: translateY(12px); }
+    html.js .reveal.in { opacity: 1; transform: none; }
+
+    .reveal-delay-1 { transition-delay: 60ms; }
+    .reveal-delay-2 { transition-delay: 120ms; }
+    .reveal-delay-3 { transition-delay: 180ms; }
+    .reveal-delay-4 { transition-delay: 240ms; }
+    .reveal-delay-5 { transition-delay: 300ms; }
+
+    /* Table row stagger via --i custom property */
+    tbody tr.reveal { transition-delay: calc(var(--i, 0) * 35ms + 100ms); }
+
+    /* ─── Selection color ────────────────────────────────────── */
+    ::selection { background: var(--accent-bg); color: var(--accent-tx); }
+
+    /* ─── Responsive ─────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .app {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto 1fr;
+      }
+      .sidebar {
+        grid-row: auto;
+        position: static;
+        height: auto;
+        flex-direction: row;
+        align-items: center;
+        flex-wrap: wrap;
+        padding: var(--sp-3) var(--sp-4);
+        gap: var(--sp-3);
+      }
+      .sidebar-logo { padding: 0; border-bottom: none; }
+      nav[aria-label="Main navigation"] { padding: 0; flex: none; }
+      .nav-label { display: none; }
+      .nav-list { display: flex; gap: var(--sp-1); }
+      .nav-list a { padding: var(--sp-2) var(--sp-3); }
+      .nav-list a[aria-current="page"]::before { display: none; }
+      .sidebar-meta { display: none; }
+      .topbar { grid-column: 1; }
+      .main { grid-column: 1; padding: var(--sp-5) var(--sp-4); }
+      .aging-buckets { grid-template-columns: repeat(2, 1fr); }
+      .aging-bucket:nth-child(2) { border-right: 1px solid var(--border); }
+      .aging-bucket:nth-child(3) { border-right: none; }
+      .summary-bar-legend { display: none; }
+      .aging-heading { font-size: var(--fs-xl); }
+      .aging-total-amount { font-size: var(--fs-2xl); }
+    }
+
+    @media (max-width: 480px) {
+      .aging-buckets { grid-template-columns: 1fr 1fr; }
+      .topbar-title { font-size: var(--fs-md); }
+      .invoice-table td:nth-child(4),
+      .invoice-table th:nth-child(4) { display: none; } /* hide desc on small */
+    }
+
+    /* ─── Reduced motion ─────────────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ── Sidebar ─────────────────────────────────────────────── -->
+  <aside class="sidebar" aria-label="Application sidebar">
+    <a href="#" class="sidebar-logo" aria-label="Ledger home">
+      <span class="logo-mark" aria-hidden="true">L</span>
+      LEDGER
+    </a>
+
+    <nav aria-label="Main navigation">
+      <p class="nav-label">Workspace</p>
+      <ul class="nav-list">
+        <li>
+          <a href="#" aria-current="page">
+            <i data-lucide="layout-dashboard" aria-hidden="true" width="16" height="16"></i>
+            Overview
+          </a>
+        </li>
+        <li>
+          <a href="#">
+            <i data-lucide="file-text" aria-hidden="true" width="16" height="16"></i>
+            Invoices
+            <span class="nav-badge" aria-label="3 overdue">3</span>
+          </a>
+        </li>
+        <li>
+          <a href="#">
+            <i data-lucide="users" aria-hidden="true" width="16" height="16"></i>
+            Clients
+          </a>
+        </li>
+        <li>
+          <a href="#">
+            <i data-lucide="bell" aria-hidden="true" width="16" height="16"></i>
+            Reminders
+          </a>
+        </li>
+      </ul>
+
+      <p class="nav-label" style="margin-top: 16px;">Reports</p>
+      <ul class="nav-list">
+        <li>
+          <a href="#">
+            <i data-lucide="bar-chart-2" aria-hidden="true" width="16" height="16"></i>
+            Cashflow
+          </a>
+        </li>
+        <li>
+          <a href="#">
+            <i data-lucide="clock" aria-hidden="true" width="16" height="16"></i>
+            Aging
+          </a>
+        </li>
+        <li>
+          <a href="#">
+            <i data-lucide="settings" aria-hidden="true" width="16" height="16"></i>
+            Settings
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="sidebar-meta">
+      <strong>Kira Hoffman</strong>
+      kira@kiradesigns.co
+    </div>
+  </aside>
+
+  <!-- ── Top bar ──────────────────────────────────────────────── -->
+  <header class="topbar">
+    <h1 class="topbar-title">Overview</h1>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost" type="button">
+        <i data-lucide="download" aria-hidden="true" width="14" height="14"></i>
+        Export
+      </button>
+      <button class="btn btn-primary" type="button">
+        <i data-lucide="plus" aria-hidden="true" width="14" height="14"></i>
+        New Invoice
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Main content ─────────────────────────────────────────── -->
+  <main class="main">
+
+    <!-- THE AGING LEDGER — standout instrument -->
+    <section aria-labelledby="aging-heading" class="aging-instrument reveal" id="aging-section">
+      <div class="aging-header">
+        <div>
+          <h2 class="aging-heading" id="aging-heading">Receivables Aging</h2>
+          <p class="aging-subhead">All outstanding invoices by time elapsed since due date</p>
+        </div>
+        <div class="aging-total-block">
+          <div class="aging-total-label">Total Outstanding</div>
+          <div class="aging-total-amount" aria-live="polite">$14,820</div>
+          <div class="aging-total-note">across 7 open invoices</div>
+        </div>
+      </div>
+
+      <!-- Four aging buckets — data-driven bars -->
+      <div class="aging-buckets">
+        <div class="aging-bucket" data-state="current" data-amount="3200" data-max="14820">
+          <div class="bucket-label">Current</div>
+          <div class="bucket-amount" aria-label="$3,200 current">$3,200</div>
+          <div class="bucket-count">2 invoices</div>
+          <div class="bucket-bar-track" role="progressbar" aria-label="Current: 22% of total" aria-valuenow="22">
+            <div class="bucket-bar-fill" style="--pct:0.216"></div>
+          </div>
+        </div>
+        <div class="aging-bucket" data-state="30" data-amount="4450" data-max="14820">
+          <div class="bucket-label">1–30 days</div>
+          <div class="bucket-amount" aria-label="$4,450 overdue 1–30 days">$4,450</div>
+          <div class="bucket-count">2 invoices</div>
+          <div class="bucket-bar-track" role="progressbar" aria-label="1–30 days: 30% of total" aria-valuenow="30">
+            <div class="bucket-bar-fill" style="--pct:0.300"></div>
+          </div>
+        </div>
+        <div class="aging-bucket" data-state="60" data-amount="4920" data-max="14820">
+          <div class="bucket-label">31–60 days</div>
+          <div class="bucket-amount" aria-label="$4,920 overdue 31–60 days">$4,920</div>
+          <div class="bucket-count">2 invoices</div>
+          <div class="bucket-bar-track" role="progressbar" aria-label="31–60 days: 33% of total" aria-valuenow="33">
+            <div class="bucket-bar-fill" style="--pct:0.332"></div>
+          </div>
+        </div>
+        <div class="aging-bucket" data-state="90" data-amount="2250" data-max="14820">
+          <div class="bucket-label">61+ days</div>
+          <div class="bucket-amount" aria-label="$2,250 overdue 61+ days">$2,250</div>
+          <div class="bucket-count">1 invoice</div>
+          <div class="bucket-bar-track" role="progressbar" aria-label="61+ days: 15% of total" aria-valuenow="15">
+            <div class="bucket-bar-fill" style="--pct:0.152"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stacked total bar with segments -->
+      <div class="aging-summary-bar">
+        <div class="summary-bar-label">Breakdown</div>
+        <div class="summary-bar-track" role="img" aria-label="Outstanding breakdown: 22% current, 30% 1-30 days, 33% 31-60 days, 15% 61+ days">
+          <div class="summary-bar-segment seg-current" style="--w:0.216" title="Current: $3,200"></div>
+          <div class="summary-bar-segment seg-30" style="--w:0.300" title="1–30 days: $4,450"></div>
+          <div class="summary-bar-segment seg-60" style="--w:0.332" title="31–60 days: $4,920"></div>
+          <div class="summary-bar-segment seg-90" style="--w:0.152" title="61+ days: $2,250"></div>
+        </div>
+        <div class="summary-bar-legend" aria-hidden="true">
+          <div class="legend-item">
+            <div class="legend-dot" style="background:var(--paid)"></div>
+            Current
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:var(--pending)"></div>
+            1–30d
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:var(--accent-tx)"></div>
+            31–60d
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:var(--accent)"></div>
+            61+d
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Filter row -->
+    <div class="filter-row reveal reveal-delay-1">
+      <span class="filter-label">Filter</span>
+      <button class="filter-chip" type="button" aria-pressed="true">
+        All
+        <span class="chip-count">13</span>
+      </button>
+      <button class="filter-chip" type="button" aria-pressed="false">
+        <i data-lucide="alert-circle" aria-hidden="true" width="12" height="12"></i>
+        Overdue
+        <span class="chip-count">5</span>
+      </button>
+      <button class="filter-chip" type="button" aria-pressed="false">
+        <i data-lucide="clock" aria-hidden="true" width="12" height="12"></i>
+        Pending
+        <span class="chip-count">2</span>
+      </button>
+      <button class="filter-chip" type="button" aria-pressed="false">
+        <i data-lucide="check-circle" aria-hidden="true" width="12" height="12"></i>
+        Paid
+        <span class="chip-count">5</span>
+      </button>
+      <button class="filter-chip" type="button" aria-pressed="false">
+        <i data-lucide="file" aria-hidden="true" width="12" height="12"></i>
+        Draft
+        <span class="chip-count">1</span>
+      </button>
+    </div>
+
+    <!-- Invoice table -->
+    <section class="invoice-section reveal reveal-delay-2" aria-labelledby="invoices-heading">
+      <div class="section-header">
+        <h2 class="section-heading" id="invoices-heading">Invoices</h2>
+        <span class="section-count">showing 9 of 13</span>
+      </div>
+      <div class="invoice-table-wrap">
+        <table class="invoice-table">
+          <caption class="sr-only">Invoice list with status, client, amount, and due date</caption>
+          <thead>
+            <tr>
+              <th scope="col">Invoice</th>
+              <th scope="col">Client</th>
+              <th scope="col">Issued</th>
+              <th scope="col">Due Date</th>
+              <th scope="col" class="num">Days</th>
+              <th scope="col" class="num">Amount</th>
+              <th scope="col">Status</th>
+              <th scope="col"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="reveal reveal-delay-1" style="--i:0">
+              <td><span class="invoice-num">#INV-0091</span></td>
+              <td>
+                <span class="client-name">Fieldwork Studio</span>
+                <span class="invoice-desc">Brand identity system</span>
+              </td>
+              <td class="date-cell">15 May 2026</td>
+              <td class="date-cell">14 Jun 2026</td>
+              <td class="num"><span class="days-overdue current">+8d</span></td>
+              <td class="num amount-cell">$3,200</td>
+              <td><span class="badge badge-pending" aria-label="Status: Pending"><i data-lucide="clock" aria-hidden="true" width="10" height="10"></i>Pending</span></td>
+              <td><button class="action-btn" type="button" aria-label="Actions for invoice INV-0091"><i data-lucide="more-horizontal" aria-hidden="true" width="14" height="14"></i></button></td>
+            </tr>
+            <tr class="reveal reveal-delay-2" style="--i:1">
+              <td><span class="invoice-num">#INV-0090</span></td>
+              <td>
+                <span class="client-name">Nomad Press</span>
+                <span class="invoice-desc">Website redesign — phase 2</span>
+              </td>
+              <td class="date-cell">08 May 2026</td>
+              <td class="date-cell">07 Jun 2026</td>
+              <td class="num"><span class="days-overdue over">+15d</span></td>
+              <td class="num amount-cell">$2,800</td>
+              <td><span class="badge badge-overdue" aria-label="Status: Overdue"><i data-lucide="alert-circle" aria-hidden="true" width="10" height="10"></i>Overdue</span></td>
+              <td><button class="action-btn" type="button" aria-label="Actions for invoice INV-0090"><i data-lucide="more-horizontal" aria-hidden="true" width="14" height="14"></i></button></td>
+            </tr>
+            <tr class="reveal reveal-delay-3" style="--i:2">
+              <td><span class="invoice-num">#INV-0089</span></td>
+              <td>
+                <span class="client-name">Torchlight Media</span>
+                <span class="invoice-desc">Motion graphics — Q2 campaign</span>
+              </td>
+              <td class="date-cell">20 Apr 2026</td>
+              <td class="date-cell">20 May 2026</td>
+              <td class="num"><span class="days-overdue over">+33d</span></td>
+              <td class="num amount-cell">$1,650</td>
+              <td><span class="badge badge-overdue" aria-label="Status: Overdue"><i data-lucide="alert-circle" aria-hidden="true" width="10" height="10"></i>Overdue</span></td>
+              <td><button class="action-btn" type="button" aria-label="Actions for invoice INV-0089"><i data-lucide="more-horizontal" aria-hidden="true" width="14" height="14"></i></button></td>
+            </tr>
+            <tr class="reveal reveal-delay-4" style="--i:3">
+              <td><span class="invoice-num">#INV-0088</span></td>
+              <td>
+                <span class="client-name">Acre Collective</span>
+                <span class="invoice-desc">UX audit & report</span>
+              </td>
+              <td class="date-cell">14 Apr 2026</td>
+              <td class="date-cell">14 May 2026</td>
+              <td class="num"><span class="days-overdue over">+39d</span></td>
+              <td class="num amount-cell">$3,270</td>
+              <td><span class="badge badge-overdue" aria-label="Status: Overdue"><i data-lucide="alert-circle" aria-hidden="true" width="10" height="10"></i>Overdue</span></td>
+              <td><button class="action-btn" type="button" aria-label="Actions for invoice INV-0088"><i data-lucide="more-horizontal" aria-hidden="true" width="14" height="14"></i></button></td>
+            </tr>
+            <tr class="reveal reveal-delay-5" style="--i:4">
+              <td><span class="invoice-num">#INV-0087</span></td>
+              <td>
+                <span class="client-name">Crestline Apps</span>
+                <span class="invoice-desc">App icon & design system</span>
+              </td>
+              <td class="date-cell">02 Apr 2026</td>
+              <td class="date-cell">02 May 2026</td>
+              <td class="num"><span class="days-overdue over">+51d</span></td>
+              <td class="num amount-cell">$2,250</td>
+              <td><span class="badge badge-overdue" aria-label="Status: Overdue"><i data-lucide="alert-circle" aria-hidden="true" width="10" height="10"></i>Overdue</span></td>
+              <td><button class="action-btn" type="button" aria-label="Actions for invoice INV-0087"><i data-lucide="more-horizontal" aria-hidden="true" width="14" height="14"></i></button></td>
+            </tr>
+            <tr class="reveal reveal-delay-1" style="--i:5">
+              <td><span class="invoice-num">#INV-0086</span></td>
+              <td>
+                <span class="client-name">Fieldwork Studio</span>
+                <span class="invoice-desc">Copywriting — homepage</span>
+              </td>
+              <td class="date-cell">25 Mar 2026</td>
+              <td class="date-cell">24 Apr 2026</td>
+              <td class="num"><span class="days-overdue over">+59d</span></td>
+              <td class="num amount-cell">$975</td>
+              <td><span class="badge badge-overdue" aria-label="Status: Overdue"><i data-lucide="alert-circle" aria-hidden="true" width="10" height="10"></i>Overdue</span></td>
+              <td><button class="action-btn" type="button" aria-label="Actions for invoice INV-0086"><i data-lucide="more-horizontal" aria-hidden="true" width="14" height="14"></i></button></td>
+            </tr>
+            <tr class="reveal reveal-delay-2" style="--i:6">
+              <td><span class="invoice-num">#INV-0085</span></td>
+              <td>
+                <span class="client-name">Wren & Carver</span>
+                <span class="invoice-desc">Packaging design — 3 SKUs</span>
+              </td>
+              <td class="date-cell">10 Mar 2026</td>
+              <td class="date-cell">09 Apr 2026</td>
+              <td class="num"><span class="days-overdue over">+74d</span></td>
+              <td class="num amount-cell">$2,250</td>
+              <td><span class="badge badge-overdue" aria-label="Status: Overdue"><i data-lucide="alert-circle" aria-hidden="true" width="10" height="10"></i>Overdue</span></td>
+              <td><button class="action-btn" type="button" aria-label="Actions for invoice INV-0085"><i data-lucide="more-horizontal" aria-hidden="true" width="14" height="14"></i></button></td>
+            </tr>
+            <tr class="reveal reveal-delay-3" style="--i:7">
+              <td><span class="invoice-num">#INV-0084</span></td>
+              <td>
+                <span class="client-name">Nomad Press</span>
+                <span class="invoice-desc">Website redesign — phase 1</span>
+              </td>
+              <td class="date-cell">18 Apr 2026</td>
+              <td class="date-cell">18 May 2026</td>
+              <td class="num"><span class="days-overdue current" style="color:var(--paid)">Paid</span></td>
+              <td class="num amount-cell" style="color:var(--paid)">$4,200</td>
+              <td><span class="badge badge-paid" aria-label="Status: Paid"><i data-lucide="check-circle" aria-hidden="true" width="10" height="10"></i>Paid</span></td>
+              <td><button class="action-btn" type="button" aria-label="Actions for invoice INV-0084"><i data-lucide="more-horizontal" aria-hidden="true" width="14" height="14"></i></button></td>
+            </tr>
+            <tr class="reveal reveal-delay-4" style="--i:8">
+              <td><span class="invoice-num">#INV-0092</span></td>
+              <td>
+                <span class="client-name">Sunken Type</span>
+                <span class="invoice-desc">Type specimen — editorial layout</span>
+              </td>
+              <td class="date-cell">28 May 2026</td>
+              <td class="date-cell">—</td>
+              <td class="num"><span class="days-overdue current">—</span></td>
+              <td class="num amount-cell" style="color:var(--text-3)">$1,800</td>
+              <td><span class="badge badge-draft" aria-label="Status: Draft"><i data-lucide="file" aria-hidden="true" width="10" height="10"></i>Draft</span></td>
+              <td><button class="action-btn" type="button" aria-label="Actions for invoice INV-0092"><i data-lucide="more-horizontal" aria-hidden="true" width="14" height="14"></i></button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main><!-- /main -->
+</div><!-- /app -->
+
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script>
+  // Initialize Lucide icons
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+
+  // ── Aging bar animations (scaleX — never width) ──────────────
+  function animateBars() {
+    // Bucket bars
+    document.querySelectorAll('.bucket-bar-fill').forEach(function(el) {
+      var pct = parseFloat(el.style.getPropertyValue('--pct') || 0);
+      el.style.transform = 'scaleX(' + pct + ')';
+    });
+
+    // Summary bar segments: set flex width, then add bar-in to trigger the ::after scaleX reveal
+    var segments = document.querySelectorAll('.summary-bar-segment');
+    var widths = [0.216, 0.300, 0.332, 0.152];
+    segments.forEach(function(seg, i) {
+      seg.style.flex = '0 0 ' + (widths[i] * 100) + '%';
+      // Trigger reflow before adding class so transition fires
+      void seg.offsetWidth;
+      seg.classList.add('bar-in');
+    });
+  }
+
+  // ── Render-safe reveal ────────────────────────────────────────
+  function revealElements() {
+    var targets = document.querySelectorAll('.reveal');
+    // Use IntersectionObserver if available; else reveal all immediately
+    if ('IntersectionObserver' in window) {
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.05 });
+      targets.forEach(function(el) { observer.observe(el); });
+    } else {
+      targets.forEach(function(el) { el.classList.add('in'); });
+    }
+  }
+
+  // ── Filter chip toggle ────────────────────────────────────────
+  document.querySelectorAll('.filter-chip').forEach(function(chip) {
+    chip.addEventListener('click', function() {
+      document.querySelectorAll('.filter-chip').forEach(function(c) {
+        c.setAttribute('aria-pressed', 'false');
+      });
+      chip.setAttribute('aria-pressed', 'true');
+    });
+  });
+
+  // ── Init ──────────────────────────────────────────────────────
+  // Bars animate after a short delay so the entrance is visible
+  window.addEventListener('load', function() {
+    // Re-init icons after load (sometimes async fonts shift layout)
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    revealElements();
+    setTimeout(animateBars, 300);
+  });
+
+  // Fallback: run immediately if load already fired
+  if (document.readyState === 'complete') {
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    revealElements();
+    setTimeout(animateBars, 300);
+  }
+</script>
+</body>
+</html>
