@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Page &amp; Co. — Independent Booksellers</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@900&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── Reset & tokens ─────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --paper:    #F4F1EE;
+      --ink:      #1A1410;
+      --ink-mid:  #4A3F36;
+      --ink-lite: #8A7A6E;
+      --stamp:    #9B2D1F;   /* stamp-ink oxblood — the accent */
+      --rule:     #C8BFB4;
+
+      --f-display: 'Big Shoulders Display', sans-serif;
+      --f-body:    'Newsreader', Georgia, serif;
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--f-body);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ── Utility ───────────────────────────────────────── */
+    .visually-hidden {
+      position: absolute; width: 1px; height: 1px;
+      padding: 0; margin: -1px; overflow: hidden;
+      clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       MASTHEAD — ultra-condensed architectural wordmark
+       ══════════════════════════════════════════════════════ */
+    .masthead {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: end;
+      padding: 2rem 2.5rem 0;
+      border-bottom: 2px solid var(--ink);
+    }
+
+    .masthead__wordmark {
+      font-family: var(--f-display);
+      font-weight: 900;
+      font-size: clamp(5rem, 16vw, 14rem);
+      line-height: 0.88;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      /* Ultra-condensed stacked lockup */
+      text-transform: uppercase;
+    }
+
+    .masthead__wordmark span {
+      display: block;
+    }
+
+    .masthead__wordmark .amp {
+      color: var(--stamp);
+      font-size: 0.6em;
+      line-height: 1;
+    }
+
+    .masthead__meta {
+      text-align: right;
+      padding-bottom: 0.5rem;
+      font-family: var(--f-body);
+      font-size: 0.8rem;
+      color: var(--ink-mid);
+      line-height: 1.5;
+    }
+
+    .masthead__meta strong {
+      display: block;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--ink);
+    }
+
+    /* ══════════════════════════════════════════════════════
+       NAV STRIP
+       ══════════════════════════════════════════════════════ */
+    .nav-strip {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--rule);
+      padding: 0 2.5rem;
+      overflow-x: auto;
+    }
+
+    .nav-strip a {
+      font-family: var(--f-body);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ink-mid);
+      text-decoration: none;
+      padding: 0.75rem 1.25rem 0.75rem 0;
+      border: none;
+      flex-shrink: 0;
+      transition: color 0.15s;
+    }
+
+    .nav-strip a:hover { color: var(--stamp); }
+    .nav-strip a:first-child { padding-left: 0; }
+
+    /* ══════════════════════════════════════════════════════
+       HERO — asymmetric broken-grid layout
+       ══════════════════════════════════════════════════════ */
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      grid-template-rows: auto auto;
+      gap: 0;
+      min-height: 60vh;
+      border-bottom: 2px solid var(--ink);
+    }
+
+    /* Left column: intro copy */
+    .hero__copy {
+      grid-column: 1;
+      grid-row: 1 / 3;
+      padding: 3rem 2.5rem 3rem;
+      border-right: 1px solid var(--rule);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .hero__copy-top { }
+
+    .hero__tagline {
+      font-family: var(--f-body);
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      font-weight: 400;
+      font-style: italic;
+      line-height: 1.3;
+      color: var(--ink);
+      max-width: 38ch;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero__desc {
+      font-size: 1rem;
+      line-height: 1.7;
+      color: var(--ink-mid);
+      max-width: 48ch;
+      margin-bottom: 2.5rem;
+    }
+
+    .hero__actions {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      font-family: var(--f-display);
+      font-weight: 900;
+      font-size: 0.9rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--paper);
+      background: var(--stamp);
+      text-decoration: none;
+      padding: 0.65rem 1.4rem 0.6rem;
+      border: 2px solid var(--stamp);
+      display: inline-block;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .btn-primary:hover {
+      background: var(--ink);
+      border-color: var(--ink);
+    }
+
+    .btn-secondary {
+      font-family: var(--f-body);
+      font-size: 0.9rem;
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1.5px solid var(--stamp);
+      padding-bottom: 1px;
+      transition: color 0.15s;
+    }
+
+    .btn-secondary:hover { color: var(--stamp); }
+
+    .hero__copy-bottom {
+      border-top: 1px solid var(--rule);
+      padding-top: 1.5rem;
+    }
+
+    .hero__address {
+      font-size: 0.85rem;
+      color: var(--ink-lite);
+      line-height: 1.6;
+    }
+
+    .hero__address strong {
+      color: var(--ink-mid);
+      display: block;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.2rem;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       THE SHELF CLOCK — the standout
+       Computes the current "reading time" from actual clock.
+       Shows which shelf section is recommended RIGHT NOW,
+       with a featured title and handwritten staff note.
+       Renders on load with current state in markup.
+       ══════════════════════════════════════════════════════ */
+    .shelf-clock {
+      grid-column: 2;
+      grid-row: 1 / 3;
+      display: flex;
+      flex-direction: column;
+      background: var(--paper);
+      /* This column bleeds visually — the broken-grid move */
+      position: relative;
+    }
+
+    .shelf-clock__header {
+      padding: 1.5rem 1.75rem 1rem;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .shelf-clock__label {
+      font-family: var(--f-display);
+      font-weight: 900;
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--stamp);
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+
+    .shelf-clock__title {
+      font-family: var(--f-display);
+      font-weight: 900;
+      font-size: 1.6rem;
+      line-height: 1;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+
+    .shelf-clock__subtitle {
+      font-size: 0.8rem;
+      color: var(--ink-lite);
+      margin-top: 0.3rem;
+      font-style: italic;
+    }
+
+    /* The spine-color bar — a row of book spines in the section's palette */
+    .shelf-clock__spines {
+      display: flex;
+      height: 80px;
+      border-bottom: 2px solid var(--ink);
+      border-top: 2px solid var(--ink);
+      overflow: hidden;
+    }
+
+    .spine {
+      flex: 0 0 auto;
+      height: 100%;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      font-family: var(--f-body);
+      font-size: 0.55rem;
+      letter-spacing: 0.05em;
+      color: transparent; /* text hidden by default, shown on active */
+      overflow: hidden;
+      cursor: default;
+    }
+
+    .spine[data-active="true"] {
+      outline: 3px solid var(--stamp);
+      outline-offset: -3px;
+      z-index: 1;
+    }
+
+    /* Featured book panel */
+    .shelf-clock__book {
+      padding: 1.25rem 1.75rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .shelf-clock__section-badge {
+      display: inline-block;
+      font-family: var(--f-display);
+      font-weight: 900;
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--paper);
+      background: var(--stamp);
+      padding: 0.2rem 0.55rem 0.15rem;
+    }
+
+    .shelf-clock__book-title {
+      font-family: var(--f-body);
+      font-size: 1.1rem;
+      font-weight: 600;
+      line-height: 1.25;
+      color: var(--ink);
+    }
+
+    .shelf-clock__book-author {
+      font-size: 0.85rem;
+      color: var(--ink-lite);
+      font-style: italic;
+    }
+
+    /* Staff pick card — the "handwritten" note */
+    .staff-pick {
+      border: 1px solid var(--rule);
+      border-left: 3px solid var(--stamp);
+      padding: 0.85rem 1rem;
+      background: #EFECE8;
+      position: relative;
+      margin-top: auto;
+    }
+
+    .staff-pick__name {
+      font-family: var(--f-display);
+      font-weight: 900;
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--stamp);
+      margin-bottom: 0.35rem;
+    }
+
+    .staff-pick__note {
+      font-family: var(--f-body);
+      font-style: italic;
+      font-size: 0.9rem;
+      line-height: 1.55;
+      color: var(--ink-mid);
+    }
+
+    /* Time-of-day progress indicator — a pure CSS ruled timeline */
+    .shelf-clock__timeline {
+      padding: 1rem 1.75rem;
+      border-top: 1px solid var(--rule);
+    }
+
+    .timeline-track {
+      position: relative;
+      height: 4px;
+      background: var(--rule);
+      border-radius: 0;
+      margin-bottom: 0.4rem;
+    }
+
+    .timeline-fill {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      background: var(--stamp);
+      transition: width 0.6s ease;
+    }
+
+    .timeline-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.65rem;
+      color: var(--ink-lite);
+      letter-spacing: 0.04em;
+    }
+
+    .timeline-now {
+      font-family: var(--f-display);
+      font-weight: 900;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--stamp);
+      margin-top: 0.3rem;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       SUPPORTING SECTION — Events
+       ══════════════════════════════════════════════════════ */
+    .events-section {
+      padding: 3.5rem 2.5rem;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .section-rule {
+      display: flex;
+      align-items: baseline;
+      gap: 1.25rem;
+      margin-bottom: 2.5rem;
+      border-bottom: 2px solid var(--ink);
+      padding-bottom: 0.6rem;
+    }
+
+    .section-rule__heading {
+      font-family: var(--f-display);
+      font-weight: 900;
+      font-size: clamp(2.2rem, 5vw, 4rem);
+      line-height: 0.9;
+      text-transform: uppercase;
+      color: var(--ink);
+      letter-spacing: -0.01em;
+    }
+
+    .section-rule__count {
+      font-family: var(--f-body);
+      font-size: 0.8rem;
+      color: var(--ink-lite);
+      font-style: italic;
+      margin-left: auto;
+    }
+
+    .events-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+      border-top: 1px solid var(--rule);
+    }
+
+    .event-item {
+      padding: 1.5rem 1.75rem 1.5rem 0;
+      border-right: 1px solid var(--rule);
+      position: relative;
+    }
+
+    .event-item:last-child { border-right: none; }
+    .event-item:not(:first-child) { padding-left: 1.75rem; }
+
+    .event-item__date {
+      font-family: var(--f-display);
+      font-weight: 900;
+      font-size: 3rem;
+      line-height: 0.9;
+      color: var(--stamp);
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .event-item__month {
+      font-family: var(--f-display);
+      font-weight: 900;
+      font-size: 0.8rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-lite);
+      margin-bottom: 1rem;
+    }
+
+    .event-item__name {
+      font-family: var(--f-body);
+      font-size: 1.05rem;
+      font-weight: 600;
+      line-height: 1.3;
+      color: var(--ink);
+      margin-bottom: 0.35rem;
+    }
+
+    .event-item__desc {
+      font-size: 0.875rem;
+      line-height: 1.6;
+      color: var(--ink-mid);
+      max-width: 30ch;
+    }
+
+    .event-item__link {
+      display: inline-block;
+      font-family: var(--f-body);
+      font-size: 0.8rem;
+      color: var(--stamp);
+      text-decoration: none;
+      border-bottom: 1px solid var(--stamp);
+      margin-top: 0.85rem;
+    }
+
+    .event-item__link:hover { border-bottom-color: transparent; }
+
+    /* ══════════════════════════════════════════════════════
+       FOOTER
+       ══════════════════════════════════════════════════════ */
+    footer {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0;
+      padding: 2rem 2.5rem;
+      border-top: 2px solid var(--ink);
+    }
+
+    footer div {
+      padding-right: 2rem;
+      border-right: 1px solid var(--rule);
+    }
+
+    footer div:last-child {
+      border-right: none;
+      padding-right: 0;
+      padding-left: 2rem;
+    }
+
+    footer div:not(:first-child):not(:last-child) {
+      padding-left: 2rem;
+    }
+
+    .footer-label {
+      font-family: var(--f-display);
+      font-weight: 900;
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--stamp);
+      margin-bottom: 0.4rem;
+    }
+
+    .footer-copy {
+      font-size: 0.8rem;
+      color: var(--ink-mid);
+      line-height: 1.6;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       RESPONSIVE
+       ══════════════════════════════════════════════════════ */
+    @media (max-width: 900px) {
+      .hero {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto;
+        min-height: auto;
+      }
+
+      .hero__copy {
+        grid-column: 1;
+        grid-row: 1;
+        border-right: none;
+        border-bottom: 1px solid var(--rule);
+      }
+
+      .shelf-clock {
+        grid-column: 1;
+        grid-row: 2;
+        border-top: 2px solid var(--ink);
+      }
+
+      .events-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .event-item {
+        border-right: none;
+        border-bottom: 1px solid var(--rule);
+        padding-left: 0 !important;
+        padding-right: 0;
+      }
+
+      footer {
+        grid-template-columns: 1fr;
+      }
+
+      footer div {
+        border-right: none;
+        border-bottom: 1px solid var(--rule);
+        padding: 1.25rem 0;
+        padding-left: 0 !important;
+        padding-right: 0;
+      }
+
+      footer div:last-child { border-bottom: none; }
+    }
+
+    @media (max-width: 600px) {
+      .masthead {
+        grid-template-columns: 1fr;
+        padding: 1.25rem 1.25rem 0;
+      }
+      .masthead__meta { text-align: left; padding-top: 0.5rem; padding-bottom: 0.75rem; }
+      .hero__copy { padding: 2rem 1.25rem; }
+      .shelf-clock__book { padding: 1rem 1.25rem; }
+      .shelf-clock__header { padding: 1rem 1.25rem 0.75rem; }
+      .shelf-clock__timeline { padding: 0.75rem 1.25rem; }
+      .events-section { padding: 2.5rem 1.25rem; }
+      .nav-strip { padding: 0 1.25rem; }
+      footer { padding: 1.5rem 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Masthead ───────────────────────────────────────── -->
+  <header class="masthead" role="banner">
+    <div class="masthead__wordmark" aria-label="Page and Co.">
+      <span>PAGE</span>
+      <span class="amp">&amp;</span>
+      <span>CO.</span>
+    </div>
+    <div class="masthead__meta" aria-label="Shop details">
+      <strong>Independent Booksellers</strong>
+      Est. 1987 · 44 Marchmont Street<br />
+      Bloomsbury, London
+    </div>
+  </header>
+
+  <!-- ── Nav strip ─────────────────────────────────────── -->
+  <nav class="nav-strip" aria-label="Main navigation">
+    <a href="#">New Arrivals</a>
+    <a href="#">Staff Picks</a>
+    <a href="#">Events</a>
+    <a href="#">Shelves</a>
+    <a href="#">About</a>
+    <a href="#">Find Us</a>
+  </nav>
+
+  <!-- ── Hero + Shelf Clock ─────────────────────────────── -->
+  <section class="hero" aria-labelledby="hero-headline">
+
+    <!-- Left: copy -->
+    <div class="hero__copy">
+      <div class="hero__copy-top">
+        <h1 id="hero-headline" class="hero__tagline">
+          A shop for readers who still get lost<br />between the shelves.
+        </h1>
+        <p class="hero__desc">
+          Thirty-seven years of curated shelves, handwritten recommendations,
+          and author evenings in the back room. Every book here was chosen
+          by a person who has read it.
+        </p>
+        <div class="hero__actions">
+          <a href="#" class="btn-primary">Browse This Week's Picks</a>
+          <a href="#events" class="btn-secondary">Upcoming events &rarr;</a>
+        </div>
+      </div>
+      <div class="hero__copy-bottom">
+        <p class="hero__address">
+          <strong>Opening Hours</strong>
+          Mon–Sat 9am–8pm &nbsp;·&nbsp; Sun 10am–6pm<br />
+          44 Marchmont St, London WC1N 1AP
+        </p>
+      </div>
+    </div>
+
+    <!-- Right: The Shelf Clock (the standout) -->
+    <!--
+      THE SHELF CLOCK
+      Reads the real wall-clock time and shows which shelf section we
+      recommend right now, plus a featured title and staff note.
+      The JS updates the display live; markup already reflects the
+      current time zone at page-render so it degrades without JS.
+      Time zones: morning 7–11, midday 11–14, afternoon 14–18,
+      evening 18–22, night 22–7.
+    -->
+    <aside class="shelf-clock" id="shelf-clock" aria-live="polite" aria-label="The Shelf Clock — what to read right now">
+
+      <div class="shelf-clock__header">
+        <span class="shelf-clock__label">The Shelf Clock</span>
+        <div class="shelf-clock__title" id="clock-zone-name">Evening</div>
+        <div class="shelf-clock__subtitle" id="clock-zone-sub">Best read after dinner, before bed</div>
+      </div>
+
+      <!-- Spine row: a visual strip of "book spines" coloured by genre -->
+      <div class="shelf-clock__spines" role="img" aria-label="Shelf spine preview for current reading time">
+        <!-- morning spines — soft sage/grey greens -->
+        <div class="spine" style="background:#8DAA91;width:14px" data-zone="morning"></div>
+        <div class="spine" style="background:#6B8F71;width:18px" data-zone="morning"></div>
+        <div class="spine" style="background:#A3B899;width:12px" data-zone="morning"></div>
+        <div class="spine" style="background:#7A9E80;width:20px" data-zone="morning"></div>
+        <div class="spine" style="background:#B0C4B1;width:10px" data-zone="morning"></div>
+        <div class="spine" style="background:#697D6A;width:16px" data-zone="morning"></div>
+        <!-- midday spines — dusty blues -->
+        <div class="spine" style="background:#7897A8;width:16px" data-zone="midday"></div>
+        <div class="spine" style="background:#5C7F93;width:13px" data-zone="midday"></div>
+        <div class="spine" style="background:#8FAAB7;width:19px" data-zone="midday"></div>
+        <div class="spine" style="background:#4E6E80;width:14px" data-zone="midday"></div>
+        <div class="spine" style="background:#9BB3C0;width:11px" data-zone="midday"></div>
+        <div class="spine" style="background:#6D8FA0;width:17px" data-zone="midday"></div>
+        <!-- afternoon spines — warm ochres and amber -->
+        <div class="spine" style="background:#C4935A;width:15px" data-zone="afternoon"></div>
+        <div class="spine" style="background:#A97940;width:19px" data-zone="afternoon"></div>
+        <div class="spine" style="background:#D4A96A;width:12px" data-zone="afternoon"></div>
+        <div class="spine" style="background:#B8874E;width:17px" data-zone="afternoon"></div>
+        <div class="spine" style="background:#E0B87A;width:13px" data-zone="afternoon"></div>
+        <div class="spine" style="background:#9B7038;width:20px" data-zone="afternoon"></div>
+        <!-- evening spines — deep oxbloods and plum -->
+        <div class="spine" style="background:#9B2D1F;width:16px" data-zone="evening" data-active="true"></div>
+        <div class="spine" style="background:#7A2218;width:13px" data-zone="evening" data-active="true"></div>
+        <div class="spine" style="background:#B5493A;width:18px" data-zone="evening" data-active="true"></div>
+        <div class="spine" style="background:#8C3428;width:14px" data-zone="evening" data-active="true"></div>
+        <div class="spine" style="background:#C05040;width:11px" data-zone="evening" data-active="true"></div>
+        <div class="spine" style="background:#6A1F15;width:20px" data-zone="evening" data-active="true"></div>
+        <!-- night spines — deep slate/indigo (dark, not neon) -->
+        <div class="spine" style="background:#4A4560;width:15px" data-zone="night"></div>
+        <div class="spine" style="background:#3A3550;width:19px" data-zone="night"></div>
+        <div class="spine" style="background:#584E72;width:12px" data-zone="night"></div>
+        <div class="spine" style="background:#3F3A58;width:17px" data-zone="night"></div>
+        <div class="spine" style="background:#6A607E;width:14px" data-zone="night"></div>
+        <div class="spine" style="background:#2E2A44;width:22px" data-zone="night"></div>
+      </div>
+
+      <!-- Featured book for this time slot -->
+      <div class="shelf-clock__book">
+        <span class="shelf-clock__section-badge" id="clock-section">Mystery &amp; Suspense</span>
+        <div class="shelf-clock__book-title" id="clock-book-title">The Secret History</div>
+        <div class="shelf-clock__book-author" id="clock-book-author">Donna Tartt</div>
+
+        <!-- Staff pick note -->
+        <div class="staff-pick">
+          <div class="staff-pick__name" id="clock-staff-name">Staff pick — Marcus</div>
+          <div class="staff-pick__note" id="clock-staff-note">
+            "Read this when the flat is quiet and you have the whole evening.
+            Tartt pulls you under in the first paragraph and doesn't let go."
+          </div>
+        </div>
+      </div>
+
+      <!-- Day progress timeline -->
+      <div class="shelf-clock__timeline">
+        <div class="timeline-track">
+          <div class="timeline-fill" id="clock-fill" style="width: 75%"></div>
+        </div>
+        <div class="timeline-labels">
+          <span>7am</span>
+          <span>Midday</span>
+          <span>6pm</span>
+          <span>10pm</span>
+        </div>
+        <div class="timeline-now" id="clock-live-time">Now: 8:14 pm</div>
+      </div>
+
+    </aside>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════════════
+       EVENTS SECTION
+       ══════════════════════════════════════════════════ -->
+  <section class="events-section" id="events" aria-labelledby="events-heading">
+    <div class="section-rule">
+      <h2 class="section-rule__heading" id="events-heading">Coming<br />Up</h2>
+      <span class="section-rule__count">Three evenings in the back room</span>
+    </div>
+    <div class="events-grid">
+      <article class="event-item">
+        <div class="event-item__date">14</div>
+        <div class="event-item__month">June</div>
+        <h3 class="event-item__name">Nina Stibbe in Conversation</h3>
+        <p class="event-item__desc">
+          The author of <em>Paradise Lodge</em> talks about writing from memory,
+          letters, and why diaries matter.
+        </p>
+        <a href="#" class="event-item__link">Reserve a seat &rarr;</a>
+      </article>
+      <article class="event-item">
+        <div class="event-item__date">21</div>
+        <div class="event-item__month">June</div>
+        <h3 class="event-item__name">Summer Reading — Staff Recommendations</h3>
+        <p class="event-item__desc">
+          The whole team pitches one book each. Disagreement encouraged.
+          Wine provided.
+        </p>
+        <a href="#" class="event-item__link">Reserve a seat &rarr;</a>
+      </article>
+      <article class="event-item">
+        <div class="event-item__date">5</div>
+        <div class="event-item__month">July</div>
+        <h3 class="event-item__name">Mick Herron: Slough House After Dark</h3>
+        <p class="event-item__desc">
+          A rare evening with the Slow Horses author. Tickets strictly
+          limited to forty. Back room only.
+        </p>
+        <a href="#" class="event-item__link">Reserve a seat &rarr;</a>
+      </article>
+    </div>
+  </section>
+
+  <!-- ── Footer ─────────────────────────────────────────── -->
+  <footer role="contentinfo">
+    <div>
+      <div class="footer-label">Visit</div>
+      <p class="footer-copy">44 Marchmont Street<br />Bloomsbury, London WC1N 1AP<br />Mon–Sat 9am–8pm · Sun 10am–6pm</p>
+    </div>
+    <div>
+      <div class="footer-label">Contact</div>
+      <p class="footer-copy">hello@pageandco.co.uk<br />020 7123 4567<br />Orders by phone welcome</p>
+    </div>
+    <div>
+      <div class="footer-label">Page &amp; Co.</div>
+      <p class="footer-copy">Independent since 1987.<br />No algorithm. No recommendation engine.<br />Just people who read.</p>
+    </div>
+  </footer>
+
+  <!-- ══════════════════════════════════════════════════
+       THE SHELF CLOCK — JS (progressive enhancement)
+       Updates display live; the markup default above
+       shows a valid state without JS.
+       ══════════════════════════════════════════════════ -->
+  <script>
+    (function () {
+      const ZONES = [
+        {
+          id: 'morning',
+          name: 'Morning',
+          sub: 'Slow fiction for a quiet start',
+          section: 'Literary Fiction',
+          title: 'Gilead',
+          author: 'Marilynne Robinson',
+          staffName: 'Staff pick — Sarah',
+          staffNote: 'Start this on a Sunday morning with coffee before anyone else is up. Robinson writes sentences you have to sit with.',
+          start: 7, end: 11
+        },
+        {
+          id: 'midday',
+          name: 'Midday',
+          sub: 'Short & essayistic — for a lunch hour',
+          section: 'Essays & Short Stories',
+          title: 'Outline',
+          author: 'Rachel Cusk',
+          staffName: 'Staff pick — Tom',
+          staffNote: 'Reads in short bursts. Each conversation opens up more than it closes. Perfect for fifteen minutes on a bench.',
+          start: 11, end: 14
+        },
+        {
+          id: 'afternoon',
+          name: 'Afternoon',
+          sub: 'Ideas and biography — for full attention',
+          section: 'Biography & Nonfiction',
+          title: 'The Warmth of Other Suns',
+          author: 'Isabel Wilkerson',
+          staffName: 'Staff pick — Priya',
+          staffNote: 'Give this your best hours. Wilkerson spent fifteen years on it. You\'ll feel every one of them — in the best way.',
+          start: 14, end: 18
+        },
+        {
+          id: 'evening',
+          name: 'Evening',
+          sub: 'Best read after dinner, before bed',
+          section: 'Mystery & Suspense',
+          title: 'The Secret History',
+          author: 'Donna Tartt',
+          staffName: 'Staff pick — Marcus',
+          staffNote: 'Read this when the flat is quiet and you have the whole evening. Tartt pulls you under in the first paragraph and doesn\'t let go.',
+          start: 18, end: 22
+        },
+        {
+          id: 'night',
+          name: 'Late Night',
+          sub: 'One poem, then sleep',
+          section: 'Poetry',
+          title: 'Ariel',
+          author: 'Sylvia Plath',
+          staffName: 'Staff pick — Aisha',
+          staffNote: 'A single poem before sleep. Not a bedtime read — a jolt. This book has been on the night table next to the till for years.',
+          start: 22, end: 31 // 31 = 7am next day (covers 22–7)
+        }
+      ];
+
+      function getZone(hour) {
+        // Handle night wrapping past midnight
+        for (const z of ZONES) {
+          if (z.id === 'night') {
+            if (hour >= 22 || hour < 7) return z;
+          } else {
+            if (hour >= z.start && hour < z.end) return z;
+          }
+        }
+        return ZONES[3]; // fallback evening
+      }
+
+      function pct(hour, min) {
+        // Map 7am–10pm (15 hours) onto 0–100%
+        const totalMins = (hour * 60 + min) - (7 * 60);
+        const rangeMins = 15 * 60;
+        return Math.max(0, Math.min(100, (totalMins / rangeMins) * 100));
+      }
+
+      function pad(n) { return String(n).padStart(2, '0'); }
+
+      function formatTime(h, m) {
+        const suffix = h >= 12 ? 'pm' : 'am';
+        const h12 = h % 12 || 12;
+        return `${h12}:${pad(m)} ${suffix}`;
+      }
+
+      function update() {
+        const now = new Date();
+        const h = now.getHours();
+        const m = now.getMinutes();
+        const zone = getZone(h);
+
+        // Update zone info
+        document.getElementById('clock-zone-name').textContent = zone.name;
+        document.getElementById('clock-zone-sub').textContent = zone.sub;
+        document.getElementById('clock-section').textContent = zone.section;
+        document.getElementById('clock-book-title').textContent = zone.title;
+        document.getElementById('clock-book-author').textContent = zone.author;
+        document.getElementById('clock-staff-name').textContent = zone.staffName;
+        document.getElementById('clock-staff-note').textContent = zone.staffNote;
+        document.getElementById('clock-live-time').textContent = 'Now: ' + formatTime(h, m);
+        document.getElementById('clock-fill').style.width = pct(h, m) + '%';
+
+        // Update spine highlights
+        document.querySelectorAll('.spine').forEach(spine => {
+          spine.dataset.active = (spine.dataset.zone === zone.id) ? 'true' : 'false';
+        });
+      }
+
+      // Run on load, then every 30 seconds
+      update();
+      setInterval(update, 30000);
+    })();
+  </script>
+
+</body>
+</html>

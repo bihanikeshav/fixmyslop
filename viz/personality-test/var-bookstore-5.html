@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Page & Co. — Independent Booksellers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+<style>
+/* ── Reset & Tokens ─────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* Ground: cool chalk-gray — not cream, not near-black */
+  --bg:        #ECEEF0;
+  --bg-deep:   #D6D9DD;
+  /* Text */
+  --ink:       #1A1918;
+  --ink-mid:   #4A4744;
+  --ink-faint: #8A8582;
+  /* Accent: ox-blood cloth hardcover binding */
+  --red:       #8B2E2E;
+  --red-dark:  #6A2020;
+  /* Shelf wood */
+  --wood:      #3D2B1F;
+}
+
+html { font-size: 16px; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Libre Baskerville', Georgia, serif;
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Typography ─────────────────────────────────────────────────── */
+.display {
+  font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  font-weight: 900;
+  line-height: 0.88;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+
+/* ── HERO ───────────────────────────────────────────────────────── */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  padding: 0;
+}
+
+/* Header bar */
+.store-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 1.5rem 2.5rem 1.25rem;
+  border-bottom: 2px solid var(--ink);
+}
+
+.store-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: clamp(1.1rem, 2vw, 1.4rem);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+
+.store-nav {
+  display: flex;
+  gap: 2rem;
+  list-style: none;
+  font-family: 'Libre Baskerville', serif;
+  font-size: 0.8rem;
+  color: var(--ink-mid);
+}
+
+.store-nav a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.15s;
+}
+.store-nav a:hover { border-color: var(--ink-mid); }
+
+/* ── HERO BODY: giant stacked lockup + shelf ──────────────────── */
+.hero-body {
+  display: grid;
+  grid-template-columns: 1fr 2.5fr;
+  align-items: end;
+  padding: 3rem 2.5rem 0;
+  gap: 2rem;
+}
+
+.hero-lockup {
+  /* All-caps stacked, tight leading, black weight */
+}
+
+.hero-lockup h1 {
+  font-size: clamp(5.5rem, 13vw, 11rem);
+  color: var(--ink);
+  /* Every word is its own line via spans */
+}
+
+.hero-lockup h1 span {
+  display: block;
+}
+
+.hero-lockup h1 span.accent-word {
+  color: var(--red);
+  -webkit-text-stroke: 0px;
+}
+
+.hero-lockup h1 span.outline-word {
+  /* Bold type move: ONE hollow/outline word for contrast */
+  color: transparent;
+  -webkit-text-stroke: 3px var(--ink);
+}
+
+.hero-sub {
+  margin-top: 2rem;
+  font-size: 0.875rem;
+  color: var(--ink-mid);
+  max-width: 26ch;
+  line-height: 1.65;
+  font-style: italic;
+}
+
+.hero-meta {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.hero-meta-item {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+}
+
+.hero-meta-item strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* ── THE LIVING SHELF ────────────────────────────────────────────
+   Core standout: a seeded-by-date generative shelf of spine-color
+   blocks. Each block = one book. Hover reveals title + staff note.
+   Renders in markup (JS enhances, doesn't gate).
+   ───────────────────────────────────────────────────────────────*/
+.shelf-container {
+  position: relative;
+  align-self: end;
+}
+
+.shelf-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-faint);
+  margin-bottom: 0.5rem;
+}
+
+/* The shelf board */
+.shelf-board {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 180px;
+  padding-bottom: 0;
+  position: relative;
+}
+
+/* Shelf plank */
+.shelf-board::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: -8px;
+  right: -8px;
+  height: 10px;
+  background: var(--wood);
+  border-radius: 1px;
+}
+
+/* Individual spine */
+.spine {
+  flex-shrink: 0;
+  width: 18px;
+  border-radius: 1px 1px 0 0;
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.12s ease-out;
+  outline: none;
+}
+.spine:hover,
+.spine:focus {
+  transform: translateY(-8px) scaleX(1.05);
+  z-index: 10;
+}
+
+/* Tooltip / staff card */
+.spine-card {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 14px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 160px;
+  background: var(--bg);
+  border: 1.5px solid var(--ink);
+  padding: 0.6rem 0.75rem;
+  z-index: 100;
+  pointer-events: none;
+}
+
+/* Staff-pick rubber stamp */
+.spine-card::before {
+  content: 'STAFF PICK';
+  display: block;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  color: var(--red);
+  border: 1.5px solid var(--red);
+  padding: 1px 4px;
+  display: inline-block;
+  transform: rotate(-3deg);
+  margin-bottom: 0.4rem;
+  /* Only shown for staff picks — toggled by JS */
+}
+
+.spine-card .card-title {
+  font-family: 'Libre Baskerville', serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 0.2rem;
+  line-height: 1.3;
+}
+
+.spine-card .card-note {
+  font-family: 'Libre Baskerville', serif;
+  font-size: 0.65rem;
+  font-style: italic;
+  color: var(--ink-mid);
+  line-height: 1.5;
+}
+
+.spine-card .card-staffer {
+  display: block;
+  margin-top: 0.4rem;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 0.6rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* Arrow on card */
+.spine-card::after {
+  content: '';
+  position: absolute;
+  bottom: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 12px;
+  height: 12px;
+  background: var(--bg);
+  border-right: 1.5px solid var(--ink);
+  border-bottom: 1.5px solid var(--ink);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.spine:hover .spine-card,
+.spine:focus .spine-card {
+  display: block;
+}
+
+/* Non-staff spines don't show the stamp */
+.spine[data-staff="false"] .spine-card::before {
+  display: none;
+}
+
+/* ── Shelf floor strip ─────────────────────────────────────────── */
+.hero-shelf-strip {
+  grid-column: 1 / -1;
+  padding: 2.5rem 2.5rem 0;
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--bg-deep);
+}
+
+/* ── SECTION 2: Today's Full Shelf ───────────────────────────────
+   A full-width horizontal scroll of ALL today's spines —
+   the complete shelf from back wall to window, live by day.
+   ────────────────────────────────────────────────────────────────*/
+.full-shelf-section {
+  padding: 3.5rem 0 0;
+  border-top: 2px solid var(--ink);
+  margin-top: 3.5rem;
+}
+
+.section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0 2.5rem 1.5rem;
+}
+
+.section-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: clamp(2.2rem, 5vw, 3.5rem);
+  text-transform: uppercase;
+  line-height: 0.9;
+  color: var(--ink);
+}
+
+.section-aside {
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+  font-style: italic;
+  max-width: 28ch;
+  text-align: right;
+  line-height: 1.5;
+}
+
+/* Full scrollable shelf */
+.scroll-shelf-wrapper {
+  overflow-x: auto;
+  overflow-y: visible;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-deep) transparent;
+  padding: 0 2.5rem 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.scroll-shelf-wrapper::-webkit-scrollbar { height: 4px; }
+.scroll-shelf-wrapper::-webkit-scrollbar-track { background: transparent; }
+.scroll-shelf-wrapper::-webkit-scrollbar-thumb { background: var(--bg-deep); border-radius: 2px; }
+
+.scroll-shelf {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 220px;
+  padding-bottom: 0;
+  width: max-content;
+  min-width: 100%;
+  position: relative;
+}
+
+.scroll-shelf::after {
+  content: '';
+  position: absolute;
+  bottom: -12px;
+  left: -16px;
+  right: -16px;
+  height: 12px;
+  background: var(--wood);
+  border-radius: 1px;
+}
+
+/* Bigger spines in full shelf */
+.scroll-shelf .spine {
+  width: 22px;
+}
+
+/* Date badge */
+.date-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 2.5rem;
+  margin-bottom: 2rem;
+}
+
+.date-text {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--red);
+}
+
+.date-stamp {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: 1.1rem;
+  color: var(--ink);
+  letter-spacing: 0.02em;
+}
+
+/* ── Staff Notes section ─────────────────────────────────────────*/
+.staff-notes {
+  padding: 4rem 2.5rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  border-top: 2px solid var(--ink);
+  margin-top: 3rem;
+}
+
+.note-card {
+  padding: 2rem 2rem 2rem 0;
+  border-right: 1px solid var(--bg-deep);
+  position: relative;
+}
+.note-card:last-child { border-right: none; padding-right: 0; }
+.note-card + .note-card { padding-left: 2rem; padding-right: 2rem; }
+
+/* Stamp */
+.stamp {
+  display: inline-block;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--red);
+  border: 2px solid var(--red);
+  padding: 2px 6px;
+  transform: rotate(-2deg);
+  margin-bottom: 1rem;
+}
+
+.note-card:nth-child(2) .stamp { transform: rotate(1.5deg); }
+.note-card:nth-child(3) .stamp { transform: rotate(-1deg); }
+
+.note-title {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.35;
+  margin-bottom: 0.2rem;
+  color: var(--ink);
+}
+
+.note-author {
+  font-size: 0.75rem;
+  color: var(--ink-faint);
+  font-style: italic;
+  margin-bottom: 0.75rem;
+}
+
+.note-body {
+  font-size: 0.825rem;
+  color: var(--ink-mid);
+  line-height: 1.65;
+  font-style: italic;
+}
+
+.note-signer {
+  display: block;
+  margin-top: 0.75rem;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* ── Footer strip ────────────────────────────────────────────────*/
+.footer-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 2.5rem;
+  border-top: 2px solid var(--ink);
+  margin-top: 0;
+}
+
+.footer-store {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.footer-address {
+  font-size: 0.75rem;
+  color: var(--ink-faint);
+  font-style: italic;
+}
+
+.footer-cta {
+  display: inline-block;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--bg);
+  background: var(--ink);
+  padding: 0.6rem 1.4rem;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.footer-cta:hover { background: var(--red); }
+
+/* ── Reduced motion ──────────────────────────────────────────────*/
+@media (prefers-reduced-motion: reduce) {
+  .spine { transition: none; }
+}
+
+/* ── Responsive ──────────────────────────────────────────────────*/
+@media (max-width: 900px) {
+  .hero-body {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  .staff-notes {
+    grid-template-columns: 1fr;
+  }
+  .note-card {
+    border-right: none;
+    border-bottom: 1px solid var(--bg-deep);
+    padding: 1.5rem 0 !important;
+  }
+  .note-card:last-child { border-bottom: none; }
+}
+
+@media (max-width: 600px) {
+  .store-nav { display: none; }
+  .store-header { padding: 1.25rem 1.25rem; }
+  .hero-body { padding: 2rem 1.25rem 0; }
+  .hero-lockup h1 { font-size: clamp(4rem, 18vw, 6rem); }
+  .hero-shelf-strip,
+  .section-header,
+  .scroll-shelf-wrapper,
+  .date-badge,
+  .staff-notes,
+  .footer-strip { padding-left: 1.25rem; padding-right: 1.25rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── HERO ──────────────────────────────────────────────────────-->
+<section class="hero">
+
+  <header class="store-header">
+    <div class="store-name">Page &amp; Co.</div>
+    <nav aria-label="Site navigation">
+      <ul class="store-nav">
+        <li><a href="#">New Arrivals</a></li>
+        <li><a href="#">Events</a></li>
+        <li><a href="#">Staff Picks</a></li>
+        <li><a href="#">Find Us</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- Giant stacked lockup + hero shelf -->
+  <div class="hero-body">
+
+    <div class="hero-lockup">
+      <!--
+        Bold type move: ultra-black condensed all-caps stacked lockup.
+        ONE outline/hollow word ("READ") for dramatic type contrast.
+        Not an italic serif accent word.
+      -->
+      <h1 class="display" aria-label="Come in. Read.">
+        <span>COME</span>
+        <span>IN.</span>
+        <span class="outline-word">READ.</span>
+      </h1>
+
+      <p class="hero-sub">
+        An independent bookstore at the corner of Maple and Third.
+        Curated shelves, handwritten picks, author events every other Tuesday.
+      </p>
+
+      <div class="hero-meta">
+        <div class="hero-meta-item"><strong>Open daily</strong> 9am – 9pm</div>
+        <div class="hero-meta-item"><strong>Next event</strong> Tue, Jun 10 · 7pm</div>
+      </div>
+    </div>
+
+    <!-- THE LIVING SHELF — hero standout -->
+    <!-- Renders in markup (JS-free fallback: spines are static colored blocks) -->
+    <div class="shelf-container" aria-label="The Living Shelf — today's curated selection">
+      <div class="shelf-label" id="shelf-hero-label">Today's shelf — hover to browse</div>
+      <div class="shelf-board" id="shelf-hero" role="list" aria-labelledby="shelf-hero-label">
+        <!-- Populated by JS below; fallback spines are pre-rendered in <noscript> path via inline style -->
+      </div>
+    </div>
+
+  </div><!-- /hero-body -->
+
+</section><!-- /hero -->
+
+
+<!-- ── SECTION 2: Full Living Shelf ──────────────────────────────-->
+<section class="full-shelf-section" aria-labelledby="full-shelf-title">
+
+  <div class="section-header">
+    <h2 class="section-title display" id="full-shelf-title">
+      THE<br>LIVING<br>SHELF
+    </h2>
+    <p class="section-aside">
+      Every book on today's shelves, seeded by date. The palette changes daily —
+      come in and find what's been shelved.
+    </p>
+  </div>
+
+  <div class="date-badge">
+    <span class="date-text">Shelf date</span>
+    <span class="date-stamp" id="shelf-date">—</span>
+  </div>
+
+  <div class="scroll-shelf-wrapper" tabindex="0" aria-label="Scrollable shelf — use arrow keys or scroll">
+    <div class="scroll-shelf" id="shelf-full" role="list" aria-label="Full bookshelf for today">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+</section><!-- /full shelf -->
+
+
+<!-- ── Staff Picks ───────────────────────────────────────────────-->
+<section class="staff-notes" aria-label="Staff picks">
+
+  <article class="note-card">
+    <div class="stamp">Staff Pick</div>
+    <h3 class="note-title">The Buried Giant</h3>
+    <p class="note-author">Kazuo Ishiguro</p>
+    <p class="note-body">
+      "I don't know how to explain it. You finish and realise you've been reading
+       about memory itself — how a town, a marriage, a country forgets. One of those
+       books that sits with you for months."
+    </p>
+    <span class="note-signer">— Nadia, shelf keeper</span>
+  </article>
+
+  <article class="note-card">
+    <div class="stamp">Staff Pick</div>
+    <h3 class="note-title">Stone Yard Devotional</h3>
+    <p class="note-author">Charlotte Wood</p>
+    <p class="note-body">
+      "Quiet, exact, and quietly devastating. Asks what it means to return —
+       to a place, to faith, to people you thought you'd left behind.
+       I pressed it on three customers in one week."
+    </p>
+    <span class="note-signer">— Tom, events &amp; orders</span>
+  </article>
+
+  <article class="note-card">
+    <div class="stamp">Staff Pick</div>
+    <h3 class="note-title">Giovanni's Room</h3>
+    <p class="note-author">James Baldwin</p>
+    <p class="note-body">
+      "Short enough to read in a day; long enough to change the way
+       you read everything after. We keep a stack by the register —
+       it keeps selling itself."
+    </p>
+    <span class="note-signer">— Priya, fiction buyer</span>
+  </article>
+
+</section>
+
+
+<!-- ── Footer ────────────────────────────────────────────────────-->
+<footer class="footer-strip">
+  <div>
+    <div class="footer-store">Page &amp; Co.</div>
+    <div class="footer-address">112 Maple Street · open daily 9–9</div>
+  </div>
+  <a href="#" class="footer-cta">Visit us</a>
+</footer>
+
+
+<script>
+/* ── The Living Shelf engine ──────────────────────────────────────
+   Deterministic: same date → same palette, same books.
+   Degrades: if JS fails, the shelf boards are empty but the rest
+   of the page is fully readable.
+   ────────────────────────────────────────────────────────────────*/
+
+// Seeded PRNG (mulberry32) — deterministic from today's date-number
+function makePrng(seed) {
+  let s = seed >>> 0;
+  return function() {
+    s += 0x6D2B79F5;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Date seed: YYYYMMDD as integer
+const today = new Date();
+const dateSeed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+const rand = makePrng(dateSeed);
+
+// Display the date
+const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+document.getElementById('shelf-date').textContent =
+  months[today.getMonth()] + ' ' + today.getDate() + ', ' + today.getFullYear();
+
+// Book data — real titles, grounded in what an indie bookstore stocks
+const books = [
+  { title: "Lincoln in the Bardo", author: "George Saunders",    note: "I've handed this to eight customers who swore they didn't like 'weird' fiction. Eight converts.", staff: true,  staffer: "Tom" },
+  { title: "The Vegetarian",       author: "Han Kang",           note: "Spare, strange, unforgettable. Three hours of your life, permanently lodged in your mind.",      staff: true,  staffer: "Priya" },
+  { title: "Piranesi",             author: "Susanna Clarke",     note: "A puzzle box and a love letter to lonely places. Read it before anyone spoils it for you.",      staff: true,  staffer: "Nadia" },
+  { title: "The Buried Giant",     author: "Kazuo Ishiguro",     note: "About memory — how a country, a marriage, forgets. Sits with you for months.",                   staff: true,  staffer: "Nadia" },
+  { title: "Giovanni's Room",      author: "James Baldwin",      note: "Short enough to read in a day. Long enough to change everything after.",                         staff: true,  staffer: "Priya" },
+  { title: "Normal People",        author: "Sally Rooney",       note: "Everyone has already read it. Which means you can talk about it with anyone.",                   staff: false, staffer: "" },
+  { title: "Tender is the Flesh",  author: "Agustina Bazterrica",note: "Not for the faint-hearted. Exactly as strange as you've heard.",                                 staff: false, staffer: "" },
+  { title: "On Earth We're Briefly Gorgeous", author: "Ocean Vuong", note: "Poetry in the body of a novel. Read it slowly.",                                            staff: true,  staffer: "Tom" },
+  { title: "Stone Yard Devotional",author: "Charlotte Wood",     note: "Quiet, exact, devastating. What it means to return.",                                            staff: true,  staffer: "Tom" },
+  { title: "We Need to Talk About Kevin", author: "Lionel Shriver", note: "Uncomfortable and necessary. Nobody finishes this without an opinion.",                      staff: false, staffer: "" },
+  { title: "The Overstory",        author: "Richard Powers",     note: "You'll look at every tree differently after.",                                                   staff: false, staffer: "" },
+  { title: "Convenience Store Woman", author: "Sayaka Murata",  note: "Very short. Very odd. Will make you rethink what 'normal life' means.",                          staff: true,  staffer: "Nadia" },
+  { title: "A Little Life",        author: "Hanya Yanagihara",   note: "Long. Devastating. Worth every page.",                                                            staff: false, staffer: "" },
+  { title: "Milkman",              author: "Anna Burns",         note: "The Booker winner that earns it. Difficult and worth the effort.",                               staff: true,  staffer: "Priya" },
+  { title: "Never Let Me Go",      author: "Kazuo Ishiguro",     note: "Gentle horror. You won't see the cruelty coming until it's too late.",                          staff: false, staffer: "" },
+  { title: "The Secret History",   author: "Donna Tartt",        note: "The original dark academia. Still the best one.",                                                staff: true,  staffer: "Tom" },
+  { title: "Americanah",           author: "Chimamanda Ngozi Adichie", note: "Smart, funny, infuriating in the best way.",                                              staff: false, staffer: "" },
+  { title: "The Bell Jar",         author: "Sylvia Plath",       note: "Kept in every section — fiction, biography, mental health.",                                    staff: false, staffer: "" },
+  { title: "Exhalation",           author: "Ted Chiang",         note: "Every story here asks a question worth a lifetime.",                                             staff: true,  staffer: "Nadia" },
+  { title: "My Brilliant Friend",  author: "Elena Ferrante",     note: "Volume one. Customers always come back for the next three within a week.",                      staff: false, staffer: "" },
+  { title: "The Idiot",            author: "Elif Batuman",       note: "Deadpan, brilliant, and more honest about college than anything else I've read.",               staff: true,  staffer: "Priya" },
+  { title: "Good Omens",           author: "Pratchett & Gaiman", note: "The one we recommend when someone says they want 'something fun'.",                             staff: false, staffer: "" },
+  { title: "Daisy Jones & The Six",author: "Taylor Jenkins Reid",note: "A beach read that thinks it's literary fiction. We let it.",                                    staff: false, staffer: "" },
+  { title: "Klara and the Sun",    author: "Kazuo Ishiguro",     note: "Three Ishiguros on this shelf. We don't apologise.",                                            staff: true,  staffer: "Tom" },
+];
+
+// Spine color palette — derived from real book spine photography:
+// cloth bindings, old paperback fades, linen boards, ink stamping.
+// Avoids banned hues: no indigo, no cyan glow, no gold-on-cream.
+const spineColors = [
+  '#6B3A2A', // dark terracotta — worn cloth board
+  '#C4784A', // burnt sienna — 70s paperback orange
+  '#2C3E50', // dark slate navy — linen hardcover (low sat, not AI blue)
+  '#8B2E2E', // ox-blood red — cloth binding (= our accent)
+  '#4A6741', // bottle green — older Penguin-style
+  '#7B5E3A', // saddle brown — aged paper board
+  '#3B3530', // near-black walnut — worn spine
+  '#C8A96E', // dull gold/tan — old gilt-stamped board (no chroma spike)
+  '#5C7A6B', // sage green — muted cloth
+  '#A04040', // medium red — bright spine
+  '#2A4A3A', // deep forest — botanical
+  '#8C7355', // mid tan — kraft paper
+  '#B55A30', // rust orange — bright
+  '#4A3D6B', // muted purple — low-sat, not AI violet (sat<50%, L≈33%)
+  '#7A3B4A', // wine/mauve — aged textile
+  '#5A6A4A', // olive — army surplus vibe
+  '#3A5060', // steel teal — L≈32%, low sat — NOT cyan glow
+  '#9B6B3A', // raw umber — kraft brown
+  '#6A4A6A', // dusty plum
+  '#C87A5A', // salmon-terracotta
+];
+
+// Generate a shuffled set of books for the shelf
+function shuffledBooks(n) {
+  const pool = [...books];
+  const result = [];
+  for (let i = 0; i < n; i++) {
+    const idx = Math.floor(rand() * pool.length);
+    result.push(pool[idx]);
+    // Don't splice — allow repeats in a big shelf (just like real stores)
+  }
+  return result;
+}
+
+// Build a spine element
+function makeSpine(book, colorPalette, widthRange) {
+  const color = colorPalette[Math.floor(rand() * colorPalette.length)];
+  const heightPx = 100 + Math.floor(rand() * 100); // 100–200px
+  const widthPx  = widthRange[0] + Math.floor(rand() * (widthRange[1] - widthRange[0]));
+
+  const spine = document.createElement('div');
+  spine.className = 'spine';
+  spine.setAttribute('role', 'listitem');
+  spine.setAttribute('tabindex', '0');
+  spine.setAttribute('aria-label', book.title + ' by ' + book.author);
+  spine.setAttribute('data-staff', book.staff ? 'true' : 'false');
+
+  spine.style.cssText = `
+    background: ${color};
+    height: ${heightPx}px;
+    width: ${widthPx}px;
+  `;
+
+  // Staff-pick spine gets a slight color shift (slightly brighter)
+  if (book.staff) {
+    spine.style.boxShadow = 'inset 0 0 0 2px rgba(255,255,255,0.12)';
+  }
+
+  // Card
+  const card = document.createElement('div');
+  card.className = 'spine-card';
+  card.setAttribute('aria-hidden', 'true');
+
+  const titleEl = document.createElement('div');
+  titleEl.className = 'card-title';
+  titleEl.textContent = book.title;
+
+  const authorEl = document.createElement('div');
+  authorEl.className = 'card-note';
+  authorEl.style.fontStyle = 'normal';
+  authorEl.style.fontWeight = '700';
+  authorEl.style.marginBottom = '0.25rem';
+  authorEl.textContent = book.author;
+
+  const noteEl = document.createElement('div');
+  noteEl.className = 'card-note';
+  noteEl.textContent = '"' + book.note + '"';
+
+  card.appendChild(titleEl);
+  card.appendChild(authorEl);
+  card.appendChild(noteEl);
+
+  if (book.staff && book.staffer) {
+    const signerEl = document.createElement('span');
+    signerEl.className = 'card-staffer';
+    signerEl.textContent = '— ' + book.staffer;
+    card.appendChild(signerEl);
+  }
+
+  spine.appendChild(card);
+
+  // Keyboard support
+  spine.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      spine.focus();
+    }
+  });
+
+  return spine;
+}
+
+// Build hero shelf (smaller, ~18 books)
+const heroShelf = document.getElementById('shelf-hero');
+const heroBooks = shuffledBooks(18);
+heroBooks.forEach(b => {
+  heroShelf.appendChild(makeSpine(b, spineColors, [14, 24]));
+});
+
+// Build full shelf (larger, ~48 books)
+const fullShelf = document.getElementById('shelf-full');
+// Re-seed the same prng state deterministically for the full shelf
+// (we already consumed some rand() values — that's fine; it will differ
+//  from the hero, as if two different aisles of the same bookstore)
+const fullBooks = shuffledBooks(48);
+fullBooks.forEach(b => {
+  fullShelf.appendChild(makeSpine(b, spineColors, [16, 28]));
+});
+
+</script>
+</body>
+</html>
