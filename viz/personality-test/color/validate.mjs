@@ -65,7 +65,8 @@ function runCalibrate() {
   const corpus = loadCorpus();
   const nFramework = corpus.filter((c) => c.kind === "framework").length;
   const nOurbuild = corpus.filter((c) => c.kind === "ourbuild").length;
-  console.log(`corpus: ${corpus.length} points (${nFramework} framework, ${nOurbuild} ourbuild)\n`);
+  const nCrawl = corpus.filter((c) => c.kind === "crawl").length;
+  console.log(`corpus: ${corpus.length} points (${nFramework} framework, ${nOurbuild} ourbuild, ${nCrawl} crawl)\n`);
 
   // 1) canonical Tailwind slop must be FLAGGED (hard-banned and/or overused).
   //    These three sit BELOW the density threshold (the blue-purple band is

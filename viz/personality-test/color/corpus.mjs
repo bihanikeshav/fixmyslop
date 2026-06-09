@@ -147,11 +147,37 @@ function ourbuildCorpus() {
   return out;
 }
 
-// Full corpus (framework + ourbuild). Each call re-reads HTML (cheap, and keeps
-// it honest as builds change). Callers that need determinism should cache it.
-export function loadCorpus({ includeOurbuild = true } = {}) {
+// kind:'crawl' — REAL AI-product-site colors, measured the same way font
+// overuse is (frequency across the crawled sites). data/observations.colors.json
+// is `[{ hex, sites, count }]` where `sites` is the number of distinct crawled
+// sites the (intra-site-deduped, chromatic-only) color appears on. We expand a
+// color on K sites into K corpus points, so site frequency drives its heat —
+// the direct parallel to font saturation. Backward-safe: missing file => [].
+const CRAWL_COLORS = resolve(HERE, "../../../data/observations.colors.json");
+function crawlCorpus() {
+  let records;
+  try {
+    records = JSON.parse(readFileSync(CRAWL_COLORS, "utf8"));
+  } catch {
+    return []; // file absent (e.g. fresh checkout) — corpus stays framework+ourbuild
+  }
+  const out = [];
+  for (const r of records) {
+    if (!r || typeof r.hex !== "string") continue;
+    const weight = Number.isFinite(r.sites) ? r.sites : (Number.isFinite(r.count) ? r.count : 1);
+    const hex = r.hex.toLowerCase();
+    for (let i = 0; i < weight; i++) out.push({ hex, source: "crawl", kind: "crawl" });
+  }
+  return out;
+}
+
+// Full corpus (framework + ourbuild + crawl). Each call re-reads HTML + the
+// crawl observations (cheap, keeps it honest as builds/crawls change). Callers
+// that need determinism should cache it.
+export function loadCorpus({ includeOurbuild = true, includeCrawl = true } = {}) {
   const corpus = frameworkCorpus();
   if (includeOurbuild) corpus.push(...ourbuildCorpus());
+  if (includeCrawl) corpus.push(...crawlCorpus());
   return corpus;
 }
 
