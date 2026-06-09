@@ -181,4 +181,4 @@ export function loadCorpus({ includeOurbuild = true, includeCrawl = true } = {})
   return corpus;
 }
 
-export { TAILWIND, MATERIAL, BOOTSTRAP, OPEN_PROPS, DAISY_CHAKRA_ANT };
+export { TAILWIND, MATERIAL, BOOTSTRAP, OPEN_PROPS, DAISY_CHAKRA_ANT, frameworkCorpus };
