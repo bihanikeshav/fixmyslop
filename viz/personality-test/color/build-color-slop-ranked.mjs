@@ -49,16 +49,22 @@ const getdesign = JSON.parse(
 // ---------------------------------------------------------------------------
 // Build brand lookup: lab → brand name, for ΔEok nearest-brand match
 // ---------------------------------------------------------------------------
+// Use IDENTITY-ROLE colors only (identityColors), not the greedy `colors` dump.
+// The greedy field included neutrals/surfaces/link/info/success/chart tokens, so
+// the "≈ brand" clone warning fired on non-identity colors (e.g. #3d4cb8 matched
+// Airtable's info:#254fad). Identity colors are the clone-distinctive hues only.
 const brandEntries = []; // [{lab, name, hex}]
 for (const brand of getdesign) {
-  for (const hex of brand.colors) {
+  for (const hex of brand.identityColors || []) {
     try {
       brandEntries.push({ lab: hexToOklab(hex), name: brand.name, hex });
     } catch (_) {}
   }
 }
 
-function nearestBrand(hex, threshold = 0.05) {
+// ΔEok 0.04 — tightened from 0.05. ~just-noticeable; only a near-exact identity
+// match counts as "you'd look like a clone."
+function nearestBrand(hex, threshold = 0.04) {
   const lab = hexToOklab(hex);
   let best = null;
   let bestDist = threshold;
@@ -306,7 +312,7 @@ const BANNED_HEXES = [
   "#22d3ee", "#2dd4bf", "#67e8f9", "#5eead4",
 ];
 
-// Brand colors+names for the clone-risk check (≈ within ΔEok 0.05).
+// Identity brand colors+names for the clone-risk check (≈ within ΔEok 0.04).
 const brandData = brandEntries.map((e) => ({
   lab: [+e.lab[0].toFixed(5), +e.lab[1].toFixed(5), +e.lab[2].toFixed(5)],
   name: e.name,
@@ -600,7 +606,7 @@ function nearestSafe(hex, count, maxDelta) {
 
 // ---- nearest brand within ΔEok 0.05 ----
 function nearestBrandName(hex, threshold) {
-  if (threshold === undefined) threshold = 0.05;
+  if (threshold === undefined) threshold = 0.04;
   const lab = hexToOklab(hex);
   let best = null, bestDist = threshold;
   for (const b of BRANDS) {
@@ -655,7 +661,7 @@ function render(hex) {
 
   // one-line reason
   let reason;
-  const brand = nearestBrandName(hex, 0.05);
+  const brand = nearestBrandName(hex, 0.04);
   if (cl.ban && cl.ban.indexOf("literal slop hex") === 0) {
     reason = "Tailwind/framework default token — every boilerplate ships it";
   } else if (cl.ban) {

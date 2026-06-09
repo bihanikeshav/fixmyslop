@@ -35,8 +35,11 @@ const GETDESIGN = resolve(ROOT, "data/reference/getdesign/index.json");
 const OUT = resolve(HERE, "color-space-map.html");
 
 // ΔEok radius around an originator brand color that counts as "you'll look like
-// them." ~0.05 is ~1.2x a just-noticeable difference (matches DUPLICATE_DELTA).
-const ORIGINATOR_DELTA = 0.05;
+// them." 0.04 is ~just-noticeable — only a near-exact match to a brand's IDENTITY
+// hue counts as a clone. (Tightened from 0.05 alongside the move to
+// identityColors; the old greedy `colors` dump at 0.05 fired on neutrals/
+// surfaces/semantic tokens and made ~89% of crawl colors falsely "originator".)
+const ORIGINATOR_DELTA = 0.04;
 
 // ---------------------------------------------------------------------------
 // Load data
@@ -49,12 +52,13 @@ const brands = JSON.parse(readFileSync(GETDESIGN, "utf8"));
 const fwSet = new Set(frameworkCorpus().map((c) => c.hex.toLowerCase()));
 
 // Flatten getdesign brands into originator points with the brand name + lab.
-// Skip neutrals/near-grey brand colors (chroma < 0.04): a brand's black/white
-// is not an "identity color" you'd clone — only its chromatic moves are.
+// Use IDENTITY-ROLE colors only (identityColors) — extracted from token names so
+// neutrals/surfaces/link/info/success/chart tokens are excluded. identityColors
+// is already neutral-filtered, but we keep the chroma guard as a belt-and-braces.
 const originators = [];
 for (const b of brands) {
   const name = b.name || b.slug;
-  for (const hex of b.colors || []) {
+  for (const hex of b.identityColors || []) {
     let lab;
     try { lab = hexToOklab(hex); } catch { continue; }
     const [, C] = hexToOklch(hex);
