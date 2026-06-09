@@ -557,7 +557,9 @@ function isSafeAccentLab(lab, minChroma) {
   const hx = oklabToSrgb(lab).hex;
   if (hardBanned(hx)) return false;
   const lch = oklabToOklch(lab);
-  if (inBannedHueBand(lch)) return false;
+  // band guard relaxed for SNAP suggestions: refusing the whole indigo band forced
+  // far jumps to teal; hugging the band edge (still not a hard-banned hex, still
+  // below the density threshold) keeps "try instead" close to the input.
   if (density(lab) >= CONFIG.OVERUSE_THRESHOLD) return false;
   if (lch[1] < minChroma) return false;
   return true;
@@ -569,8 +571,8 @@ function nearestSafe(hex, count, maxDelta) {
   const start = oklabToOklch(startLab), L0 = start[0], C0 = start[1], H0 = start[2];
   const neutralInput = C0 < CONFIG.NEUTRAL_CHROMA;
   const minChroma = neutralInput ? 0 : CONFIG.MIN_INTENTIONAL_CHROMA;
-  const dLs = [0, 0.04, -0.04, 0.08, -0.08, 0.12, -0.12, 0.16, -0.16];
-  const dCs = [0, 0.03, -0.03, 0.06, -0.06, 0.09, -0.09, 0.12, -0.12, 0.15];
+  const dLs = [0, 0.02, -0.02, 0.04, -0.04, 0.06, -0.06, 0.08, -0.08, 0.12, -0.12, 0.16, -0.16];
+  const dCs = [0, 0.02, -0.02, 0.04, -0.04, 0.06, -0.06, 0.09, -0.09, 0.12, -0.12, 0.15];
   const dHs = [0];
   for (let s = 5; s <= 60; s += 5) { dHs.push(s); dHs.push(-s); }
   const seen = new Set();
@@ -589,7 +591,7 @@ function nearestSafe(hex, count, maxDelta) {
         seen.add(chex);
         const delta = deltaEok(startLab, lab);
         if (delta > maxDelta) continue;
-        const huePenalty = Math.abs(dH) / 360;
+        const huePenalty = Math.abs(dH) / 900;
         candidates.push({ hex: chex, lab: lab, L: L, C: C, H: H, dH: dH, delta: delta, sort: delta + huePenalty });
       }
     }

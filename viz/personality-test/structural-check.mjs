@@ -33,15 +33,19 @@ const ROOT = resolve(HERE, "../..");
 const CUTOFF = 4; // total severity >= this => SLOP (nonzero exit)
 
 const SEVERITY = {
+  "emoji": 5,                     // ANY emoji glyph — instant tell
   "sparkle-badge": 5,
   "gradient-text": 4,
-  "glass-nav": 4,
   "colored-glow-shadow": 4,
   "gradient-blue-purple-band": 4,
+  "tinted-fill-same-border": 3,  // low-opacity colored fill + same-color border box
+  "radial-gradient-box": 3,      // the "modern" radial-glow-in-card look, now dead
+  "blob-shape": 3,               // organic blobby background shapes
   "bento": 3,
   "tailwind-animate-canned": 3,
+  "pill": 3,                     // BUMPED (was 2)
+  "glass-nav": 2,                // DROPPED (was 4) — restrained glass is fine; rises to 3 dynamically when it's "glass everywhere"
   "stack-shadcn": 2,
-  "pill": 2,
   "layout-prop-animation": 2,
   "bounce-elastic-easing": 2,
   "box-shadow-everywhere": 1,
@@ -52,6 +56,10 @@ const SEVERITY = {
 const SEV = (m) => SEVERITY[m] ?? 2;
 
 const FIX = {
+  "emoji": "Remove decorative emojis — an instant AI tell; use real iconography or nothing.",
+  "tinted-fill-same-border": "Drop the low-opacity colored fill + same-color border box; use a solid surface or a real border.",
+  "radial-gradient-box": "Remove the radial-gradient glow inside cards; flat fills read more crafted.",
+  "blob-shape": "Cut the organic blob background shapes; commit to a real composition.",
   "sparkle-badge": "Drop the ✨/AI badge — say what it does in plain words.",
   "gradient-text": "Solid ink heading; no background-clip:text gradient.",
   "glass-nav": "Solid or hairline-bordered nav; no backdrop-blur glass.",
@@ -131,9 +139,9 @@ function detect(file) {
   const raw = readFileSync(file, "utf8");
   const lc = resolveVars(raw.toLowerCase());
   const hits = [];
-  const hit = (marker, why) => {
+  const hit = (marker, why, sevOverride) => {
     const row = byMarker[marker];
-    hits.push({ marker, label: row ? row.label : marker, pct: W(marker), group: row ? row.group : "?", why, severity: SEV(marker), fix: FIXOF(marker) });
+    hits.push({ marker, label: row ? row.label : marker, pct: W(marker), group: row ? row.group : "?", why, severity: sevOverride ?? SEV(marker), fix: FIXOF(marker) });
   };
 
   // --- gradient-text: background-clip:text (+ a gradient present) ---
@@ -141,10 +149,26 @@ function detect(file) {
   const hasGradient = /linear-gradient|radial-gradient|conic-gradient|\bbg-gradient-to-/.test(lc);
   if (hasBgClipText && hasGradient) hit("gradient-text", "background-clip:text + gradient");
 
-  // --- glass-nav: backdrop-filter: blur (or tailwind backdrop-blur) ---
-  if (/backdrop-filter\s*:\s*[^;{}]*blur|\bbackdrop-blur\b/.test(lc)) {
-    hit("glass-nav", "backdrop-filter: blur");
+  // --- glass: backdrop-blur. Restrained (1 nav) is fine; "glass everywhere" isn't.
+  // severity scales with how many surfaces use it. ---
+  const blurCount = (lc.match(/backdrop-filter\s*:\s*[^;{}]*blur|\bbackdrop-blur\b/g) || []).length;
+  if (blurCount) {
+    const sev = blurCount >= 4 ? 3 : blurCount >= 2 ? 2 : 1;
+    hit("glass-nav", blurCount >= 4 ? `glass everywhere ×${blurCount}` : `backdrop-blur ×${blurCount} (restrained)`, sev);
   }
+
+  // --- radial-gradient inside boxes/cards: the "modern" glow look, now tired ---
+  if (/radial-gradient\(/.test(lc)) hit("radial-gradient-box", "radial-gradient present");
+
+  // --- blob shapes: organic multi-value % border-radius in the background ---
+  if (/border-radius\s*:\s*\d+%\s+\d+%\s+\d+%\s+\d+%|\bborder-radius\s*:\s*\d+%\s*\/\s*\d+%/.test(lc)) {
+    hit("blob-shape", "organic blob border-radius");
+  }
+
+  // --- tinted box: low-opacity colored fill paired with a same-color border ---
+  const tintedTW = [...lc.matchAll(/\bbg-([a-z]+)-\d{2,3}\/\d{1,3}\b/g)].some((m) => new RegExp(`\\bborder-${m[1]}-`).test(lc));
+  const tintedRgba = /background(-color)?\s*:\s*(rgba|hsla)\([^)]*,\s*0?\.\d+\s*\)/.test(lc) && /\bborder[^;{}]*\b(rgba|hsla|#[0-9a-f])/.test(lc);
+  if (tintedTW || tintedRgba) hit("tinted-fill-same-border", "low-opacity fill + same-color border");
 
   // --- pill / rounded-full: border-radius:9999px|50%|999rem or rounded-full ---
   const pillDecls = (lc.match(/border-radius\s*:\s*(9999px|999rem|50%|50px|100px|100vh|100vmax)/g) || []).length;
@@ -182,12 +206,10 @@ function detect(file) {
   const boxShadows = (lc.match(/box-shadow\s*:/g) || []).length + (lc.match(/\bshadow-(sm|md|lg|xl|2xl)\b/g) || []).length;
   if (boxShadows >= 5) hit("box-shadow-everywhere", `${boxShadows} box-shadow uses`);
 
-  // --- ✨ / emoji "AI" badge ---
-  const sparkle = /[✨\u{1FAE7}\u{1F31F}❇]/u.test(raw) || /\bsparkle|magicwand|\bai-badge\b/.test(lc);
-  if (sparkle && /\bai\b|powered by|gpt|assistant|magic|smart/.test(lc)) {
-    hit("sparkle-badge", "sparkle/emoji near AI copy");
-  } else if (/[✨]/u.test(raw)) {
-    hit("sparkle-badge", "✨ glyph present");
+  // --- emoji: ANY emoji glyph is a tell (sev 5). Excludes © ® ™ false positives. ---
+  const emojis = (raw.match(/\p{Extended_Pictographic}/gu) || []).filter((c) => !"©®™".includes(c));
+  if (emojis.length) {
+    hit("emoji", `${emojis.length} emoji: ${[...new Set(emojis)].slice(0, 8).join(" ")}`);
   }
 
   // --- Tailwind canned animate-*: pulse/ping/spin/bounce/marquee classes ---
@@ -280,7 +302,8 @@ for (const file of process.argv.slice(2)) {
   console.log(`\n${tag}  severity ${String(sc).padStart(2)}   ${r.hits.length} tell${r.hits.length === 1 ? "" : "s"}   ${file}`);
   const sorted = r.hits.slice().sort((a, b) => b.severity - a.severity || b.pct - a.pct);
   for (const h of sorted) {
-    console.log(`   sev ${h.severity}/5  ${h.label}  (${h.pct}% of AI sites · ${h.why})`);
+    const ctx = h.pct ? `${h.pct}% of AI sites` : "a tell";
+    console.log(`   sev ${h.severity}/5  ${h.label}  (${ctx} · ${h.why})`);
     console.log(`        FIX: ${h.fix}`);
   }
   if (r.hits.length === 0) console.log("   (no structural slop markers — clean)");

@@ -191,12 +191,17 @@ export function isOverused(hex) {
 
 // A color is "safe to use as an identity accent" iff: not hard-banned, in gamut,
 // low density, and (if chromatic) carrying enough chroma to read as intentional.
-function isSafeAccentLab(lab, { minChroma = CONFIG.MIN_INTENTIONAL_CHROMA } = {}) {
+function isSafeAccentLab(lab, { minChroma = CONFIG.MIN_INTENTIONAL_CHROMA, allowBandEdge = false } = {}) {
   if (!isInGamut(lab)) return false;
   const { hex } = oklabToSrgb(lab);
   if (hardBanned(hex)) return false;
   const lch = oklabToOklch(lab);
-  if (inBannedHueBand(lch)) return false; // don't hug the edge of a slop band
+  // The wider hue-band guard keeps deliberate picks well clear of slop bands. For
+  // SNAP suggestions we relax it (allowBandEdge): if the input is itself an indigo,
+  // refusing the entire indigo band forces a far jump to teal. Hugging the band
+  // edge (still NOT a hard-banned hex, still below the density threshold) keeps the
+  // suggestion CLOSE to the input — the small slop-risk the user opted into.
+  if (!allowBandEdge && inBannedHueBand(lch)) return false;
   if (density(lab) >= CONFIG.OVERUSE_THRESHOLD) return false;
   if (lch[1] < minChroma) return false; // too muddy to be a deliberate chromatic choice
   return true;
@@ -223,8 +228,8 @@ export function nearestSafe(hex, { count = 3, maxDelta = 0.6 } = {}) {
   const candidates = [];
   // Sample a shell of OKLCH offsets: vary L and C in small steps, hue in a
   // widening fan. Deterministic grid (no RNG). Sorted by perceptual distance.
-  const dLs = [0, 0.04, -0.04, 0.08, -0.08, 0.12, -0.12, 0.16, -0.16];
-  const dCs = [0, 0.03, -0.03, 0.06, -0.06, 0.09, -0.09, 0.12, -0.12, 0.15];
+  const dLs = [0, 0.02, -0.02, 0.04, -0.04, 0.06, -0.06, 0.08, -0.08, 0.12, -0.12, 0.16, -0.16];
+  const dCs = [0, 0.02, -0.02, 0.04, -0.04, 0.06, -0.06, 0.09, -0.09, 0.12, -0.12, 0.15];
   // hue offsets: 0 first (stay in family), then widen to ±60° in 5° steps.
   const dHs = [0];
   for (let s = 5; s <= 60; s += 5) { dHs.push(s); dHs.push(-s); }
@@ -238,13 +243,13 @@ export function nearestSafe(hex, { count = 3, maxDelta = 0.6 } = {}) {
         const H = (H0 + dH + 360) % 360;
         if (L <= 0.05 || L >= 0.99) continue;
         const lab = oklchToOklab([L, C, H]);
-        if (!isSafeAccentLab(lab, { minChroma })) continue;
+        if (!isSafeAccentLab(lab, { minChroma, allowBandEdge: true })) continue;
         const { hex: chex } = oklabToSrgb(lab);
         if (seen.has(chex)) continue;
         seen.add(chex);
         const delta = deltaEok(startLab, lab);
         if (delta > maxDelta) continue;
-        const huePenalty = Math.abs(dH) / 360; // tiebreak toward same hue family
+        const huePenalty = Math.abs(dH) / 900; // mild tiebreak toward same hue; keep distance dominant
         candidates.push({ hex: chex, lab, L, C, H, dH, delta, sort: delta + huePenalty });
       }
     }
