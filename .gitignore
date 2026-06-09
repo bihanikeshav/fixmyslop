@@ -16,3 +16,4 @@ data/
 
 # Playwright MCP browser snapshots
 .playwright-mcp/
+*.bak

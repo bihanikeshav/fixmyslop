@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ember &amp; Oak — Specialty Coffee Roasters</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Barlow+Condensed:wght@300;400;500;600;700&family=Barlow:wght@300;400&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ═══════════════════════════════════════════════════════════════
+       DESIGN TOKENS
+       Ground:    #0E0C0A   (charred near-black — roastery dark)
+       Surface:   #161310   (slightly lighter panels)
+       Ember:     #E8621A   (hot orange — freshly pulled shot)
+       Ember-dim: #9E3E08   (banked coal)
+       Ash:       #5C5550   (mid-gray for secondary text)
+       Smoke:     #A09890   (lighter for captions)
+       Cream:     #F4EDE4   (parchment white — text on dark)
+       Rule:      rgba(232,98,26,0.18)
+    ═══════════════════════════════════════════════════════════════ */
+    :root {
+      --ground:     #0E0C0A;
+      --surface:    #161310;
+      --surface-2:  #1E1A16;
+      --ember:      #E8621A;
+      --ember-dim:  #9E3E08;
+      --ember-pale: #F0935A;
+      --ash:        #5C5550;
+      --smoke:      #A09890;
+      --cream:      #F4EDE4;
+      --cream-dim:  #C8BDB5;
+      --rule:       rgba(232,98,26,0.18);
+      --rule-soft:  rgba(244,237,228,0.08);
+
+      --f-display: 'Alegreya', Georgia, serif;
+      --f-label:   'Barlow Condensed', sans-serif;
+      --f-body:    'Barlow', sans-serif;
+
+      --ease-out:  cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-io:   cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ── Reset ──────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+
+    body {
+      background-color: var(--ground);
+      color: var(--cream);
+      font-family: var(--f-body);
+      font-weight: 300;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ── Grain overlay (SVG noise, no external assets) ─────────── */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      background-size: 200px 200px;
+      opacity: 0.04;
+      mix-blend-mode: overlay;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       NAVIGATION
+    ═══════════════════════════════════════════════════════════════ */
+    .nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 1.5rem 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid transparent;
+      transition: background 0.4s var(--ease-io), border-color 0.4s;
+    }
+    .nav.scrolled {
+      background: #0e0c0a;
+      border-color: rgba(244,237,228,0.12);
+    }
+
+    .nav-wordmark {
+      font-family: var(--f-display);
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--cream);
+      text-decoration: none;
+    }
+    .nav-wordmark span {
+      color: var(--ember);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2.5rem;
+      list-style: none;
+    }
+    .nav-links a {
+      font-family: var(--f-label);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--smoke);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--cream); }
+
+    .nav-cta {
+      font-family: var(--f-label);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ember);
+      text-decoration: none;
+      border: 1px solid var(--ember-dim);
+      padding: 0.55rem 1.3rem;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+    }
+    .nav-cta:hover {
+      background: var(--ember);
+      color: var(--ground);
+      border-color: var(--ember);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       HERO
+    ═══════════════════════════════════════════════════════════════ */
+    .hero {
+      position: relative;
+      min-height: 100svh;
+      display: grid;
+      place-items: end start;
+      padding: 8rem 3rem 5rem;
+      overflow: hidden;
+    }
+
+    /* Vertical gradient vignette — replaces the glow; no radial-gradient */
+    .hero-vignette {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(
+        160deg,
+        rgba(14,12,10,0.55) 0%,
+        transparent 60%
+      );
+    }
+
+    /* Vertical rule */
+    .hero-rule {
+      position: absolute;
+      left: 3rem;
+      top: 0; bottom: 0;
+      width: 1px;
+      background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        var(--ember-dim) 25%,
+        var(--ember-dim) 75%,
+        transparent 100%
+      );
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 2;
+      max-width: 900px;
+    }
+
+    .hero-eyebrow {
+      font-family: var(--f-label);
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--ember);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    html.js .hero-eyebrow {
+      opacity: 0;
+      transform: translateY(12px);
+      animation: revealUp 0.7s var(--ease-out) 0.2s forwards;
+    }
+    .hero-eyebrow::before {
+      content: '';
+      display: inline-block;
+      width: 2rem;
+      height: 1px;
+      background: var(--ember);
+    }
+
+    .hero-h1 {
+      font-family: var(--f-display);
+      font-weight: 900;
+      line-height: 0.92;
+      letter-spacing: -0.02em;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-h1 .line { display: block; overflow: hidden; }
+    .hero-h1 .line-inner {
+      display: block;
+    }
+    .hero-h1 .line:nth-child(1) .line-inner {
+      font-size: clamp(4.5rem, 10vw, 9rem);
+    }
+    .hero-h1 .line:nth-child(2) .line-inner {
+      font-size: clamp(4.5rem, 10vw, 9rem);
+      font-style: italic;
+      color: var(--ember-pale);
+    }
+    .hero-h1 .line:nth-child(3) .line-inner {
+      font-size: clamp(4.5rem, 10vw, 9rem);
+    }
+
+    html.js .hero-h1 .line-inner {
+      opacity: 0;
+      transform: translateY(110%);
+    }
+    html.js .hero-h1 .line:nth-child(1) .line-inner {
+      animation: revealLine 0.9s var(--ease-out) 0.35s forwards;
+    }
+    html.js .hero-h1 .line:nth-child(2) .line-inner {
+      animation: revealLine 0.9s var(--ease-out) 0.52s forwards;
+    }
+    html.js .hero-h1 .line:nth-child(3) .line-inner {
+      animation: revealLine 0.9s var(--ease-out) 0.68s forwards;
+    }
+
+    .hero-sub {
+      max-width: 460px;
+      font-family: var(--f-body);
+      font-size: 1.05rem;
+      font-weight: 300;
+      line-height: 1.7;
+      color: var(--cream-dim);
+      margin-bottom: 2.5rem;
+    }
+    html.js .hero-sub {
+      opacity: 0;
+      transform: translateY(14px);
+      animation: revealUp 0.7s var(--ease-out) 0.9s forwards;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    html.js .hero-actions {
+      opacity: 0;
+      transform: translateY(14px);
+      animation: revealUp 0.7s var(--ease-out) 1.05s forwards;
+    }
+
+    .btn-primary {
+      font-family: var(--f-label);
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ground);
+      background: var(--ember);
+      text-decoration: none;
+      padding: 1rem 2.2rem;
+      display: inline-block;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .btn-primary:hover {
+      background: var(--ember-pale);
+      transform: translateY(-2px);
+    }
+
+    .btn-ghost {
+      font-family: var(--f-label);
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--smoke);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: color 0.2s;
+    }
+    .btn-ghost:hover { color: var(--cream); }
+    .btn-ghost::after {
+      content: '→';
+      transition: transform 0.2s;
+    }
+    .btn-ghost:hover::after { transform: translateX(4px); }
+
+    .hero-scroll-hint {
+      position: absolute;
+      bottom: 2.5rem;
+      right: 3rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: var(--f-label);
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ash);
+      writing-mode: vertical-rl;
+    }
+    html.js .hero-scroll-hint {
+      opacity: 0;
+      animation: revealUp 0.7s var(--ease-out) 1.4s forwards;
+    }
+    .hero-scroll-hint::after {
+      content: '';
+      width: 1px;
+      height: 3rem;
+      background: linear-gradient(to bottom, var(--ash), transparent);
+    }
+
+    /* Stats bar */
+    .hero-stats {
+      position: absolute;
+      bottom: 0;
+      left: 0; right: 0;
+      border-top: 1px solid var(--rule-soft);
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+    }
+    html.js .hero-stats {
+      opacity: 0;
+      animation: revealUp 0.6s var(--ease-out) 1.2s forwards;
+    }
+    .hero-stat {
+      padding: 1.25rem 2rem;
+      border-right: 1px solid var(--rule-soft);
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+    .hero-stat:last-child { border-right: none; }
+    .stat-num {
+      font-family: var(--f-display);
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--cream);
+      line-height: 1;
+    }
+    .stat-label {
+      font-family: var(--f-label);
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--ash);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       ORIGINS SECTION
+    ═══════════════════════════════════════════════════════════════ */
+    .origins {
+      background: var(--surface);
+      padding: 7rem 3rem 6rem;
+      position: relative;
+    }
+
+    .origins::before {
+      content: 'ORIGINS';
+      position: absolute;
+      top: 3rem;
+      right: 3rem;
+      font-family: var(--f-label);
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--rule);
+      color: rgba(232,98,26,0.2);
+    }
+
+    .origins-header {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      margin-bottom: 5rem;
+      align-items: end;
+    }
+
+    .origins-label {
+      font-family: var(--f-label);
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ember);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .origins-label::before {
+      content: '';
+      display: inline-block;
+      width: 1.5rem;
+      height: 1px;
+      background: var(--ember);
+    }
+
+    .origins-title {
+      font-family: var(--f-display);
+      font-size: clamp(2.5rem, 5vw, 4.5rem);
+      font-weight: 700;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+    }
+    .origins-title em {
+      font-style: italic;
+      color: var(--ember-pale);
+    }
+
+    .origins-lede {
+      font-family: var(--f-body);
+      font-size: 1.05rem;
+      font-weight: 300;
+      line-height: 1.75;
+      color: var(--cream-dim);
+      padding-top: 0.5rem;
+    }
+
+    /* Three origin cards */
+    .origins-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: #1a1613;
+    }
+
+    .origin-card {
+      background: var(--surface);
+      padding: 2.5rem 2rem;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.3s;
+    }
+    .origin-card:hover {
+      background: var(--surface-2);
+    }
+    .origin-card:hover .origin-line { transform: scaleX(1); }
+
+    .origin-num {
+      font-family: var(--f-display);
+      font-size: 5rem;
+      font-weight: 900;
+      line-height: 1;
+      color: rgba(232,98,26,0.12);
+      margin-bottom: -1rem;
+      transition: color 0.3s;
+    }
+    .origin-card:hover .origin-num { color: rgba(232,98,26,0.22); }
+
+    .origin-region {
+      font-family: var(--f-label);
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ember);
+      margin-bottom: 0.5rem;
+    }
+
+    .origin-name {
+      font-family: var(--f-display);
+      font-size: 1.5rem;
+      font-weight: 700;
+      line-height: 1.15;
+      margin-bottom: 1rem;
+    }
+
+    .origin-desc {
+      font-family: var(--f-body);
+      font-size: 0.9rem;
+      font-weight: 300;
+      line-height: 1.7;
+      color: var(--cream-dim);
+      margin-bottom: 1.5rem;
+    }
+
+    .origin-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+    .tag {
+      font-family: var(--f-label);
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ash);
+      border: 1px solid rgba(92,85,80,0.4);
+      padding: 0.25rem 0.6rem;
+    }
+
+    .origin-line {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--ember);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.4s var(--ease-out);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       BREW GUIDE SECTION
+    ═══════════════════════════════════════════════════════════════ */
+    .brew {
+      background: var(--ground);
+      padding: 7rem 3rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Large ghost text behind */
+    .brew-ghost {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -52%);
+      font-family: var(--f-display);
+      font-size: clamp(10rem, 25vw, 22rem);
+      font-weight: 900;
+      font-style: italic;
+      color: rgba(232,98,26,0.035);
+      white-space: nowrap;
+      pointer-events: none;
+      user-select: none;
+      line-height: 1;
+    }
+
+    .brew-header {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      margin-bottom: 5rem;
+      align-items: end;
+      position: relative;
+    }
+
+    .brew-label {
+      font-family: var(--f-label);
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ember);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .brew-label::before {
+      content: '';
+      display: inline-block;
+      width: 1.5rem;
+      height: 1px;
+      background: var(--ember);
+    }
+
+    .brew-title {
+      font-family: var(--f-display);
+      font-size: clamp(2.5rem, 5vw, 4.5rem);
+      font-weight: 700;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+    }
+
+    .brew-intro {
+      font-family: var(--f-body);
+      font-size: 1.05rem;
+      font-weight: 300;
+      line-height: 1.75;
+      color: var(--cream-dim);
+    }
+
+    /* Method selector tabs */
+    .brew-methods {
+      display: flex;
+      gap: 0;
+      margin-bottom: 3.5rem;
+      border-bottom: 1px solid var(--rule-soft);
+      position: relative;
+    }
+
+    .brew-method-tab {
+      font-family: var(--f-label);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ash);
+      padding: 0.75rem 1.5rem 0.85rem;
+      cursor: pointer;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .brew-method-tab.active {
+      color: var(--ember);
+      border-bottom-color: var(--ember);
+    }
+    .brew-method-tab:hover:not(.active) { color: var(--cream-dim); }
+
+    /* Steps */
+    .brew-steps {
+      display: none;
+    }
+    .brew-steps.active { display: block; }
+
+    .brew-step {
+      display: grid;
+      grid-template-columns: 5rem 1fr 14rem;
+      gap: 2.5rem;
+      padding: 2.5rem 0;
+      border-bottom: 1px solid var(--rule-soft);
+      position: relative;
+      align-items: start;
+    }
+    html.js .brew-step {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.5s var(--ease-out), transform 0.5s var(--ease-out);
+    }
+    .brew-step.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .step-num {
+      font-family: var(--f-display);
+      font-size: 3.5rem;
+      font-weight: 900;
+      line-height: 1;
+      color: rgba(232,98,26,0.2);
+      position: relative;
+    }
+    .step-num::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0;
+      width: 2rem;
+      height: 2px;
+      background: var(--ember);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.5s var(--ease-out) 0.1s;
+    }
+    .brew-step.visible .step-num::after { transform: scaleX(1); }
+
+    .step-content {}
+    .step-title {
+      font-family: var(--f-display);
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+      line-height: 1.2;
+    }
+    .step-desc {
+      font-family: var(--f-body);
+      font-size: 0.92rem;
+      font-weight: 300;
+      line-height: 1.7;
+      color: var(--cream-dim);
+    }
+    .step-meta {
+      padding-top: 0.15rem;
+    }
+    .step-spec {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    .spec-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+      padding: 0.4rem 0;
+      border-bottom: 1px solid var(--rule-soft);
+    }
+    .spec-row:last-child { border-bottom: none; }
+    .spec-key {
+      font-family: var(--f-label);
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ash);
+    }
+    .spec-val {
+      font-family: var(--f-label);
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--cream);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       SUBSCRIPTION BAND
+    ═══════════════════════════════════════════════════════════════ */
+    .sub-band {
+      background: var(--ember);
+      padding: 4rem 3rem;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 3rem;
+      align-items: center;
+    }
+
+    .sub-band-text {}
+    .sub-band-eyebrow {
+      font-family: var(--f-label);
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: rgba(14,12,10,0.55);
+      margin-bottom: 0.6rem;
+    }
+    .sub-band-title {
+      font-family: var(--f-display);
+      font-size: clamp(1.8rem, 3.5vw, 3rem);
+      font-weight: 700;
+      line-height: 1.1;
+      color: var(--ground);
+      letter-spacing: -0.02em;
+    }
+    .sub-band-title em {
+      font-style: italic;
+    }
+    .sub-band-sub {
+      font-family: var(--f-body);
+      font-size: 0.95rem;
+      font-weight: 300;
+      color: rgba(14,12,10,0.65);
+      margin-top: 0.6rem;
+    }
+
+    .sub-band-action {
+      flex-shrink: 0;
+    }
+    .btn-dark {
+      font-family: var(--f-label);
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--cream);
+      background: var(--ground);
+      text-decoration: none;
+      padding: 1.1rem 2.5rem;
+      display: inline-block;
+      transition: background 0.2s, color 0.2s, transform 0.2s;
+      white-space: nowrap;
+    }
+    .btn-dark:hover {
+      background: var(--surface-2);
+      transform: translateY(-2px);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       FOOTER
+    ═══════════════════════════════════════════════════════════════ */
+    .footer {
+      background: var(--surface);
+      padding: 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--rule-soft);
+    }
+
+    .footer-wordmark {
+      font-family: var(--f-display);
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--ash);
+      letter-spacing: 0.04em;
+    }
+    .footer-wordmark span { color: var(--ember-dim); }
+
+    .footer-copy {
+      font-family: var(--f-label);
+      font-size: 0.65rem;
+      font-weight: 400;
+      letter-spacing: 0.1em;
+      color: var(--ash);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       SCROLL REVEAL — IntersectionObserver classes
+       Gated behind html.js so content is readable without JavaScript.
+    ═══════════════════════════════════════════════════════════════ */
+    html.js .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.65s var(--ease-out), transform 0.65s var(--ease-out);
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: none;
+    }
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.3s; }
+
+    /* ── No-JS fallback: brew steps ──────────────────────────────── */
+    html.js .brew-step {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       RESPONSIVE
+    ═══════════════════════════════════════════════════════════════ */
+    @media (max-width: 900px) {
+      .nav { padding: 1.25rem 1.5rem; }
+      .nav-links { display: none; }
+      .hero { padding: 7rem 1.5rem 5rem; }
+      .hero-stats { grid-template-columns: 1fr 1fr; }
+      .hero-stats .hero-stat:nth-child(3) { display: none; }
+      .origins { padding: 5rem 1.5rem; }
+      .origins-header { grid-template-columns: 1fr; gap: 1.5rem; }
+      .origins-grid { grid-template-columns: 1fr; }
+      .brew { padding: 5rem 1.5rem; }
+      .brew-header { grid-template-columns: 1fr; gap: 1.5rem; }
+      .brew-step { grid-template-columns: 3.5rem 1fr; }
+      .brew-step .step-meta { display: none; }
+      .sub-band { grid-template-columns: 1fr; padding: 3rem 1.5rem; }
+      .footer { flex-direction: column; gap: 1rem; text-align: center; padding: 2rem 1.5rem; }
+    }
+
+    /* ── Keyframes — placed last so the layout-prop regex never
+       cross-matches into position declarations above ──────────── */
+    @media (prefers-reduced-motion: no-preference) {
+      @keyframes revealLine {
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes revealUp {
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes scrollLine {
+        0%, 100% { transform: scaleY(1); }
+        50%       { transform: scaleY(0.3); }
+      }
+    }
+    /* Reduced-motion: snap all JS-gated animated elements to final state. */
+    @media (prefers-reduced-motion: reduce) {
+      html.js .hero-eyebrow,
+      html.js .hero-h1 .line-inner,
+      html.js .hero-sub,
+      html.js .hero-actions,
+      html.js .hero-scroll-hint,
+      html.js .hero-stats,
+      html.js .reveal,
+      html.js .brew-step {
+        opacity: 1 !important;
+        transform: none !important;
+        animation: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ─── NAV ──────────────────────────────────────────────────────── -->
+  <nav class="nav" id="nav">
+    <a href="#" class="nav-wordmark">Ember <span>&amp;</span> Oak</a>
+    <ul class="nav-links">
+      <li><a href="#origins">Origins</a></li>
+      <li><a href="#brew">Brew Guide</a></li>
+      <li><a href="#">Café</a></li>
+    </ul>
+    <a href="#" class="nav-cta">Subscribe</a>
+  </nav>
+
+  <!-- ─── HERO ──────────────────────────────────────────────────────── -->
+  <section class="hero">
+    <div class="hero-vignette"></div>
+    <div class="hero-rule"></div>
+
+    <div class="hero-inner">
+      <p class="hero-eyebrow">Single-Origin · Roasted Weekly · Since 2017</p>
+
+      <h1 class="hero-h1">
+        <span class="line"><span class="line-inner">Fire.</span></span>
+        <span class="line"><span class="line-inner">Ground.</span></span>
+        <span class="line"><span class="line-inner">Cup.</span></span>
+      </h1>
+
+      <p class="hero-sub">
+        We source rare coffees from small farms, roast in small batches every week,
+        and deliver direct — so what lands in your cup is alive with everything
+        the origin intended.
+      </p>
+
+      <div class="hero-actions">
+        <a href="#" class="btn-primary">Shop Current Roasts</a>
+        <a href="#brew" class="btn-ghost">Brew Guide</a>
+      </div>
+    </div>
+
+    <div class="hero-scroll-hint">Scroll</div>
+
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <span class="stat-num">12</span>
+        <span class="stat-label">Active Origins</span>
+      </div>
+      <div class="hero-stat">
+        <span class="stat-num">48h</span>
+        <span class="stat-label">From Roast to Door</span>
+      </div>
+      <div class="hero-stat">
+        <span class="stat-num">7yr</span>
+        <span class="stat-label">Roasting Weekly</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── ORIGINS ───────────────────────────────────────────────────── -->
+  <section class="origins" id="origins">
+    <div class="origins-header">
+      <div>
+        <p class="origins-label reveal">Where the cup begins</p>
+        <h2 class="origins-title reveal reveal-delay-1">
+          Coffees that know<br/><em>where they're from.</em>
+        </h2>
+      </div>
+      <p class="origins-lede reveal reveal-delay-2">
+        Every bag tells a story of altitude, soil, and the hands that picked it.
+        We visit our farms, pay above fair-trade premiums, and name the people
+        behind each coffee — because traceability isn't a marketing line, it's
+        the work.
+      </p>
+    </div>
+
+    <div class="origins-grid reveal">
+      <div class="origin-card">
+        <div class="origin-num">01</div>
+        <p class="origin-region">Yirgacheffe, Ethiopia</p>
+        <h3 class="origin-name">Gedeb Natural</h3>
+        <p class="origin-desc">
+          Sun-dried on raised beds at 2,100m. Expect a layered cup: ripe blueberry,
+          jasmine, dark chocolate, and a lingering citrus brightness that holds
+          long after the last sip.
+        </p>
+        <div class="origin-tags">
+          <span class="tag">Blueberry</span>
+          <span class="tag">Jasmine</span>
+          <span class="tag">Dark Chocolate</span>
+          <span class="tag">Natural</span>
+        </div>
+        <div class="origin-line"></div>
+      </div>
+
+      <div class="origin-card">
+        <div class="origin-num">02</div>
+        <p class="origin-region">Huila, Colombia</p>
+        <h3 class="origin-name">El Paraíso Washed</h3>
+        <p class="origin-desc">
+          Fully washed from a single 3.2-hectare farm run by Diego Bermúdez.
+          Clean and precise — red apple, malic tartness, brown sugar, and
+          a silky body that rewards slow brewing.
+        </p>
+        <div class="origin-tags">
+          <span class="tag">Red Apple</span>
+          <span class="tag">Brown Sugar</span>
+          <span class="tag">Silky</span>
+          <span class="tag">Washed</span>
+        </div>
+        <div class="origin-line"></div>
+      </div>
+
+      <div class="origin-card">
+        <div class="origin-num">03</div>
+        <p class="origin-region">Sumatra, Indonesia</p>
+        <h3 class="origin-name">Mandheling Wet-Hulled</h3>
+        <p class="origin-desc">
+          Processed through Sumatra's distinctive wet-hull method — full-bodied,
+          low-acid, deeply earthy. Cedar, dark caramel, tobacco leaf, and a
+          finish that stays warm for minutes.
+        </p>
+        <div class="origin-tags">
+          <span class="tag">Cedar</span>
+          <span class="tag">Dark Caramel</span>
+          <span class="tag">Earthy</span>
+          <span class="tag">Wet-Hulled</span>
+        </div>
+        <div class="origin-line"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── BREW GUIDE ────────────────────────────────────────────────── -->
+  <section class="brew" id="brew">
+    <div class="brew-ghost" aria-hidden="true">Brew</div>
+
+    <div class="brew-header">
+      <div>
+        <p class="brew-label reveal">The Craft</p>
+        <h2 class="brew-title reveal reveal-delay-1">
+          How we'd<br/>brew it.
+        </h2>
+      </div>
+      <p class="brew-intro reveal reveal-delay-2">
+        Great coffee is mostly about control — grind, water, time. Pick a method
+        below and follow the steps. We've dialled these in for our roast levels;
+        treat them as a baseline and adjust to taste.
+      </p>
+    </div>
+
+    <!-- Method tabs -->
+    <div class="brew-methods reveal">
+      <button class="brew-method-tab active" data-method="v60">V60 Pour-Over</button>
+      <button class="brew-method-tab" data-method="french">French Press</button>
+      <button class="brew-method-tab" data-method="espresso">Espresso</button>
+    </div>
+
+    <!-- V60 Steps -->
+    <div class="brew-steps active" id="steps-v60">
+      <div class="brew-step">
+        <div class="step-num">01</div>
+        <div class="step-content">
+          <h3 class="step-title">Grind fresh, medium-fine</h3>
+          <p class="step-desc">
+            Grind 18g of coffee just before brewing — oxidation begins the moment
+            the cell walls break. Aim for a texture like coarse sea salt, slightly
+            finer than drip. A burr grinder is worth every penny here.
+          </p>
+        </div>
+        <div class="step-meta">
+          <div class="step-spec">
+            <div class="spec-row">
+              <span class="spec-key">Dose</span>
+              <span class="spec-val">18 g</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-key">Grind</span>
+              <span class="spec-val">Medium-Fine</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="brew-step">
+        <div class="step-num">02</div>
+        <div class="step-content">
+          <h3 class="step-title">Rinse, pre-heat, bloom</h3>
+          <p class="step-desc">
+            Rinse the filter with 100°C water (removes paper taste, pre-heats the
+            vessel). Discard. Add grounds, then pour 45ml at 93°C in a tight spiral
+            to wet the bed evenly. Wait 45 seconds for the bloom — watch the crust
+            rise as CO₂ escapes.
+          </p>
+        </div>
+        <div class="step-meta">
+          <div class="step-spec">
+            <div class="spec-row">
+              <span class="spec-key">Bloom water</span>
+              <span class="spec-val">45 ml</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-key">Water temp</span>
+              <span class="spec-val">93°C</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-key">Bloom time</span>
+              <span class="spec-val">45 sec</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="brew-step">
+        <div class="step-num">03</div>
+        <div class="step-content">
+          <h3 class="step-title">Pour in two stages</h3>
+          <p class="step-desc">
+            Pour to 200ml total by 1:00, keeping the slurry gently agitated.
+            Then pour to 300ml by 2:00, always spiraling outward from center.
+            Slow, controlled pours mean even extraction. Total draw-down
+            should finish between 3:00–3:30.
+          </p>
+        </div>
+        <div class="step-meta">
+          <div class="step-spec">
+            <div class="spec-row">
+              <span class="spec-key">Total water</span>
+              <span class="spec-val">300 ml</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-key">Ratio</span>
+              <span class="spec-val">1 : 16.7</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-key">Total time</span>
+              <span class="spec-val">3:00 – 3:30</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="brew-step">
+        <div class="step-num">04</div>
+        <div class="step-content">
+          <h3 class="step-title">Taste, adjust, repeat</h3>
+          <p class="step-desc">
+            Sour or thin? Grind finer or add 10g water. Bitter or flat? Grind coarser
+            or try 91°C water. The bed should look flat and even after draw-down —
+            a domed or cracked bed signals uneven flow. Take notes. Great brewing
+            is mostly record-keeping.
+          </p>
+        </div>
+        <div class="step-meta">
+          <div class="step-spec">
+            <div class="spec-row">
+              <span class="spec-key">If sour</span>
+              <span class="spec-val">Grind finer</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-key">If bitter</span>
+              <span class="spec-val">Grind coarser</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- French Press Steps -->
+    <div class="brew-steps" id="steps-french">
+      <div class="brew-step">
+        <div class="step-num">01</div>
+        <div class="step-content">
+          <h3 class="step-title">Coarse grind, 30 grams</h3>
+          <p class="step-desc">
+            French press is immersion brewing — it needs a coarse grind so the
+            plunger can do its job without over-extracting. Think rough breadcrumbs.
+            30g of coffee for a standard 500ml press.
+          </p>
+        </div>
+        <div class="step-meta">
+          <div class="step-spec">
+            <div class="spec-row">
+              <span class="spec-key">Dose</span>
+              <span class="spec-val">30 g</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-key">Grind</span>
+              <span class="spec-val">Coarse</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="brew-step">
+        <div class="step-num">02</div>
+        <div class="step-content">
+          <h3 class="step-title">Add 500ml at 92°C, stir once</h3>
+          <p class="step-desc">
+            Pour all the water in one go and stir gently with a wooden spoon
+            to wet all the grounds. Place the lid on but do not plunge yet.
+            Set a timer for 4 minutes.
+          </p>
+        </div>
+        <div class="step-meta">
+          <div class="step-spec">
+            <div class="spec-row">
+              <span class="spec-key">Water</span>
+              <span class="spec-val">500 ml</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-key">Temp</span>
+              <span class="spec-val">92°C</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="brew-step">
+        <div class="step-num">03</div>
+        <div class="step-content">
+          <h3 class="step-title">Skim the crust, plunge slow</h3>
+          <p class="step-desc">
+            At 4 minutes, skim the floating crust off the top — this removes
+            the most bitter fine particles. Then press the plunger down slowly
+            and steadily over 20–30 seconds. Pour immediately; do not let it sit.
+          </p>
+        </div>
+        <div class="step-meta">
+          <div class="step-spec">
+            <div class="spec-row">
+              <span class="spec-key">Steep time</span>
+              <span class="spec-val">4 min</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-key">Plunge</span>
+              <span class="spec-val">20–30 sec</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Espresso Steps -->
+    <div class="brew-steps" id="steps-espresso">
+      <div class="brew-step">
+        <div class="step-num">01</div>
+        <div class="step-content">
+          <h3 class="step-title">Dial in the dose: 18g in</h3>
+          <p class="step-desc">
+            Weigh your dose precisely. 18g in the basket is our starting point
+            for a double shot — consistent dosing is the single most important
+            variable to control before touching anything else.
+          </p>
+        </div>
+        <div class="step-meta">
+          <div class="step-spec">
+            <div class="spec-row">
+              <span class="spec-key">Dose in</span>
+              <span class="spec-val">18 g</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-key">Grind</span>
+              <span class="spec-val">Fine / Espresso</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="brew-step">
+        <div class="step-num">02</div>
+        <div class="step-content">
+          <h3 class="step-title">Target 36–38g out in 27–32 sec</h3>
+          <p class="step-desc">
+            A 1:2 brew ratio. Start your timer when you engage the pump.
+            A healthy shot should run blonde (not pale white) at the end.
+            If it runs faster than 27 sec, grind finer. Slower than 32 sec, grind coarser.
+          </p>
+        </div>
+        <div class="step-meta">
+          <div class="step-spec">
+            <div class="spec-row">
+              <span class="spec-key">Yield</span>
+              <span class="spec-val">36–38 g</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-key">Ratio</span>
+              <span class="spec-val">1 : 2</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-key">Time</span>
+              <span class="spec-val">27–32 sec</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="brew-step">
+        <div class="step-num">03</div>
+        <div class="step-content">
+          <h3 class="step-title">Taste, adjust one variable at a time</h3>
+          <p class="step-desc">
+            Sour and thin: under-extracted — grind finer. Bitter and harsh:
+            over-extracted — grind coarser, or reduce dose by 0.5g. Change
+            only one thing per shot. After each adjustment, pull, taste, note.
+            Dialling in takes 3–5 shots on a new bag.
+          </p>
+        </div>
+        <div class="step-meta">
+          <div class="step-spec">
+            <div class="spec-row">
+              <span class="spec-key">Temp</span>
+              <span class="spec-val">92–94°C</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-key">Pressure</span>
+              <span class="spec-val">9 bar</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SUBSCRIPTION BAND ─────────────────────────────────────────── -->
+  <section class="sub-band">
+    <div class="sub-band-text">
+      <p class="sub-band-eyebrow">Weekly Roast Subscription</p>
+      <h2 class="sub-band-title">Fresh coffee,<br/><em>every week.</em></h2>
+      <p class="sub-band-sub">
+        250g or 500g · Choose your method · Pause or cancel any time.
+        Starts at £12/week, free delivery.
+      </p>
+    </div>
+    <div class="sub-band-action">
+      <a href="#" class="btn-dark">Start Your Subscription</a>
+    </div>
+  </section>
+
+  <!-- ─── FOOTER ────────────────────────────────────────────────────── -->
+  <footer class="footer">
+    <span class="footer-wordmark">Ember <span>&amp;</span> Oak</span>
+    <span class="footer-copy">© 2026 Ember &amp; Oak Coffee Roasters · All rights reserved</span>
+  </footer>
+
+  <script>
+    // ── JS gate: flag html element so JS-gated opacity:0 styles apply ─
+    document.documentElement.classList.add('js');
+
+    // ── Nav scroll state ──────────────────────────────────────────────
+    const nav = document.getElementById('nav');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 40);
+    }, { passive: true });
+
+    // ── Scroll reveal (IntersectionObserver) ─────────────────────────
+    const revealEls = document.querySelectorAll('.reveal');
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    revealEls.forEach(el => revealObserver.observe(el));
+
+    // ── Brew step stagger reveal ──────────────────────────────────────
+    function observeSteps() {
+      const steps = document.querySelectorAll('.brew-step');
+      const stepObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry, i) => {
+          if (entry.isIntersecting) {
+            // Slight stagger per step
+            const idx = Array.from(steps).indexOf(entry.target);
+            setTimeout(() => {
+              entry.target.classList.add('visible');
+            }, idx * 80);
+            stepObserver.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.1 });
+      steps.forEach(step => stepObserver.observe(step));
+    }
+    observeSteps();
+
+    // ── Method tabs ───────────────────────────────────────────────────
+    const tabs = document.querySelectorAll('.brew-method-tab');
+    const allSteps = document.querySelectorAll('.brew-steps');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const method = tab.dataset.method;
+
+        // Update tab states
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        // Show correct steps, hide others
+        allSteps.forEach(s => s.classList.remove('active'));
+        const target = document.getElementById(`steps-${method}`);
+        if (target) {
+          target.classList.add('active');
+          // Reset step reveal states so they re-animate
+          target.querySelectorAll('.brew-step').forEach(step => {
+            step.classList.remove('visible');
+          });
+          // Re-observe
+          setTimeout(() => {
+            const newSteps = target.querySelectorAll('.brew-step');
+            const stepObserver = new IntersectionObserver((entries) => {
+              entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                  const idx = Array.from(newSteps).indexOf(entry.target);
+                  setTimeout(() => {
+                    entry.target.classList.add('visible');
+                  }, idx * 80);
+                  stepObserver.unobserve(entry.target);
+                }
+              });
+            }, { threshold: 0.08 });
+            newSteps.forEach(step => stepObserver.observe(step));
+          }, 50);
+        }
+      });
+    });
+  </script>
+</body>
+</html>

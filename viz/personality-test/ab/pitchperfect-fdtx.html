@@ -1,0 +1,1984 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PitchPerfect — Vocal Coaching</title>
+<script>document.documentElement.classList.replace('no-js','js')</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600;1,700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+
+<style>
+/* ─── DESIGN TOKENS ──────────────────────────────────────────────────────── */
+:root {
+  --ink:       #0a0807;
+  --ink-deep:  #060504;
+  --paper:     #f5ede0;
+  --paper-dim: #e8dccb;
+  --saffron:   #e8892a;
+  --saffron-2: #f5a84b;
+  --teal:      #6fcdc4;
+  --teal-dim:  #1a9e94;
+  --ruby:      #e84060;
+  --gold:      #d4af37;
+  --mist:      rgba(245,237,224,0.06);
+  --mist-2:    rgba(245,237,224,0.12);
+  --mist-3:    rgba(245,237,224,0.22);
+
+  --roll-bg:   #0f0c0a;
+  --lane-line: rgba(245,237,224,0.07);
+  --beat-line: rgba(245,237,224,0.14);
+
+  --ff-display: 'Crimson Pro', Georgia, serif;
+  --ff-mono:    'JetBrains Mono', monospace;
+  --ff-body:    'Noto Sans', sans-serif;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out:      cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ─── RESET & BASE ───────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--ink-deep);
+  color: var(--paper);
+  font-family: var(--ff-body);
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-x: hidden;
+  cursor: default;
+}
+
+::selection { background: var(--saffron); color: var(--ink-deep); }
+
+/* ─── CUSTOM CURSOR ──────────────────────────────────────────────────────── */
+body { cursor: none; }
+#cursor {
+  position: fixed;
+  width: 10px;
+  height: 10px;
+  background: var(--teal);
+  border-radius: 5px;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  transition: transform 0.08s ease, background 0.2s ease;
+  mix-blend-mode: screen;
+}
+#cursor-ring {
+  position: fixed;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(111,205,196,0.4);
+  border-radius: 16px;
+  pointer-events: none;
+  z-index: 9998;
+  transform: translate(-50%, -50%);
+  transition: transform 0.18s var(--ease-out-expo), opacity 0.2s ease;
+}
+
+/* ─── NOISE GRAIN OVERLAY ────────────────────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  animation: grain 0.8s steps(1) infinite;
+}
+@keyframes grain {
+  0%, 100% { transform: translate(0, 0); }
+  10%  { transform: translate(-2%, -3%); }
+  20%  { transform: translate(3%, 2%); }
+  30%  { transform: translate(-1%, 3%); }
+  40%  { transform: translate(2%, -1%); }
+  50%  { transform: translate(-3%, 1%); }
+  60%  { transform: translate(1%, -2%); }
+  70%  { transform: translate(-2%, 2%); }
+  80%  { transform: translate(3%, -3%); }
+  90%  { transform: translate(-1%, 1%); }
+}
+
+/* ─── NAV ────────────────────────────────────────────────────────────────── */
+nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 800;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 2.5rem;
+  background: rgba(6,5,4,0.96);
+  border-bottom: 1px solid var(--mist);
+}
+
+.nav-logo {
+  font-family: var(--ff-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  font-style: italic;
+  letter-spacing: -0.02em;
+  color: var(--paper);
+  text-decoration: none;
+}
+.nav-logo span { color: var(--saffron); }
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 2.5rem;
+  list-style: none;
+}
+.nav-links a {
+  font-family: var(--ff-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(245,237,224,0.5);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+.nav-links a:hover { color: var(--saffron); }
+
+.nav-cta {
+  font-family: var(--ff-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-deep);
+  background: var(--saffron);
+  padding: 0.5rem 1.25rem;
+  border: none;
+  cursor: none;
+  font-weight: 700;
+  transition: background 0.2s ease, transform 0.15s var(--ease-out);
+}
+.nav-cta:hover {
+  background: var(--saffron-2);
+  transform: translateY(-1px);
+}
+
+/* ─── HERO ───────────────────────────────────────────────────────────────── */
+#hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  padding: 7rem 2.5rem 4rem;
+}
+
+/* Hero right-side tanpura circle (hued, no glow) */
+#hero::after {
+  content: '';
+  position: absolute;
+  right: -60px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 55vw;
+  height: 55vw;
+  border-radius: 50%;
+  border: 1px solid rgba(232,137,42,0.12);
+  outline: 1px solid rgba(232,137,42,0.05);
+  outline-offset: 40px;
+  pointer-events: none;
+  animation: breathe 6s ease-in-out infinite;
+}
+@keyframes breathe {
+  0%, 100% { transform: translateY(-50%) scale(1); }
+  50% { transform: translateY(-50%) scale(1.04); }
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 640px;
+}
+
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--ff-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--saffron);
+  margin-bottom: 1.5rem;
+}
+html.js .hero-eyebrow {
+  opacity: 0;
+  animation: fadeUp 0.8s var(--ease-out-expo) 0.2s forwards;
+}
+.hero-eyebrow::before {
+  content: '';
+  width: 24px;
+  height: 1px;
+  background: var(--saffron);
+}
+
+.hero-h1 {
+  font-family: var(--ff-display);
+  font-size: clamp(3.2rem, 7vw, 6.5rem);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  margin-bottom: 1.5rem;
+}
+html.js .hero-h1 {
+  opacity: 0;
+  animation: fadeUp 0.9s var(--ease-out-expo) 0.35s forwards;
+}
+.hero-h1 em {
+  font-style: italic;
+  font-weight: 300;
+  color: var(--saffron);
+}
+.hero-h1 .line-accent {
+  display: block;
+  color: var(--teal);
+  font-weight: 100;
+  font-size: 0.6em;
+  letter-spacing: 0.01em;
+  margin-top: 0.1em;
+}
+
+.hero-p {
+  font-size: 1.05rem;
+  font-weight: 300;
+  color: rgba(245,237,224,0.65);
+  line-height: 1.7;
+  margin-bottom: 2.5rem;
+  max-width: 420px;
+}
+html.js .hero-p {
+  opacity: 0;
+  animation: fadeUp 0.9s var(--ease-out-expo) 0.5s forwards;
+}
+
+.hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+html.js .hero-actions {
+  opacity: 0;
+  animation: fadeUp 0.9s var(--ease-out-expo) 0.65s forwards;
+}
+
+.btn-primary {
+  font-family: var(--ff-mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-deep);
+  background: var(--saffron);
+  padding: 0.9rem 2rem;
+  border: none;
+  cursor: none;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s var(--ease-out);
+}
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.15);
+  transform: translateX(-101%);
+  transition: transform 0.3s var(--ease-out);
+}
+.btn-primary:hover::after { transform: translateX(0); }
+.btn-primary:hover { transform: translateY(-2px); }
+
+.btn-ghost {
+  font-family: var(--ff-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(245,237,224,0.55);
+  background: none;
+  border: none;
+  cursor: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: color 0.2s ease;
+}
+.btn-ghost:hover { color: var(--paper); }
+.btn-ghost svg { width: 18px; height: 18px; transition: transform 0.2s ease; }
+.btn-ghost:hover svg { transform: scale(1.15); }
+
+/* Stat pills */
+.hero-stats {
+  display: flex;
+  gap: 2rem;
+  margin-top: 3.5rem;
+  padding-top: 2.5rem;
+  border-top: 1px solid var(--mist);
+}
+html.js .hero-stats {
+  opacity: 0;
+  animation: fadeUp 0.9s var(--ease-out-expo) 0.8s forwards;
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.stat-num {
+  font-family: var(--ff-display);
+  font-size: 2rem;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1;
+  color: var(--paper);
+}
+.stat-num span { color: var(--saffron); }
+.stat-label {
+  font-family: var(--ff-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(245,237,224,0.35);
+}
+
+/* Floating raga badge */
+.raga-badge {
+  position: absolute;
+  right: max(3rem, 8vw);
+  top: 50%;
+  transform: translateY(-60%);
+  z-index: 3;
+}
+html.js .raga-badge {
+  opacity: 0;
+  animation: fadeIn 1s ease 1.1s forwards;
+}
+.raga-badge-inner {
+  background: rgba(15,12,10,0.96);
+  border: 1px solid rgba(232,137,42,0.25);
+  padding: 1.5rem 2rem;
+  position: relative;
+  min-width: 200px;
+}
+.raga-badge-inner::before {
+  content: 'NOW DETECTING';
+  position: absolute;
+  top: -0.6rem;
+  left: 1rem;
+  font-family: var(--ff-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  color: var(--saffron);
+  background: var(--ink-deep);
+  padding: 0 0.5rem;
+}
+.raga-name {
+  font-family: var(--ff-display);
+  font-size: 1.8rem;
+  font-weight: 700;
+  font-style: italic;
+  color: var(--gold);
+  line-height: 1;
+}
+.raga-sub {
+  font-family: var(--ff-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  color: rgba(245,237,224,0.4);
+  margin-top: 0.3rem;
+}
+.raga-swaras {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.8rem;
+}
+.swara {
+  font-family: var(--ff-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.4rem;
+  background: transparent;
+  border: 1px solid rgba(245,237,224,0.12);
+  color: rgba(212,175,55,0.7);
+}
+.swara.active {
+  background: var(--saffron);
+  border-color: var(--saffron);
+  color: var(--ink-deep);
+  animation: swara-pulse 0.4s ease;
+}
+@keyframes swara-pulse {
+  0% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+/* Confidence meter */
+.confidence-row {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+.conf-label {
+  font-family: var(--ff-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  color: rgba(245,237,224,0.35);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.conf-bar {
+  flex: 1;
+  height: 2px;
+  background: rgba(245,237,224,0.1);
+  position: relative;
+  overflow: hidden;
+}
+.conf-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--teal-dim), var(--teal));
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.6s var(--ease-out-expo);
+}
+.conf-pct {
+  font-family: var(--ff-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--teal);
+  min-width: 2.5rem;
+  text-align: right;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ─── DEMO SECTION ───────────────────────────────────────────────────────── */
+#demo {
+  position: relative;
+  padding: 6rem 0 6rem;
+  background: var(--ink-deep);
+}
+
+.section-label {
+  font-family: var(--ff-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--saffron);
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-bottom: 1rem;
+  padding: 0 2.5rem;
+}
+.section-label::after {
+  content: '';
+  flex: 1;
+  max-width: 60px;
+  height: 1px;
+  background: rgba(232,137,42,0.4);
+}
+
+.section-title {
+  font-family: var(--ff-display);
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  padding: 0 2.5rem;
+  margin-bottom: 0.6rem;
+}
+.section-title em {
+  font-style: italic;
+  font-weight: 300;
+  color: rgba(245,237,224,0.45);
+}
+
+/* ── COACH INTERFACE ────────────────────────────────────────────────────── */
+.coach-shell {
+  margin: 2.5rem 2.5rem 0;
+  background: var(--roll-bg);
+  border: 1px solid rgba(245,237,224,0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+/* top bar */
+.coach-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.5rem;
+  background: rgba(255,255,255,0.025);
+  border-bottom: 1px solid rgba(245,237,224,0.07);
+}
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+.raga-pill {
+  font-family: var(--ff-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  background: transparent;
+  border: 1px solid rgba(245,237,224,0.14);
+  padding: 0.25rem 0.75rem;
+}
+.bpm-pill {
+  font-family: var(--ff-mono);
+  font-size: 0.65rem;
+  color: rgba(245,237,224,0.35);
+  letter-spacing: 0.05em;
+}
+.bpm-pill span {
+  color: rgba(245,237,224,0.7);
+  font-weight: 700;
+}
+
+/* live indicator */
+.live-dot {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--ff-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ruby);
+}
+.live-dot::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--ruby);
+  border-radius: 50%;
+  animation: blink 1.1s ease-in-out infinite;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+.metric-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.05rem;
+}
+.metric-val {
+  font-family: var(--ff-mono);
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--paper);
+  transition: color 0.3s ease;
+}
+.metric-val.good { color: var(--teal); }
+.metric-val.warn { color: var(--saffron); }
+.metric-val.bad  { color: var(--ruby); }
+.metric-key {
+  font-family: var(--ff-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(245,237,224,0.3);
+}
+
+/* ── PIANO ROLL AREA ────────────────────────────────────────────────────── */
+.roll-wrapper {
+  display: flex;
+  height: 360px;
+  position: relative;
+}
+
+/* Piano keyboard sidebar */
+.piano-keys {
+  width: 64px;
+  flex-shrink: 0;
+  background: #111;
+  border-right: 1px solid rgba(245,237,224,0.07);
+  position: relative;
+  overflow: hidden;
+}
+.key {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-bottom: 1px solid rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 6px;
+  font-family: var(--ff-mono);
+  font-size: 0.52rem;
+  letter-spacing: 0.04em;
+  user-select: none;
+  transition: background 0.15s ease;
+}
+.key.white {
+  background: #1a1815;
+  color: rgba(245,237,224,0.2);
+}
+.key.black {
+  background: #0d0b09;
+  color: rgba(245,237,224,0.1);
+  z-index: 1;
+}
+.key.active-white { background: rgba(232,137,42,0.25) !important; color: var(--saffron) !important; }
+.key.active-black { background: rgba(232,137,42,0.4) !important; color: var(--saffron) !important; }
+.key.target-key   { background: rgba(42,212,200,0.12) !important; }
+.key.sa { border-bottom: 1px solid rgba(232,137,42,0.3); }
+
+/* Roll canvas area */
+.roll-canvas-wrap {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+canvas#rollCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: crisp-edges;
+}
+
+/* Playhead */
+.playhead {
+  position: absolute;
+  left: 30%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(245,237,224,0.15);
+  pointer-events: none;
+  z-index: 10;
+}
+.playhead::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -3px;
+  width: 8px;
+  height: 8px;
+  background: var(--paper);
+  clip-path: polygon(50% 100%, 0% 0%, 100% 0%);
+}
+
+/* Ornament flash */
+.ornament-flash {
+  position: absolute;
+  top: 0.5rem;
+  right: 1rem;
+  font-family: var(--ff-display);
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--gold);
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  z-index: 20;
+}
+html.js .ornament-flash { opacity: 0; }
+.ornament-flash.show { opacity: 1; }
+
+/* ── PITCH METER (right side) ────────────────────────────────────────────── */
+.pitch-meter {
+  width: 48px;
+  flex-shrink: 0;
+  background: #0a0908;
+  border-left: 1px solid rgba(245,237,224,0.05);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+}
+.pitch-meter-bar {
+  width: 4px;
+  height: 180px;
+  background: rgba(245,237,224,0.07);
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+}
+.pitch-meter-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  background: linear-gradient(to top, var(--teal-dim), var(--teal));
+  border-radius: 2px;
+  transform: scaleY(0.5);
+  transform-origin: bottom;
+  transition: transform 0.05s linear;
+}
+.pitch-cent {
+  font-family: var(--ff-mono);
+  font-size: 0.55rem;
+  font-weight: 700;
+  color: var(--teal);
+  text-align: center;
+  line-height: 1;
+}
+.pitch-cent-label {
+  font-family: var(--ff-mono);
+  font-size: 0.45rem;
+  letter-spacing: 0.1em;
+  color: rgba(245,237,224,0.25);
+  text-transform: uppercase;
+  text-align: center;
+}
+
+/* ── SCORE BAR ──────────────────────────────────────────────────────────── */
+.score-bar {
+  display: flex;
+  align-items: stretch;
+  border-top: 1px solid rgba(245,237,224,0.07);
+}
+
+.score-segment {
+  flex: 1;
+  padding: 1rem 1.5rem;
+  position: relative;
+}
+.score-segment + .score-segment {
+  border-left: 1px solid rgba(245,237,224,0.07);
+}
+
+.score-segment-label {
+  font-family: var(--ff-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(245,237,224,0.3);
+  margin-bottom: 0.4rem;
+}
+
+.score-val {
+  font-family: var(--ff-display);
+  font-size: 2rem;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1;
+  color: var(--paper);
+}
+.score-val sup {
+  font-size: 0.5em;
+  font-style: normal;
+  color: rgba(245,237,224,0.4);
+  vertical-align: super;
+}
+
+.xp-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+.xp-bar {
+  flex: 1;
+  height: 3px;
+  background: rgba(245,237,224,0.07);
+  overflow: hidden;
+}
+.xp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--saffron), var(--gold));
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.5s var(--ease-out-expo);
+}
+.xp-next {
+  font-family: var(--ff-mono);
+  font-size: 0.55rem;
+  color: rgba(245,237,224,0.25);
+  white-space: nowrap;
+}
+
+/* Streak flame */
+.streak-display {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+}
+.streak-num {
+  font-family: var(--ff-display);
+  font-size: 2rem;
+  font-weight: 800;
+  font-style: italic;
+  color: var(--saffron);
+  line-height: 1;
+}
+.streak-icon {
+  line-height: 0;
+  display: flex;
+  align-items: center;
+  animation: flame-flicker 0.8s ease-in-out infinite alternate;
+}
+@keyframes flame-flicker {
+  from { transform: scaleY(1) skewX(-2deg); filter: brightness(1); }
+  to   { transform: scaleY(1.1) skewX(2deg); filter: brightness(1.3); }
+}
+
+/* Level badge */
+.level-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: transparent;
+  border: 1px solid rgba(245,237,224,0.14);
+  padding: 0.3rem 0.8rem;
+  margin-top: 0.4rem;
+}
+.level-badge .lv-num {
+  font-family: var(--ff-mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--gold);
+}
+.level-badge .lv-name {
+  font-family: var(--ff-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  color: rgba(212,175,55,0.6);
+  text-transform: uppercase;
+}
+
+/* Pitch accuracy gauge — arc */
+.arc-gauge {
+  position: relative;
+  width: 80px;
+  height: 48px;
+  overflow: hidden;
+  margin-top: 0.2rem;
+}
+.arc-gauge svg {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+}
+.arc-label {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--ff-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--teal);
+  white-space: nowrap;
+}
+
+/* Controls row */
+.controls-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1.5rem;
+  border-top: 1px solid rgba(245,237,224,0.07);
+  background: rgba(255,255,255,0.015);
+}
+.ctrl-btn {
+  font-family: var(--ff-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.45rem 1rem;
+  border: 1px solid rgba(245,237,224,0.15);
+  background: transparent;
+  color: rgba(245,237,224,0.5);
+  cursor: none;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+.ctrl-btn:hover {
+  border-color: var(--saffron);
+  color: var(--saffron);
+  background: transparent;
+}
+.ctrl-btn.active {
+  border-color: var(--ruby);
+  color: var(--ruby);
+  background: transparent;
+}
+.ctrl-btn.primary {
+  border-color: var(--saffron);
+  color: var(--ink-deep);
+  background: var(--saffron);
+  font-weight: 700;
+}
+.ctrl-btn.primary:hover {
+  background: var(--saffron-2);
+  color: var(--ink-deep);
+}
+
+.ctrl-sep {
+  flex: 1;
+}
+
+.raga-select-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.raga-select-wrap label {
+  font-family: var(--ff-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(245,237,224,0.3);
+}
+.raga-select-wrap select {
+  font-family: var(--ff-mono);
+  font-size: 0.68rem;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(245,237,224,0.12);
+  color: var(--gold);
+  padding: 0.35rem 0.7rem;
+  cursor: none;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 1.4rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(212,175,55,0.5)'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+}
+.raga-select-wrap select option {
+  background: #1a1612;
+  color: var(--paper);
+}
+
+/* Feedback toast */
+.feedback-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translateX(-50%) translateY(10px);
+  background: rgba(15,12,10,0.95);
+  border: 1px solid var(--teal);
+  padding: 0.5rem 1.2rem;
+  font-family: var(--ff-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  color: var(--teal);
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s var(--ease-out-expo);
+  z-index: 50;
+  margin-bottom: 0.5rem;
+}
+html.js .feedback-toast { opacity: 0; }
+.feedback-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+/* ─── FEATURES SECTION ───────────────────────────────────────────────────── */
+#features {
+  padding: 6rem 2.5rem;
+  position: relative;
+}
+
+/* features section — no radial glow overlay */
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: rgba(245,237,224,0.06);
+  margin-top: 3rem;
+  position: relative;
+}
+
+.feature-card {
+  background: var(--ink-deep);
+  padding: 2.5rem 2rem;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.25s ease;
+}
+.feature-card:hover { background: rgba(15,12,10,0.98); }
+
+.feature-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: transparent;
+  transition: background 0.25s ease;
+}
+.feature-card:nth-child(1)::before { background: var(--saffron); }
+.feature-card:nth-child(2)::before { background: var(--teal); }
+.feature-card:nth-child(3)::before { background: var(--gold); }
+
+.feature-num {
+  font-family: var(--ff-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  color: rgba(245,237,224,0.15);
+  margin-bottom: 1.5rem;
+}
+
+.feature-icon {
+  width: 44px;
+  height: 44px;
+  margin-bottom: 1.25rem;
+  position: relative;
+}
+.feature-icon svg { width: 100%; height: 100%; }
+
+.feature-title {
+  font-family: var(--ff-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.6rem;
+  line-height: 1.2;
+}
+.feature-title em {
+  font-style: italic;
+  font-weight: 300;
+  color: rgba(245,237,224,0.5);
+}
+
+.feature-desc {
+  font-size: 0.85rem;
+  font-weight: 300;
+  line-height: 1.65;
+  color: rgba(245,237,224,0.45);
+}
+
+.feature-detail {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.detail-tag {
+  font-family: var(--ff-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid rgba(245,237,224,0.1);
+  color: rgba(245,237,224,0.3);
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+.feature-card:nth-child(1) .detail-tag:hover { border-color: var(--saffron); color: var(--saffron); }
+.feature-card:nth-child(2) .detail-tag:hover { border-color: var(--teal); color: var(--teal); }
+.feature-card:nth-child(3) .detail-tag:hover { border-color: var(--gold); color: var(--gold); }
+
+/* ─── FOOTER ─────────────────────────────────────────────────────────────── */
+footer {
+  padding: 2.5rem 2.5rem;
+  border-top: 1px solid var(--mist);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.footer-logo {
+  font-family: var(--ff-display);
+  font-size: 1rem;
+  font-weight: 700;
+  font-style: italic;
+  color: rgba(245,237,224,0.3);
+}
+.footer-logo span { color: rgba(232,137,42,0.5); }
+.footer-note {
+  font-family: var(--ff-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  color: rgba(245,237,224,0.18);
+  text-transform: uppercase;
+}
+
+/* ─── SCROLL ENTRANCE ANIMATIONS ────────────────────────────────────────── */
+html.js .reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s var(--ease-out-expo), transform 0.7s var(--ease-out-expo);
+}
+html.js .reveal.visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* ─── REDUCED MOTION ─────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  html.js .hero-eyebrow,
+  html.js .hero-h1,
+  html.js .hero-p,
+  html.js .hero-actions,
+  html.js .hero-stats,
+  html.js .raga-badge {
+    opacity: 1;
+    animation: none;
+  }
+  html.js .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<!-- Custom Cursor -->
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<!-- Navigation -->
+<nav>
+  <a href="#" class="nav-logo">Pitch<span>Perfect</span></a>
+  <ul class="nav-links">
+    <li><a href="#demo">Live Demo</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#">Ragas</a></li>
+    <li><a href="#">Pricing</a></li>
+  </ul>
+  <button class="nav-cta">Start Free</button>
+</nav>
+
+<!-- ─── HERO ─────────────────────────────────────────────────────────────── -->
+<section id="hero">
+  <div class="hero-content">
+    <div class="hero-eyebrow">Vocal Intelligence Platform</div>
+    <h1 class="hero-h1">
+      Hear yourself<br>
+      <em>truly</em>
+      <span class="line-accent">in perfect pitch</span>
+    </h1>
+    <p class="hero-p">
+      Real-time pitch analysis meets Indian classical music theory.
+      See every note on a scrolling piano-roll, detect ornaments like
+      meend and gamak, and earn XP as your voice finds its path.
+    </p>
+    <div class="hero-actions">
+      <button class="btn-primary" onclick="document.getElementById('demo').scrollIntoView({behavior:'smooth'})">Try the Demo</button>
+      <button class="btn-ghost">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"/>
+        </svg>
+        Watch intro
+      </button>
+    </div>
+    <div class="hero-stats">
+      <div class="stat">
+        <div class="stat-num">72<span>+</span></div>
+        <div class="stat-label">Ragas mapped</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">0.8<span>¢</span></div>
+        <div class="stat-label">Pitch resolution</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">14<span>ms</span></div>
+        <div class="stat-label">Feedback latency</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating raga detection badge -->
+  <div class="raga-badge">
+    <div class="raga-badge-inner">
+      <div class="raga-name" id="heroRagaName">Yaman</div>
+      <div class="raga-sub" id="heroRagaTime">Sandhiprakash · Evening</div>
+      <div class="raga-swaras" id="heroSwaras">
+        <span class="swara">Sa</span>
+        <span class="swara">Re</span>
+        <span class="swara">Ga</span>
+        <span class="swara active">Ma#</span>
+        <span class="swara">Pa</span>
+        <span class="swara">Dha</span>
+        <span class="swara">Ni</span>
+      </div>
+      <div class="confidence-row">
+        <span class="conf-label">Conf</span>
+        <div class="conf-bar"><div class="conf-fill" id="confFill"></div></div>
+        <span class="conf-pct" id="confPct">—</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── INTERACTIVE DEMO ──────────────────────────────────────────────────── -->
+<section id="demo">
+  <div class="section-label">Interactive Demo</div>
+  <h2 class="section-title reveal">The <em>piano-roll</em> that listens</h2>
+
+  <div class="coach-shell reveal">
+    <!-- Top metrics bar -->
+    <div class="coach-topbar">
+      <div class="topbar-left">
+        <div class="live-dot" id="liveDot">Simulating</div>
+        <div class="raga-pill" id="rollRagaName">Raga Yaman</div>
+        <div class="bpm-pill"><span id="bpmVal">72</span> BPM</div>
+      </div>
+      <div class="topbar-right">
+        <div class="metric-chip">
+          <div class="metric-val" id="metricNote">—</div>
+          <div class="metric-key">Current Note</div>
+        </div>
+        <div class="metric-chip">
+          <div class="metric-val" id="metricCents">+0¢</div>
+          <div class="metric-key">Deviation</div>
+        </div>
+        <div class="metric-chip">
+          <div class="metric-val good" id="metricHz">—</div>
+          <div class="metric-key">Frequency</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Piano Roll -->
+    <div class="roll-wrapper">
+      <div class="piano-keys" id="pianoKeys"></div>
+      <div class="roll-canvas-wrap">
+        <canvas id="rollCanvas"></canvas>
+        <div class="playhead"></div>
+        <div class="ornament-flash" id="ornamentFlash"></div>
+      </div>
+      <div class="pitch-meter">
+        <div class="pitch-cent" id="pmCent">0</div>
+        <div class="pitch-cent-label">¢</div>
+        <div class="pitch-meter-bar">
+          <div class="pitch-meter-fill" id="pmFill"></div>
+        </div>
+        <div class="pitch-cent-label">dev</div>
+      </div>
+    </div>
+
+    <!-- Score bar -->
+    <div class="score-bar">
+      <!-- Score -->
+      <div class="score-segment">
+        <div class="score-segment-label">Score</div>
+        <div class="score-val" id="scoreVal">0<sup>/100</sup></div>
+        <div class="xp-bar-wrap">
+          <div class="xp-bar"><div class="xp-fill" id="xpFill"></div></div>
+          <div class="xp-next" id="xpNext">0 / 500 XP</div>
+        </div>
+      </div>
+      <!-- Streak -->
+      <div class="score-segment">
+        <div class="score-segment-label">Streak</div>
+        <div class="streak-display">
+          <div class="streak-num" id="streakNum">0</div>
+          <div class="streak-icon" aria-hidden="true">
+            <svg width="16" height="18" viewBox="0 0 16 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M8 1C8 1 11 5 10 8C12 6 13 4 13 4C13 4 15 8 13 11.5C14 11 14.5 10 14.5 10C14.5 10 15 14 11 16.5C12 15.5 12.5 14.5 12.5 14.5C12.5 14.5 10 17 7 17C4 17 1.5 15 1.5 12.5C1.5 10 3 9 3 9C3 9 3 11 4.5 12C4 10 4 8 5 6.5C5 8 6 9 6 9C6 9 5 6 8 1Z" fill="var(--saffron)" opacity="0.9"/>
+            </svg>
+          </div>
+        </div>
+        <div style="font-family:var(--ff-mono);font-size:0.58rem;color:rgba(245,237,224,0.25);margin-top:0.3rem;letter-spacing:0.06em;">consecutive notes</div>
+      </div>
+      <!-- Level -->
+      <div class="score-segment">
+        <div class="score-segment-label">Level</div>
+        <div class="level-badge" id="levelBadge">
+          <span class="lv-num" id="levelNum">1</span>
+          <span class="lv-name" id="levelName">Shishya</span>
+        </div>
+        <div style="font-family:var(--ff-mono);font-size:0.58rem;color:rgba(245,237,224,0.2);margin-top:0.6rem;letter-spacing:0.06em;" id="nextLevelHint">→ 500 XP to Sadhak</div>
+      </div>
+      <!-- Accuracy arc -->
+      <div class="score-segment">
+        <div class="score-segment-label">Accuracy</div>
+        <div class="arc-gauge">
+          <svg width="80" height="48" viewBox="0 0 80 48">
+            <path d="M8,44 A32,32,0,0,1,72,44" fill="none" stroke="rgba(245,237,224,0.07)" stroke-width="4" stroke-linecap="round"/>
+            <path id="arcPath" d="M8,44 A32,32,0,0,1,72,44" fill="none" stroke="var(--teal)" stroke-width="4" stroke-linecap="round"
+                  stroke-dasharray="100" stroke-dashoffset="100"/>
+          </svg>
+          <div class="arc-label" id="arcLabel">0%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls row -->
+    <div class="controls-row" style="position:relative">
+      <div class="feedback-toast" id="feedbackToast">Perfect pitch!</div>
+      <button class="ctrl-btn primary" id="btnPlayPause" onclick="togglePlayPause()">Start</button>
+      <button class="ctrl-btn" id="btnReset" onclick="resetDemo()">Reset</button>
+      <div class="ctrl-sep"></div>
+      <div class="raga-select-wrap">
+        <label>Raga</label>
+        <select id="ragaSelect" onchange="changeRaga(this.value)">
+          <option value="yaman">Yaman</option>
+          <option value="bhairav">Bhairav</option>
+          <option value="bhupali">Bhupali</option>
+          <option value="malkauns">Malkauns</option>
+          <option value="bilawal">Bilawal</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FEATURES ──────────────────────────────────────────────────────────── -->
+<section id="features">
+  <div class="section-label">Why PitchPerfect</div>
+  <h2 class="section-title reveal">Built for <em>serious</em> singers</h2>
+
+  <div class="features-grid reveal">
+    <!-- Feature 1 -->
+    <div class="feature-card">
+      <div class="feature-num">01</div>
+      <div class="feature-icon">
+        <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M8 34 Q22 10 36 28" stroke="var(--saffron)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <path d="M8 34 Q22 18 36 22" stroke="rgba(42,212,200,0.7)" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-dasharray="3 2"/>
+          <circle cx="22" cy="22" r="3" fill="var(--saffron)" opacity="0.6"/>
+        </svg>
+      </div>
+      <h3 class="feature-title">Live <em>Piano-Roll</em></h3>
+      <p class="feature-desc">
+        See your voice rendered as a continuous pitch line against the target melody. Every microtone, every oscillation — visible in real time at 14ms latency.
+      </p>
+      <div class="feature-detail">
+        <span class="detail-tag">0.8¢ resolution</span>
+        <span class="detail-tag">WebAudio API</span>
+        <span class="detail-tag">Autocorrelation</span>
+      </div>
+    </div>
+    <!-- Feature 2 -->
+    <div class="feature-card">
+      <div class="feature-num">02</div>
+      <div class="feature-icon">
+        <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="22" cy="22" r="12" stroke="var(--teal)" stroke-width="1" opacity="0.4"/>
+          <circle cx="22" cy="22" r="7" stroke="var(--teal)" stroke-width="1.5" opacity="0.7"/>
+          <circle cx="22" cy="22" r="2.5" fill="var(--teal)"/>
+          <path d="M22 8 L22 6 M22 38 L22 36 M8 22 L6 22 M38 22 L36 22" stroke="var(--teal)" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
+        </svg>
+      </div>
+      <h3 class="feature-title">Raga <em>Intelligence</em></h3>
+      <p class="feature-desc">
+        72 ragas mapped with full swara grids. Automatic raga detection, meend trajectory analysis, gamak pattern recognition, and andolan vibrato measurement.
+      </p>
+      <div class="feature-detail">
+        <span class="detail-tag">Meend</span>
+        <span class="detail-tag">Gamak</span>
+        <span class="detail-tag">Andolan</span>
+        <span class="detail-tag">Kan</span>
+      </div>
+    </div>
+    <!-- Feature 3 -->
+    <div class="feature-card">
+      <div class="feature-num">03</div>
+      <div class="feature-icon">
+        <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10 30 L18 16 L26 22 L34 10" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="34" cy="10" r="3" fill="var(--gold)" opacity="0.8"/>
+          <rect x="8" y="32" width="6" height="3" rx="0.5" fill="rgba(212,175,55,0.3)"/>
+          <rect x="16" y="28" width="6" height="7" rx="0.5" fill="rgba(212,175,55,0.4)"/>
+          <rect x="24" y="24" width="6" height="11" rx="0.5" fill="rgba(212,175,55,0.5)"/>
+          <rect x="32" y="18" width="6" height="17" rx="0.5" fill="rgba(212,175,55,0.7)"/>
+        </svg>
+      </div>
+      <h3 class="feature-title">XP & <em>Progression</em></h3>
+      <p class="feature-desc">
+        Climb from Shishya to Ustad across ten Sanskrit-named levels. Daily streaks, weekly raga challenges, and practice hour rewards keep momentum alive.
+      </p>
+      <div class="feature-detail">
+        <span class="detail-tag">10 levels</span>
+        <span class="detail-tag">Daily streaks</span>
+        <span class="detail-tag">Challenges</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FOOTER ────────────────────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-logo">Pitch<span>Perfect</span></div>
+  <div class="footer-note">© 2026 · Real-time vocal intelligence</div>
+</footer>
+
+<!-- ─── JAVASCRIPT ────────────────────────────────────────────────────────── -->
+<script>
+/* ── Cursor ───────────────────────────────────────────────────────────────── */
+const cur = document.getElementById('cursor');
+const curRing = document.getElementById('cursor-ring');
+let mx = 0, my = 0, rx = 0, ry = 0;
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  cur.style.left = mx + 'px';
+  cur.style.top  = my + 'px';
+});
+function animCursor() {
+  rx += (mx - rx) * 0.12;
+  ry += (my - ry) * 0.12;
+  curRing.style.left = rx + 'px';
+  curRing.style.top  = ry + 'px';
+  requestAnimationFrame(animCursor);
+}
+animCursor();
+document.querySelectorAll('button,select,a,.feature-card').forEach(el => {
+  el.addEventListener('mouseenter', () => { cur.style.transform = 'translate(-50%,-50%) scale(2)'; curRing.style.opacity = '0'; });
+  el.addEventListener('mouseleave', () => { cur.style.transform = 'translate(-50%,-50%) scale(1)'; curRing.style.opacity = '1'; });
+});
+
+/* ── Scroll reveal ────────────────────────────────────────────────────────── */
+const revealObs = new IntersectionObserver((entries) => {
+  entries.forEach((e, i) => {
+    if (e.isIntersecting) {
+      e.target.style.transitionDelay = (i * 0.05) + 's';
+      e.target.classList.add('visible');
+      revealObs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.12 });
+document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+
+/* ── Hero raga badge animation ────────────────────────────────────────────── */
+const heroRagas = [
+  { name: 'Yaman',    time: 'Sandhiprakash · Evening', swaras: ['Sa','Re','Ga','Ma#','Pa','Dha','Ni'], active: 3, conf: 88 },
+  { name: 'Bhairav',  time: 'Pratah · Dawn',           swaras: ['Sa','Reb','Ga','Ma','Pa','Dhab','Ni'], active: 1, conf: 92 },
+  { name: 'Bhupali',  time: 'Sandhya · Dusk',          swaras: ['Sa','Re','Ga','Pa','Dha'], active: 4, conf: 76 },
+];
+let hrIdx = 0;
+function cycleHeroRaga() {
+  const r = heroRagas[hrIdx % heroRagas.length];
+  document.getElementById('heroRagaName').textContent = r.name;
+  document.getElementById('heroRagaTime').textContent = r.time;
+  const sw = document.getElementById('heroSwaras');
+  sw.innerHTML = r.swaras.map((s,i) =>
+    `<span class="swara${i===r.active?' active':''}">${s}</span>`
+  ).join('');
+  const cf = document.getElementById('confFill');
+  const cp = document.getElementById('confPct');
+  cf.style.transform = 'scaleX(0)';
+  cp.textContent = '—';
+  setTimeout(() => {
+    cf.style.transition = 'transform 1.2s var(--ease-out-expo)';
+    cf.style.transform = 'scaleX(' + (r.conf / 100) + ')';
+    cp.textContent = r.conf + '%';
+  }, 200);
+  hrIdx++;
+}
+cycleHeroRaga();
+setInterval(cycleHeroRaga, 4000);
+
+/* ── Raga definitions ─────────────────────────────────────────────────────── */
+const RAGAS = {
+  yaman:    { name:'Yaman',    notes: [0,2,4,6,7,9,11], base: 60 }, // Sa Re Ga Ma# Pa Dha Ni
+  bhairav:  { name:'Bhairav',  notes: [0,1,4,5,7,8,11], base: 60 },
+  bhupali:  { name:'Bhupali',  notes: [0,2,4,7,9],      base: 60 }, // pentatonic
+  malkauns: { name:'Malkauns', notes: [0,3,5,8,10],     base: 60 }, // pentatonic minor
+  bilawal:  { name:'Bilawal',  notes: [0,2,4,5,7,9,11], base: 60 }, // major scale
+};
+
+const NOTE_NAMES = ['Sa','re','Re','ga','Ga','Ma','Ma#','Pa','dha','Dha','ni','Ni'];
+const SEMITONE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+let currentRaga = RAGAS.yaman;
+let running = false;
+let animId = null;
+
+// Simulated melody: a sequence of {semitone, beats} events in raga
+function buildMelody(raga) {
+  const n = raga.notes;
+  const seqLen = 24;
+  const melody = [];
+  for (let i = 0; i < seqLen; i++) {
+    // Random walk through raga notes with occasional leaps
+    const prev = melody.length ? melody[melody.length-1].semi : n[0];
+    let idx = n.indexOf((prev - raga.base + 120) % 12);
+    if (idx < 0) idx = 0;
+    const step = Math.random() < 0.3 ? (Math.random() < 0.5 ? 2 : -2) : (Math.random() < 0.5 ? 1 : -1);
+    idx = Math.max(0, Math.min(n.length-1, idx + step));
+    // Octave range: base±12
+    const oct = raga.base + (Math.random() < 0.3 ? 12 : 0);
+    melody.push({
+      semi: oct + n[idx],
+      beats: Math.random() < 0.2 ? 2 : 1,
+    });
+  }
+  return melody;
+}
+
+let melody = buildMelody(currentRaga);
+
+/* ── Piano key sidebar ────────────────────────────────────────────────────── */
+const ROLL_ROWS = 24; // semitones displayed
+const ROLL_BASE_SEMI = 48; // MIDI note at bottom (C3)
+
+function buildPianoKeys() {
+  const kb = document.getElementById('pianoKeys');
+  kb.innerHTML = '';
+  const rowH = 360 / ROLL_ROWS;
+  for (let i = ROLL_ROWS - 1; i >= 0; i--) {
+    const semi = ROLL_BASE_SEMI + i;
+    const chroma = semi % 12;
+    const isBlack = [1,3,6,8,10].includes(chroma);
+    const div = document.createElement('div');
+    div.className = 'key ' + (isBlack ? 'black' : 'white') + (chroma === 0 ? ' sa' : '');
+    div.style.top = ((ROLL_ROWS - 1 - i) * rowH) + 'px';
+    div.style.height = rowH + 'px';
+    div.dataset.semi = semi;
+    div.textContent = NOTE_NAMES[chroma];
+    kb.appendChild(div);
+  }
+}
+buildPianoKeys();
+
+/* ── Canvas piano-roll renderer ───────────────────────────────────────────── */
+const canvas = document.getElementById('rollCanvas');
+let W, H;
+function resizeCanvas() {
+  const wrap = canvas.parentElement;
+  W = wrap.clientWidth;
+  H = wrap.clientHeight;
+  canvas.width = W;
+  canvas.height = H;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+const ctx = canvas.getContext('2d');
+
+// State
+let scrollX = 0; // px scrolled (increases each frame)
+const SCROLL_SPEED = 1.2; // px per frame
+const BEAT_WIDTH = 80; // px per beat
+const PLAYHEAD_X = W * 0.30; // constant
+
+// Per-frame data
+let melodyPtr = 0;    // current melody note index
+let melodyBeatPos = 0; // beat position of current note start
+let currentBeat = 0;  // global beat counter (float)
+let beatAccum = 0;    // frames since last beat tick
+
+const BPM = 72;
+const FRAME_MS = 1000 / 60;
+const BEATS_PER_FRAME = BPM / (60 * 60); // at 60fps
+
+// Simulated "your pitch" (slightly deviated from melody + ornaments)
+let yourPitchSemi = 60.0;
+let targetPitchSemi = 60.0;
+let pitchHistory = []; // [{x, y, semi}] in canvas coords
+const HISTORY_LEN = 300;
+
+// Score state
+let score = 0, xp = 0, streak = 0, totalNotes = 0, hitNotes = 0;
+let lastOrnamentType = null;
+let ornamentCooldown = 0;
+
+const LEVELS = [
+  {name:'Shishya',  xp:0},
+  {name:'Sadhak',   xp:500},
+  {name:'Abhyasi',  xp:1200},
+  {name:'Kalakar',  xp:2500},
+  {name:'Vidwan',   xp:4500},
+  {name:'Pandit',   xp:7500},
+  {name:'Ustad',    xp:12000},
+];
+function getLevel(xpVal) {
+  let lv = 0;
+  for (let i = LEVELS.length-1; i >= 0; i--) {
+    if (xpVal >= LEVELS[i].xp) { lv = i; break; }
+  }
+  return lv;
+}
+
+// Draw a frame
+function drawFrame() {
+  ctx.clearRect(0, 0, W, H);
+
+  const rowH = H / ROLL_ROWS;
+
+  // ── Background lanes ──────────────────────────────────────────────────────
+  for (let i = 0; i < ROLL_ROWS; i++) {
+    const semi = ROLL_BASE_SEMI + i;
+    const chroma = semi % 12;
+    const isBlack = [1,3,6,8,10].includes(chroma);
+    const y = H - (i + 1) * rowH;
+
+    ctx.fillStyle = isBlack
+      ? 'rgba(0,0,0,0.25)'
+      : 'rgba(255,255,255,0.018)';
+    ctx.fillRect(0, y, W, rowH);
+
+    // Highlight raga notes with subtle tint
+    const noteOffset = ((semi - ROLL_BASE_SEMI) % 12 + 12) % 12;
+    // Check if this chroma is in current raga (modulo 12)
+    const ragaSet = currentRaga.notes.map(n => (n % 12 + 12) % 12);
+    if (ragaSet.includes(noteOffset)) {
+      ctx.fillStyle = 'rgba(212,175,55,0.04)';
+      ctx.fillRect(0, y, W, rowH);
+    }
+  }
+
+  // ── Horizontal lane lines ─────────────────────────────────────────────────
+  for (let i = 0; i <= ROLL_ROWS; i++) {
+    const y = i * rowH;
+    ctx.strokeStyle = 'rgba(245,237,224,0.05)';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(0, y); ctx.lineTo(W, y);
+    ctx.stroke();
+  }
+
+  // ── Beat/bar vertical lines ───────────────────────────────────────────────
+  const firstBeatX = -(scrollX % BEAT_WIDTH);
+  for (let b = firstBeatX; b < W; b += BEAT_WIDTH) {
+    const beatIdx = Math.floor((scrollX + b) / BEAT_WIDTH);
+    const isBar = beatIdx % 4 === 0;
+    ctx.strokeStyle = isBar
+      ? 'rgba(245,237,224,0.12)'
+      : 'rgba(245,237,224,0.05)';
+    ctx.lineWidth = isBar ? 1 : 0.5;
+    ctx.beginPath();
+    ctx.moveTo(b, 0); ctx.lineTo(b, H);
+    ctx.stroke();
+    if (isBar) {
+      ctx.fillStyle = 'rgba(245,237,224,0.12)';
+      ctx.font = '500 9px JetBrains Mono, monospace';
+      ctx.fillText('|' + (Math.floor(beatIdx/4)+1), b + 4, 12);
+    }
+  }
+
+  // ── Target melody blocks ──────────────────────────────────────────────────
+  // Render visible portion of melody
+  let noteStartBeat = 0;
+  for (let mi = 0; mi < melody.length; mi++) {
+    const mn = melody[mi];
+    const noteEndBeat = noteStartBeat + mn.beats;
+
+    const xStart = noteStartBeat * BEAT_WIDTH - scrollX + W * 0.30;
+    const xEnd   = noteEndBeat   * BEAT_WIDTH - scrollX + W * 0.30;
+
+    if (xEnd < -BEAT_WIDTH || xStart > W + BEAT_WIDTH) {
+      noteStartBeat = noteEndBeat;
+      continue;
+    }
+
+    const semiInView = mn.semi - ROLL_BASE_SEMI;
+    const y = H - (semiInView + 1) * rowH;
+
+    // Block fill
+    const gradient = ctx.createLinearGradient(xStart, y, xEnd, y + rowH);
+    gradient.addColorStop(0,   'rgba(42,212,200,0.55)');
+    gradient.addColorStop(0.5, 'rgba(42,212,200,0.45)');
+    gradient.addColorStop(1,   'rgba(42,212,200,0.35)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(xStart + 1, y + 1, xEnd - xStart - 2, rowH - 2);
+
+    // Top edge highlight
+    ctx.fillStyle = 'rgba(42,212,200,0.9)';
+    ctx.fillRect(xStart + 1, y + 1, xEnd - xStart - 2, 1.5);
+
+    // Note label
+    const chroma = ((mn.semi % 12) + 12) % 12;
+    const noteName = NOTE_NAMES[chroma];
+    ctx.fillStyle = 'rgba(10,8,7,0.85)';
+    ctx.font = '500 9px JetBrains Mono, monospace';
+    const textW = ctx.measureText(noteName).width;
+    const blockW = xEnd - xStart - 4;
+    if (blockW > textW + 4) {
+      ctx.fillText(noteName, xStart + 4, y + rowH - 4);
+    }
+
+    noteStartBeat = noteEndBeat;
+  }
+
+  // ── Your pitch line (the live voice) ─────────────────────────────────────
+  if (pitchHistory.length > 1) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(pitchHistory[0].x, pitchHistory[0].y);
+    for (let i = 1; i < pitchHistory.length; i++) {
+      ctx.lineTo(pitchHistory[i].x, pitchHistory[i].y);
+    }
+    ctx.strokeStyle = 'rgba(232,137,42,0.85)';
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.stroke();
+    ctx.restore();
+
+    // Current dot
+    const last = pitchHistory[pitchHistory.length-1];
+    ctx.beginPath();
+    ctx.arc(last.x, last.y, 4, 0, Math.PI*2);
+    ctx.fillStyle = 'var(--saffron)';
+    ctx.fill();
+    // Pulse ring
+    const pulse = (Date.now() % 800) / 800;
+    ctx.beginPath();
+    ctx.arc(last.x, last.y, 4 + pulse * 10, 0, Math.PI*2);
+    ctx.strokeStyle = `rgba(232,137,42,${0.5 * (1-pulse)})`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // ── Playhead ──────────────────────────────────────────────────────────────
+  // (rendered by CSS .playhead element, just sync)
+}
+
+// Advance simulation
+function tick() {
+  if (!running) return;
+
+  // Advance beat
+  currentBeat += BEATS_PER_FRAME;
+  scrollX += SCROLL_SPEED;
+
+  // Find current target note
+  let noteStartBeat = 0;
+  for (let mi = 0; mi < melody.length; mi++) {
+    const mn = melody[mi];
+    const noteEndBeat = noteStartBeat + mn.beats;
+    if (currentBeat >= noteStartBeat && currentBeat < noteEndBeat) {
+      targetPitchSemi = mn.semi;
+      break;
+    }
+    noteStartBeat = noteEndBeat;
+    if (mi === melody.length - 1 && currentBeat >= noteEndBeat) {
+      // Loop
+      currentBeat = 0;
+      scrollX = 0;
+      pitchHistory = [];
+      buildMelody(currentRaga);
+      melody = buildMelody(currentRaga);
+    }
+  }
+
+  // Simulate voice pitch (smoothly tracking target with some human wobble)
+  const wobble = (Math.sin(Date.now() * 0.009) * 0.3) + (Math.sin(Date.now() * 0.023) * 0.15);
+  const lagFactor = 0.09 + Math.random() * 0.03;
+  yourPitchSemi += (targetPitchSemi - yourPitchSemi) * lagFactor;
+  yourPitchSemi += wobble * 0.08;
+
+  // Occasionally inject ornaments
+  if (ornamentCooldown <= 0 && Math.random() < 0.004) {
+    const ornaments = ['Meend','Gamak','Andolan ~','Kan','Murki'];
+    lastOrnamentType = ornaments[Math.floor(Math.random() * ornaments.length)];
+    const flashEl = document.getElementById('ornamentFlash');
+    flashEl.textContent = lastOrnamentType;
+    flashEl.classList.add('show');
+    setTimeout(() => flashEl.classList.remove('show'), 1600);
+    ornamentCooldown = 120;
+    // Add brief glide
+    yourPitchSemi += (Math.random() - 0.5) * 1.2;
+  }
+  if (ornamentCooldown > 0) ornamentCooldown--;
+
+  // Compute pitch position in canvas
+  const rowH = H / ROLL_ROWS;
+  const pitchY = H - (yourPitchSemi - ROLL_BASE_SEMI + 0.5) * rowH;
+  const pitchX = W * 0.30;
+
+  // Shift history left
+  pitchHistory.forEach(p => p.x -= SCROLL_SPEED);
+  pitchHistory.push({ x: pitchX, y: pitchY, semi: yourPitchSemi });
+  if (pitchHistory.length > HISTORY_LEN) pitchHistory.shift();
+  pitchHistory = pitchHistory.filter(p => p.x > -20);
+
+  // Compute deviation in cents
+  const devSemis = yourPitchSemi - targetPitchSemi;
+  const devCents = Math.round(devSemis * 100);
+  const absDev = Math.abs(devCents);
+
+  // Score logic
+  totalNotes++;
+  let hit = false;
+  if (absDev < 20) {
+    score = Math.min(100, score + 0.05);
+    xp += 0.15;
+    streak++;
+    hit = true;
+    hitNotes++;
+  } else if (absDev < 40) {
+    score = Math.max(0, score - 0.01);
+    streak = 0;
+  } else {
+    score = Math.max(0, score - 0.03);
+    streak = 0;
+  }
+
+  // Toast feedback
+  if (absDev < 8 && Math.random() < 0.003) {
+    const msgs = ['Perfect pitch!','Sur laga!','Swara siddha','In tune','Excellent!'];
+    showToast(msgs[Math.floor(Math.random() * msgs.length)]);
+  }
+
+  // Update DOM displays
+  const chroma = ((Math.round(targetPitchSemi) % 12) + 12) % 12;
+  const noteDisp = NOTE_NAMES[chroma] + (Math.round(targetPitchSemi) > 71 ? '₄' : '₃');
+  const hzVal = (440 * Math.pow(2, (yourPitchSemi - 69) / 12)).toFixed(1);
+
+  document.getElementById('metricNote').textContent = noteDisp;
+  const centEl = document.getElementById('metricCents');
+  centEl.textContent = (devCents >= 0 ? '+' : '') + devCents + '¢';
+  centEl.className = 'metric-val ' + (absDev < 15 ? 'good' : absDev < 35 ? 'warn' : 'bad');
+  document.getElementById('metricHz').textContent = hzVal + 'Hz';
+  document.getElementById('metricHz').className = 'metric-val good';
+
+  // Pitch meter
+  document.getElementById('pmCent').textContent = (devCents >= 0 ? '+' : '') + devCents;
+  const meterPct = 50 + (devCents / 100) * 40; // center = 50%
+  document.getElementById('pmFill').style.transform = 'scaleY(' + Math.max(0.05, Math.min(0.95, meterPct / 100)) + ')';
+
+  // Score display
+  document.getElementById('scoreVal').innerHTML = Math.round(score) + '<sup>/100</sup>';
+
+  // XP
+  const xpInt = Math.floor(xp);
+  const lv = getLevel(xpInt);
+  const lvData = LEVELS[lv];
+  const nextLvData = LEVELS[lv+1];
+  const xpInLevel = xpInt - lvData.xp;
+  const xpToNext  = nextLvData ? nextLvData.xp - lvData.xp : 1;
+  const xpPct = nextLvData ? (xpInLevel / xpToNext * 100) : 100;
+  document.getElementById('xpFill').style.transform = 'scaleX(' + (xpPct / 100) + ')';
+  document.getElementById('xpNext').textContent = xpInt + ' / ' + (nextLvData ? nextLvData.xp : '∞') + ' XP';
+  document.getElementById('levelNum').textContent = lv + 1;
+  document.getElementById('levelName').textContent = lvData.name;
+  document.getElementById('nextLevelHint').textContent =
+    nextLvData ? '→ ' + (nextLvData.xp - xpInt) + ' XP to ' + nextLvData.name : '— Master level';
+
+  // Streak
+  document.getElementById('streakNum').textContent = Math.floor(streak / 30);
+
+  // Arc gauge
+  const acc = totalNotes > 0 ? (hitNotes / totalNotes * 100) : 0;
+  const arcLen = 100;
+  const arcOffset = arcLen - (acc / 100) * arcLen;
+  document.getElementById('arcPath').setAttribute('stroke-dashoffset', arcOffset.toFixed(1));
+  document.getElementById('arcLabel').textContent = Math.round(acc) + '%';
+  const arcEl = document.getElementById('arcPath');
+  arcEl.style.stroke = acc > 75 ? 'var(--teal)' : acc > 50 ? 'var(--saffron)' : 'var(--ruby)';
+}
+
+function loop() {
+  tick();
+  drawFrame();
+  animId = requestAnimationFrame(loop);
+}
+
+// Initial static draw
+drawFrame();
+
+/* ── Controls ─────────────────────────────────────────────────────────────── */
+function togglePlayPause() {
+  running = !running;
+  const btn = document.getElementById('btnPlayPause');
+  const ld  = document.getElementById('liveDot');
+  if (running) {
+    btn.textContent = 'Pause';
+    btn.classList.add('active');
+    btn.classList.remove('primary');
+    ld.textContent = 'Live';
+    if (!animId) loop();
+    else ; // already looping
+  } else {
+    btn.textContent = 'Start';
+    btn.classList.remove('active');
+    btn.classList.add('primary');
+    ld.textContent = 'Paused';
+  }
+}
+
+function resetDemo() {
+  running = false;
+  const btn = document.getElementById('btnPlayPause');
+  btn.textContent = 'Start';
+  btn.classList.remove('active');
+  btn.classList.add('primary');
+  document.getElementById('liveDot').textContent = 'Simulating';
+  scrollX = 0;
+  currentBeat = 0;
+  pitchHistory = [];
+  score = 0; xp = 0; streak = 0; totalNotes = 0; hitNotes = 0;
+  yourPitchSemi = currentRaga.base + currentRaga.notes[0];
+  targetPitchSemi = yourPitchSemi;
+  melody = buildMelody(currentRaga);
+  drawFrame();
+  // Update UI zeros
+  document.getElementById('scoreVal').innerHTML = '0<sup>/100</sup>';
+  document.getElementById('xpFill').style.transform = 'scaleX(0)';
+  document.getElementById('streakNum').textContent = '0';
+  document.getElementById('arcLabel').textContent = '0%';
+  document.getElementById('arcPath').setAttribute('stroke-dashoffset', '100');
+  document.getElementById('metricNote').textContent = '—';
+  document.getElementById('metricCents').textContent = '+0¢';
+  document.getElementById('metricHz').textContent = '—';
+}
+
+function changeRaga(val) {
+  currentRaga = RAGAS[val] || RAGAS.yaman;
+  document.getElementById('rollRagaName').textContent = 'Raga ' + currentRaga.name;
+  buildPianoKeys();
+  resetDemo();
+}
+
+// Toast helper
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('feedbackToast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+// Auto-start the loop (paused state) so first frame renders
+requestAnimationFrame(() => { drawFrame(); });
+
+// Kick off running by default after brief delay
+setTimeout(() => {
+  running = true;
+  const btn = document.getElementById('btnPlayPause');
+  btn.textContent = 'Pause';
+  btn.classList.add('active');
+  btn.classList.remove('primary');
+  document.getElementById('liveDot').textContent = 'Live';
+  loop();
+}, 600);
+</script>
+</body>
+</html>

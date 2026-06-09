@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tracewell — Logs & Traces for Backend Teams</title>
+
+  <!-- IBM Plex Mono (terminal/instrument) + DM Sans (body workhorse) + Parkinsans (display) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=Parkinsans:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── Design Tokens ───────────────────────────────────────────── */
+    :root {
+      /* Core surface */
+      --bg-0:         #090b0c;   /* deepest background */
+      --bg-1:         #0e1214;   /* card / panel surfaces */
+      --bg-2:         #141a1d;   /* elevated panels */
+      --bg-3:         #1c2428;   /* hover / selected states */
+
+      /* Structural lines */
+      --rule-hard:    rgba(255,255,255,0.07);
+      --rule-soft:    rgba(255,255,255,0.04);
+
+      /* Text scale */
+      --text-0:       #e8eced;   /* primary — near white, not blinding */
+      --text-1:       #8fa3ab;   /* secondary */
+      --text-2:       #566970;   /* muted / labels */
+      --text-3:       #364248;   /* very muted / decorative */
+
+      /* Accent — verdigris phosphor */
+      --accent:       #66d5aa;            /* CRT trace green */
+      --accent-dim:   rgba(102,213,170,.18);
+      --accent-glow:  rgba(102,213,170,.06);
+
+      /* Service-type span colors */
+      --span-http:    #66d5aa;   /* verdigris — primary accent */
+      --span-db:      #5b9cf6;   /* electric blue */
+      --span-cache:   #e0ab2d;   /* amber */
+      --span-queue:   #ae7cee;   /* violet */
+      --span-rpc:     #f07050;   /* coral */
+      --span-ext:     #5ecdee;   /* cyan */
+
+      /* Error */
+      --err:          #f05a5a;
+      --warn:         #e0ab2d;
+
+      /* Type */
+      --font-mono:    'IBM Plex Mono', 'Menlo', monospace;
+      --font-body:    'DM Sans', system-ui, sans-serif;
+      --font-display: 'Parkinsans', system-ui, sans-serif;
+
+      /* Geometry */
+      --radius-xs: 2px;
+      --radius-sm: 4px;
+      --radius-md: 6px;
+      --radius-lg: 10px;
+    }
+
+    /* ── Reset ───────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-0);
+      color: var(--text-0);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ── Scrollbar ───────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-0); }
+    ::-webkit-scrollbar-thumb { background: var(--bg-3); border-radius: 3px; }
+
+    /* ─────────────────────────────────────────────────────────────
+       HERO
+    ───────────────────────────────────────────────────────────── */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      overflow: hidden;
+      padding: 0 clamp(24px, 6vw, 96px);
+    }
+
+    /* Grid overlay — technical graph paper feel */
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--rule-soft) 1px, transparent 1px),
+        linear-gradient(90deg, var(--rule-soft) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: linear-gradient(to right, black 0%, black 60%, transparent 100%);
+      pointer-events: none;
+    }
+
+    /* Scan-line shimmer — CRT refresh effect via transform */
+    .hero::after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0;
+      top: -4px;
+      height: 4px;
+      background: linear-gradient(
+        transparent 0%,
+        rgba(102,213,170,.06) 50%,
+        transparent 100%
+      );
+      pointer-events: none;
+      opacity: 0.7;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .hero::after {
+        animation: scanline 8s linear infinite;
+      }
+    }
+
+    /* Hero vignette — tonal depth without colored glow */
+    .hero-glow {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.015) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    .hero-glow-2 { display: none; }
+
+    /* ── Nav ─────────────────────────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 clamp(24px, 6vw, 96px);
+      height: 56px;
+      background: var(--bg-0);
+      border-bottom: 1px solid var(--rule-hard);
+    }
+
+    .nav-logo {
+      font-family: var(--font-mono);
+      font-weight: 500;
+      font-size: 0.9rem;
+      letter-spacing: 0.04em;
+      color: var(--text-0);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-logo-mark {
+      display: inline-flex;
+      width: 22px;
+      height: 22px;
+      border: 1.5px solid var(--accent);
+      border-radius: var(--radius-xs);
+      align-items: center;
+      justify-content: center;
+    }
+
+    .nav-logo-mark svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 400;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-1);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--text-0); }
+
+    .nav-cta {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--bg-0);
+      background: var(--accent);
+      border: none;
+      padding: 7px 16px;
+      border-radius: 0;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .nav-cta:hover { opacity: 0.85; }
+
+    /* ── Hero content ────────────────────────────────────────────── */
+    .hero-inner {
+      position: relative;
+      z-index: 10;
+      max-width: 760px;
+      padding-top: 56px; /* nav height */
+    }
+
+    .hero-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 400;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .hero-eyebrow {
+        opacity: 0;
+        animation: fadeUp 0.6s ease 0.1s forwards;
+      }
+    }
+
+    .hero-eyebrow::before {
+      content: '';
+      display: inline-block;
+      width: 24px;
+      height: 1px;
+      background: var(--accent);
+    }
+
+    .hero-h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2.4rem, 5vw, 4.2rem);
+      font-weight: 300;
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+      color: var(--text-0);
+      margin-bottom: 28px;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .hero-h1 {
+        opacity: 0;
+        animation: fadeUp 0.7s ease 0.2s forwards;
+      }
+    }
+
+    .hero-h1 em {
+      font-style: italic;
+      font-weight: 300;
+      color: var(--accent);
+    }
+
+    .hero-h1 .dim { color: var(--text-2); }
+
+    .hero-sub {
+      font-family: var(--font-body);
+      font-size: clamp(1rem, 1.8vw, 1.15rem);
+      font-weight: 300;
+      line-height: 1.7;
+      color: var(--text-1);
+      max-width: 480px;
+      margin-bottom: 40px;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .hero-sub {
+        opacity: 0;
+        animation: fadeUp 0.7s ease 0.35s forwards;
+      }
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .hero-actions {
+        opacity: 0;
+        animation: fadeUp 0.7s ease 0.5s forwards;
+      }
+    }
+
+    .btn-primary {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--bg-0);
+      background: var(--accent);
+      border: none;
+      padding: 12px 24px;
+      border-radius: 0;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+
+    .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+
+    .btn-secondary {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 400;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-1);
+      background: transparent;
+      border: 1px solid var(--rule-hard);
+      padding: 11px 24px;
+      border-radius: 0;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .btn-secondary:hover { border-color: var(--text-2); color: var(--text-0); }
+
+    .hero-meta {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      margin-top: 56px;
+      padding-top: 24px;
+      border-top: 1px solid var(--rule-hard);
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .hero-meta {
+        opacity: 0;
+        animation: fadeUp 0.7s ease 0.65s forwards;
+      }
+    }
+
+    .hero-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .hero-stat-val {
+      font-family: var(--font-mono);
+      font-size: 1.4rem;
+      font-weight: 300;
+      color: var(--text-0);
+      letter-spacing: -0.02em;
+    }
+
+    .hero-stat-val span { color: var(--accent); font-size: 0.85em; }
+
+    .hero-stat-label {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-2);
+    }
+
+    .hero-stat-divider {
+      width: 1px;
+      height: 32px;
+      background: var(--rule-hard);
+    }
+
+    /* ─────────────────────────────────────────────────────────────
+       TRACE WATERFALL SECTION
+    ───────────────────────────────────────────────────────────── */
+    .section-waterfall {
+      padding: clamp(64px, 10vw, 120px) clamp(24px, 6vw, 96px);
+      border-top: 1px solid var(--rule-hard);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 32px;
+      margin-bottom: 48px;
+      flex-wrap: wrap;
+    }
+
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-label::before {
+      content: '';
+      display: inline-block;
+      width: 16px;
+      height: 1px;
+      background: var(--accent);
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: clamp(1.3rem, 2.8vw, 2rem);
+      font-weight: 300;
+      letter-spacing: -0.015em;
+      color: var(--text-0);
+      line-height: 1.2;
+    }
+
+    .section-desc {
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      font-weight: 300;
+      color: var(--text-1);
+      line-height: 1.65;
+      max-width: 300px;
+      margin-top: 8px;
+    }
+
+    /* ── Waterfall Panel ─────────────────────────────────────────── */
+    .waterfall-panel {
+      background: var(--bg-1);
+      border: 1px solid var(--rule-hard);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      /* Subtle inset shadow */
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 24px 64px rgba(0,0,0,0.4);
+    }
+
+    /* Panel toolbar */
+    .wf-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--rule-hard);
+      background: var(--bg-2);
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .wf-toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .wf-dot { width: 8px; height: 8px; border-radius: 1px; }
+    .wf-dot-r { background: #f05a5a; opacity: 0.7; }
+    .wf-dot-y { background: #e0ab2d; opacity: 0.7; }
+    .wf-dot-g { background: var(--accent); opacity: 0.7; }
+
+    .wf-trace-id {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--text-2);
+      letter-spacing: 0.04em;
+    }
+
+    .wf-trace-id strong {
+      color: var(--text-1);
+      font-weight: 400;
+    }
+
+    .wf-toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .wf-badge {
+      font-family: var(--font-mono);
+      font-size: 0.63rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: var(--radius-xs);
+    }
+
+    .wf-badge-ok {
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+    }
+
+    .wf-badge-ms {
+      background: transparent;
+      border: 1px solid #5b9cf6;
+      color: #5b9cf6;
+    }
+
+    .wf-badge-spans {
+      background: transparent;
+      border: 1px solid var(--rule-hard);
+      color: var(--text-1);
+    }
+
+    .wf-refresh-btn {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-2);
+      background: transparent;
+      border: 1px solid var(--rule-hard);
+      padding: 4px 10px;
+      border-radius: var(--radius-xs);
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .wf-refresh-btn:hover { color: var(--text-1); border-color: var(--text-2); }
+
+    /* ── Waterfall table layout ───────────────────────────────────── */
+    .wf-table {
+      display: grid;
+      /* col 1: service badge; col 2: span name; col 3: timeline */
+      grid-template-columns: 100px minmax(160px, 240px) 1fr;
+    }
+
+    /* ── Header row ──────────────────────────────────────────────── */
+    .wf-head {
+      display: contents;
+    }
+
+    .wf-head-cell {
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      padding: 8px 12px 7px;
+      border-bottom: 1px solid var(--rule-hard);
+      background: var(--bg-2);
+    }
+
+    .wf-head-cell.timeline-cell {
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Tick marks drawn by JS */
+    .wf-tick-row {
+      display: flex;
+      align-items: flex-end;
+      height: 100%;
+      gap: 0;
+    }
+
+    /* ── Data rows ───────────────────────────────────────────────── */
+    .wf-row {
+      display: contents;
+    }
+
+    /* Every cell in a data row */
+    .wf-row > div {
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      height: 40px;
+      border-bottom: 1px solid var(--rule-soft);
+      transition: background 0.15s;
+    }
+
+    .wf-row:hover > div {
+      background: var(--bg-3);
+    }
+
+    /* Depth indent for child spans */
+    .wf-row[data-depth="1"] .wf-span-name { padding-left: 14px; }
+    .wf-row[data-depth="2"] .wf-span-name { padding-left: 28px; }
+    .wf-row[data-depth="3"] .wf-span-name { padding-left: 42px; }
+
+    /* Connector lines for depth */
+    .wf-row[data-depth="1"] .wf-span-name::before,
+    .wf-row[data-depth="2"] .wf-span-name::before,
+    .wf-row[data-depth="3"] .wf-span-name::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 1px;
+      background: var(--text-3);
+      margin-right: 6px;
+      vertical-align: middle;
+      flex-shrink: 0;
+    }
+
+    /* Service badge pill */
+    .wf-service {
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      font-weight: 400;
+      letter-spacing: 0.04em;
+      padding: 2px 7px;
+      border-radius: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      border: 1px solid var(--svc-color, currentColor);
+      color: var(--svc-color, currentColor);
+    }
+
+    /* Span name */
+    .wf-span-name {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 400;
+      color: var(--text-0);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Span name for error rows */
+    .wf-row[data-status="error"] .wf-span-name {
+      color: var(--err);
+    }
+
+    /* Timeline cell */
+    .wf-timeline {
+      position: relative;
+      overflow: visible;
+      cursor: pointer;
+    }
+
+    /* Vertical grid lines (drawn via background on .wf-grid) */
+    .wf-grid-lines {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    /* Span bar container */
+    .wf-bar-wrap {
+      position: relative;
+      width: 100%;
+      height: 40px;
+      display: flex;
+      align-items: center;
+    }
+
+    .wf-bar {
+      position: absolute;
+      left: var(--bar-l, 0%);
+      width: var(--bar-w, 10%);
+      background: var(--bar-color, currentColor);
+      opacity: 0.82;
+      height: 10px;
+      border-radius: 2px;
+      transform-origin: left center;
+      transform: scaleX(0);
+      transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .wf-bar.animated {
+      transform: scaleX(1);
+    }
+
+    /* Self-time indicator (darker segment at end) */
+    .wf-bar-self {
+      position: absolute;
+      height: 10px;
+      border-radius: 0 2px 2px 0;
+      opacity: 0.45;
+    }
+
+    /* Duration label */
+    .wf-dur {
+      position: absolute;
+      right: -1px;
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      color: var(--text-2);
+      white-space: nowrap;
+      padding-left: 6px;
+      pointer-events: none;
+    }
+
+    /* Error indicator */
+    .wf-err-dot {
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 6px;
+      height: 6px;
+      border-radius: 1px;
+      background: var(--err);
+    }
+
+    /* ── Tooltip ─────────────────────────────────────────────────── */
+    .wf-tooltip {
+      position: fixed;
+      z-index: 999;
+      background: var(--bg-2);
+      border: 1px solid var(--rule-hard);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--text-0);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      min-width: 220px;
+      max-width: 300px;
+    }
+
+    .wf-tooltip.visible { opacity: 1; }
+
+    .wf-tooltip-name {
+      font-weight: 500;
+      color: var(--text-0);
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--rule-hard);
+      word-break: break-all;
+    }
+
+    .wf-tooltip-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 2px 0;
+      color: var(--text-1);
+    }
+
+    .wf-tooltip-row span:first-child {
+      color: var(--text-2);
+    }
+
+    .wf-tooltip-row.err-row span:last-child {
+      color: var(--err);
+    }
+
+    /* ── Time axis ───────────────────────────────────────────────── */
+    .wf-time-axis {
+      display: flex;
+      position: relative;
+      height: 26px;
+      border-top: 1px solid var(--rule-hard);
+      background: var(--bg-2);
+    }
+
+    .wf-time-axis-left {
+      width: calc(100px + 240px); /* service + name columns */
+      min-width: calc(100px + 160px);
+      padding-left: 12px;
+      display: flex;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      color: var(--text-2);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
+    .wf-time-axis-ticks {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .wf-tick {
+      position: absolute;
+      top: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .wf-tick-line {
+      width: 1px;
+      height: 6px;
+      background: var(--text-3);
+    }
+
+    .wf-tick-label {
+      font-family: var(--font-mono);
+      font-size: 0.58rem;
+      color: var(--text-2);
+      white-space: nowrap;
+      transform: translateX(-50%);
+      padding-top: 2px;
+    }
+
+    /* ── Legend ──────────────────────────────────────────────────── */
+    .wf-legend {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 10px 16px;
+      border-top: 1px solid var(--rule-soft);
+      background: var(--bg-2);
+      flex-wrap: wrap;
+    }
+
+    .wf-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-2);
+    }
+
+    .wf-legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 1px;
+      flex-shrink: 0;
+    }
+
+    /* ─────────────────────────────────────────────────────────────
+       HOVER-HIGHLIGHT grid lines
+    ───────────────────────────────────────────────────────────── */
+    .wf-vline {
+      position: absolute;
+      top: 0;
+      width: 1px;
+      height: 100%;
+      pointer-events: none;
+      background: var(--rule-soft);
+    }
+
+    /* ─────────────────────────────────────────────────────────────
+       FOOTER strip
+    ───────────────────────────────────────────────────────────── */
+    .footer-strip {
+      border-top: 1px solid var(--rule-hard);
+      padding: 16px clamp(24px, 6vw, 96px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .footer-wordmark {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      color: var(--text-2);
+    }
+
+    .footer-wordmark span { color: var(--accent); }
+
+    .footer-copy {
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.06em;
+      color: var(--text-3);
+    }
+
+    .wf-legend-label {
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      color: var(--text-3);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .wf-legend-error { flex-grow: 1; justify-content: flex-end; }
+
+    /* ── Keyframe definitions (no CSS layout props after this point) ── */
+    @keyframes scanline {
+      0%   { transform: translateY(0); }
+      100% { transform: translateY(calc(100vh + 4px)); }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Tooltip (shared, moved by JS) ───────────────────────────── -->
+<div class="wf-tooltip" id="tooltip"></div>
+
+<!-- ── Navigation ──────────────────────────────────────────────── -->
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-mark">
+      <svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M1 6 L4 3 L7 7 L10 2" stroke="#66d5aa" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    tracewell
+  </div>
+  <ul class="nav-links">
+    <li><a href="#">Traces</a></li>
+    <li><a href="#">Logs</a></li>
+    <li><a href="#">Metrics</a></li>
+    <li><a href="#">Alerts</a></li>
+    <li><a href="#">Docs</a></li>
+  </ul>
+  <button class="nav-cta">Start free</button>
+</nav>
+
+<!-- ── Hero ────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-glow-2"></div>
+  <div class="hero-inner">
+
+    <p class="hero-eyebrow">Observability for backend teams</p>
+
+    <h1 class="hero-h1">
+      Find the slow part.<br>
+      <em>Instantly.</em><br>
+      <span class="dim">Not eventually.</span>
+    </h1>
+
+    <p class="hero-sub">
+      Tracewell ingests distributed traces and structured logs from your services, correlates them automatically, and surfaces the exact span where latency broke. No dashboards to configure. No queries to learn.
+    </p>
+
+    <div class="hero-actions">
+      <button class="btn-primary">Get started free</button>
+      <button class="btn-secondary">View live demo</button>
+    </div>
+
+    <div class="hero-meta">
+      <div class="hero-stat">
+        <div class="hero-stat-val">2.4<span>ms</span></div>
+        <div class="hero-stat-label">Ingestion lag</div>
+      </div>
+      <div class="hero-stat-divider"></div>
+      <div class="hero-stat">
+        <div class="hero-stat-val">14<span>TB</span></div>
+        <div class="hero-stat-label">Stored / day</div>
+      </div>
+      <div class="hero-stat-divider"></div>
+      <div class="hero-stat">
+        <div class="hero-stat-val">99.97<span>%</span></div>
+        <div class="hero-stat-label">Uptime SLA</div>
+      </div>
+      <div class="hero-stat-divider"></div>
+      <div class="hero-stat">
+        <div class="hero-stat-val">OpenTelemetry</div>
+        <div class="hero-stat-label">Native protocol</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── Trace Waterfall Section ──────────────────────────────────── -->
+<section class="section-waterfall">
+
+  <div class="section-header">
+    <div>
+      <p class="section-label">Trace waterfall</p>
+      <h2 class="section-title">Every span.<br>One timeline.</h2>
+    </div>
+    <p class="section-desc">
+      A single request, decomposed into every database call, RPC, cache lookup, and queue publish. Latency contributors visible at a glance.
+    </p>
+  </div>
+
+  <!-- Waterfall instrument -->
+  <div class="waterfall-panel" id="waterfallPanel">
+
+    <!-- Toolbar -->
+    <div class="wf-toolbar">
+      <div class="wf-toolbar-left">
+        <div class="wf-dot wf-dot-r"></div>
+        <div class="wf-dot wf-dot-y"></div>
+        <div class="wf-dot wf-dot-g"></div>
+        <span class="wf-trace-id">trace_id <strong>a8f3c91e-004b</strong></span>
+      </div>
+      <div class="wf-toolbar-right">
+        <span class="wf-badge wf-badge-ok">200 OK</span>
+        <span class="wf-badge wf-badge-ms" id="totalDurBadge">847 ms total</span>
+        <span class="wf-badge wf-badge-spans">18 spans</span>
+        <button class="wf-refresh-btn" id="replayBtn">↺ replay</button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="wf-table" id="wfTable">
+      <!-- Injected by JS -->
+    </div>
+
+    <!-- Time axis -->
+    <div class="wf-time-axis">
+      <div class="wf-time-axis-left">duration</div>
+      <div class="wf-time-axis-ticks" id="timeAxisTicks"></div>
+    </div>
+
+    <!-- Legend -->
+    <div class="wf-legend">
+      <span class="wf-legend-label">service type</span>
+      <div class="wf-legend-item"><div class="wf-legend-dot" style="background:#66d5aa"></div>http</div>
+      <div class="wf-legend-item"><div class="wf-legend-dot" style="background:#5b9cf6"></div>database</div>
+      <div class="wf-legend-item"><div class="wf-legend-dot" style="background:#e0ab2d"></div>cache</div>
+      <div class="wf-legend-item"><div class="wf-legend-dot" style="background:#ae7cee"></div>queue</div>
+      <div class="wf-legend-item"><div class="wf-legend-dot" style="background:#f07050"></div>rpc</div>
+      <div class="wf-legend-item"><div class="wf-legend-dot" style="background:#5ecdee"></div>external</div>
+      <div class="wf-legend-item wf-legend-error">
+        <div class="wf-legend-dot" style="background:var(--err);"></div>error
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ── Footer ───────────────────────────────────────────────────── -->
+<footer class="footer-strip">
+  <div class="footer-wordmark"><span>trace</span>well</div>
+  <div class="footer-copy">© 2026 Tracewell, Inc. — Built for engineers.</div>
+</footer>
+
+<!-- ── Waterfall JS ──────────────────────────────────────────────── -->
+<script>
+(function () {
+  'use strict';
+
+  /* ── Span data model ────────────────────────────────────────── */
+  // start / end in ms, relative to trace start (0)
+  const TOTAL_MS = 847;
+
+  const SPANS = [
+    // depth 0 — root
+    { id:'s0',  parent:null,  depth:0, service:'api-gateway',   type:'http',     name:'POST /api/v2/checkout',          start:0,    end:847,  status:'ok',    db:null },
+    // depth 1
+    { id:'s1',  parent:'s0',  depth:1, service:'auth-svc',      type:'rpc',      name:'ValidateSession',                start:2,    end:24,   status:'ok',    db:null },
+    { id:'s2',  parent:'s0',  depth:1, service:'cart-svc',      type:'http',     name:'GET /cart/{session_id}',         start:26,   end:104,  status:'ok',    db:null },
+    { id:'s3',  parent:'s0',  depth:1, service:'pricing-svc',   type:'rpc',      name:'ComputePricing',                 start:106,  end:220,  status:'ok',    db:null },
+    { id:'s4',  parent:'s0',  depth:1, service:'order-svc',     type:'http',     name:'POST /orders',                   start:222,  end:760,  status:'ok',    db:null },
+    { id:'s5',  parent:'s0',  depth:1, service:'notify-svc',    type:'queue',    name:'publish checkout.completed',     start:762,  end:810,  status:'ok',    db:null },
+    { id:'s6',  parent:'s0',  depth:1, service:'cdn-edge',      type:'external', name:'Purge /user/{id}/cart cache',    start:812,  end:847,  status:'ok',    db:null },
+    // depth 2 — cart children
+    { id:'s7',  parent:'s2',  depth:2, service:'redis',         type:'cache',    name:'GET cart:sess:9f2a',             start:28,   end:34,   status:'ok',    db:'redis:6379' },
+    { id:'s8',  parent:'s2',  depth:2, service:'postgres',      type:'db',       name:'SELECT * FROM cart_items WHERE…',start:36,   end:99,   status:'ok',    db:'pg:5432/shop' },
+    // depth 2 — pricing children
+    { id:'s9',  parent:'s3',  depth:2, service:'redis',         type:'cache',    name:'GET pricing:sku:bulk:7x',        start:108,  end:113,  status:'ok',    db:'redis:6379' },
+    { id:'s10', parent:'s3',  depth:2, service:'pricing-svc',   type:'rpc',      name:'FetchTaxRates',                  start:115,  end:178,  status:'ok',    db:null },
+    { id:'s11', parent:'s3',  depth:2, service:'discount-svc',  type:'rpc',      name:'ApplyPromoCode',                 start:180,  end:219,  status:'ok',    db:null },
+    // depth 2 — order children
+    { id:'s12', parent:'s4',  depth:2, service:'postgres',      type:'db',       name:'BEGIN / INSERT orders …',        start:224,  end:290,  status:'ok',    db:'pg:5432/shop' },
+    { id:'s13', parent:'s4',  depth:2, service:'postgres',      type:'db',       name:'INSERT order_items (12 rows)',   start:292,  end:340,  status:'ok',    db:'pg:5432/shop' },
+    { id:'s14', parent:'s4',  depth:2, service:'payment-svc',   type:'rpc',      name:'ChargeCard',                     start:342,  end:695,  status:'ok',    db:null },
+    { id:'s15', parent:'s4',  depth:2, service:'postgres',      type:'db',       name:'UPDATE inventory SET qty …',     start:698,  end:755,  status:'ok',    db:'pg:5432/shop' },
+    // depth 3 — payment children
+    { id:'s16', parent:'s14', depth:3, service:'stripe-api',    type:'external', name:'POST /v1/payment_intents',       start:344,  end:685,  status:'ok',    db:null },
+    { id:'s17', parent:'s14', depth:3, service:'fraud-svc',     type:'rpc',      name:'ScoreFraudRisk',                 start:344,  end:372,  status:'error',  db:null },
+  ];
+
+  const TYPE_COLOR = {
+    http:     '#66d5aa',
+    db:       '#5b9cf6',
+    cache:    '#e0ab2d',
+    queue:    '#ae7cee',
+    rpc:      '#f07050',
+    external: '#5ecdee',
+  };
+
+  /* ── Render ────────────────────────────────────────────────── */
+  function ms(n) {
+    return n >= 1000 ? (n/1000).toFixed(2)+'s' : n+'ms';
+  }
+
+  function renderWaterfall() {
+    const table = document.getElementById('wfTable');
+    table.innerHTML = '';
+
+    // Header row
+    const headHtml = `
+      <div class="wf-head-cell">Service</div>
+      <div class="wf-head-cell">Span</div>
+      <div class="wf-head-cell timeline-cell">Timeline</div>
+    `;
+    table.insertAdjacentHTML('beforeend', headHtml);
+
+    // Data rows
+    SPANS.forEach((span, idx) => {
+      const color = TYPE_COLOR[span.type] || '#888';
+      const pct = (t) => ((t / TOTAL_MS) * 100).toFixed(3) + '%';
+      const leftPct  = pct(span.start);
+      const widthPct = pct(Math.max(span.end - span.start, 2)); // minimum 2ms wide
+      const selfW    = pct(Math.max((span.end - span.start) * 0.3, 1));
+      const durLabel = ms(span.end - span.start);
+
+      const barId = 'bar-' + span.id;
+      // Use CSS custom properties for position to keep layout props out of raw HTML
+      const barStyle = `--bar-l:${leftPct};--bar-w:${widthPct};--bar-color:${color};`;
+      const rowHtml = `
+        <div class="wf-row" data-depth="${span.depth}" data-status="${span.status}" data-idx="${idx}">
+          <div>
+            <span class="wf-service" style="--svc-color:${color};">${span.service}</span>
+          </div>
+          <div>
+            <span class="wf-span-name">${span.name}</span>
+          </div>
+          <div class="wf-timeline">
+            <div class="wf-bar-wrap">
+              <div class="wf-bar" id="${barId}" style="${barStyle}" data-idx="${idx}">
+              </div>
+              ${span.status === 'error' ? `<div class="wf-err-dot" style="--dot-l:calc(${leftPct} + ${widthPct});"></div>` : ''}
+              <span class="wf-dur" style="--dur-l:calc(${leftPct} + ${widthPct});">${durLabel}</span>
+            </div>
+          </div>
+        </div>
+      `;
+      table.insertAdjacentHTML('beforeend', rowHtml);
+    });
+
+    // Draw vertical grid lines on timeline cells
+    drawGridLines();
+
+    // Animate bars in staggered
+    animateBars();
+  }
+
+  function drawGridLines() {
+    // We'll add grid lines as a CSS background on the timeline column via JS-injected elements
+    // Actually, insert tick marks into the time axis
+    const axisEl = document.getElementById('timeAxisTicks');
+    axisEl.innerHTML = '';
+    const ticks = [0, 100, 200, 300, 400, 500, 600, 700, 847];
+    ticks.forEach(t => {
+      const pct = (t / TOTAL_MS * 100).toFixed(2);
+      const el = document.createElement('div');
+      el.className = 'wf-tick';
+      el.style.left = pct + '%';
+      el.innerHTML = `
+        <div class="wf-tick-line"></div>
+        <div class="wf-tick-label">${ms(t)}</div>
+      `;
+      axisEl.appendChild(el);
+    });
+  }
+
+  function animateBars() {
+    SPANS.forEach((span, idx) => {
+      const bar = document.getElementById('bar-' + span.id);
+      if (!bar) return;
+      // Stagger: base delay + slight per-depth offset
+      const delay = 100 + idx * 35;
+      setTimeout(() => {
+        bar.classList.add('animated');
+      }, delay);
+    });
+  }
+
+  /* ── Tooltip ────────────────────────────────────────────────── */
+  const tooltip = document.getElementById('tooltip');
+
+  function showTooltip(e, span) {
+    const color = TYPE_COLOR[span.type] || '#888';
+    tooltip.innerHTML = `
+      <div class="wf-tooltip-name">${span.name}</div>
+      <div class="wf-tooltip-row"><span>service</span><span style="color:${color}">${span.service}</span></div>
+      <div class="wf-tooltip-row"><span>type</span><span>${span.type}</span></div>
+      <div class="wf-tooltip-row"><span>start</span><span>+${ms(span.start)}</span></div>
+      <div class="wf-tooltip-row"><span>end</span><span>+${ms(span.end)}</span></div>
+      <div class="wf-tooltip-row"><span>duration</span><span>${ms(span.end - span.start)}</span></div>
+      ${span.db ? `<div class="wf-tooltip-row"><span>connection</span><span>${span.db}</span></div>` : ''}
+      <div class="wf-tooltip-row ${span.status === 'error' ? 'err-row' : ''}"><span>status</span><span>${span.status}</span></div>
+    `;
+    positionTooltip(e);
+    tooltip.classList.add('visible');
+  }
+
+  function positionTooltip(e) {
+    const TW = 240, TH = 160;
+    let x = e.clientX + 14;
+    let y = e.clientY - 20;
+    if (x + TW > window.innerWidth - 8) x = e.clientX - TW - 14;
+    if (y + TH > window.innerHeight - 8) y = e.clientY - TH - 14;
+    tooltip.style.left = x + 'px';
+    tooltip.style.top  = y + 'px';
+  }
+
+  function hideTooltip() {
+    tooltip.classList.remove('visible');
+  }
+
+  /* ── Event wiring ────────────────────────────────────────────── */
+  function wireEvents() {
+    const table = document.getElementById('wfTable');
+
+    table.addEventListener('mousemove', (e) => {
+      const row = e.target.closest('.wf-row');
+      if (!row) { hideTooltip(); return; }
+      const idx = parseInt(row.dataset.idx, 10);
+      if (isNaN(idx)) return;
+      showTooltip(e, SPANS[idx]);
+      positionTooltip(e);
+    });
+
+    table.addEventListener('mouseleave', hideTooltip);
+
+    document.getElementById('replayBtn').addEventListener('click', () => {
+      // Reset bars, then re-animate
+      SPANS.forEach(span => {
+        const bar = document.getElementById('bar-' + span.id);
+        if (bar) bar.classList.remove('animated');
+      });
+      setTimeout(animateBars, 80);
+    });
+  }
+
+  /* ── Init ───────────────────────────────────────────────────── */
+  document.addEventListener('DOMContentLoaded', () => {
+    renderWaterfall();
+    wireEvents();
+  });
+
+})();
+</script>
+
+</body>
+</html>
