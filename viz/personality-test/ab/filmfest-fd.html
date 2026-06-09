@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NIGHTSHIFT — Independent Film Festival</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+
+<style>
+  /* ── RESET & BASE ─────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink:    #0a0a08;
+    --cream:  #f0ece0;
+    --warm:   #e8e0cc;
+    --amber:  #d4a843;
+    --rust:   #b84c1e;
+    --mist:   #c8c0ae;
+    --paper:  #f7f3e8;
+
+    --f-display: 'Bebas Neue', sans-serif;
+    --f-serif:   'Playfair Display', Georgia, serif;
+    --f-mono:    'DM Mono', 'Courier New', monospace;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--ink);
+    color: var(--cream);
+    font-family: var(--f-mono);
+    font-size: 14px;
+    line-height: 1.6;
+    overflow-x: hidden;
+    cursor: crosshair;
+  }
+
+  /* ── GRAIN OVERLAY ────────────────────────────────────── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+    opacity: 0.035;
+    pointer-events: none;
+    z-index: 9999;
+    mix-blend-mode: overlay;
+  }
+
+  /* ── CUSTOM SCROLLBAR ─────────────────────────────────── */
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-track { background: var(--ink); }
+  ::-webkit-scrollbar-thumb { background: var(--amber); }
+
+  /* ── HEADER / NAV ─────────────────────────────────────── */
+  .site-nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 22px 40px;
+    mix-blend-mode: normal;
+  }
+
+  .site-nav::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(10,10,8,.85) 0%, transparent 100%);
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  .nav-logo {
+    font-family: var(--f-display);
+    font-size: 22px;
+    letter-spacing: 0.15em;
+    color: var(--cream);
+    text-decoration: none;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 36px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--mist);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--amber); }
+
+  .nav-badge {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--amber);
+    border: 1px solid var(--amber);
+    padding: 5px 12px;
+    text-transform: uppercase;
+  }
+
+  /* ── HERO ─────────────────────────────────────────────── */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr auto;
+    overflow: hidden;
+  }
+
+  /* Stark vertical light shaft */
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 1px;
+    height: 100%;
+    background: linear-gradient(to bottom, transparent 0%, var(--amber) 30%, var(--amber) 70%, transparent 100%);
+    opacity: 0.25;
+  }
+
+  /* Horizontal rule mid-hero */
+  .hero::after {
+    content: '';
+    position: absolute;
+    top: 60%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent 0%, var(--mist) 20%, var(--mist) 80%, transparent 100%);
+    opacity: 0.15;
+  }
+
+  /* Left column — big title */
+  .hero-title-block {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 0 48px 60px 48px;
+    padding-top: 120px;
+    position: relative;
+    z-index: 2;
+    animation: fadeSlideUp 1.1s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .hero-eyebrow {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .hero-eyebrow::before {
+    content: '';
+    display: block;
+    width: 32px;
+    height: 1px;
+    background: var(--amber);
+  }
+
+  .hero-main-title {
+    font-family: var(--f-display);
+    font-size: clamp(96px, 12vw, 180px);
+    line-height: 0.88;
+    letter-spacing: -0.02em;
+    color: var(--cream);
+    display: block;
+  }
+
+  /* Italic serif year inset */
+  .hero-year {
+    font-family: var(--f-serif);
+    font-style: italic;
+    font-size: clamp(18px, 2.2vw, 28px);
+    color: var(--amber);
+    margin-top: 24px;
+    letter-spacing: 0.04em;
+  }
+
+  .hero-subline {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--mist);
+    margin-top: 12px;
+  }
+
+  /* Right column — film-strip composition */
+  .hero-visual {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    position: relative;
+    overflow: hidden;
+    animation: fadeIn 1.4s ease both;
+    animation-delay: 0.2s;
+  }
+
+  /* Simulated film-strip texture with CSS */
+  .film-strip {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .film-frame {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .film-frame::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--ink);
+  }
+
+  .film-frame:nth-child(1) {
+    background: linear-gradient(135deg, #1a1410 0%, #2d1f10 100%);
+    flex: 1.8;
+  }
+  .film-frame:nth-child(2) {
+    background: linear-gradient(135deg, #0e1218 0%, #1a2028 100%);
+    flex: 1.2;
+  }
+  .film-frame:nth-child(3) {
+    background: linear-gradient(135deg, #180e0e 0%, #2a1414 100%);
+    flex: 0.9;
+  }
+
+  /* Abstract "scene" shapes in each frame */
+  .film-frame:nth-child(1)::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 60%;
+    background: linear-gradient(to top, rgba(212,168,67,0.12) 0%, transparent 100%);
+  }
+
+  .film-frame:nth-child(2)::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px;
+    height: 80px;
+    border: 1px solid rgba(212,168,67,0.2);
+    border-radius: 50%;
+  }
+
+  .film-frame:nth-child(3)::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      90deg,
+      transparent 0px,
+      transparent 18px,
+      rgba(255,255,255,0.015) 18px,
+      rgba(255,255,255,0.015) 19px
+    );
+  }
+
+  /* Film sprocket holes simulation on left edge */
+  .hero-visual::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 20px;
+    background: var(--ink);
+    z-index: 3;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 12px,
+      var(--ink) 12px,
+      var(--ink) 14px,
+      transparent 14px,
+      transparent 28px
+    );
+  }
+
+  /* Scratch lines */
+  .hero-visual::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 28px; bottom: 0; width: 2px;
+    background: linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgba(240,236,224,0.06) 15%,
+      transparent 30%,
+      rgba(240,236,224,0.04) 55%,
+      transparent 70%,
+      rgba(240,236,224,0.07) 85%,
+      transparent 100%
+    );
+    z-index: 4;
+  }
+
+  /* Overlay text on film frames */
+  .frame-label {
+    position: absolute;
+    bottom: 16px;
+    right: 20px;
+    font-family: var(--f-mono);
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    color: rgba(240,236,224,0.3);
+    text-transform: uppercase;
+    z-index: 5;
+  }
+
+  /* Big rotated text on right column */
+  .hero-rotated-text {
+    position: absolute;
+    right: -50px;
+    top: 50%;
+    transform: rotate(90deg) translateX(-50%);
+    font-family: var(--f-display);
+    font-size: 10px;
+    letter-spacing: 0.4em;
+    color: rgba(212,168,67,0.3);
+    text-transform: uppercase;
+    white-space: nowrap;
+    z-index: 10;
+    transform-origin: center center;
+  }
+
+  /* Bottom info strip (left column row 2) */
+  .hero-stats {
+    grid-column: 1;
+    grid-row: 2;
+    padding: 0 48px 48px 48px;
+    display: flex;
+    gap: 40px;
+    position: relative;
+    z-index: 2;
+    animation: fadeSlideUp 1.1s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: 0.3s;
+  }
+
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border-top: 1px solid rgba(240,236,224,0.12);
+    padding-top: 16px;
+  }
+
+  .stat-num {
+    font-family: var(--f-display);
+    font-size: 36px;
+    line-height: 1;
+    color: var(--cream);
+    letter-spacing: 0.02em;
+  }
+
+  .stat-num span {
+    color: var(--amber);
+    font-size: 0.6em;
+    vertical-align: super;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--mist);
+  }
+
+  /* Horizontal ticker / marquee at hero bottom */
+  .ticker-wrap {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 36px;
+    background: var(--amber);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    z-index: 20;
+  }
+
+  .ticker-track {
+    display: flex;
+    white-space: nowrap;
+    animation: ticker 28s linear infinite;
+    will-change: transform;
+  }
+
+  .ticker-item {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink);
+    padding: 0 40px;
+  }
+
+  .ticker-dot {
+    display: inline-block;
+    width: 4px;
+    height: 4px;
+    background: var(--ink);
+    border-radius: 50%;
+    vertical-align: middle;
+    margin: 0 16px;
+    opacity: 0.4;
+  }
+
+  /* ── DIVIDER ──────────────────────────────────────────── */
+  .section-divider {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 0 48px;
+    margin: 0;
+    height: 1px;
+    position: relative;
+  }
+
+  .section-divider::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0;
+    height: 1px;
+    background: rgba(240,236,224,0.08);
+  }
+
+  /* ── PROGRAM SECTION ──────────────────────────────────── */
+  .program {
+    background: var(--ink);
+    padding: 100px 0 120px;
+    position: relative;
+  }
+
+  /* Faint vertical column lines */
+  .program::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(
+        90deg,
+        transparent 0px,
+        transparent calc(25% - 1px),
+        rgba(255,255,255,0.025) calc(25% - 1px),
+        rgba(255,255,255,0.025) 25%
+      );
+    pointer-events: none;
+  }
+
+  .program-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 0 48px;
+    margin-bottom: 60px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .program-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .program-eyebrow {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--amber);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .program-eyebrow::before {
+    content: '';
+    display: block;
+    width: 32px;
+    height: 1px;
+    background: var(--amber);
+  }
+
+  .program-big-title {
+    font-family: var(--f-display);
+    font-size: clamp(60px, 7vw, 100px);
+    line-height: 0.9;
+    letter-spacing: 0.01em;
+    color: var(--cream);
+  }
+
+  .program-right-text {
+    text-align: right;
+    max-width: 280px;
+  }
+
+  .program-intro {
+    font-family: var(--f-serif);
+    font-style: italic;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--mist);
+    margin-bottom: 16px;
+  }
+
+  .program-date-range {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--amber);
+  }
+
+  /* ── DAILY SCHEDULE GRID ──────────────────────────────── */
+  .schedule-grid {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Column headers */
+  .schedule-cols {
+    display: grid;
+    grid-template-columns: 80px 1fr 1fr 1fr 120px;
+    padding: 0 48px;
+    border-bottom: 1px solid rgba(240,236,224,0.08);
+    margin-bottom: 0;
+  }
+
+  .col-head {
+    font-family: var(--f-mono);
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: rgba(200,192,174,0.4);
+    padding: 12px 0;
+  }
+
+  /* Individual day rows */
+  .day-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 1fr 1fr 120px;
+    padding: 0 48px;
+    border-bottom: 1px solid rgba(240,236,224,0.06);
+    align-items: stretch;
+    transition: background 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .day-row::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 0;
+    background: rgba(212,168,67,0.04);
+    transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .day-row:hover::before { width: 100%; }
+
+  .day-row:hover .day-num { color: var(--amber); }
+
+  .day-cell {
+    padding: 24px 16px 24px 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  .day-num {
+    font-family: var(--f-display);
+    font-size: 28px;
+    line-height: 1;
+    color: rgba(240,236,224,0.3);
+    transition: color 0.25s;
+    display: block;
+  }
+
+  .day-name {
+    font-family: var(--f-mono);
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(200,192,174,0.4);
+    margin-top: 2px;
+  }
+
+  /* Screening slot */
+  .slot {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .slot-time {
+    font-family: var(--f-mono);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: var(--amber);
+    opacity: 0.8;
+  }
+
+  .slot-title {
+    font-family: var(--f-serif);
+    font-size: 13px;
+    font-style: italic;
+    line-height: 1.3;
+    color: var(--cream);
+  }
+
+  .slot-director {
+    font-family: var(--f-mono);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    color: var(--mist);
+    opacity: 0.6;
+  }
+
+  .slot-tag {
+    display: inline-block;
+    font-family: var(--f-mono);
+    font-size: 8px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border: 1px solid;
+    margin-top: 3px;
+    width: fit-content;
+  }
+
+  .slot-tag.talk { border-color: rgba(212,168,67,0.4); color: var(--amber); }
+  .slot-tag.late  { border-color: rgba(184,76,30,0.4); color: var(--rust); }
+  .slot-tag.open  { border-color: rgba(200,192,174,0.3); color: var(--mist); }
+  .slot-tag.world { border-color: rgba(100,180,120,0.4); color: #82c49a; }
+
+  .day-status {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    font-family: var(--f-mono);
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .status-pill {
+    padding: 5px 12px;
+    font-size: 8px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .status-pill.sold-out {
+    background: var(--rust);
+    color: var(--cream);
+  }
+
+  .status-pill.few-left {
+    background: transparent;
+    border: 1px solid var(--amber);
+    color: var(--amber);
+  }
+
+  .status-pill.available {
+    background: transparent;
+    border: 1px solid rgba(200,192,174,0.3);
+    color: var(--mist);
+  }
+
+  /* ── BOTTOM PROMO STRIP ────────────────────────────────── */
+  .promo-strip {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    border-top: 1px solid rgba(240,236,224,0.08);
+    margin: 80px 48px 0;
+    padding-top: 60px;
+    gap: 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  .promo-strip::before {
+    content: '';
+    position: absolute;
+    left: 33.33%; top: 0; bottom: 0;
+    width: 1px;
+    background: rgba(240,236,224,0.06);
+  }
+  .promo-strip::after {
+    content: '';
+    position: absolute;
+    left: 66.66%; top: 0; bottom: 0;
+    width: 1px;
+    background: rgba(240,236,224,0.06);
+  }
+
+  .promo-col {
+    padding: 0 40px 0 0;
+  }
+  .promo-col + .promo-col { padding: 0 40px 0 40px; }
+
+  .promo-label {
+    font-family: var(--f-mono);
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .promo-label::before {
+    content: '';
+    display: block;
+    width: 20px;
+    height: 1px;
+    background: var(--amber);
+  }
+
+  .promo-heading {
+    font-family: var(--f-serif);
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--cream);
+    margin-bottom: 12px;
+  }
+
+  .promo-body {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    line-height: 1.7;
+    color: var(--mist);
+    opacity: 0.7;
+  }
+
+  .promo-cta {
+    display: inline-block;
+    margin-top: 20px;
+    font-family: var(--f-mono);
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--cream);
+    text-decoration: none;
+    border-bottom: 1px solid var(--amber);
+    padding-bottom: 2px;
+    transition: color 0.2s, border-color 0.2s;
+    cursor: crosshair;
+  }
+  .promo-cta:hover { color: var(--amber); }
+
+  /* ── FOOTER ───────────────────────────────────────────── */
+  .site-footer {
+    padding: 50px 48px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-top: 1px solid rgba(240,236,224,0.06);
+    margin-top: 80px;
+  }
+
+  .footer-logo {
+    font-family: var(--f-display);
+    font-size: 48px;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    color: rgba(240,236,224,0.08);
+  }
+
+  .footer-right {
+    text-align: right;
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: rgba(200,192,174,0.35);
+    line-height: 1.8;
+  }
+
+  /* ── ANIMATIONS ───────────────────────────────────────── */
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(32px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  @keyframes ticker {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+
+  /* Stagger the hero elements */
+  .hero-eyebrow       { animation: fadeSlideUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.1s both; }
+  .hero-main-title    { animation: fadeSlideUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.22s both; }
+  .hero-year          { animation: fadeSlideUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.33s both; }
+  .hero-subline       { animation: fadeSlideUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.4s both; }
+  .hero-stats         { animation: fadeSlideUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.5s both; }
+
+  /* Scroll reveal for program rows */
+  .day-row {
+    animation: fadeSlideUp 0.7s cubic-bezier(0.16,1,0.3,1) both;
+    animation-play-state: paused;
+  }
+  .day-row.visible { animation-play-state: running; }
+
+  /* ── RESPONSIVE ───────────────────────────────────────── */
+  @media (max-width: 900px) {
+    .hero { grid-template-columns: 1fr; }
+    .hero-visual { display: none; }
+    .hero-title-block { padding: 140px 28px 40px; }
+    .hero-stats { padding: 0 28px 100px; }
+    .program-header { flex-direction: column; gap: 28px; padding: 0 28px; }
+    .program-right-text { text-align: left; }
+    .schedule-cols, .day-row { grid-template-columns: 60px 1fr 1fr; padding: 0 28px; }
+    .schedule-cols .col-head:nth-child(4),
+    .schedule-cols .col-head:nth-child(5),
+    .day-row .day-cell:nth-child(4),
+    .day-row .day-cell:nth-child(5) { display: none; }
+    .promo-strip { grid-template-columns: 1fr; padding: 40px 28px 0; margin: 60px 0 0; }
+    .promo-col + .promo-col { padding: 28px 0 0; }
+    .promo-strip::before, .promo-strip::after { display: none; }
+    .site-nav { padding: 18px 28px; }
+    .nav-links, .nav-badge { display: none; }
+    .site-footer { padding: 40px 28px 30px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── NAV ──────────────────────────────────────────────── -->
+<nav class="site-nav">
+  <a href="#" class="nav-logo">NSF</a>
+  <ul class="nav-links">
+    <li><a href="#program">Program</a></li>
+    <li><a href="#">Venues</a></li>
+    <li><a href="#">About</a></li>
+    <li><a href="#">Press</a></li>
+  </ul>
+  <span class="nav-badge">Tickets</span>
+</nav>
+
+<!-- ── HERO ──────────────────────────────────────────────── -->
+<section class="hero">
+
+  <div class="hero-title-block">
+    <p class="hero-eyebrow">10th edition &mdash; independent film festival</p>
+    <h1>
+      <span class="hero-main-title">NIGHT<br>SHIFT</span>
+    </h1>
+    <p class="hero-year">When the city quiets, the cinema begins.</p>
+    <p class="hero-subline">Berlin &mdash; Oct 14–23, 2026</p>
+  </div>
+
+  <div class="hero-stats">
+    <div class="stat-item">
+      <span class="stat-num">10<span>d</span></span>
+      <span class="stat-label">Nights</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">80<span>+</span></span>
+      <span class="stat-label">Films</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">24<span>+</span></span>
+      <span class="stat-label">Director talks</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">6<span></span></span>
+      <span class="stat-label">Venues</span>
+    </div>
+  </div>
+
+  <!-- Film strip right column -->
+  <div class="hero-visual">
+    <div class="film-strip">
+      <div class="film-frame">
+        <span class="frame-label">Scene 001 &mdash; 35mm</span>
+      </div>
+      <div class="film-frame">
+        <span class="frame-label">Scene 002 &mdash; DCP</span>
+      </div>
+      <div class="film-frame">
+        <span class="frame-label">Scene 003 &mdash; 16mm</span>
+      </div>
+    </div>
+    <span class="hero-rotated-text">NSF &mdash; 2026 &mdash; Berlin</span>
+  </div>
+
+  <!-- Ticker -->
+  <div class="ticker-wrap">
+    <div class="ticker-track">
+      <span class="ticker-item">Opening Night</span><span class="ticker-dot"></span>
+      <span class="ticker-item">World Premieres</span><span class="ticker-dot"></span>
+      <span class="ticker-item">Director Q&amp;A</span><span class="ticker-dot"></span>
+      <span class="ticker-item">Late-Night Screenings</span><span class="ticker-dot"></span>
+      <span class="ticker-item">Experimental Shorts</span><span class="ticker-dot"></span>
+      <span class="ticker-item">Industry Panels</span><span class="ticker-dot"></span>
+      <span class="ticker-item">Midnight Features</span><span class="ticker-dot"></span>
+      <span class="ticker-item">Oct 14–23</span><span class="ticker-dot"></span>
+      <!-- Duplicate for seamless loop -->
+      <span class="ticker-item">Opening Night</span><span class="ticker-dot"></span>
+      <span class="ticker-item">World Premieres</span><span class="ticker-dot"></span>
+      <span class="ticker-item">Director Q&amp;A</span><span class="ticker-dot"></span>
+      <span class="ticker-item">Late-Night Screenings</span><span class="ticker-dot"></span>
+      <span class="ticker-item">Experimental Shorts</span><span class="ticker-dot"></span>
+      <span class="ticker-item">Industry Panels</span><span class="ticker-dot"></span>
+      <span class="ticker-item">Midnight Features</span><span class="ticker-dot"></span>
+      <span class="ticker-item">Oct 14–23</span><span class="ticker-dot"></span>
+    </div>
+  </div>
+
+</section>
+
+<!-- ── PROGRAM SECTION ─────────────────────────────────── -->
+<section class="program" id="program">
+
+  <header class="program-header">
+    <div class="program-title-group">
+      <p class="program-eyebrow">Full Schedule</p>
+      <h2 class="program-big-title">THE<br>PROGRAM</h2>
+    </div>
+    <div class="program-right-text">
+      <p class="program-intro">Ten nights of uncompromising cinema — from debut features to late-night provocations. Every screening, every talk.</p>
+      <p class="program-date-range">Oct 14 &mdash; Oct 23, 2026 &mdash; Berlin</p>
+    </div>
+  </header>
+
+  <!-- Schedule grid -->
+  <div class="schedule-grid">
+
+    <!-- Column headers -->
+    <div class="schedule-cols">
+      <div class="col-head">Day</div>
+      <div class="col-head">Main Screening</div>
+      <div class="col-head">Late Night</div>
+      <div class="col-head">Talk / Event</div>
+      <div class="col-head">Availability</div>
+    </div>
+
+    <!-- Day rows -->
+    <div class="day-row">
+      <div class="day-cell">
+        <span class="day-num">01</span>
+        <span class="day-name">Wed</span>
+      </div>
+      <div class="day-cell">
+        <div class="slot">
+          <span class="slot-time">19:00</span>
+          <span class="slot-title">A Mouth Full of Salt</span>
+          <span class="slot-director">Dir. Vera Molnár-Kiss</span>
+          <span class="slot-tag open">Opening Night</span>
+        </div>
+      </div>
+      <div class="day-cell">
+        <div class="slot">
+          <span class="slot-time">23:30</span>
+          <span class="slot-title">The Hollow Season</span>
+          <span class="slot-director">Dir. Kwame Asante</span>
+          <span class="slot-tag late">Midnight</span>
+        </div>
+      </div>
+      <div class="day-cell">
+        <div class="slot">
+          <span class="slot-time">21:30</span>
+          <span class="slot-title">Opening Ceremony &amp; Talk</span>
+          <span class="slot-director">Molnár-Kiss in conversation</span>
+          <span class="slot-tag talk">Director Talk</span>
+        </div>
+      </div>
+      <div class="day-status">
+        <span class="status-pill sold-out">Sold Out</span>
+      </div>
+    </div>
+
+    <div class="day-row">
+      <div class="day-cell">
+        <span class="day-num">02</span>
+        <span class="day-name">Thu</span>
+      </div>
+      <div class="day-cell">
+        <div class="slot">
+          <span class="slot-time">18:30</span>
+          <span class="slot-title">Peripheral Light</span>
+          <span class="slot-director">Dir. Lena Brandt</span>
+          <span class="slot-tag world">World Premiere</span>
+        </div>
+      </div>
+      <div class="day-cell">
+        <div class="slot">
+          <span class="slot-time">00:00</span>
+          <span class="slot-title">Shorts Program I: Edges</span>
+          <span class="slot-director">Various Directors</span>
+          <span class="slot-tag late">Midnight</span>
+        </div>
+      </div>
+      <div class="day-cell">
+        <div class="slot">
+          <span class="slot-time">20:30</span>
+          <span class="slot-title">On Making the Unseen Visible</span>
+          <span class="slot-director">Panel — Moderated</span>
+          <span class="slot-tag talk">Panel</span>
+        </div>
+      </div>
+      <div class="day-status">
+        <span class="status-pill few-left">Few Left</span>
+      </div>
+    </div>
+
+    <div class="day-row">
+      <div class="day-cell">
+        <span class="day-num">03</span>
+        <span class="day-name">Fri</span>
+      </div>
+      <div class="day-cell">
+        <div class="slot">
+          <span class="slot-time">19:00</span>
+          <span class="slot-title">Mare Nostrum</span>
+          <span class="slot-director">Dir. Sofia Papadaki</span>
+          <span class="slot-tag world">World Premiere</span>
+        </div>
+      </div>
+      <div class="day-cell">
+        <div class="slot">
+          <span class="slot-time">23:00</span>
+          <span class="slot-title">Before the Dogs Sleep</span>
+          <span class="slot-director">Dir. Elías Vértiz</span>
+          <span class="slot-tag late">Midnight</span>
+        </div>
+      </div>
+      <div class="day-cell">
+        <div class="slot">
+          <span class="slot-time">21:00</span>
+          <span class="slot-title">The Mediterranean Now</span>
+          <span class="slot-director">Papadaki &amp; Guests</span>
+          <span class="slot-tag talk">Director Talk</span>
+        </div>
+      </div>
+      <div class="day-status">
+        <span class="status-pill available">Available</span>
+      </div>
+    </div>
+
+    <div class="day-row">
+      <div class="day-cell">
+        <span class="day-num">04</span>
+        <span class="day-name">Sat</span>
+      </div>
+      <div class="day-cell">
+        <div class="slot">
+          <span class="slot-time">17:00</span>
+          <span class="slot-title">Archive: Tarkovsky Retrospective</span>
+          <span class="slot-director">Selected by NSF Jury</span>
+          <span class="slot-tag open">Retrospective</span>
+        </div>
+      </div>
+      <div class="day-cell">
+        <div class="slot">
+          <span class="slot-time">00:30</span>
+          <span class="slot-title">All-Night Marathon I</span>
+          <span class="slot-director">5 Films / 8 Hours</span>
+          <span class="slot-tag late">All Night</span>
+        </div>
+      </div>
+      <div class="day-cell">
+        <div class="slot">
+          <span class="slot-time">20:00</span>
+          <span class="slot-title">Cinematography Masterclass</span>
+          <span class="slot-director">DoP Hiroshi Nakamura</span>
+          <span class="slot-tag talk">Masterclass</span>
+        </div>
+      </div>
+      <div class="day-status">
+        <span class="status-pill sold-out">Sold Out</span>
+      </div>
+    </div>
+
+    <div class="day-row">
+      <div class="day-cell">
+        <span class="day-num">05</span>
+        <span class="day-name">Sun</span>
+      </div>
+      <div class="day-cell">
+        <div class="slot">
+          <span class="slot-time">15:00</span>
+          <span class="slot-title">Children of the Periphery</span>
+          <span class="slot-director">Dir. Amara Diallo</span>
+          <span class="slot-tag world">World Premiere</span>
+        </div>
+      </div>
+      <div class="day-cell">
+        <div class="slot">
+          <span class="slot-time">23:00</span>
+          <span class="slot-title">Shorts Program II: Rupture</span>
+          <span class="slot-director">Various Directors</span>
+          <span class="slot-tag late">Midnight</span>
+        </div>
+      </div>
+      <div class="day-cell">
+        <div class="slot">
+          <span class="slot-time">17:30</span>
+          <span class="slot-title">Borders &amp; Bodies</span>
+          <span class="slot-director">Diallo in conversation</span>
+          <span class="slot-tag talk">Director Talk</span>
+        </div>
+      </div>
+      <div class="day-status">
+        <span class="status-pill few-left">Few Left</span>
+      </div>
+    </div>
+
+    <div class="day-row">
+      <div class="day-cell">
+        <span class="day-num">06</span>
+        <span class="day-name">Mon</span>
+      </div>
+      <div class="day-cell">
+        <div class="slot">
+          <span class="slot-time">19:30</span>
+          <span class="slot-title">The Weight of Returning</span>
+          <span class="slot-director">Dir. Jonas Berger</span>
+          <span class="slot-tag open">Competition</span>
+        </div>
+      </div>
+      <div class="day-cell">
+        <div class="slot">
+          <span class="slot-time">22:45</span>
+          <span class="slot-title">Night Drive (1979 Restoration)</span>
+          <span class="slot-director">35mm Print</span>
+          <span class="slot-tag open">Restored</span>
+        </div>
+      </div>
+      <div class="day-cell">
+        <div class="slot">
+          <span class="slot-time">21:30</span>
+          <span class="slot-title">Restoring the Gaze</span>
+          <span class="slot-director">Archive Curator — Talk</span>
+          <span class="slot-tag talk">Talk</span>
+        </div>
+      </div>
+      <div class="day-status">
+        <span class="status-pill available">Available</span>
+      </div>
+    </div>
+
+    <div class="day-row">
+      <div class="day-cell">
+        <span class="day-num">07</span>
+        <span class="day-name">Tue</span>
+      </div>
+      <div class="day-cell">
+        <div class="slot">
+          <span class="slot-time">18:00</span>
+          <span class="slot-title">Even the Shadows Move</span>
+          <span class="slot-director">Dir. Yuki Tanaka</span>
+          <span class="slot-tag world">World Premiere</span>
+        </div>
+      </div>
+      <div class="day-cell">
+        <div class="slot">
+          <span class="slot-time">00:00</span>
+          <span class="slot-title">Horror Program: Domestic Dread</span>
+          <span class="slot-director">Curated Double Bill</span>
+          <span class="slot-tag late">Midnight</span>
+        </div>
+      </div>
+      <div class="day-cell">
+        <div class="slot">
+          <span class="slot-time">20:30</span>
+          <span class="slot-title">New Asian Cinema</span>
+          <span class="slot-director">Tanaka &amp; Critics</span>
+          <span class="slot-tag talk">Panel</span>
+        </div>
+      </div>
+      <div class="day-status">
+        <span class="status-pill available">Available</span>
+      </div>
+    </div>
+
+    <div class="day-row">
+      <div class="day-cell">
+        <span class="day-num">08</span>
+        <span class="day-name">Wed</span>
+      </div>
+      <div class="day-cell">
+        <div class="slot">
+          <span class="slot-time">19:00</span>
+          <span class="slot-title">Estuary</span>
+          <span class="slot-director">Dir. Isabela Carvalho</span>
+          <span class="slot-tag open">Competition</span>
+        </div>
+      </div>
+      <div class="day-cell">
+        <div class="slot">
+          <span class="slot-time">23:30</span>
+          <span class="slot-title">Expanded Cinema Performance</span>
+          <span class="slot-director">Live Score — Ensemble Null</span>
+          <span class="slot-tag late">Live</span>
+        </div>
+      </div>
+      <div class="day-cell">
+        <div class="slot">
+          <span class="slot-time">21:15</span>
+          <span class="slot-title">Making Space for Silence</span>
+          <span class="slot-director">Carvalho &amp; Composer</span>
+          <span class="slot-tag talk">Director Talk</span>
+        </div>
+      </div>
+      <div class="day-status">
+        <span class="status-pill few-left">Few Left</span>
+      </div>
+    </div>
+
+    <div class="day-row">
+      <div class="day-cell">
+        <span class="day-num">09</span>
+        <span class="day-name">Thu</span>
+      </div>
+      <div class="day-cell">
+        <div class="slot">
+          <span class="slot-time">18:30</span>
+          <span class="slot-title">Without Wind</span>
+          <span class="slot-director">Dir. Nadia Ferreira</span>
+          <span class="slot-tag world">World Premiere</span>
+        </div>
+      </div>
+      <div class="day-cell">
+        <div class="slot">
+          <span class="slot-time">00:30</span>
+          <span class="slot-title">All-Night Marathon II</span>
+          <span class="slot-director">5 Films / 9 Hours</span>
+          <span class="slot-tag late">All Night</span>
+        </div>
+      </div>
+      <div class="day-cell">
+        <div class="slot">
+          <span class="slot-time">20:30</span>
+          <span class="slot-title">Independent Financing Today</span>
+          <span class="slot-director">Industry Panel</span>
+          <span class="slot-tag talk">Panel</span>
+        </div>
+      </div>
+      <div class="day-status">
+        <span class="status-pill available">Available</span>
+      </div>
+    </div>
+
+    <div class="day-row">
+      <div class="day-cell">
+        <span class="day-num">10</span>
+        <span class="day-name">Fri</span>
+      </div>
+      <div class="day-cell">
+        <div class="slot">
+          <span class="slot-time">20:00</span>
+          <span class="slot-title">Awards Night Screening</span>
+          <span class="slot-director">Best Film Presentation</span>
+          <span class="slot-tag open">Closing Night</span>
+        </div>
+      </div>
+      <div class="day-cell">
+        <div class="slot">
+          <span class="slot-time">00:00</span>
+          <span class="slot-title">The Last Projection</span>
+          <span class="slot-director">Surprise Selection — 35mm</span>
+          <span class="slot-tag late">Finale</span>
+        </div>
+      </div>
+      <div class="day-cell">
+        <div class="slot">
+          <span class="slot-time">22:00</span>
+          <span class="slot-title">Awards Ceremony</span>
+          <span class="slot-director">NSF Grand Jury Prize</span>
+          <span class="slot-tag talk">Ceremony</span>
+        </div>
+      </div>
+      <div class="day-status">
+        <span class="status-pill sold-out">Sold Out</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom promo strip -->
+  <div class="promo-strip">
+    <div class="promo-col">
+      <p class="promo-label">Passes</p>
+      <h3 class="promo-heading">Full Festival<br>Accreditation</h3>
+      <p class="promo-body">Unlimited access to all screenings, talks, and industry events. Includes priority entry and printed programme.</p>
+      <a href="#" class="promo-cta">Get Accreditation &rarr;</a>
+    </div>
+    <div class="promo-col">
+      <p class="promo-label">Late-Night</p>
+      <h3 class="promo-heading">Midnight<br>Series Pass</h3>
+      <p class="promo-body">All ten midnight screenings — the city's best kept secret. Doors at 23:00. Ends when it ends.</p>
+      <a href="#" class="promo-cta">Midnight Pass &rarr;</a>
+    </div>
+    <div class="promo-col">
+      <p class="promo-label">Venue</p>
+      <h3 class="promo-heading">6 Screens<br>Across Berlin</h3>
+      <p class="promo-body">Volksbühne, HAU, Babylon, Kino International, ACUD Kino &amp; Arsenal — all within the ring.</p>
+      <a href="#" class="promo-cta">View Venues &rarr;</a>
+    </div>
+  </div>
+
+</section>
+
+<!-- ── FOOTER ──────────────────────────────────────────── -->
+<footer class="site-footer">
+  <span class="footer-logo">NIGHTSHIFT</span>
+  <div class="footer-right">
+    <p>Nightshift Independent Film Festival</p>
+    <p>Berlin, Germany &mdash; Oct 14–23, 2026</p>
+    <p style="margin-top:8px;">Press: press@nightshiftfest.de &mdash; Info: info@nightshiftfest.de</p>
+  </div>
+</footer>
+
+<script>
+  // ── Scroll-reveal for schedule rows ──────────────────────
+  const rows = document.querySelectorAll('.day-row');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        // Stagger each row by its index relative to the batch
+        const delay = Array.from(rows).indexOf(entry.target) * 55;
+        entry.target.style.animationDelay = `${delay}ms`;
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+  rows.forEach(row => observer.observe(row));
+
+  // ── Subtle parallax on hero visual ───────────────────────
+  const heroVisual = document.querySelector('.hero-visual');
+  if (heroVisual) {
+    window.addEventListener('scroll', () => {
+      const scrollY = window.scrollY;
+      if (scrollY < window.innerHeight) {
+        heroVisual.style.transform = `translateY(${scrollY * 0.12}px)`;
+      }
+    }, { passive: true });
+  }
+
+  // ── Cursor-tracking amber dot ─────────────────────────────
+  const dot = document.createElement('div');
+  dot.style.cssText = `
+    position: fixed;
+    width: 6px; height: 6px;
+    background: #d4a843;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9998;
+    transform: translate(-50%, -50%);
+    transition: transform 0.08s ease, opacity 0.2s;
+    opacity: 0;
+  `;
+  document.body.appendChild(dot);
+
+  let mouseX = 0, mouseY = 0;
+  document.addEventListener('mousemove', (e) => {
+    mouseX = e.clientX; mouseY = e.clientY;
+    dot.style.opacity = '1';
+    dot.style.left = mouseX + 'px';
+    dot.style.top  = mouseY + 'px';
+  });
+
+  document.addEventListener('mouseleave', () => { dot.style.opacity = '0'; });
+
+  // Slightly scale dot on interactive elements
+  document.querySelectorAll('a, .day-row, .status-pill').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      dot.style.transform = 'translate(-50%, -50%) scale(3)';
+      dot.style.opacity = '0.5';
+    });
+    el.addEventListener('mouseleave', () => {
+      dot.style.transform = 'translate(-50%, -50%) scale(1)';
+      dot.style.opacity = '1';
+    });
+  });
+</script>
+</body>
+</html>
