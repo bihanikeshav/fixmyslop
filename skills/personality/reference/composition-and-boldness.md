@@ -58,5 +58,28 @@ Discriminators for bold-not-slop: is it **load-bearing** (removing it breaks the
 4. **Verify divergence:** could this page belong to another brief unchanged? If yes, change an axis. Run the swap test on the standout.
 5. **Non-repetition across builds:** keep archetype + type move + color commitment different from the previous build.
 
+## Aesthetic direction & creative ambition (the gates are a FLOOR, not a ceiling)
+The hard gates raise the floor; they are NOT a license to be timid. The opposite failure —
+a safe page that passes every gate and bores — is also a fail. So before you build, commit
+to a real creative direction and execute it fully:
+
+- **Pick ONE extreme aesthetic tone and commit.** Choose a flavor — brutally minimal,
+  maximalist, editorial/magazine, retro-futurist, art-deco/geometric, industrial/utilitarian,
+  luxury/refined, organic/natural, soft/pastel, toy/playful — and design true to it.
+  **Intentionality > intensity:** refined-minimal and loud-maximal both win; a half-committed
+  middle loses. Name the **one unforgettable thing** someone remembers (usually your standout).
+- **Match implementation complexity to the vision.** Maximalist → elaborate code, layered
+  effects, orchestrated motion. Minimalist → restraint, precision, impeccable spacing/type/
+  detail. Elegance is executing the chosen vision *fully*, not doing a little of everything.
+- **Atmosphere & depth are craft levers** — texture, layered depth, decorative detail,
+  considered shadow, a custom cursor — use them to avoid flat defaults. BUT execute them
+  *within the gates*: depth from real material / grain / contrast / structure, never from
+  dark+neon glow, an indigo→cyan gradient mesh, or glassmorphism.
+- **Don't hold back.** Show what you can actually make when you commit to a distinctive
+  point of view. The anti-slop rules tell you what to avoid; this tells you to still go big.
+
+(Distilled from the frontend-design skill — its creative push, kept but bound by our gates,
+so a single build gets the ambition AND the anti-slop.)
+
 → deep dive (each archetype/move with real examples + how-to + sources):
 docs/design-research/composition-and-boldness.md

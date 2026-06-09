@@ -42,7 +42,11 @@ sameness ship.
    slider that outputs a number), the safe palette (light warm ground + one earthy
    accent). **Now forbid all of it for this build.** This is what makes each build
    different from the last; the gates raise the floor, this raises the ceiling.
-4. **Commit — to a standout, a layout, and a type stance.** Pick:
+4. **Commit — to an aesthetic direction, a standout, a layout, and a type stance.** Pick:
+   - ONE **extreme aesthetic tone** and execute it fully (brutalist / maximalist /
+     editorial / retro-futurist / art-deco / industrial / luxury / soft / playful…) —
+     intentionality > intensity; match code complexity to the vision. The gates are a
+     FLOOR, not a license to be timid. See **Aesthetic direction** in `composition-and-boldness.md`.
    - ONE **standout** (the bar in `hero-artifacts.md`): bold, subject-grounded,
      unique. Often functional, but it may also be a bold visual / typographic /
      spatial statement — never decoration, never a story defending a generic choice.
