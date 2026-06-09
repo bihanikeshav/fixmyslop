@@ -45,6 +45,22 @@ const NEUTRAL_CHROMA = 0.04;
 // INCLUDE: a key whose first segment is one of these is an identity-role color.
 const INCLUDE_PREFIX = /^(primary|brand|accent|signature|cta|key|hero|voltage)\b/;
 
+// Some brands key their identity color by the COLOR NAME itself (e.g. Cohere's
+// `coral: #ff7759`) instead of `accent-coral`. Accept a key whose first segment is
+// a DISTINCTIVE chromatic color name. Deliberately EXCLUDES the ambiguous basics
+// (red/green/blue/yellow/orange/purple/pink/brown + neutrals) that routinely double
+// as semantic states (red=error, green=success) or generic scales — those were the
+// source of the original pollution, so we don't re-admit them by name.
+const COLOR_NAME_KEYS = new Set([
+  "coral", "teal", "amber", "mint", "sage", "lavender", "magenta", "fuchsia",
+  "crimson", "scarlet", "vermillion", "vermilion", "ochre", "ocher", "mustard",
+  "peach", "apricot", "rose", "blush", "lime", "indigo", "violet", "cyan", "azure",
+  "cobalt", "ultramarine", "gold", "olive", "plum", "mauve", "salmon", "turquoise",
+  "emerald", "jade", "ruby", "sapphire", "lilac", "periwinkle", "maroon", "burgundy",
+  "oxblood", "rust", "terracotta", "tangerine", "marigold", "chartreuse", "aqua",
+  "aquamarine", "seafoam", "lemon", "honey", "copper", "bronze", "brass", "claret",
+]);
+
 // EXCLUDE tokens. Anchored at the start of the whole key (per spec) OR matching
 // any hyphen-delimited segment of the key — so `accent-warning`, `brand-error`,
 // `accent-blue-link`, `key-bg-start`, `hero-glow` are correctly rejected even
@@ -72,7 +88,8 @@ const EXCLUDE_PREFIX = /^(on-|canvas|surface|bg|background|ink|body|text|muted|s
 
 function isIdentityKey(key) {
   const k = key.toLowerCase();
-  if (!INCLUDE_PREFIX.test(k)) return false;
+  const seg0 = k.split("-")[0];
+  if (!INCLUDE_PREFIX.test(k) && !COLOR_NAME_KEYS.has(seg0)) return false;
   if (EXCLUDE_PREFIX.test(k)) return false;
   // reject if any hyphen segment is a semantic/structural exclude token
   for (const seg of k.split("-")) {
