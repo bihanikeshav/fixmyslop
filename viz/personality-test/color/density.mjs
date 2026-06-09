@@ -36,7 +36,12 @@ export const CONFIG = {
   // standard deviation. ~0.04 sits at the small end of a just-noticeable
   // difference, so a corpus point only heats colors a viewer would confuse with
   // it. Smaller => tighter, flags fewer near-neighbours; larger => broader.
-  BANDWIDTH: 0.04,
+  // TIGHTENED 0.04 -> 0.02 (~1 JND): with the crawl corpus (~7.7k points) 0.04
+  // smeared heat across nearly the whole gamut (~95% flagged). 0.02 keeps each
+  // color's footprint to its immediate neighbourhood, so individual-color space
+  // stays WIDE OPEN. The heavy lifting now moves to the PALETTE gate (the whole
+  // combination), not individual hexes.
+  BANDWIDTH: 0.02,
 
   // Overuse threshold on the raw KDE heat (density() = sum of unit-peak Gaussian
   // blobs). With ~925 corpus points and BANDWIDTH 0.04 the usable-space density
@@ -52,7 +57,9 @@ export const CONFIG = {
   // we converge on warm earth, not blue). They are still caught, by the hard ban
   // (which is the stronger verdict). The density field's distinct job is to catch
   // OUR convergence (oxblood/brick/ochre) that no fixed blocklist would name.
-  OVERUSE_THRESHOLD: 18.0,
+  OVERUSE_THRESHOLD: 40.0,  // at BANDWIDTH 0.02 over the crawl corpus this flags
+  // ~10% of usable space (was ~95% at 0.04/18) — only the genuine hot peaks trip
+  // it; the exact Tailwind tokens are still caught by the (stronger) hard ban.
 
   // Below this OKLCH chroma a color reads as a neutral (grey/near-grey). Neutrals
   // are exempt from the density penalty. 0.04 ≈ the line where a tint stops

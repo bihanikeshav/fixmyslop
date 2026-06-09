@@ -125,10 +125,11 @@ describe("nearestSafe snapping", () => {
     expect(sugg[0].density).toBeLessThanOrEqual(before);
   });
 
-  it("snaps an OVERUSED earthy color to a lower-density neighbour", () => {
-    const c = classify("#7c4b2a"); // warm brown we over-use
+  it("snaps an OVERUSED color to a lower-density neighbour", () => {
+    // a genuine hot peak from the crawl (red, ~62 density at BANDWIDTH 0.02 / threshold 40)
+    const c = classify("#f04848");
     expect(c.verdict).toBe("OVERUSED");
-    const sugg = nearestSafe("#7c4b2a");
+    const sugg = nearestSafe("#f04848");
     expect(sugg.length).toBeGreaterThan(0);
     expect(sugg[0].density).toBeLessThan(c.density);
   });
