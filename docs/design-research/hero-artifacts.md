@@ -237,3 +237,37 @@ atmosphere wearing a signature's clothes.
 Find the subject's core data or mechanic, build one nameable working component around
 THAT, render it real on load, and make sure swapping the subject would break it. If it
 survives the swap, you built atmosphere — go back and build the instrument.
+
+---
+
+## Statement assets in the wild — field notes (Magnific · Mastra · Kinetik)
+
+The archetypes above are mostly *tools you operate*. A second, equally strong family is
+the **statement asset**: a bespoke hero that *shows the product's output or mechanic*
+rather than describing it. Three studied (lift the move, not the execution):
+
+- **Magnific** — a full-bleed, genuinely striking **output asset** (a real image at
+  quality) bleeding off the hero, beside a **rotating capability column**. The asset IS
+  the output; the rotating list shows breadth without a text wall. "direct your best work."
+- **Mastra** — a **bespoke generative concept diagram** of the real mechanic: an animated
+  agent-network graph (hub + branching glowing nodes), not a stock screenshot — a custom
+  picture of *what the framework builds* — plus a real `npm create mastra` command.
+- **Kinetik** — an asymmetric layout with a **fanned deck of outcome cards**: each a real
+  photo + an actual result it produced ("Wrote 3 versions of bio in my voice"). Proof, not
+  promises. Statement line "Not a chatbot. A doer."
+
+**New archetypes to add to the catalog:**
+1. **Proof / output asset** — show the real thing the product makes, full-bleed, at quality.
+2. **Concept diagram of the real mechanic** — a custom, precise generative graphic of how it
+   works (agent graph, pipeline). Distinct from a *doodled* illustration (banned) because it
+   depicts the actual system, data-driven.
+3. **Outcome cards** — a few real, specific results (real artifact + concrete one-line
+   outcome), fanned/overlapping, not a tidy 3-up.
+
+**What to lift:** the asset is concrete + load-bearing (passes the swap test); a short
+**opinionated statement line** carries it ("Not a chatbot. A doer.", never "AI-powered
+platform"); an **asymmetric layout** where one side is a content-rich lightly-animated
+bespoke asset (rotating list / live graph / card deck) — not centered, not a browser-framed
+screenshot; **real product artifacts** as texture (an install command, a real CTA channel,
+genuine results). Caveat: all three lean dark/gradient — borrow the asset + layout +
+statement moves, execute them in a non-slop palette/type.

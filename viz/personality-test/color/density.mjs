@@ -217,6 +217,7 @@ function isSafeAccentLab(lab, { minChroma = CONFIG.MIN_INTENTIONAL_CHROMA, allow
 // ===========================================================================
 export function nearestSafe(hex, { count = 3, maxDelta = 0.6 } = {}) {
   const startLab = hexToOklab(hex);
+  const startDensity = density(startLab); // suggestions must come in below this
   const [L0, C0, H0] = oklabToOklch(startLab);
   const neutralInput = C0 < CONFIG.NEUTRAL_CHROMA;
 
@@ -244,18 +245,19 @@ export function nearestSafe(hex, { count = 3, maxDelta = 0.6 } = {}) {
         if (L <= 0.05 || L >= 0.99) continue;
         const lab = oklchToOklab([L, C, H]);
         if (!isSafeAccentLab(lab, { minChroma, allowBandEdge: true })) continue;
+        const cd = density(lab);
+        if (cd >= startDensity) continue; // a suggestion must be LESS slop than the input
         const { hex: chex } = oklabToSrgb(lab);
         if (seen.has(chex)) continue;
         seen.add(chex);
         const delta = deltaEok(startLab, lab);
         if (delta > maxDelta) continue;
-        const huePenalty = Math.abs(dH) / 900; // mild tiebreak toward same hue; keep distance dominant
-        candidates.push({ hex: chex, lab, L, C, H, dH, delta, sort: delta + huePenalty });
+        candidates.push({ hex: chex, lab, L, C, H, dH, delta, density: cd });
       }
     }
   }
 
-  candidates.sort((a, b) => a.sort - b.sort);
+  candidates.sort((a, b) => a.delta - b.delta || a.density - b.density); // closest first, then least slop
   const picked = [];
   for (const c of candidates) {
     // de-dupe near-identical suggestions in the result set

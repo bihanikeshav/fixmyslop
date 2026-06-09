@@ -568,6 +568,7 @@ function nearestSafe(hex, count, maxDelta) {
   if (count === undefined) count = 3;
   if (maxDelta === undefined) maxDelta = 0.6;
   const startLab = hexToOklab(hex);
+  const startDensity = density(startLab); // suggestions must come in below this
   const start = oklabToOklch(startLab), L0 = start[0], C0 = start[1], H0 = start[2];
   const neutralInput = C0 < CONFIG.NEUTRAL_CHROMA;
   const minChroma = neutralInput ? 0 : CONFIG.MIN_INTENTIONAL_CHROMA;
@@ -586,17 +587,18 @@ function nearestSafe(hex, count, maxDelta) {
         if (L <= 0.05 || L >= 0.99) continue;
         const lab = oklchToOklab([L, C, H]);
         if (!isSafeAccentLab(lab, minChroma)) continue;
+        const cd = density(lab);
+        if (cd >= startDensity) continue; // suggestion must be LESS slop than the input
         const chex = oklabToSrgb(lab).hex;
         if (seen.has(chex)) continue;
         seen.add(chex);
         const delta = deltaEok(startLab, lab);
         if (delta > maxDelta) continue;
-        const huePenalty = Math.abs(dH) / 900;
-        candidates.push({ hex: chex, lab: lab, L: L, C: C, H: H, dH: dH, delta: delta, sort: delta + huePenalty });
+        candidates.push({ hex: chex, lab: lab, L: L, C: C, H: H, dH: dH, delta: delta, density: cd });
       }
     }
   }
-  candidates.sort((a, b) => a.sort - b.sort);
+  candidates.sort((a, b) => a.delta - b.delta || a.density - b.density);
   const picked = [];
   for (const c of candidates) {
     if (picked.some((p) => deltaEok(p.lab, c.lab) < CONFIG.DUPLICATE_DELTA)) continue;
