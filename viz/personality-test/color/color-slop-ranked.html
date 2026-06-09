@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Color Slop: What AI Reaches For</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface2: #222;
+    --border: #2d2d2d;
+    --text: #e8e8e8;
+    --muted: #888;
+    --accent: #f5f5f5;
+    --radius: 10px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 0 0 80px;
+  }
+
+  /* ---- header ---- */
+  .page-header {
+    padding: 56px 48px 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .page-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  .page-header .subtitle {
+    color: var(--muted);
+    font-size: 15px;
+    max-width: 600px;
+  }
+
+  /* ---- sections ---- */
+  .section {
+    max-width: 1200px;
+    margin: 0 auto 64px;
+    padding: 0 48px;
+  }
+  .section-head {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-head h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .section-head p {
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  /* ---- SECTION 1: swatch grid ---- */
+  .swatch-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+  }
+  .swatch-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .swatch-block {
+    height: 88px;
+    display: flex;
+    align-items: flex-end;
+    padding: 8px;
+    position: relative;
+  }
+  .swatch-badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 4px;
+    line-height: 1.6;
+  }
+  .swatch-info {
+    padding: 8px 10px 10px;
+  }
+  .swatch-hex {
+    font-family: "SF Mono", "Fira Code", "Fira Mono", monospace;
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: 0.5px;
+  }
+  .swatch-sites {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .swatch-brand {
+    font-size: 10px;
+    color: #a78bfa;
+    margin-top: 3px;
+    font-style: italic;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ---- SECTION 2: hue histogram ---- */
+  .hist-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px 24px 20px;
+    overflow-x: auto;
+  }
+  .hist-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    height: 260px;
+    min-width: 600px;
+  }
+  .hist-bar-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    height: 100%;
+    justify-content: flex-end;
+  }
+  .hist-bar-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 1;
+    width: 100%;
+  }
+  .hist-bar {
+    width: 100%;
+    border-radius: 4px 4px 0 0;
+    transition: opacity 0.15s;
+    min-height: 2px;
+  }
+  .hist-bar:hover {
+    opacity: 0.8;
+  }
+  .hist-value {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 4px;
+    white-space: nowrap;
+  }
+  .hist-label {
+    margin-top: 8px;
+    font-size: 10px;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.2;
+  }
+  .hist-top .hist-label strong {
+    color: var(--accent);
+    font-size: 10px;
+    display: block;
+    white-space: nowrap;
+  }
+  .hist-axis-label {
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 12px;
+  }
+
+  /* ---- SECTION 3: open lanes ---- */
+  .open-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .open-card {
+    text-align: center;
+  }
+  .open-block {
+    width: 100px;
+    height: 100px;
+    border-radius: 8px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 8px;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .open-density {
+    font-size: 9px;
+    opacity: 0.7;
+    letter-spacing: 0.3px;
+  }
+  .open-hex {
+    font-family: "SF Mono", "Fira Code", "Fira Mono", monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  /* ---- footer ---- */
+  .page-footer {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 48px;
+    color: var(--muted);
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+    padding-top: 24px;
+  }
+
+  @media (max-width: 600px) {
+    .page-header, .section, .page-footer { padding-left: 20px; padding-right: 20px; }
+    .page-header h1 { font-size: 22px; }
+    .swatch-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Color Slop: What AI Reaches For</h1>
+  <p class="subtitle">
+    1,083 colors extracted from AI-generated sites, ranked by how many sites used each one.
+    The pattern is stark — one narrow corner of the color wheel, over and over.
+  </p>
+</div>
+
+<div class="section">
+  <div class="section-head">
+    <h2>The colors AI overuses</h2>
+    <p>Top 60 crawl colors sorted by site count. Badge shows the verdict — CLONE-RISK means statistically crowded, BANNED means a hard-blocked framework default. Purple label names the nearest recognizable brand.</p>
+  </div>
+  <div class="swatch-grid">
+    <div class="swatch-card">
+  <div class="swatch-block" style="background:#181830;color:#ffffff">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#181830</div>
+    <div class="swatch-sites">350 sites</div>
+    <div class="swatch-brand">≈ Sentry</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#183030;color:#ffffff">
+    <span class="swatch-badge" style="background:#6b7280;color:#fff">NEUTRAL</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#183030</div>
+    <div class="swatch-sites">206 sites</div>
+    <div class="swatch-brand">≈ Superhuman</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#0000f0;color:#ffffff">
+    <span class="swatch-badge" style="background:#dc2626;color:#fff">BANNED</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#0000f0</div>
+    <div class="swatch-sites">118 sites</div>
+    <div class="swatch-brand">≈ Dell (1996)</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#607890;color:#ffffff">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#607890</div>
+    <div class="swatch-sites">113 sites</div>
+    <div class="swatch-brand">≈ Stripe</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#000018;color:#ffffff">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#000018</div>
+    <div class="swatch-sites">107 sites</div>
+    <div class="swatch-brand">≈ Together AI</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#303048;color:#ffffff">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#303048</div>
+    <div class="swatch-sites">100 sites</div>
+    <div class="swatch-brand">≈ Together AI</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#001818;color:#ffffff">
+    <span class="swatch-badge" style="background:#6b7280;color:#fff">NEUTRAL</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#001818</div>
+    <div class="swatch-sites">85 sites</div>
+    <div class="swatch-brand">≈ Clay</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#606078;color:#ffffff">
+    <span class="swatch-badge" style="background:#6b7280;color:#fff">NEUTRAL</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#606078</div>
+    <div class="swatch-sites">79 sites</div>
+    <div class="swatch-brand">≈ Coinbase</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#d8f0ff;color:#111111">
+    <span class="swatch-badge" style="background:#6b7280;color:#fff">NEUTRAL</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#d8f0ff</div>
+    <div class="swatch-sites">79 sites</div>
+    <div class="swatch-brand">≈ PostHog</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#90a8c0;color:#111111">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#90a8c0</div>
+    <div class="swatch-sites">78 sites</div>
+    <div class="swatch-brand">≈ Mintlify</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#304860;color:#ffffff">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#304860</div>
+    <div class="swatch-sites">76 sites</div>
+    <div class="swatch-brand">≈ Sanity</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#3060f0;color:#ffffff">
+    <span class="swatch-badge" style="background:#dc2626;color:#fff">BANNED</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#3060f0</div>
+    <div class="swatch-sites">72 sites</div>
+    <div class="swatch-brand">≈ HashiCorp</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#d8d8f0;color:#111111">
+    <span class="swatch-badge" style="background:#6b7280;color:#fff">NEUTRAL</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#d8d8f0</div>
+    <div class="swatch-sites">71 sites</div>
+    <div class="swatch-brand">≈ PostHog</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#484860;color:#ffffff">
+    <span class="swatch-badge" style="background:#6b7280;color:#fff">NEUTRAL</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#484860</div>
+    <div class="swatch-sites">63 sites</div>
+    <div class="swatch-brand">≈ Kraken</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#f0f0d8;color:#111111">
+    <span class="swatch-badge" style="background:#6b7280;color:#fff">NEUTRAL</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#f0f0d8</div>
+    <div class="swatch-sites">52 sites</div>
+    <div class="swatch-brand">≈ Figma</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#787890;color:#111111">
+    <span class="swatch-badge" style="background:#6b7280;color:#fff">NEUTRAL</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#787890</div>
+    <div class="swatch-sites">51 sites</div>
+    <div class="swatch-brand">≈ Cohere</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#3078f0;color:#111111">
+    <span class="swatch-badge" style="background:#dc2626;color:#fff">BANNED</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#3078f0</div>
+    <div class="swatch-sites">50 sites</div>
+    <div class="swatch-brand">≈ Meta</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#9090a8;color:#111111">
+    <span class="swatch-badge" style="background:#6b7280;color:#fff">NEUTRAL</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#9090a8</div>
+    <div class="swatch-sites">50 sites</div>
+    <div class="swatch-brand">≈ Miro</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#f0a800;color:#111111">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#f0a800</div>
+    <div class="swatch-sites">48 sites</div>
+    <div class="swatch-brand">≈ Meta</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#6060f0;color:#ffffff">
+    <span class="swatch-badge" style="background:#dc2626;color:#fff">BANNED</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#6060f0</div>
+    <div class="swatch-sites">41 sites</div>
+    <div class="swatch-brand">≈ Stripe</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#c0d8ff;color:#111111">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#c0d8ff</div>
+    <div class="swatch-sites">41 sites</div>
+    <div class="swatch-brand">≈ MiniMax</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#001830;color:#ffffff">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#001830</div>
+    <div class="swatch-sites">40 sites</div>
+    <div class="swatch-brand">≈ Cohere</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#f04848;color:#111111">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#f04848</div>
+    <div class="swatch-sites">39 sites</div>
+    <div class="swatch-brand">≈ Cal.com</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#183048;color:#ffffff">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#183048</div>
+    <div class="swatch-sites">38 sites</div>
+    <div class="swatch-brand">≈ MongoDB</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#18c078;color:#111111">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#18c078</div>
+    <div class="swatch-sites">37 sites</div>
+    <div class="swatch-brand">≈ Cal.com</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#fff0d8;color:#111111">
+    <span class="swatch-badge" style="background:#6b7280;color:#fff">NEUTRAL</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#fff0d8</div>
+    <div class="swatch-sites">37 sites</div>
+    <div class="swatch-brand">≈ Vercel</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#a8a8c0;color:#111111">
+    <span class="swatch-badge" style="background:#6b7280;color:#fff">NEUTRAL</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#a8a8c0</div>
+    <div class="swatch-sites">35 sites</div>
+    <div class="swatch-brand">≈ Miro</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#c0c0d8;color:#111111">
+    <span class="swatch-badge" style="background:#6b7280;color:#fff">NEUTRAL</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#c0c0d8</div>
+    <div class="swatch-sites">35 sites</div>
+    <div class="swatch-brand">≈ Shopify</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#181848;color:#ffffff">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#181848</div>
+    <div class="swatch-sites">32 sites</div>
+    <div class="swatch-brand">≈ Stripe</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#18a848;color:#111111">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#18a848</div>
+    <div class="swatch-sites">32 sites</div>
+    <div class="swatch-brand">≈ Linear</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#1848d8;color:#ffffff">
+    <span class="swatch-badge" style="background:#dc2626;color:#fff">BANNED</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#1848d8</div>
+    <div class="swatch-sites">31 sites</div>
+    <div class="swatch-brand">≈ HP</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#f07818;color:#111111">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#f07818</div>
+    <div class="swatch-sites">30 sites</div>
+    <div class="swatch-brand">≈ Revolut</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#60a8f0;color:#111111">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#60a8f0</div>
+    <div class="swatch-sites">29 sites</div>
+    <div class="swatch-brand">≈ Notion</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#7830f0;color:#ffffff">
+    <span class="swatch-badge" style="background:#dc2626;color:#fff">BANNED</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#7830f0</div>
+    <div class="swatch-sites">29 sites</div>
+    <div class="swatch-brand">≈ Composio</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#18c060;color:#111111">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#18c060</div>
+    <div class="swatch-sites">28 sites</div>
+    <div class="swatch-brand">≈ BMW</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#d8d8ff;color:#111111">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#d8d8ff</div>
+    <div class="swatch-sites">28 sites</div>
+    <div class="swatch-brand">≈ Nike</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#4848f0;color:#ffffff">
+    <span class="swatch-badge" style="background:#dc2626;color:#fff">BANNED</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#4848f0</div>
+    <div class="swatch-sites">26 sites</div>
+    <div class="swatch-brand">≈ Revolut</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#d83030;color:#ffffff">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#d83030</div>
+    <div class="swatch-sites">26 sites</div>
+    <div class="swatch-brand">≈ BMW</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#009060;color:#111111">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#009060</div>
+    <div class="swatch-sites">25 sites</div>
+    <div class="swatch-brand">≈ PostHog</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#48d878;color:#111111">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#48d878</div>
+    <div class="swatch-sites">25 sites</div>
+    <div class="swatch-brand">≈ Supabase</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#9060f0;color:#111111">
+    <span class="swatch-badge" style="background:#dc2626;color:#fff">BANNED</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#9060f0</div>
+    <div class="swatch-sites">25 sites</div>
+    <div class="swatch-brand">≈ Cal.com</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#a890f0;color:#111111">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#a890f0</div>
+    <div class="swatch-sites">25 sites</div>
+    
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#a860f0;color:#111111">
+    <span class="swatch-badge" style="background:#dc2626;color:#fff">BANNED</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#a860f0</div>
+    <div class="swatch-sites">24 sites</div>
+    <div class="swatch-brand">≈ MiniMax</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#f0c030;color:#111111">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#f0c030</div>
+    <div class="swatch-sites">24 sites</div>
+    <div class="swatch-brand">≈ IBM</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#0078ff;color:#111111">
+    <span class="swatch-badge" style="background:#dc2626;color:#fff">BANNED</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#0078ff</div>
+    <div class="swatch-sites">23 sites</div>
+    <div class="swatch-brand">≈ OpenCode</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#183060;color:#ffffff">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#183060</div>
+    <div class="swatch-sites">23 sites</div>
+    <div class="swatch-brand">≈ Airtable</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#90c0ff;color:#111111">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#90c0ff</div>
+    <div class="swatch-sites">23 sites</div>
+    <div class="swatch-brand">≈ Sentry</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#fff0c0;color:#111111">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#fff0c0</div>
+    <div class="swatch-sites">23 sites</div>
+    <div class="swatch-brand">≈ Mistral AI</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#187848;color:#ffffff">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#187848</div>
+    <div class="swatch-sites">22 sites</div>
+    <div class="swatch-brand">≈ Starbucks</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#30d890;color:#111111">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#30d890</div>
+    <div class="swatch-sites">22 sites</div>
+    <div class="swatch-brand">≈ VoltAgent</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#486078;color:#ffffff">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#486078</div>
+    <div class="swatch-sites">22 sites</div>
+    <div class="swatch-brand">≈ Sanity</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#9030f0;color:#ffffff">
+    <span class="swatch-badge" style="background:#dc2626;color:#fff">BANNED</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#9030f0</div>
+    <div class="swatch-sites">22 sites</div>
+    <div class="swatch-brand">≈ HashiCorp</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#1878f0;color:#111111">
+    <span class="swatch-badge" style="background:#dc2626;color:#fff">BANNED</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#1878f0</div>
+    <div class="swatch-sites">21 sites</div>
+    <div class="swatch-brand">≈ Meta</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#c04800;color:#ffffff">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#c04800</div>
+    <div class="swatch-sites">21 sites</div>
+    <div class="swatch-brand">≈ Mastercard</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#c090ff;color:#111111">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#c090ff</div>
+    <div class="swatch-sites">21 sites</div>
+    
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#f0d8ff;color:#111111">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#f0d8ff</div>
+    <div class="swatch-sites">21 sites</div>
+    <div class="swatch-brand">≈ Supabase</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#ffd848;color:#111111">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#ffd848</div>
+    <div class="swatch-sites">21 sites</div>
+    <div class="swatch-brand">≈ Binance</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#1878ff;color:#111111">
+    <span class="swatch-badge" style="background:#dc2626;color:#fff">BANNED</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#1878ff</div>
+    <div class="swatch-sites">20 sites</div>
+    <div class="swatch-brand">≈ OpenCode</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#f06018;color:#111111">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#f06018</div>
+    <div class="swatch-sites">20 sites</div>
+    <div class="swatch-brand">≈ Mistral AI</div>
+  </div>
+</div>
+<div class="swatch-card">
+  <div class="swatch-block" style="background:#f07878;color:#111111">
+    <span class="swatch-badge" style="background:#d97706;color:#fff">CLONE-RISK</span>
+  </div>
+  <div class="swatch-info">
+    <div class="swatch-hex">#f07878</div>
+    <div class="swatch-sites">20 sites</div>
+    <div class="swatch-brand">≈ Spotify</div>
+  </div>
+</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-head">
+    <h2>AI's hue addiction</h2>
+    <p>Every crawl color binned by hue (15° each), bar height = total sites in that slice. Three spikes dominate — blue-indigo, indigo, and plain blue — crowding out the rest of the wheel.</p>
+  </div>
+  <div class="hist-container">
+    <div class="hist-bars">
+      <div class="hist-bar-wrap">
+  <div class="hist-bar-col">
+    
+    <div class="hist-bar" style="height:20px;background:#d83078" title="red: 85 sites"></div>
+  </div>
+  <div class="hist-label">0°</div>
+</div>
+<div class="hist-bar-wrap">
+  <div class="hist-bar-col">
+    
+    <div class="hist-bar" style="height:77px;background:#f04848" title="red-orange: 323 sites"></div>
+  </div>
+  <div class="hist-label">15°</div>
+</div>
+<div class="hist-bar-wrap">
+  <div class="hist-bar-col">
+    
+    <div class="hist-bar" style="height:56px;background:#c04800" title="orange: 235 sites"></div>
+  </div>
+  <div class="hist-label">30°</div>
+</div>
+<div class="hist-bar-wrap">
+  <div class="hist-bar-col">
+    
+    <div class="hist-bar" style="height:37px;background:#f07818" title="amber: 156 sites"></div>
+  </div>
+  <div class="hist-label">45°</div>
+</div>
+<div class="hist-bar-wrap">
+  <div class="hist-bar-col">
+    
+    <div class="hist-bar" style="height:40px;background:#f0d8c0" title="yellow: 169 sites"></div>
+  </div>
+  <div class="hist-label">60°</div>
+</div>
+<div class="hist-bar-wrap">
+  <div class="hist-bar-col">
+    
+    <div class="hist-bar" style="height:45px;background:#f0a800" title="yellow-green: 191 sites"></div>
+  </div>
+  <div class="hist-label">75°</div>
+</div>
+<div class="hist-bar-wrap">
+  <div class="hist-bar-col">
+    
+    <div class="hist-bar" style="height:35px;background:#fff0c0" title="chartreuse: 146 sites"></div>
+  </div>
+  <div class="hist-label">90°</div>
+</div>
+<div class="hist-bar-wrap">
+  <div class="hist-bar-col">
+    
+    <div class="hist-bar" style="height:17px;background:#181800" title="green: 71 sites"></div>
+  </div>
+  <div class="hist-label">105°</div>
+</div>
+<div class="hist-bar-wrap">
+  <div class="hist-bar-col">
+    
+    <div class="hist-bar" style="height:23px;background:#f0ffd8" title="green: 95 sites"></div>
+  </div>
+  <div class="hist-label">120°</div>
+</div>
+<div class="hist-bar-wrap">
+  <div class="hist-bar-col">
+    
+    <div class="hist-bar" style="height:48px;background:#18a848" title="sea-green: 201 sites"></div>
+  </div>
+  <div class="hist-label">135°</div>
+</div>
+<div class="hist-bar-wrap">
+  <div class="hist-bar-col">
+    
+    <div class="hist-bar" style="height:88px;background:#18c078" title="teal: 369 sites"></div>
+  </div>
+  <div class="hist-label">150°</div>
+</div>
+<div class="hist-bar-wrap">
+  <div class="hist-bar-col">
+    
+    <div class="hist-bar" style="height:41px;background:#007860" title="teal: 173 sites"></div>
+  </div>
+  <div class="hist-label">165°</div>
+</div>
+<div class="hist-bar-wrap">
+  <div class="hist-bar-col">
+    
+    <div class="hist-bar" style="height:23px;background:#003030" title="cyan: 97 sites"></div>
+  </div>
+  <div class="hist-label">180°</div>
+</div>
+<div class="hist-bar-wrap">
+  <div class="hist-bar-col">
+    
+    <div class="hist-bar" style="height:19px;background:#18d8f0" title="sky: 79 sites"></div>
+  </div>
+  <div class="hist-label">195°</div>
+</div>
+<div class="hist-bar-wrap">
+  <div class="hist-bar-col">
+    
+    <div class="hist-bar" style="height:22px;background:#00c0d8" title="sky-blue: 92 sites"></div>
+  </div>
+  <div class="hist-label">210°</div>
+</div>
+<div class="hist-bar-wrap">
+  <div class="hist-bar-col">
+    
+    <div class="hist-bar" style="height:37px;background:#30c0f0" title="blue: 158 sites"></div>
+  </div>
+  <div class="hist-label">225°</div>
+</div>
+<div class="hist-bar-wrap hist-top">
+  <div class="hist-bar-col">
+    <div class="hist-value">631</div>
+    <div class="hist-bar" style="height:150px;background:#607890" title="blue: 631 sites"></div>
+  </div>
+  <div class="hist-label"><strong>blue</strong></div>
+</div>
+<div class="hist-bar-wrap hist-top">
+  <div class="hist-bar-col">
+    <div class="hist-value">927</div>
+    <div class="hist-bar" style="height:220px;background:#0000f0" title="blue-indigo: 927 sites"></div>
+  </div>
+  <div class="hist-label"><strong>blue-indigo</strong></div>
+</div>
+<div class="hist-bar-wrap hist-top">
+  <div class="hist-bar-col">
+    <div class="hist-value">865</div>
+    <div class="hist-bar" style="height:205px;background:#181830" title="indigo: 865 sites"></div>
+  </div>
+  <div class="hist-label"><strong>indigo</strong></div>
+</div>
+<div class="hist-bar-wrap">
+  <div class="hist-bar-col">
+    
+    <div class="hist-bar" style="height:69px;background:#7830f0" title="violet: 290 sites"></div>
+  </div>
+  <div class="hist-label">285°</div>
+</div>
+<div class="hist-bar-wrap">
+  <div class="hist-bar-col">
+    
+    <div class="hist-bar" style="height:56px;background:#a860f0" title="purple: 236 sites"></div>
+  </div>
+  <div class="hist-label">300°</div>
+</div>
+<div class="hist-bar-wrap">
+  <div class="hist-bar-col">
+    
+    <div class="hist-bar" style="height:27px;background:#f0d8f0" title="pink: 112 sites"></div>
+  </div>
+  <div class="hist-label">315°</div>
+</div>
+<div class="hist-bar-wrap">
+  <div class="hist-bar-col">
+    
+    <div class="hist-bar" style="height:8px;background:#ffd8f0" title="rose: 32 sites"></div>
+  </div>
+  <div class="hist-label">330°</div>
+</div>
+<div class="hist-bar-wrap">
+  <div class="hist-bar-col">
+    
+    <div class="hist-bar" style="height:15px;background:#f04890" title="red: 65 sites"></div>
+  </div>
+  <div class="hist-label">345°</div>
+</div>
+    </div>
+    <div class="hist-axis-label">Hue angle (0° = red · 120° = green · 240° = blue · 360° = red)</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-head">
+    <h2>Open lanes</h2>
+    <p>Colors with real chroma that score SAFE by the density model — low enough heat that using them doesn't look like every other AI product. Mostly deep wine-reds, olive-chartreuse, and vivid magentas: the directions AI systematically skips.</p>
+  </div>
+  <div class="open-row">
+    <div class="open-card">
+  <div class="open-block" style="background:#78003c;color:#ffffff">
+    <span class="open-density">density 15</span>
+  </div>
+  <div class="open-hex">#78003c</div>
+</div>
+<div class="open-card">
+  <div class="open-block" style="background:#ae5d78;color:#111111">
+    <span class="open-density">density 17</span>
+  </div>
+  <div class="open-hex">#ae5d78</div>
+</div>
+<div class="open-card">
+  <div class="open-block" style="background:#939f09;color:#111111">
+    <span class="open-density">density 14</span>
+  </div>
+  <div class="open-hex">#939f09</div>
+</div>
+<div class="open-card">
+  <div class="open-block" style="background:#819808;color:#111111">
+    <span class="open-density">density 17</span>
+  </div>
+  <div class="open-hex">#819808</div>
+</div>
+<div class="open-card">
+  <div class="open-block" style="background:#f13bfe;color:#111111">
+    <span class="open-density">density 6</span>
+  </div>
+  <div class="open-hex">#f13bfe</div>
+</div>
+<div class="open-card">
+  <div class="open-block" style="background:#db18e9;color:#111111">
+    <span class="open-density">density 10</span>
+  </div>
+  <div class="open-hex">#db18e9</div>
+</div>
+<div class="open-card">
+  <div class="open-block" style="background:#f934f1;color:#111111">
+    <span class="open-density">density 6</span>
+  </div>
+  <div class="open-hex">#f934f1</div>
+</div>
+<div class="open-card">
+  <div class="open-block" style="background:#a50685;color:#ffffff">
+    <span class="open-density">density 7</span>
+  </div>
+  <div class="open-hex">#a50685</div>
+</div>
+<div class="open-card">
+  <div class="open-block" style="background:#9a0a70;color:#ffffff">
+    <span class="open-density">density 7</span>
+  </div>
+  <div class="open-hex">#9a0a70</div>
+</div>
+<div class="open-card">
+  <div class="open-block" style="background:#fe50f6;color:#111111">
+    <span class="open-density">density 5</span>
+  </div>
+  <div class="open-hex">#fe50f6</div>
+</div>
+<div class="open-card">
+  <div class="open-block" style="background:#b0039b;color:#ffffff">
+    <span class="open-density">density 8</span>
+  </div>
+  <div class="open-hex">#b0039b</div>
+</div>
+<div class="open-card">
+  <div class="open-block" style="background:#a10f8e;color:#ffffff">
+    <span class="open-density">density 8</span>
+  </div>
+  <div class="open-hex">#a10f8e</div>
+</div>
+  </div>
+</div>
+
+<div class="page-footer">
+  Built from data/observations.colors.json (1083 crawl colors) + 73 brand palettes from getdesign.md.
+  Density model: Gaussian KDE in OKLab, bandwidth 0.04 ΔEok, overuse threshold 18.0.
+</div>
+
+</body>
+</html>
