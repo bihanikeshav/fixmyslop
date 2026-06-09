@@ -25,7 +25,50 @@ import { dirname, resolve } from "node:path";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "../..");
 
-const CUTOFF = 35; // structural slop score above this => FAIL (nonzero exit)
+// FEEDBACK gate. Verdict is SEVERITY-driven (how loudly a marker screams "AI",
+// 1=benign .. 5=dead-giveaway) — NOT raw frequency. box-shadow is on 77% of sites
+// but benign (sev 1); a ✨ "AI-powered" badge is rarer but a giveaway (sev 5).
+// score = sum of severities of the markers hit ("how many tells + how severe").
+// Every hit carries a FIX so Claude can repair the page and re-run.
+const CUTOFF = 4; // total severity >= this => SLOP (nonzero exit)
+
+const SEVERITY = {
+  "sparkle-badge": 5,
+  "gradient-text": 4,
+  "glass-nav": 4,
+  "colored-glow-shadow": 4,
+  "gradient-blue-purple-band": 4,
+  "bento": 3,
+  "tailwind-animate-canned": 3,
+  "stack-shadcn": 2,
+  "pill": 2,
+  "layout-prop-animation": 2,
+  "bounce-elastic-easing": 2,
+  "box-shadow-everywhere": 1,
+  "anim-lib": 1,
+  "stack-tailwind": 1,
+  "stack-bootstrap": 1,
+};
+const SEV = (m) => SEVERITY[m] ?? 2;
+
+const FIX = {
+  "sparkle-badge": "Drop the ✨/AI badge — say what it does in plain words.",
+  "gradient-text": "Solid ink heading; no background-clip:text gradient.",
+  "glass-nav": "Solid or hairline-bordered nav; no backdrop-blur glass.",
+  "colored-glow-shadow": "Remove the colored glow; tight neutral shadow or a border. On dark, contrast = lightness, not glow.",
+  "gradient-blue-purple-band": "Drop the indigo/blue→cyan/violet gradient wash; commit to one flat color.",
+  "bento": "Don't default to a bento of rounded tiles; pick the layout the content wants.",
+  "tailwind-animate-canned": "Replace animate-pulse/ping/spin/bounce with one purposeful transform/opacity transition.",
+  "stack-shadcn": "Restyle shadcn tokens to your palette/type — don't ship the default look.",
+  "pill": "Vary radius to your system; rounded-full everything reads generic.",
+  "layout-prop-animation": "Animate transform/opacity, never width/height/top/left/margin/padding or transition:all.",
+  "bounce-elastic-easing": "ease-out / ease-in-out for UI; no bounce/elastic on functional elements.",
+  "box-shadow-everywhere": "Use shadow sparingly + intentionally; flat/bordered often reads more crafted.",
+  "anim-lib": "A scroll/anim library is fine — make the motion purposeful, not canned reveals everywhere.",
+  "stack-tailwind": "Tailwind is fine; don't ship the default utility look — commit to a real identity.",
+  "stack-bootstrap": "Restyle Bootstrap components; the stock look is a tell.",
+};
+const FIXOF = (m) => FIX[m] || "Reconsider this pattern.";
 
 // ---------------------------------------------------------------------------
 // Prevalence table = per-marker weight. Built by build-structural-prevalence.mjs.
@@ -90,7 +133,7 @@ function detect(file) {
   const hits = [];
   const hit = (marker, why) => {
     const row = byMarker[marker];
-    hits.push({ marker, label: row ? row.label : marker, pct: W(marker), group: row ? row.group : "?", why });
+    hits.push({ marker, label: row ? row.label : marker, pct: W(marker), group: row ? row.group : "?", why, severity: SEV(marker), fix: FIXOF(marker) });
   };
 
   // --- gradient-text: background-clip:text (+ a gradient present) ---
@@ -208,19 +251,13 @@ function detect(file) {
 }
 
 // ---------------------------------------------------------------------------
-// Scoring. The score is the weighted presence of markers, normalized 0-100.
-// Weight = each marker's crawl prevalence (sitesPct). A page that hits the most
-// common tells scores highest. We normalize against the sum of the top-K
-// heaviest weights (K = number of markers hit), so a page hitting K markers is
-// compared to the worst-case page that hit its K *most prevalent* markers.
+// Score = sum of severities of the markers hit ("how many AI tells + how severe").
+// Prevalence is shown as context per hit, but does NOT drive the score — severity
+// does, so a single dead-giveaway (✨ badge, sev 5) fails while a benign-but-common
+// box-shadow (sev 1) does not.
 // ---------------------------------------------------------------------------
-const ALL_WEIGHTS = prevalence.map((r) => r.sitesPct).sort((a, b) => b - a);
 function score(hits) {
-  const n = hits.length;
-  if (n === 0) return 0;
-  const got = hits.reduce((s, h) => s + h.pct, 0);
-  const worst = ALL_WEIGHTS.slice(0, n).reduce((s, w) => s + w, 0) || 1;
-  return Math.round((got / worst) * 100);
+  return hits.reduce((s, h) => s + h.severity, 0);
 }
 
 const GROUP_ORDER = ["style", "gradient", "motion", "stack"];
@@ -237,17 +274,16 @@ for (const file of process.argv.slice(2)) {
     continue;
   }
   const sc = score(r.hits);
-  const fail = sc > CUTOFF;
+  const fail = sc >= CUTOFF;
   anyFail = anyFail || fail;
   const tag = fail ? "SLOP" : "ok  ";
-  console.log(`\n${tag}  structural score ${String(sc).padStart(3)}/100   ${r.hits.length} of ${total} markers hit   ${file}`);
-  const sorted = r.hits.slice().sort(
-    (a, b) => GROUP_ORDER.indexOf(a.group) - GROUP_ORDER.indexOf(b.group) || b.pct - a.pct
-  );
+  console.log(`\n${tag}  severity ${String(sc).padStart(2)}   ${r.hits.length} tell${r.hits.length === 1 ? "" : "s"}   ${file}`);
+  const sorted = r.hits.slice().sort((a, b) => b.severity - a.severity || b.pct - a.pct);
   for (const h of sorted) {
-    console.log(`   [${h.group.padEnd(8)}] ${h.label} — ${h.pct}% of AI sites do this too  (${h.why})`);
+    console.log(`   sev ${h.severity}/5  ${h.label}  (${h.pct}% of AI sites · ${h.why})`);
+    console.log(`        FIX: ${h.fix}`);
   }
-  if (r.hits.length === 0) console.log("   (no structural slop markers detected)");
+  if (r.hits.length === 0) console.log("   (no structural slop markers — clean)");
 }
-console.log(`\ncutoff: score > ${CUTOFF} => SLOP (nonzero exit)`);
+console.log(`\ncutoff: total severity >= ${CUTOFF} => SLOP. Fix the listed tells and re-run.`);
 process.exit(anyFail ? 1 : 0);
