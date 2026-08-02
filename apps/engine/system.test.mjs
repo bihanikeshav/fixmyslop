@@ -1,7 +1,7 @@
 // apps/engine/system.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { typeScale, lineHeightFor, trackingFor, fluidType, auditTypeScale, spacingScale, auditSpacing } from "./system.mjs";
+import { typeScale, lineHeightFor, trackingFor, fluidType, auditTypeScale, spacingScale, auditSpacing, radiusScale, nestedRadius, outerRadius, auditRadius } from "./system.mjs";
 
 test("typeScale: geometric, snapped, step 0 = base", () => {
   const s = typeScale({ base: 16, ratio: "major-third", up: 2, down: 1 });
@@ -47,4 +47,20 @@ test("auditSpacing: flags off-grid + passes clean scale", () => {
   const bad = auditSpacing([4, 8, 13, 30]);
   assert.equal(bad.verdict, "SLOP");
   assert.ok(bad.fix.length);
+});
+
+test("radiusScale + concentric rule", () => {
+  const r = radiusScale({ base: 8 });
+  assert.equal(r.md, 8);
+  assert.equal(r.full, 9999);
+  assert.equal(nestedRadius(16, 12), 4);
+  assert.equal(nestedRadius(8, 12), 0);   // clamped
+  assert.equal(outerRadius(4, 12), 16);
+});
+
+test("auditRadius: sprawl + broken concentricity", () => {
+  assert.equal(auditRadius([0, 4, 8, 16]).verdict, "CLEAN");
+  assert.equal(auditRadius([2, 3, 5, 7, 9, 11, 13]).verdict, "SLOP");
+  const broken = auditRadius([8, 16], [{ outer: 16, padding: 12, inner: 8 }]);
+  assert.equal(broken.verdict, "SLOP"); // inner should be 4, not 8
 });

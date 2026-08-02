@@ -80,3 +80,23 @@ export function auditSpacing(values) {
     fix: issues.length ? spacingScale({ base: base >= 4 ? base : 4 }) : null,
   };
 }
+
+export function radiusScale({ base = 8 } = {}) {
+  return { none: 0, sm: round(base * 0.5), md: base, lg: base * 2, xl: base * 3, full: 9999 };
+}
+export const nestedRadius = (outer, padding) => Math.max(0, outer - padding);
+export const outerRadius = (inner, padding) => inner + padding;
+export function auditRadius(values, pairs = []) {
+  const v = [...new Set(values.map(Number))].filter((n) => n < 9999);
+  const issues = [];
+  if (v.length > 5) issues.push(`${v.length} distinct radii — sprawl (aim ≤5 + full)`);
+  for (const p of pairs) {
+    const want = nestedRadius(p.outer, p.padding);
+    if (p.inner !== want) issues.push(`inner ${p.inner}px breaks concentricity (should be ${want}px for outer ${p.outer}/pad ${p.padding})`);
+  }
+  return {
+    verdict: issues.length ? "SLOP" : "CLEAN",
+    reason: issues.join("; ") || "coherent radius scale, concentric",
+    fix: issues.length ? radiusScale({ base: Math.min(...v.filter((n) => n > 0)) || 8 }) : null,
+  };
+}
