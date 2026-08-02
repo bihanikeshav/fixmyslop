@@ -35,3 +35,10 @@ test("system fns re-exported on engine", () => {
   assert.equal(typeof eng.typeScale, "function");
   assert.equal(typeof eng.shadow, "function");
 });
+
+test("audit_system on designSystem output scores 100 (not silent NaN-CLEAN)", () => {
+  const ds = eng.designSystem({ seed: 5 });
+  const r = eng.auditSystem({ type: ds.type, spacing: ds.spacing, radius: Object.values(ds.radius).filter((n) => n < 9999) });
+  assert.doesNotMatch(JSON.stringify(r.domains), /NaN/);
+  assert.equal(r.coherence, 100);
+});

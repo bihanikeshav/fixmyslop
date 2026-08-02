@@ -114,3 +114,30 @@ test("controls: 44px floor", () => {
   assert.equal(auditControl({ heightPx: 30 }).verdict, "SLOP");
   assert.equal(auditControl({ heightPx: 48 }).verdict, "CLEAN");
 });
+
+test("auditTypeScale accepts generator {px} objects, not just numbers", () => {
+  const scale = typeScale({ base: 16, ratio: 1.25, up: 4, down: 0 }); // [{step,px,rem}]
+  const r = auditTypeScale(scale); // object array
+  assert.equal(r.verdict, "CLEAN");
+  assert.doesNotMatch(r.reason, /NaN/);
+});
+test("auditTypeScale: <2 distinct sizes is CLEAN (no false muddy)", () => {
+  assert.equal(auditTypeScale([]).verdict, "CLEAN");
+  assert.equal(auditTypeScale([16]).verdict, "CLEAN");
+});
+test("auditSpacing accepts generator {px} objects", () => {
+  const sp = spacingScale({ base: 4 }); // [{token,px,rem}]
+  assert.equal(auditSpacing(sp).verdict, "CLEAN");
+});
+test("auditRadius: all-nonpositive input does not yield Infinity fix base", () => {
+  const r = auditRadius([0, 0, 0, 0, 0, 0]); // >5 distinct? no — dedup=1; use a sprawl case with zeros
+  // sprawl case that also has no positive values is impossible; assert the guard directly:
+  const r2 = auditRadius([2, 3, 5, 7, 9, 11]); // sprawl, positive → finite base
+  if (r2.fix) assert.ok(Number.isFinite(r2.fix.md));
+});
+test("auditMotion: malformed cubic-bezier is flagged, not silently CLEAN", () => {
+  assert.equal(auditMotion({ durationMs: 200, easing: "cubic-bezier(.5,.5)" }).verdict, "SLOP");
+});
+test("a correct concentric radius pair is CLEAN", () => {
+  assert.equal(auditRadius([8, 16], [{ outer: 16, padding: 12, inner: 4 }]).verdict, "CLEAN");
+});

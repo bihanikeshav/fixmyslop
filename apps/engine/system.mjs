@@ -1,6 +1,10 @@
 // apps/engine/system.mjs — pure, closed-form design math (no fs/Date/random).
 export const round = (n, p = 2) => Math.round(n * 10 ** p) / 10 ** p;
 
+// accept a raw number, a numeric string, or a token object ({px} / {value}) — for auditors that
+// consume either hand-written values or generator output ([{px,...}]).
+export const toPx = (x) => (x && typeof x === "object" ? Number(x.px ?? x.value) : Number(x));
+
 // piecewise-linear interpolation over [x,y] anchors, clamped at the ends
 export function lerpAnchors(anchors, x) {
   if (x <= anchors[0][0]) return anchors[0][1];
@@ -45,7 +49,8 @@ export function fluidType(minPx, maxPx, minVw = 390, maxVw = 1440) {
 }
 
 export function auditTypeScale(sizes) {
-  const uniq = [...new Set(sizes.map(Number))].sort((a, b) => a - b);
+  const uniq = [...new Set(sizes.map(toPx))].filter(Number.isFinite).sort((a, b) => a - b);
+  if (uniq.length < 2) return { verdict: "CLEAN", reason: "fewer than 2 distinct sizes — nothing to assess", fix: null };
   const ratios = uniq.slice(1).map((v, i) => v / uniq[i]);
   const mean = ratios.reduce((a, b) => a + b, 0) / (ratios.length || 1);
   const variance = ratios.reduce((a, b) => a + (b - mean) ** 2, 0) / (ratios.length || 1);
@@ -67,7 +72,7 @@ export function spacingScale({ base = 4, steps = SPACE_MULT.length } = {}) {
 }
 const gcd = (a, b) => (b ? gcd(b, a % b) : a);
 export function auditSpacing(values) {
-  const v = values.map(Number).filter((n) => n > 0);
+  const v = values.map(toPx).filter((n) => Number.isFinite(n) && n > 0);
   const base = v.reduce((a, b) => gcd(a, b), v[0] || 4);
   const offGrid = v.filter((n) => n % base !== 0);
   const issues = [];
@@ -94,10 +99,11 @@ export function auditRadius(values, pairs = []) {
     const want = nestedRadius(p.outer, p.padding);
     if (p.inner !== want) issues.push(`inner ${p.inner}px breaks concentricity (should be ${want}px for outer ${p.outer}/pad ${p.padding})`);
   }
+  const pos = v.filter((n) => n > 0);
   return {
     verdict: issues.length ? "SLOP" : "CLEAN",
     reason: issues.join("; ") || "coherent radius scale, concentric",
-    fix: issues.length ? radiusScale({ base: Math.min(...v.filter((n) => n > 0)) || 8 }) : null,
+    fix: issues.length ? radiusScale({ base: pos.length ? Math.min(...pos) : 8 }) : null,
   };
 }
 
@@ -204,7 +210,11 @@ export function auditMotion({ durationMs, easing } = {}) {
   const issues = [];
   if (durationMs > 500) issues.push(`${durationMs}ms > 500ms for feedback — feels laggy`);
   const m = easing && String(easing).match(/cubic-bezier\(([^)]+)\)/);
-  if (m) { const [, y1, , y2] = m[1].split(",").map(Number); if (y1 < 0 || y1 > 1 || y2 < 0 || y2 > 1) issues.push("bounce/elastic easing (control point overshoots) — dated"); }
+  if (m) {
+    const p = m[1].split(",").map(Number);
+    if (p.length < 4 || p.some((n) => !Number.isFinite(n))) issues.push("malformed cubic-bezier — needs 4 numeric control values");
+    else { const [, y1, , y2] = p; if (y1 < 0 || y1 > 1 || y2 < 0 || y2 > 1) issues.push("bounce/elastic easing (control point overshoots) — dated"); }
+  }
   return { verdict: issues.length ? "SLOP" : "CLEAN", reason: issues.join("; ") || "duration + easing tasteful", fix: issues.length ? motionTokens() : null };
 }
 const DENSITY = { compact: 6, cozy: 10, comfortable: 14 };

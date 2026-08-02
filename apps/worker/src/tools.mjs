@@ -107,7 +107,7 @@ export const TOOLS = [
   },
   {
     name: "type_scale",
-    description: "Generate a modular type scale. Returns [{step, px, rem}] plus recommended line-height and tracking are available via the fields.",
+    description: "Generate a modular type scale from a base size and ratio. Returns [{step, px, rem}] (line-height/tracking come from the separate lineHeightFor/trackingFor helpers).",
     inputSchema: { type: "object", properties: {
       base: { type: "number", description: "Base px (default 16)." },
       ratio: { type: "string", description: "Ratio name or number (default 1.25)." },
