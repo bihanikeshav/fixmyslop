@@ -266,13 +266,29 @@ export function createEngine({ corpus = [], brands = [], fonts = [] } = {}) {
     if (AVOID_LIST.has(f.family.toLowerCase())) return -Infinity;
     if (f.isBrandFont) return -Infinity;
     let s = 0;
-    if (f.supplier && f.supplier !== "google") s += 2.5;
-    if (!f.isFoundational) s += 1.0;
+    if (f.supplier && f.supplier !== "google") s += 1.0;   // was 2.5 — stop chasing the obscure indie tail
+    if (!f.isFoundational) s += 0.6;
     const rank = f.popularityRank || 9999;
     if (rank > 100 && rank < 900) s += 1.5;
     else if (rank >= 900 && rank < 1400) s += 0.6;
+    else if (rank >= 1400 && rank < 1800) s -= 1.0;         // NEW: distinctive fades into novelty
+    else if (rank >= 1800) s -= 2.5;                        // NEW: the novelty tail (Kihim 2114) is demoted
     else if (rank <= 100) s -= 2.0;
     s += (f.quality || 0) * 1.2;
+    return s;
+  }
+  function bodyScore(f) {
+    if (!f) return -Infinity;
+    if (AVOID_LIST.has(f.family.toLowerCase())) return -Infinity;
+    if (f.isBrandFont) return -Infinity;
+    if (!["serif", "sans-serif"].includes(f.category)) return -Infinity; // never display/handwriting/mono for running text
+    let s = 0;
+    if (f.isFoundational) s += 3.0;          // the flag literally means "usable as a NEUTRAL body workhorse"
+    const rank = f.popularityRank || 9999;
+    if (rank > 40 && rank < 1200) s += 1.0;  // distinctive but vetted enough to read
+    else if (rank <= 40) s -= 1.0;           // the monoculture floor
+    s += (f.quality || 0) * 1.5;
+    if (f.supplier && f.supplier !== "google") s += 0.4;
     return s;
   }
   const findFont = (family) => {
@@ -293,19 +309,27 @@ export function createEngine({ corpus = [], brands = [], fonts = [] } = {}) {
     return { ...base, verdict: "FRESH", isFoundational: !!f.isFoundational, why: `${f.family} is not on the avoid-list and not top-tier popular (rank ${f.popularityRank ?? "?"}, supplier ${f.supplier}) — a distinctive choice.`, alternatives: [] };
   }
   function suggestFonts(n = 4, { category = null } = {}) {
-    const scored = fonts.map((f) => ({ f, score: freshnessScore(f) })).filter((x) => x.score > -Infinity).sort((a, b) => b.score - a.score);
-    let display = scored.filter((x) => x.f.category === "display");
-    let body = scored.filter((x) => ["sans-serif", "serif"].includes(x.f.category));
-    if (category === "display") { body = []; }
-    if (category === "body") { display = []; }
-    const half = Math.max(1, Math.ceil(n / 2));
-    const pick = (arr, k) => arr.slice(0, k).map((x) => ({
+    const disp = fonts.map((f) => ({ f, score: freshnessScore(f) })).filter((x) => x.score > -Infinity)
+      .filter((x) => x.f.category === "display").sort((a, b) => b.score - a.score);
+    const body = fonts.map((f) => ({ f, score: bodyScore(f) })).filter((x) => x.score > -Infinity)
+      .sort((a, b) => b.score - a.score);
+    const pickOf = (arr) => arr.map((x) => ({
       family: x.f.family, supplier: x.f.supplier, category: x.f.category, popularityRank: x.f.popularityRank,
       isFoundational: !!x.f.isFoundational,
-      why: `fresh: ${x.f.supplier !== "google" ? `indie (${x.f.supplier}), ` : ""}rank ${x.f.popularityRank}, non-slop ${x.f.category}`,
+      why: `${x.f.category === "display" ? "characterful display" : "readable body workhorse"}: rank ${x.f.popularityRank}, ${x.f.supplier}`,
     }));
-    const picks = display.length && body.length ? [...pick(display, half), ...pick(body, n - half)].slice(0, n) : pick(display.length ? display : body, n);
-    return { picks, pairing: { display: display[0]?.f.family || null, body: body[0]?.f.family || null, note: "Display face for headings/identity; body face for running text. Both off the avoid-list." } };
+    if (category === "display") return { picks: pickOf(disp).slice(0, n), pairing: pairFrom(disp, body) };
+    if (category === "body") return { picks: pickOf(body).slice(0, n), pairing: pairFrom(disp, body) };
+    const half = Math.max(1, Math.ceil(n / 2));
+    const picks = [...pickOf(disp).slice(0, half), ...pickOf(body).slice(0, n - half)].slice(0, n);
+    return { picks, pairing: pairFrom(disp, body) };
+  }
+  function pairFrom(disp, body) {
+    return {
+      display: disp[0]?.f.family || null,
+      body: body[0]?.f.family || null,
+      note: "Display face carries identity (headings, name); body face carries running text — never swap them. The display pick is distinctive; confirm it reads for your context.",
+    };
   }
 
   // seeded PRNG — keeps generation deterministic + portable (no Math.random)
