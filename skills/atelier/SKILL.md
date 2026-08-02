@@ -34,7 +34,7 @@ Both run the identical `apps/engine` module. Verdicts never drift.
 |---|---|---|
 | Whole theme at once | `design_system` | palette + type + spacing + radius + shadow + motion |
 | A color is OK? | `check_color` / `check_palette` | slop gate + fresh alternatives |
-| A fresh palette | `palette` | seeded, gate-passing, ≥4.5:1 contrast |
+| A fresh palette | `generate_palette` | seeded, gate-passing, ≥4.5:1 contrast |
 | Fonts | `suggest_fonts` / `check_font` | off the AI monoculture |
 | Type sizes | `type_scale` / `check_type` | modular; ≤7 sizes |
 | Spacing | `spacing_scale` / `check_spacing` | one base grid |

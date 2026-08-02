@@ -150,7 +150,7 @@ export const TOOLS = [
     run: (a) => engine.layout(a || {}),
   },
   {
-    name: "palette",
+    name: "generate_palette",
     description: "Generate a fresh, gate-passing palette {ground, ink, accent, accent2} from a numeric seed (deterministic). Passes the color slop gates and ≥4.5:1 ink-on-ground contrast.",
     inputSchema: { type: "object", properties: { seed: { type: "integer", description: "Deterministic seed (default 1)." } } },
     run: (a) => engine.generatePalette(Number(a && a.seed) || 1),

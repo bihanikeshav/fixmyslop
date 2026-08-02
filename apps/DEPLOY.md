@@ -26,7 +26,7 @@ Gives a URL like `https://ai-slop-font.<your-subdomain>.workers.dev`. Endpoints:
 - REST: `/api/color?hex=` · `/api/palette` · `/api/fonts?n=` · `/api/font?family=` · `/api/structure` · `/health`
 - REST (per-tool): `GET|POST /api/tool/<name>` for every MCP tool
   (`design_system`, `type_scale`, `spacing_scale`, `radius_scale`, `shadow`, `layout`,
-  `palette`, `motion_tokens`, and the `check_*` / `audit_system` auditors), in addition to
+  `generate_palette`, `motion_tokens`, and the `check_*` / `audit_system` auditors), in addition to
   the named `/api/color`, `/api/palette`, `/api/fonts`, `/api/font`, `/api/structure`.
 
 The MCP now exposes 20 tools: 5 color/font + 15 system (type, spacing, radius, shadow,
