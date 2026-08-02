@@ -20,3 +20,16 @@ test("unknown tool → 404", async () => {
   const res = await worker.fetch(new Request("http://x/api/tool/nope"));
   assert.equal(res.status, 404);
 });
+
+test("GET /skill returns an install script; /skill/SKILL.md returns the self-contained skill", async () => {
+  const s = await worker.fetch(new Request("http://x/skill"));
+  assert.equal(s.status, 200);
+  const script = await s.text();
+  assert.match(script, /mkdir[^\n]*atelier/);
+  assert.match(script, /SKILL\.md/);
+  const md = await worker.fetch(new Request("http://x/skill/SKILL.md"));
+  assert.equal(md.status, 200);
+  const body = await md.text();
+  assert.match(body, /name:\s*atelier/);
+  assert.doesNotMatch(body, /\.\.\/personality/);
+});

@@ -6,6 +6,7 @@
 
 import { engine, stats, STRUCTURE_ARCHETYPES, TOOL_BY_NAME } from "./tools.mjs";
 import { handleMcpPost, handleSse } from "./mcp.mjs";
+import { renderSkill } from "../../engine/prompts.mjs";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -93,6 +94,23 @@ export default {
           for (const [k, v] of q.entries()) args[k] = /^-?\d+\.?\d*$/.test(v) ? Number(v) : v;
         }
         return json(tool.run(args));
+      }
+
+      // ---- skill routes ----
+      if (pathname === "/skill/SKILL.md") {
+        return new Response(renderSkill(), { headers: { ...CORS, "content-type": "text/markdown; charset=utf-8" } });
+      }
+      if (pathname === "/skill") {
+        const base = url.origin;
+        const script = `#!/bin/sh
+# Install the ai-slop-font 'atelier' design skill for Claude Code.
+set -e
+mkdir -p "$HOME/.claude/skills/atelier"
+curl -fsSL "${base}/skill/SKILL.md" -o "$HOME/.claude/skills/atelier/SKILL.md"
+echo "Installed atelier skill -> $HOME/.claude/skills/atelier/SKILL.md"
+echo "Now connect the tools:  claude mcp add --transport http ai-slop-font ${base}/mcp"
+`;
+        return new Response(script, { headers: { ...CORS, "content-type": "text/x-shellscript; charset=utf-8" } });
       }
 
       // ---- index / 404 ----
