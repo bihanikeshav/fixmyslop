@@ -1,7 +1,7 @@
 // apps/engine/system.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { typeScale, lineHeightFor, trackingFor, fluidType, auditTypeScale, spacingScale, auditSpacing, radiusScale, nestedRadius, outerRadius, auditRadius } from "./system.mjs";
+import { typeScale, lineHeightFor, trackingFor, fluidType, auditTypeScale, spacingScale, auditSpacing, radiusScale, nestedRadius, outerRadius, auditRadius, shadow, auditShadow } from "./system.mjs";
 
 test("typeScale: geometric, snapped, step 0 = base", () => {
   const s = typeScale({ base: 16, ratio: "major-third", up: 2, down: 1 });
@@ -63,4 +63,17 @@ test("auditRadius: sprawl + broken concentricity", () => {
   assert.equal(auditRadius([2, 3, 5, 7, 9, 11, 13]).verdict, "SLOP");
   const broken = auditRadius([8, 16], [{ outer: 16, padding: 12, inner: 8 }]);
   assert.equal(broken.verdict, "SLOP"); // inner should be 4, not 8
+});
+
+test("shadow: none at 0, multi-layer above", () => {
+  assert.equal(shadow(0).css, "none");
+  const s = shadow(4);
+  assert.ok(s.layers.length >= 2);
+  assert.match(s.css, /px .+px .+px/);
+});
+
+test("auditShadow: flags flat default + glow, passes ramp", () => {
+  assert.equal(auditShadow("0 4px 6px rgba(0,0,0,0.5)").verdict, "SLOP"); // single + harsh
+  assert.equal(auditShadow("0 0 40px rgba(0,0,0,0.2)").verdict, "SLOP");   // glow
+  assert.equal(auditShadow(shadow(3).css).verdict, "CLEAN");
 });

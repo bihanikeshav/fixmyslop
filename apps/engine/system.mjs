@@ -100,3 +100,46 @@ export function auditRadius(values, pairs = []) {
     fix: issues.length ? radiusScale({ base: Math.min(...v.filter((n) => n > 0)) || 8 }) : null,
   };
 }
+
+const shadowTint = (hue, a) => (hue ? `hsla(${hue}, 25%, 12%, ${a})` : `rgba(0,0,0,${a})`);
+export function shadow(elevation = 1, { hue = 0, alpha = 0.18 } = {}) {
+  const e = Math.max(0, Number(elevation));
+  if (e === 0) return { css: "none", layers: [] };
+  const n = Math.min(5, Math.max(2, Math.round(1 + e / 2)));
+  const layers = [];
+  for (let i = 0; i < n; i++) {
+    const f = (i + 1) / n;
+    const y = round(e * f * f * 1.2, 1);
+    const blur = round(y * 2, 1);
+    const spread = round(-e * f * 0.15, 1);
+    const a = round(alpha * (1 - i / n), 3);
+    layers.push({ x: 0, y, blur, spread, color: shadowTint(hue, a) });
+  }
+  const css = layers.map((l) => `${l.x}px ${l.y}px ${l.blur}px ${l.spread}px ${l.color}`).join(", ");
+  return { css, layers };
+}
+export function splitShadowLayers(css) {
+  const out = []; let depth = 0, cur = "";
+  for (const ch of css) {
+    if (ch === "(") depth++; else if (ch === ")") depth--;
+    if (ch === "," && depth === 0) { out.push(cur.trim()); cur = ""; } else cur += ch;
+  }
+  if (cur.trim()) out.push(cur.trim());
+  return out;
+}
+export function auditShadow(css) {
+  if (!css || css === "none") return { verdict: "CLEAN", reason: "no shadow", fix: null };
+  const layers = splitShadowLayers(css);
+  const issues = [];
+  if (layers.length === 1) issues.push("single flat layer — reads generic; use a multi-layer ramp");
+  if (/rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*(0?\.[3-9]\d*|1(\.0)?)\s*\)/.test(css)) issues.push("harsh pure-black alpha ≥0.3 — muddy; tint + lower alpha");
+  for (const l of layers) {
+    const m = l.match(/(-?\d+\.?\d*)px\s+(-?\d+\.?\d*)px\s+(-?\d+\.?\d*)px/);
+    if (m && +m[1] === 0 && +m[2] === 0 && +m[3] >= 16) issues.push(`glow layer (0 0 ${m[3]}px) — not a shadow`);
+  }
+  return {
+    verdict: issues.length ? "SLOP" : "CLEAN",
+    reason: issues.join("; ") || "layered, tinted, plausible",
+    fix: issues.length ? shadow(4).css : null,
+  };
+}
