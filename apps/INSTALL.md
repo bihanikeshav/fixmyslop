@@ -108,6 +108,28 @@ auditors return `{ verdict, reason, fix }`.
 
 ---
 
+## 3b. Prompts (slash-commands)
+
+The MCP server also exposes 6 prompts (`prompts/list` · `prompts/get`) — canonical,
+self-contained design workflows an MCP client can surface as slash-commands:
+
+- `improve_design` — take an existing UI through the full audit → fix loop.
+- `design_review` — critique a build against the hard gates without changing it.
+- `theme` — gather a brief, then call `design_system` for one coherent theme.
+- `colorize` — bring a palette to gate-passing FRESH, derived from real material.
+- `typeset` — pick a display/body pairing and a modular type scale.
+- `polish` — a final pass over spacing, radius, shadow, and motion.
+
+Each prompt embeds the full Atelier design law (hard gates, tool table, self-check),
+so it works even without the companion skill installed.
+
+One-line skill install (drops the self-contained `atelier` skill into your project):
+```bash
+curl -fsSL https://ai-slop-font.bihanikeshav.workers.dev/skill | sh
+```
+
+---
+
 ## 4. Typical LLM workflow
 
 1. `design_system` for a coherent baseline theme (re-roll the seed until you like it).
