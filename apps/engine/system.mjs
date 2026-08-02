@@ -155,7 +155,12 @@ export function grid({ viewport, minCol = 280, gutter = 24, margin = 32, maxCols
   let cols = Math.floor((inner + gutter) / (minCol + gutter));
   cols = Math.max(1, Math.min(maxCols, cols));
   const colW = round((inner - (cols - 1) * gutter) / cols, 2);
-  return { viewport, inner, cols, colW, gutter, margin, template: `repeat(${cols}, ${colW}px)` };
+  return {
+    viewport, inner, cols, colW, gutter, margin,
+    template: `repeat(${cols}, minmax(0, 1fr))`,
+    fixedTemplate: `repeat(${cols}, ${colW}px)`,
+    innerNote: "`inner` already excludes margins — do not subtract or re-pad by `margin` again.",
+  };
 }
 export const SPLITS = { golden: [38.2, 61.8], thirds: [33.33, 66.67], quarter: [25, 75], half: [50, 50] };
 export const splitRatio = (name) => SPLITS[name] || SPLITS.golden;
@@ -182,7 +187,15 @@ export function contentBreakpoints({ fontPx = 16, maxCpl = 75 } = {}) {
 export function layout({ viewport = 1440, baseFont = 18, columns, split } = {}) {
   const g = grid({ viewport, ...(columns ? { maxCols: columns } : {}) });
   const sp = split ? computeSplit(g.inner, split) : null;
-  return { grid: g, measurePx: measure(baseFont), measureCh: 66, margins: g.margin, split: split ? { name: split, widths: sp } : null, whitespaceRatioTarget: 0.4 };
+  const container = {
+    maxWidth: g.inner,
+    paddingInline: g.margin,
+    note: "Set the container `max-width: maxWidth; margin-inline: auto; padding-inline: paddingInline`. Do NOT also cap width by `inner` and re-add `margin` — that double-counts.",
+  };
+  return {
+    grid: g, container, measurePx: measure(baseFont), measureCh: 66, margins: g.margin,
+    split: split ? { name: split, widths: sp } : null, whitespaceRatioTarget: 0.4,
+  };
 }
 export function auditLayout({ containerWidth, fontPx = 16, gutter, margin, base = 8 } = {}) {
   const issues = [];

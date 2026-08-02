@@ -141,3 +141,13 @@ test("auditMotion: malformed cubic-bezier is flagged, not silently CLEAN", () =>
 test("a correct concentric radius pair is CLEAN", () => {
   assert.equal(auditRadius([8, 16], [{ outer: 16, padding: 12, inner: 4 }]).verdict, "CLEAN");
 });
+
+test("layout: usable container tokens that don't double-count margins", () => {
+  const L = layout({ viewport: 1440, baseFont: 18, split: "golden" });
+  assert.ok(L.container && typeof L.container.maxWidth === "number");
+  // applying maxWidth + padding on both sides must fit the viewport
+  assert.ok(L.container.maxWidth + 2 * L.container.paddingInline <= 1440);
+  assert.match(L.grid.template, /minmax\(0, 1fr\)/);        // fluid, not fixed-px
+  assert.match(L.grid.fixedTemplate, /px\)/);               // fixed form preserved separately
+  assert.equal(L.grid.inner, 1440 - 2 * L.grid.margin);     // math unchanged
+});
