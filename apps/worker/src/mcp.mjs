@@ -7,7 +7,7 @@
 // with a single JSON response (no long-lived stream needed for these tools).
 
 import { TOOLS, TOOL_BY_NAME } from "./tools.mjs";
-import { VERBS, renderPrompt } from "../../engine/prompts.mjs";
+import { VERBS, renderPrompt, INSTRUCTIONS } from "../../engine/prompts.mjs";
 
 const PROTOCOL_VERSION = "2024-11-05";
 const SERVER_INFO = { name: "ai-slop-font", version: "1.0.0" };
@@ -32,6 +32,7 @@ function handleMessage(msg) {
         protocolVersion: (params && params.protocolVersion) || PROTOCOL_VERSION,
         capabilities: { tools: { listChanged: false }, prompts: { listChanged: false } },
         serverInfo: SERVER_INFO,
+        instructions: INSTRUCTIONS,
       });
 
     case "notifications/initialized":

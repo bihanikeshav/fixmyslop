@@ -104,12 +104,17 @@ export default {
       if (pathname === "/skill") {
         const base = url.origin;
         const script = `#!/bin/sh
-# Install the ai-slop-font 'atelier' design skill for Claude Code.
+# Install the ai-slop-font 'atelier' design skill. SKILL.md is a cross-agent standard:
+# this writes to ~/.claude/skills (read by Claude Code, and by Cursor & Codex for
+# compatibility) and ~/.agents/skills (the neutral cross-agent location).
 set -e
-mkdir -p "$HOME/.claude/skills/atelier"
+mkdir -p "$HOME/.claude/skills/atelier" "$HOME/.agents/skills/atelier"
 curl -fsSL "${base}/skill/SKILL.md" -o "$HOME/.claude/skills/atelier/SKILL.md"
-echo "Installed atelier skill -> $HOME/.claude/skills/atelier/SKILL.md"
-echo "Now connect the tools:  claude mcp add --transport http ai-slop-font ${base}/mcp"
+cp -f "$HOME/.claude/skills/atelier/SKILL.md" "$HOME/.agents/skills/atelier/SKILL.md" 2>/dev/null || true
+echo "Installed atelier skill (Claude Code / Cursor / Codex) -> ~/.claude/skills/atelier/SKILL.md"
+echo "Now connect the tools:"
+echo "  Claude Code:  claude mcp add --transport http ai-slop-font ${base}/mcp"
+echo "  Cursor:       add {\\"ai-slop-font\\":{\\"url\\":\\"${base}/mcp\\"}} to ~/.cursor/mcp.json"
 `;
         return new Response(script, { headers: { ...CORS, "content-type": "text/x-shellscript; charset=utf-8" } });
       }

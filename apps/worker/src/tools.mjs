@@ -52,7 +52,7 @@ export const TOOLS = [
   },
   {
     name: "suggest_fonts",
-    description: "Suggest fresh, non-monoculture font families (off the AI avoid-list, away from top-tier popularity). Returns picks with supplier/category/rank plus a display+body pairing recommendation.",
+    description: "Suggest fresh, non-monoculture font families (off the AI avoid-list, away from top-tier popularity). Returns picks plus a {display, body} pairing. RULE: pairing.body is a readable text workhorse — use it for running/body text. NEVER set the display pick (or any novelty/display face) as body text; that is the single most common way an AI design becomes unreadable.",
     inputSchema: {
       type: "object",
       properties: {
@@ -140,7 +140,7 @@ export const TOOLS = [
   },
   {
     name: "layout",
-    description: "Do the math for a layout: given viewport/base font/columns/split intent, returns a fitted grid, the optimal measure, margins, a recommended split, and a whitespace-ratio target.",
+    description: "Do the math for a layout: given viewport/base font/columns/split intent, returns a fitted grid, the optimal measure, a recommended split, and a `container` block. RULE: style your outer wrapper with container.maxWidth + container.paddingInline (margin auto). NEVER also cap width by grid.inner and re-add margin — inner already excludes margins, so re-adding them double-counts and breaks alignment. Use grid.template (fluid) unless you truly need fixed-px columns.",
     inputSchema: { type: "object", properties: {
       viewport: { type: "number", description: "Viewport width px (default 1440)." },
       baseFont: { type: "number", description: "Body font px (default 18)." },
