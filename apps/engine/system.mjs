@@ -60,3 +60,23 @@ export function auditTypeScale(sizes) {
     fix: issues.length ? typeScale({ base: uniq[0] || 16, ratio: round(Math.max(1.15, mean), 3), up: Math.min(6, uniq.length - 1), down: 0 }) : null,
   };
 }
+
+const SPACE_MULT = [1, 2, 3, 4, 6, 8, 12, 16, 24];
+export function spacingScale({ base = 4, steps = SPACE_MULT.length } = {}) {
+  return SPACE_MULT.slice(0, steps).map((m, i) => ({ token: `s${i + 1}`, px: base * m, rem: round(base * m / 16, 4) }));
+}
+const gcd = (a, b) => (b ? gcd(b, a % b) : a);
+export function auditSpacing(values) {
+  const v = values.map(Number).filter((n) => n > 0);
+  const base = v.reduce((a, b) => gcd(a, b), v[0] || 4);
+  const offGrid = v.filter((n) => n % base !== 0);
+  const issues = [];
+  if (base < 4) issues.push(`no consistent base grid (gcd ${base}px) — values not aligned`);
+  else if (offGrid.length) issues.push(`off-grid vs ${base}px: ${offGrid.join(", ")}`);
+  if (v.length > 6 && new Set(v).size >= v.length) issues.push("all values distinct — no reusable scale");
+  return {
+    verdict: issues.length ? "SLOP" : "CLEAN",
+    reason: issues.join("; ") || `all multiples of ${base}px`,
+    fix: issues.length ? spacingScale({ base: base >= 4 ? base : 4 }) : null,
+  };
+}

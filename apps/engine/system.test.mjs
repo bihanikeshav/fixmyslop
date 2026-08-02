@@ -1,7 +1,7 @@
 // apps/engine/system.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { typeScale, lineHeightFor, trackingFor, fluidType, auditTypeScale } from "./system.mjs";
+import { typeScale, lineHeightFor, trackingFor, fluidType, auditTypeScale, spacingScale, auditSpacing } from "./system.mjs";
 
 test("typeScale: geometric, snapped, step 0 = base", () => {
   const s = typeScale({ base: 16, ratio: "major-third", up: 2, down: 1 });
@@ -34,4 +34,17 @@ test("auditTypeScale: flags too many sizes + arbitrary ratio", () => {
   assert.ok(bad.fix);
   const good = auditTypeScale(typeScale({ base: 16, ratio: 1.25, up: 4, down: 0 }).map((x) => x.px));
   assert.equal(good.verdict, "CLEAN");
+});
+
+test("spacingScale: base grid multiples", () => {
+  const s = spacingScale({ base: 4 });
+  assert.deepEqual(s.map((x) => x.px), [4, 8, 12, 16, 24, 32, 48, 64, 96]);
+  assert.equal(s[0].token, "s1");
+});
+
+test("auditSpacing: flags off-grid + passes clean scale", () => {
+  assert.equal(auditSpacing([4, 8, 16, 32]).verdict, "CLEAN");
+  const bad = auditSpacing([4, 8, 13, 30]);
+  assert.equal(bad.verdict, "SLOP");
+  assert.ok(bad.fix.length);
 });
