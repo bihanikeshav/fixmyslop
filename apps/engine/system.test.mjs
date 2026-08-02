@@ -1,7 +1,7 @@
 // apps/engine/system.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { typeScale, lineHeightFor, trackingFor, fluidType, auditTypeScale, spacingScale, auditSpacing, radiusScale, nestedRadius, outerRadius, auditRadius, shadow, auditShadow, grid, computeSplit, measure, auditMeasure, layout, auditLayout } from "./system.mjs";
+import { typeScale, lineHeightFor, trackingFor, fluidType, auditTypeScale, spacingScale, auditSpacing, radiusScale, nestedRadius, outerRadius, auditRadius, shadow, auditShadow, grid, computeSplit, measure, auditMeasure, layout, auditLayout, motionTokens, durationFor, auditMotion, controlSize, auditControl } from "./system.mjs";
 
 test("typeScale: geometric, snapped, step 0 = base", () => {
   const s = typeScale({ base: 16, ratio: "major-third", up: 2, down: 1 });
@@ -99,4 +99,18 @@ test("layout: composite + auditLayout off-grid", () => {
   assert.ok(L.split.widths.length === 2);
   assert.equal(auditLayout({ containerWidth: 594, fontPx: 18, gutter: 24, margin: 32 }).verdict, "CLEAN");
   assert.equal(auditLayout({ gutter: 23, margin: 32 }).verdict, "SLOP");
+});
+
+test("motion: dynamic duration + slop audit", () => {
+  assert.ok(durationFor(400) > durationFor(50));
+  assert.ok(durationFor(9999) <= 500);
+  assert.equal(auditMotion({ durationMs: 250, easing: "cubic-bezier(.22,1,.36,1)" }).verdict, "CLEAN");
+  assert.equal(auditMotion({ durationMs: 700, easing: "ease" }).verdict, "SLOP");
+  assert.equal(auditMotion({ durationMs: 200, easing: "cubic-bezier(.34,1.56,.64,1)" }).verdict, "SLOP"); // bounce
+});
+
+test("controls: 44px floor", () => {
+  assert.ok(controlSize(16, "cozy").height >= 44);
+  assert.equal(auditControl({ heightPx: 30 }).verdict, "SLOP");
+  assert.equal(auditControl({ heightPx: 48 }).verdict, "CLEAN");
 });

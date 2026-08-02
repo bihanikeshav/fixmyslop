@@ -190,3 +190,32 @@ export function auditLayout({ containerWidth, fontPx = 16, gutter, margin, base 
   if (margin != null && margin % base !== 0) issues.push(`margin ${margin}px off the ${base}px grid`);
   return { verdict: issues.length ? "SLOP" : "CLEAN", reason: issues.join("; ") || "measure in range; gutters/margins on-grid", fix: null };
 }
+
+// Motion + controls bucket: curves, durations, easing, animation audits, control sizing, z-index
+export const CURVES = {
+  "ease-out-quart": "cubic-bezier(.25,1,.5,1)",
+  "ease-out-quint": "cubic-bezier(.22,1,.36,1)",
+  "ease-out-expo": "cubic-bezier(.16,1,.3,1)",
+};
+export const motionTokens = () => ({ curves: CURVES, durations: { fast: 150, base: 250, slow: 400 }, exitFactor: 0.75 });
+export const durationFor = (px) => Math.max(150, Math.min(500, Math.round(150 + Math.sqrt(Math.abs(px)) * 14)));
+export const stagger = (i, base = 50) => i * base;
+export function auditMotion({ durationMs, easing } = {}) {
+  const issues = [];
+  if (durationMs > 500) issues.push(`${durationMs}ms > 500ms for feedback — feels laggy`);
+  const m = easing && String(easing).match(/cubic-bezier\(([^)]+)\)/);
+  if (m) { const [, y1, , y2] = m[1].split(",").map(Number); if (y1 < 0 || y1 > 1 || y2 < 0 || y2 > 1) issues.push("bounce/elastic easing (control point overshoots) — dated"); }
+  return { verdict: issues.length ? "SLOP" : "CLEAN", reason: issues.join("; ") || "duration + easing tasteful", fix: issues.length ? motionTokens() : null };
+}
+const DENSITY = { compact: 6, cozy: 10, comfortable: 14 };
+export function controlSize(fontPx = 16, density = "cozy") {
+  const padY = DENSITY[density] ?? DENSITY.cozy;
+  const lineBox = Math.round(fontPx * 1.2);
+  const height = Math.max(44, lineBox + padY * 2);
+  return { fontPx, lineBox, paddingY: padY, height, hitTargetOk: height >= 44 };
+}
+export const zScale = () => ({ base: 0, dropdown: 1000, sticky: 1100, modal: 1300, toast: 1400 });
+export function auditControl({ heightPx } = {}) {
+  const ok = heightPx >= 44;
+  return { verdict: ok ? "CLEAN" : "SLOP", reason: ok ? `${heightPx}px ≥ 44px min target` : `${heightPx}px < 44px — hit target too small`, fix: ok ? null : controlSize() };
+}
