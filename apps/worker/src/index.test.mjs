@@ -33,3 +33,16 @@ test("GET /skill returns an install script; /skill/SKILL.md returns the self-con
   assert.match(body, /name:\s*atelier/);
   assert.doesNotMatch(body, /\.\.\/personality/);
 });
+
+test("GET /install.md covers MCP + skill with the live origin", async () => {
+  const res = await worker.fetch(new Request("http://example.test/install.md"));
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get("content-type"), /text\/markdown/);
+  const md = await res.text();
+  assert.match(md, /Connect the MCP/);            // MCP section
+  assert.match(md, /atelier skill/);              // skill section
+  assert.match(md, /example\.test\/mcp/);         // base URL interpolated from origin
+  assert.match(md, /example\.test\/skill/);
+  const alias = await worker.fetch(new Request("http://example.test/install"));
+  assert.equal(alias.status, 200);                // /install alias also works
+});

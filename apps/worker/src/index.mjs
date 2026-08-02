@@ -7,6 +7,7 @@
 import { engine, stats, STRUCTURE_ARCHETYPES, TOOL_BY_NAME } from "./tools.mjs";
 import { handleMcpPost, handleSse } from "./mcp.mjs";
 import { renderSkill } from "../../engine/prompts.mjs";
+import { renderInstall } from "./install-doc.mjs";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -113,12 +114,19 @@ echo "Now connect the tools:  claude mcp add --transport http ai-slop-font ${bas
         return new Response(script, { headers: { ...CORS, "content-type": "text/x-shellscript; charset=utf-8" } });
       }
 
+      // ---- install guide ----
+      if (pathname === "/install" || pathname === "/install.md") {
+        return new Response(renderInstall(url.origin), { headers: { ...CORS, "content-type": "text/markdown; charset=utf-8" } });
+      }
+
       // ---- index / 404 ----
       if (pathname === "/" || pathname === "") {
         return json({
           name: "ai-slop-font",
+          install: "/install.md",
           rest: ["/api/color?hex=", "/api/palette", "/api/fonts?n=&category=", "/api/font?family=", "/api/structure", "/health"],
-          mcp: { streamableHttp: "POST /mcp", sse: "GET /sse" },
+          mcp: { streamableHttp: "POST /mcp", sse: "GET /sse", prompts: "prompts/list · prompts/get" },
+          skill: { install: "GET /skill", raw: "GET /skill/SKILL.md" },
           tools: Object.keys(TOOL_BY_NAME),
           restTool: "/api/tool/<name> (GET query or POST json)",
         });
