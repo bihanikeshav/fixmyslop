@@ -143,3 +143,50 @@ export function auditShadow(css) {
     fix: issues.length ? shadow(4).css : null,
   };
 }
+
+// Layout bucket: grid, splits, measure, focal points, content breakpoints, composite layout, audit
+export function grid({ viewport, minCol = 280, gutter = 24, margin = 32, maxCols = 12 } = {}) {
+  const inner = viewport - 2 * margin;
+  let cols = Math.floor((inner + gutter) / (minCol + gutter));
+  cols = Math.max(1, Math.min(maxCols, cols));
+  const colW = round((inner - (cols - 1) * gutter) / cols, 2);
+  return { viewport, inner, cols, colW, gutter, margin, template: `repeat(${cols}, ${colW}px)` };
+}
+export const SPLITS = { golden: [38.2, 61.8], thirds: [33.33, 66.67], quarter: [25, 75], half: [50, 50] };
+export const splitRatio = (name) => SPLITS[name] || SPLITS.golden;
+export const computeSplit = (width, name = "golden") => { const [a, b] = splitRatio(name); return [round(width * a / 100, 2), round(width * b / 100, 2)]; };
+export const measure = (fontPx, cpl = 66) => round(cpl * 0.5 * fontPx, 1);
+export function auditMeasure(widthPx, fontPx) {
+  const cpl = round(widthPx / (0.5 * fontPx), 1);
+  const issues = [];
+  if (cpl < 45) issues.push(`measure ${cpl}ch < 45 — too narrow`);
+  if (cpl > 75) issues.push(`measure ${cpl}ch > 75 — too wide to track`);
+  return { verdict: issues.length ? "SLOP" : "CLEAN", reason: issues.join("; ") || `${cpl}ch — in the 45–75 sweet spot`, cpl, fix: issues.length ? measure(fontPx) : null };
+}
+export function focalPoints({ w, h }) {
+  const P = (fx, fy) => ({ x: round(w * fx), y: round(h * fy) });
+  return {
+    thirds: [P(1/3, 1/3), P(2/3, 1/3), P(1/3, 2/3), P(2/3, 2/3)],
+    golden: [P(0.382, 0.382), P(0.618, 0.382), P(0.382, 0.618), P(0.618, 0.618)],
+  };
+}
+export function contentBreakpoints({ fontPx = 16, maxCpl = 75 } = {}) {
+  const maxW = measure(fontPx, maxCpl);
+  return { maxLineWidthPx: maxW, suggestMaxCh: maxCpl, note: `cap the text column at ~${maxW}px; beyond that, add columns` };
+}
+export function layout({ viewport = 1440, baseFont = 18, columns, split } = {}) {
+  const g = grid({ viewport, ...(columns ? { maxCols: columns } : {}) });
+  const sp = split ? computeSplit(g.inner, split) : null;
+  return { grid: g, measurePx: measure(baseFont), measureCh: 66, margins: g.margin, split: split ? { name: split, widths: sp } : null, whitespaceRatioTarget: 0.4 };
+}
+export function auditLayout({ containerWidth, fontPx = 16, gutter, margin, base = 8 } = {}) {
+  const issues = [];
+  if (containerWidth && fontPx) {
+    const cpl = containerWidth / (0.5 * fontPx);
+    if (cpl > 75) issues.push(`measure ${round(cpl, 1)}ch > 75`);
+    if (cpl < 45) issues.push(`measure ${round(cpl, 1)}ch < 45`);
+  }
+  if (gutter != null && gutter % base !== 0) issues.push(`gutter ${gutter}px off the ${base}px grid`);
+  if (margin != null && margin % base !== 0) issues.push(`margin ${margin}px off the ${base}px grid`);
+  return { verdict: issues.length ? "SLOP" : "CLEAN", reason: issues.join("; ") || "measure in range; gutters/margins on-grid", fix: null };
+}

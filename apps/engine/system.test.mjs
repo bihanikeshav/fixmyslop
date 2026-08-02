@@ -1,7 +1,7 @@
 // apps/engine/system.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { typeScale, lineHeightFor, trackingFor, fluidType, auditTypeScale, spacingScale, auditSpacing, radiusScale, nestedRadius, outerRadius, auditRadius, shadow, auditShadow } from "./system.mjs";
+import { typeScale, lineHeightFor, trackingFor, fluidType, auditTypeScale, spacingScale, auditSpacing, radiusScale, nestedRadius, outerRadius, auditRadius, shadow, auditShadow, grid, computeSplit, measure, auditMeasure, layout, auditLayout } from "./system.mjs";
 
 test("typeScale: geometric, snapped, step 0 = base", () => {
   const s = typeScale({ base: 16, ratio: "major-third", up: 2, down: 1 });
@@ -76,4 +76,27 @@ test("auditShadow: flags flat default + glow, passes ramp", () => {
   assert.equal(auditShadow("0 4px 6px rgba(0,0,0,0.5)").verdict, "SLOP"); // single + harsh
   assert.equal(auditShadow("0 0 40px rgba(0,0,0,0.2)").verdict, "SLOP");   // glow
   assert.equal(auditShadow(shadow(3).css).verdict, "CLEAN");
+});
+
+test("grid: columns exactly fill the container", () => {
+  const g = grid({ viewport: 1440, minCol: 280, gutter: 24, margin: 32, maxCols: 12 });
+  const filled = g.cols * g.colW + (g.cols - 1) * g.gutter;
+  assert.ok(Math.abs(filled - g.inner) < 0.5);
+  assert.ok(g.cols >= 1 && g.cols <= 12);
+});
+
+test("computeSplit + measure + auditMeasure", () => {
+  const [a, b] = computeSplit(1000, "golden");
+  assert.ok(Math.abs(a + b - 1000) < 0.5);
+  assert.ok(a < b);
+  assert.equal(auditMeasure(measure(18, 66), 18).verdict, "CLEAN");
+  assert.equal(auditMeasure(1400, 18).verdict, "SLOP"); // way over 75ch
+});
+
+test("layout: composite + auditLayout off-grid", () => {
+  const L = layout({ viewport: 1440, baseFont: 18, split: "golden" });
+  assert.ok(L.grid.cols >= 1);
+  assert.ok(L.split.widths.length === 2);
+  assert.equal(auditLayout({ containerWidth: 594, fontPx: 18, gutter: 24, margin: 32 }).verdict, "CLEAN");
+  assert.equal(auditLayout({ gutter: 23, margin: 32 }).verdict, "SLOP");
 });
