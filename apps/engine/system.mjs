@@ -78,7 +78,6 @@ export function auditSpacing(values) {
   const issues = [];
   if (base < 4) issues.push(`no consistent base grid (gcd ${base}px) — values not aligned`);
   else if (offGrid.length) issues.push(`off-grid vs ${base}px: ${offGrid.join(", ")}`);
-  if (v.length > 6 && new Set(v).size >= v.length) issues.push("all values distinct — no reusable scale");
   return {
     verdict: issues.length ? "SLOP" : "CLEAN",
     reason: issues.join("; ") || `all multiples of ${base}px`,
