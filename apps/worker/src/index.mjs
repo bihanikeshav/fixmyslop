@@ -7,6 +7,7 @@
 import { engine, stats, STRUCTURE_ARCHETYPES, TOOL_BY_NAME } from "./tools.mjs";
 import { handleMcpPost, handleSse } from "./mcp.mjs";
 import { renderSkill, renderVerbFile, PREAMBLE } from "../../engine/prompts.mjs";
+import { renderReference, REFERENCE } from "../../engine/reference.mjs";
 import { renderInstall } from "./install-doc.mjs";
 
 const CORS = {
@@ -103,12 +104,14 @@ export default {
         let md = null;
         if (name === "SKILL") md = renderSkill();
         else if (name === "design-law") md = PREAMBLE;
+        else if (name.startsWith("reference/")) md = renderReference(name.slice("reference/".length));
         else md = renderVerbFile(name);
         if (md == null) return err(`unknown skill file: ${name}`, 404);
         return new Response(md, { headers: { ...CORS, "content-type": "text/markdown; charset=utf-8" } });
       }
       if (pathname === "/skill") {
         const base = url.origin;
+        const refKeys = REFERENCE.map((r) => r.key).join(" ");
         const script = `#!/bin/sh
 # Install the fix-ai-slop design skill (staggered: a cheap index + on-demand passes).
 # SKILL.md is a cross-agent standard: this writes to ~/.claude/skills (read by Claude
@@ -122,8 +125,12 @@ curl -fsSL "${base}/skill/design-law.md" -o "$DIR/design-law.md"
 for V in improve_design design_review theme colorize typeset polish; do
   curl -fsSL "${base}/skill/$V.md" -o "$DIR/$V.md"
 done
+mkdir -p "$DIR/reference"
+for R in ${refKeys}; do
+  curl -fsSL "${base}/skill/reference/$R.md" -o "$DIR/reference/$R.md"
+done
 mkdir -p "$HOME/.agents/skills/$NAME"
-cp -f "$DIR"/*.md "$HOME/.agents/skills/$NAME/" 2>/dev/null || true
+cp -rf "$DIR/." "$HOME/.agents/skills/$NAME/" 2>/dev/null || true
 echo "Installed fix-ai-slop skill (Claude Code / Cursor / Codex) -> $DIR"
 echo "Invoke it: /fix-ai-slop  (full guide, agent picks passes)  or  /fix-ai-slop:polish  (one pass)"
 echo "Connect the tools:"

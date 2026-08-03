@@ -31,4 +31,25 @@ pass or chain several in order; decide from what the user actually asked for.
 
 For the complete design law (all five gates, forbid-the-median, the ONE-centrepiece
 bar) load `design-law.md`. Unsure which pass? Load `improve_design.md` — it runs the
-full flow. Keep this index in context; pull detail only when you act on it.
+full flow.
+
+## Reference — pull a topic only when you want depth
+Craft knowledge, not law. Load one of these ONLY if the task needs that depth;
+otherwise ship against the gates, and prefer your own subject-grounded invention
+over any example here.
+
+| Topic | Load |
+|---|---|
+| Foundations — signifiers, affordances, hierarchy, control states | `reference/foundations.md` |
+| Layout & structure — grids, spacing, section rhythm, density vs air | `reference/layout.md` |
+| Typography — type scales, roles, product vs marketing type | `reference/typography.md` |
+| Color systems — ramps, semantics, dark mode, 60-30-10 in apps | `reference/color.md` |
+| Components — buttons, cards, tables, forms, icons, AI surfaces | `reference/components.md` |
+| Dashboards & data UI — sidebar + object list + charts, density, statuses | `reference/dashboards.md` |
+| Landing & marketing — hero, craft levels, narrative, CTAs | `reference/landing.md` |
+| Mobile & gestures — targets, bottom nav, thumb reach, swipe | `reference/mobile.md` |
+| Motion — micro-interactions, restraint, meaningful transitions | `reference/motion.md` |
+| Failure modes — the recognizable AI-slop tells + concrete fixes | `reference/failure-modes.md` |
+| Ship checklist — the master pre-ship checklist + surface recipes | `reference/checklist.md` |
+
+Keep this index in context; pull detail only when you act on it.

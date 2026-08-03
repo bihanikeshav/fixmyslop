@@ -45,6 +45,12 @@ test("staggered skill files: SKILL.md index, a pass, the design law, and 404", a
   assert.equal(law.status, 200);
   assert.match(await law.text(), /Hard gates/);
 
+  // the index maps the on-demand reference library, and each topic serves
+  assert.match(idxBody, /reference\/layout\.md/);
+  const ref = await worker.fetch(new Request("http://x/skill/reference/layout.md"));
+  assert.equal(ref.status, 200);
+  assert.match(await ref.text(), /fix-ai-slop reference/);
+
   const missing = await worker.fetch(new Request("http://x/skill/nope.md"));
   assert.equal(missing.status, 404);
 });
