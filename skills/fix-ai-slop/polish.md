@@ -1,21 +1,16 @@
 # fix-ai-slop — polish
 
-Understand the stage of this build before touching tokens — near-ship polish or an
-early draft, which surfaces most need finishing (interactive controls,
-elevation/depth, motion), and whether prefers-reduced-motion is already handled
-elsewhere; ask only if that isn't already obvious from the target.
+Understand the stage before touching tokens — near-ship or early draft, which
+surfaces need finishing, whether prefers-reduced-motion is already handled; ask
+only if not obvious from the target.
 
-Then run the finishing tools in turn: `radius_scale` / `check_radius` for concentric
-corner nesting across nested elements, `shadow` / `check_shadow` for layered, tinted
-elevation (never a flat default box-shadow), and `motion_tokens` / `check_motion` for
-ease-out timing capped around 500ms on feedback interactions, confirming
-prefers-reduced-motion is respected and nothing primary is hidden behind
-opacity:0-until-scroll. Check that control sizing and corner radii read as one
-family rather than several unrelated values, and re-run `audit_system` if a fuller
-token set is available to catch anything the individual checks miss.
+Run the finishing tools: `radius_scale` / `check_radius` (concentric nesting),
+`shadow` / `check_shadow` (layered, tinted — never a flat default), `motion_tokens`
+/ `check_motion` (ease-out, ≤500ms feedback, reduced-motion respected, nothing
+hidden behind opacity:0-until-scroll). Control sizing and radii read as one family.
+Re-run `audit_system` if a fuller token set is available.
 
-Self-check: did you understand which surfaces needed the pass before touching
-tokens? Do shadows read as layered and tinted rather than flat? Does motion degrade
-cleanly under prefers-reduced-motion with no content hidden pre-JS?
+Self-check: shadows layered and tinted, not flat? Motion degrades cleanly under
+prefers-reduced-motion, no content hidden pre-JS?
 
 _The hard gates, forbid-the-median, and the ONE-centrepiece bar live in `design-law.md` and the fix-ai-slop index — load them if they aren't already in context._
