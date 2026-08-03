@@ -17,6 +17,12 @@ body text, margin stacked on a layout inner, opacity:0-until-scroll, and a missi
 centrepiece. Every finding names its concrete fix (`generate_palette`,
 `suggest_fonts`, …), not just a verdict.
 
+Crawl-validated tells (from our own labeled corpus — a small seed, supplementary to
+the gates): incomplete-layout whitespace, unmotivated section bands, repeated default
+cards, weak focal continuity, duplicate CTA end-caps, weak content density, pill-heavy
+chrome, colored-glow shadows, gradient text/surface, single-font monoculture. Confirm
+each against a tool verdict before flagging.
+
 Self-check: every finding cites a tool verdict? Ranked tells checked specifically?
 Fix list implementable with no follow-up questions?
 

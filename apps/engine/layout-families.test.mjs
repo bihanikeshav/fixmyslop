@@ -7,14 +7,16 @@ import { LAYOUT_FAMILIES, LAYOUT_FAMILY_SCHEMA_KEYS, suggestLayout } from "./lay
 const HERO_LANDING = new Set(["hero-thesis-single", "contrast-band-flow"]);
 const TOOL_KINDS = new Set(["dashboard", "data-admin", "app"]);
 
-test("exactly 15 families, all named per the spec table", () => {
-  assert.equal(LAYOUT_FAMILIES.length, 15);
+test("18 families (15 hand-authored + 3 crawl-derived), all schema-valid", () => {
+  assert.equal(LAYOUT_FAMILIES.length, 18);
+  assert.equal(LAYOUT_FAMILIES.filter((f) => f.provenance === "crawl-derived").length, 3);
   const names = LAYOUT_FAMILIES.map((f) => f.name).sort();
   assert.deepEqual(names, [
-    "app-shell-workbench", "asymmetric-proof-stack", "contrast-band-flow",
-    "editorial-broadsheet", "full-bleed-diagram", "gallery-mosaic", "hero-thesis-single",
-    "instrument-console", "ledger-table", "pricing-comparison", "sidebar-doc",
-    "spec-sheet", "split-marquee", "stacked-narrative-scroll", "two-pane-reader",
+    "app-shell-workbench", "asymmetric-proof-stack", "audio-transcript-workbench",
+    "contrast-band-flow", "docs-three-rail-reader", "editorial-broadsheet",
+    "full-bleed-diagram", "gallery-mosaic", "hero-thesis-single",
+    "instrument-console", "ledger-table", "pricing-comparison", "research-index-grid",
+    "sidebar-doc", "spec-sheet", "split-marquee", "stacked-narrative-scroll", "two-pane-reader",
   ]);
 });
 
@@ -26,7 +28,7 @@ test("every family has all schema keys and non-empty required lists", () => {
     for (const list of ["whenToUse", "notFor", "requiredContent", "antiPatterns", "materialSlots", "sectionGrammar"]) {
       assert.ok(Array.isArray(f[list]) && f[list].length > 0, `${f.name}.${list} must be non-empty`);
     }
-    assert.equal(f.provenance, "hand-authored");
+    assert.ok(["hand-authored", "crawl-derived"].includes(f.provenance), `${f.name}.provenance`);
     for (const dial of ["layoutVariance", "contentDensity"]) {
       assert.ok(Array.isArray(f.dialCompatibility[dial]) && f.dialCompatibility[dial].length === 2, `${f.name}.dialCompatibility.${dial}`);
     }
