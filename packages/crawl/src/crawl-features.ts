@@ -6,6 +6,21 @@
  *   npx tsx src/crawl-features.ts --concurrency 10 --timeout 15000
  *   npx tsx src/crawl-features.ts --fresh         # ignore prior progress, recrawl all
  *
+ * LAYOUT V2 (--layout-v2) also accepts:
+ *   --rich-capture     opt-in capture recipe for lazy-load/SPA pages: networkidle
+ *                       nav (falls back to domcontentloaded + wait), waits for a
+ *                       semantic landmark or text-length stabilization, stubs
+ *                       IntersectionObserver to fire immediately, and progressively
+ *                       autoscrolls to the document bottom before extracting
+ *                       geometry + screenshotting. Does NOT change the default
+ *                       recipe or output paths.
+ *   --raw-v2 <path>          override the raw NDJSON output path (default geometry-crawl-raw.v2.ndjson)
+ *   --screenshot-dir <path>  override the screenshot output dir (default data/layout-crawl/screenshots)
+ *   --only-hosts a.com,b.com restrict the run to a comma-separated host allowlist
+ *
+ *   npx tsx src/crawl-features.ts --layout-v2 --rich-capture --only-hosts adva-soft.com,blink.new \
+ *     --raw-v2 data/geometry-crawl-raw.v3.sample.ndjson --screenshot-dir data/layout-crawl/screenshots-v3-sample
+ *
  * GOAL — measure DESIGN SLOP the way crawl.ts measures font overuse: as FREQUENCY
  * ACROSS SITES (the font-saturation parallel). For each site we read computed
  * style off the live DOM (visible elements, cap ~600/site) plus page-level DOM /
@@ -37,15 +52,21 @@
 
 import { readFile, writeFile, appendFile, mkdir } from "node:fs/promises";
 import { existsSync, readFileSync } from "node:fs";
+import { createReadStream } from "node:fs";
+import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
-import { dirname, resolve } from "node:path";
+import { dirname, relative, resolve } from "node:path";
 import { chromium, type Browser, type Page } from "playwright";
 import { UA } from "./extract.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = resolve(HERE, "../../../data");
+const PROJECT_DIR = resolve(HERE, "../../..");
 const SITE_LIST = resolve(DATA_DIR, "site-list.json");
 const RAW_LOG = resolve(DATA_DIR, "feature-crawl-raw.ndjson");
+// Versioned layout collection. The original feature crawl above is intentionally untouched.
+let LAYOUT_RAW_LOG_V2 = resolve(DATA_DIR, "geometry-crawl-raw.v2.ndjson");
+let LAYOUT_SCREENSHOT_DIR_V2 = resolve(DATA_DIR, "layout-crawl/screenshots");
 
 // --- tunables -------------------------------------------------------------
 const MAX_ELEMENTS = 600;
@@ -134,6 +155,123 @@ interface SiteRaw {
   ok: boolean;
   error?: string;
   elements: ElementStyle[];
+  fp: PageFingerprint;
+}
+
+type ViewportName = "desktop" | "mobile";
+
+interface NormalizedRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+interface LayoutRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  normalized: NormalizedRect;
+  areaShare: number;
+}
+
+interface LayoutElement extends ElementStyle {
+  id: string;
+  tag: string;
+  depth: number;
+  parentId: string | null;
+  childCount: number;
+  repeatedGroup: string | null;
+  domPath: string;
+  zIndex: number;
+  stackingOrder: number;
+  overlapIds: string[];
+  sectionRole: string | null;
+  headingLevel: number | null;
+  landmarkRole: string | null;
+  textRole: string | null;
+  lineCount: number;
+  measure: { widthPx: number; widthShare: number; charsPerLineEstimate: number };
+  textSnippet: string;
+  rect: LayoutRect;
+  visibility: {
+    display: string;
+    visibility: string;
+    opacity: number;
+    inViewport: boolean;
+    visibleFraction: number;
+    occludedAtCenter: boolean;
+  };
+}
+
+interface SectionBoundary {
+  id: string;
+  role: string;
+  heading: string | null;
+  rect: LayoutRect;
+  heightShare: number;
+  focalPoint: "left" | "center" | "right";
+  composition: string;
+}
+
+interface AssetRecord {
+  id: string;
+  tag: string;
+  role: string;
+  sectionRole: string | null;
+  alt: string | null;
+  rect: LayoutRect;
+  aspectRatio: number;
+  naturalSize: { width: number; height: number } | null;
+  objectFit: string;
+  objectPosition: string;
+  visible: boolean;
+}
+
+interface LayoutViewportRecord {
+  viewport: { name: ViewportName; width: number; height: number; deviceScaleFactor: number };
+  document: { width: number; height: number };
+  elements: LayoutElement[];
+  sections: SectionBoundary[];
+  focalRegion: { elementId: string | null; role: string; rect: LayoutRect | null; reason: string };
+  assets: AssetRecord[];
+  screenshot: {
+    path: string;
+    viewport: { width: number; height: number };
+    deviceScaleFactor: number;
+    fullPage: boolean;
+    capturedAt: string;
+  };
+}
+
+interface ResponsiveTransform {
+  desktopViewport: { width: number; height: number };
+  mobileViewport: { width: number; height: number };
+  stack: { count: number; examples: string[] };
+  reorder: { count: number; examples: string[] };
+  hideShow: { hiddenOnMobile: string[]; shownOnMobile: string[] };
+  density: {
+    desktopElementsPerViewport: number;
+    mobileElementsPerViewport: number;
+    desktopTextAreaShare: number;
+    mobileTextAreaShare: number;
+    change: number;
+  };
+  sectionChanges: Array<{ role: string; desktopHeightShare: number; mobileHeightShare: number; mobileComposition: string }>;
+  summary: string;
+}
+
+interface LayoutSiteRaw {
+  schemaVersion: "geometry-crawl.v2";
+  host: string;
+  url: string;
+  ok: boolean;
+  error?: string;
+  capturedAt: string;
+  desktop: LayoutViewportRecord | null;
+  mobile: LayoutViewportRecord | null;
+  responsiveTransform: ResponsiveTransform | null;
   fp: PageFingerprint;
 }
 
@@ -247,6 +385,665 @@ async function extractFeatures(page: Page): Promise<{ elements: ElementStyle[]; 
       fp: { components, animationLibs, tailwindAnimate, gradientText, sparkleBadge },
     };
   }, MAX_ELEMENTS);
+}
+
+// ===========================================================================
+// LAYOUT V2 EXTRACTION - versioned geometry/semantics pass. This intentionally
+// lives beside (rather than replacing) the original feature extraction above.
+// ===========================================================================
+async function extractLayoutViewport(page: Page, viewportName: ViewportName): Promise<LayoutViewportRecord> {
+  return page.evaluate(({ max, name }) => {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const docWidth = Math.max(document.documentElement.scrollWidth, document.body?.scrollWidth ?? 0, vw);
+    const docHeight = Math.max(
+      document.documentElement.scrollHeight,
+      document.body?.scrollHeight ?? 0,
+      vh,
+    );
+    const root = document.body || document.documentElement;
+    const all = Array.from(document.querySelectorAll("*"));
+    const nodePath = (node: Element): string => {
+      const parts: string[] = [];
+      let current: Element | null = node;
+      while (current && current !== document.documentElement && parts.length < 16) {
+        let index = 1;
+        let sibling = current.previousElementSibling;
+        while (sibling) { index++; sibling = sibling.previousElementSibling; }
+        parts.unshift(`${current.tagName.toLowerCase()}:nth-child(${index})`);
+        current = current.parentElement;
+      }
+      return parts.join("/") || "body";
+    };
+    const compactHash = (value: string): string => {
+      let hash = 2166136261;
+      for (let i = 0; i < value.length; i++) {
+        hash ^= value.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+      }
+      return (hash >>> 0).toString(36);
+    };
+    // Keep domPath for auditability, but use a compact stable ID everywhere it is
+    // referenced (parent/overlap/section/asset) so the NDJSON stays bounded.
+    const idOf = (node: Element): string => `e${compactHash(nodePath(node))}`;
+    const cleanText = (value: string | null | undefined, limit = 240): string =>
+      (value || "").replace(/\s+/g, " ").trim().slice(0, limit);
+    const metaText = (node: Element): string => cleanText([
+      node.tagName,
+      node.getAttribute("role"),
+      node.getAttribute("aria-label"),
+      node.getAttribute("id"),
+      node.getAttribute("class"),
+      node.getAttribute("data-section"),
+      node.textContent,
+    ].filter(Boolean).join(" "), 420).toLowerCase();
+    const textContent = (node: Element): string => cleanText(node.textContent, 320);
+    const isVisible = (node: Element, rect: DOMRect, cs: CSSStyleDeclaration): boolean =>
+      cs.display !== "none" && cs.visibility !== "hidden" && parseFloat(cs.opacity || "1") > 0 &&
+      rect.width > 0 && rect.height > 0;
+    const rectFor = (node: Element): LayoutRect => {
+      const r = node.getBoundingClientRect();
+      const x = r.left + window.scrollX;
+      const y = r.top + window.scrollY;
+      const width = Math.max(0, r.width);
+      const height = Math.max(0, r.height);
+      return {
+        x, y, width, height,
+        normalized: {
+          x: Number((x / vw).toFixed(5)),
+          y: Number((y / docHeight).toFixed(5)),
+          w: Number((width / vw).toFixed(5)),
+          h: Number((height / docHeight).toFixed(5)),
+        },
+        areaShare: Number(((width * height) / (vw * docHeight)).toFixed(6)),
+      };
+    };
+    const visibleFraction = (rect: DOMRect): number => {
+      const left = Math.max(0, rect.left);
+      const top = Math.max(0, rect.top);
+      const right = Math.min(vw, rect.right);
+      const bottom = Math.min(vh, rect.bottom);
+      const visible = Math.max(0, right - left) * Math.max(0, bottom - top);
+      return rect.width * rect.height ? Number((visible / (rect.width * rect.height)).toFixed(4)) : 0;
+    };
+    const centerOccluded = (node: Element, rect: DOMRect): boolean => {
+      const x = Math.max(0, Math.min(vw - 1, rect.left + rect.width / 2));
+      const y = Math.max(0, Math.min(vh - 1, rect.top + rect.height / 2));
+      const top = document.elementFromPoint(x, y);
+      return !!top && top !== node && !node.contains(top) && !top.contains(node);
+    };
+    const roleFromText = (node: Element, index: number, rect: LayoutRect): string => {
+      const tag = node.tagName.toLowerCase();
+      const t = metaText(node);
+      if (tag === "nav" || /\b(nav|navbar|navigation|menu|topbar)\b/.test(t)) return "nav";
+      if (tag === "header") return "nav";
+      if (tag === "footer" || /\b(footer|site-footer)\b/.test(t)) return "footer";
+      if (/\b(pric(?:e|ing)|plans?|tiers?|billing|cost)\b/.test(t)) return "pricing";
+      if (/\b(faq|frequently asked|questions?|accordion)\b/.test(t)) return "faq";
+      if (/\b(proof|trusted|customers?|testimonials?|reviews?|case stud(?:y|ies)|logos?|results?|social proof)\b/.test(t)) return "proof";
+      if (/\b(features?|benefits?|capabilities?|use cases?|workflows?|how it works)\b/.test(t)) return "features";
+      if (/\b(cta|call.to.action|get started|sign up|signup|book a demo|contact us|try it|start free)\b/.test(t)) return "cta";
+      if (/\b(hero|masthead|marquee|banner|above.fold|intro)\b/.test(t)) return "hero";
+      if (index === 0 && rect.y < 0.18 && rect.height > 0.08) return "hero";
+      return "unknown";
+    };
+    const focalPointFor = (rect: LayoutRect): "left" | "center" | "right" => {
+      const center = rect.x + rect.width / 2;
+      if (center < vw * 0.39) return "left";
+      if (center > vw * 0.61) return "right";
+      return "center";
+    };
+    const compositionFor = (node: Element, rect: LayoutRect): string => {
+      const cs = getComputedStyle(node);
+      const children = Array.from(node.children).filter((child) => {
+        const r = child.getBoundingClientRect();
+        return r.width > 20 && r.height > 20 && getComputedStyle(child).display !== "none";
+      });
+      const hasImage = !!node.querySelector("img,svg,video,canvas,[role='img']");
+      const hasText = !!node.querySelector("h1,h2,h3,h4,h5,h6,p");
+      const row = cs.display === "flex" && cs.flexDirection !== "column" ||
+        cs.display === "grid" && /repeat|\d+fr|auto auto/.test(cs.gridTemplateColumns);
+      if (hasImage && hasText && row) return "figure-plus-text";
+      if (row && children.length >= 2) return "split";
+      if (hasImage && hasText) return "media-led-stack";
+      if (children.length >= 4) return "repeated-module-stack";
+      if (node.querySelector("button,a")) return "content-plus-action";
+      if (rect.width >= vw * 0.92) return "full-width-band";
+      return "stack";
+    };
+    const sectionSelector = "header,nav,main,section,article,aside,footer,[role='region'],[data-section]";
+    const sectionNodes = Array.from(document.querySelectorAll(sectionSelector)).filter((node) => {
+      const cs = getComputedStyle(node);
+      const rect = node.getBoundingClientRect();
+      return isVisible(node, rect, cs) && rect.height >= 24;
+    });
+    const sectionByNode = new Map<Element, { id: string; role: string; rect: LayoutRect }>();
+    const sectionRecords: SectionBoundary[] = [];
+    const seenSections = new Set<string>();
+    for (let i = 0; i < sectionNodes.length; i++) {
+      const node = sectionNodes[i];
+      if (!node) continue;
+      const id = idOf(node);
+      if (seenSections.has(id)) continue;
+      seenSections.add(id);
+      const rect = rectFor(node);
+      const role = roleFromText(node, i, rect);
+      const heading = node.querySelector("h1,h2,h3,h4,h5,h6");
+      const record: SectionBoundary = {
+        id,
+        role,
+        heading: heading ? cleanText(heading.textContent, 180) : null,
+        rect,
+        heightShare: Number((rect.height / docHeight).toFixed(5)),
+        focalPoint: focalPointFor(rect),
+        composition: compositionFor(node, rect),
+      };
+      sectionByNode.set(node, { id, role, rect });
+      sectionRecords.push(record);
+    }
+    // A section-like div often carries the actual hero/features boundary. Add only
+    // large, direct children of main when semantic sections are absent.
+    if (!sectionRecords.some((s) => s.role === "hero")) {
+      const heroCandidate = Array.from(root.querySelectorAll("div")).find((node) => {
+        const rect = node.getBoundingClientRect();
+        return rect.top < vh * 1.4 && rect.height > vh * 0.22 && !!node.querySelector("h1,h2");
+      });
+      if (heroCandidate) {
+        const id = idOf(heroCandidate);
+        const rect = rectFor(heroCandidate);
+        const hero: SectionBoundary = {
+          id,
+          role: "hero",
+          heading: heroCandidate.querySelector("h1,h2") ? cleanText(heroCandidate.querySelector("h1,h2")!.textContent, 180) : null,
+          rect,
+          heightShare: Number((rect.height / docHeight).toFixed(5)),
+          focalPoint: focalPointFor(rect),
+          composition: compositionFor(heroCandidate, rect),
+        };
+        sectionRecords.push(hero);
+        sectionByNode.set(heroCandidate, { id, role: "hero", rect });
+      }
+    }
+    sectionRecords.sort((a, b) => a.rect.y - b.rect.y || a.rect.x - b.rect.x);
+    const sectionFor = (node: Element): { id: string; role: string } | null => {
+      let best: { id: string; role: string; area: number } | null = null;
+      for (const [section, info] of sectionByNode) {
+        if (!section.contains(node) && section !== node) continue;
+        const area = info.rect.width * info.rect.height;
+        if (!best || area < best.area) best = { ...info, area };
+      }
+      return best ? { id: best.id, role: best.role } : null;
+    };
+    const selectedSelector = "body,main,header,nav,section,article,aside,footer,h1,h2,h3,h4,h5,h6,p,a,span,li,button,code,pre,blockquote,div,figcaption,label,img,svg,video,canvas,[role='img']";
+    const selectedNodes = Array.from(document.querySelectorAll(selectedSelector)).filter((node) => {
+      const rect = node.getBoundingClientRect();
+      const cs = getComputedStyle(node);
+      const text = textContent(node);
+      // Keep semantically meaningful hidden nodes so the desktop/mobile diff can
+      // report hide/show transforms instead of silently losing them.
+      if (!isVisible(node, rect, cs)) {
+        return text.length >= 2 || /^(NAV|HEADER|MAIN|SECTION|ARTICLE|ASIDE|FOOTER|H[1-6]|BUTTON|A|IMG|SVG|VIDEO|CANVAS)$/.test(node.tagName);
+      }
+      return text.length >= 2 || rect.width * rect.height > 3000 || /^(IMG|SVG|VIDEO|CANVAS)$/.test(node.tagName);
+    }).slice(0, max);
+    const selectedSet = new Set(selectedNodes);
+    const nearestSelectedParent = (node: Element): Element | null => {
+      let parent = node.parentElement;
+      while (parent) {
+        if (selectedSet.has(parent)) return parent;
+        parent = parent.parentElement;
+      }
+      return null;
+    };
+    const textRoleFor = (node: Element, text: string): string | null => {
+      if (!text) return null;
+      const tag = node.tagName.toLowerCase();
+      if (/^h[1-6]$/.test(tag)) return "heading";
+      if (tag === "label" || /\b(label|eyebrow|kicker|caption|meta)\b/.test(metaText(node))) return "label";
+      if (tag === "button" || node.getAttribute("role") === "button" ||
+        (tag === "a" && /\b(get started|sign up|signup|buy|try|demo|contact|learn more|start)\b/i.test(text))) return "cta";
+      if (tag === "p" || tag === "blockquote" || tag === "li" || tag === "article") return "body";
+      return text.length > 18 ? "body" : "label";
+    };
+    const landmarkFor = (node: Element): string | null => {
+      const explicit = node.getAttribute("role");
+      if (explicit && /^(navigation|banner|main|contentinfo|complementary|region)$/.test(explicit)) return explicit;
+      const tag = node.tagName.toLowerCase();
+      if (["nav", "header", "main", "footer", "aside"].includes(tag)) return tag === "header" ? "banner" : tag === "footer" ? "contentinfo" : tag;
+      return null;
+    };
+    const headingLevelFor = (node: Element): number | null => {
+      const match = node.tagName.toLowerCase().match(/^h([1-6])$/);
+      return match ? Number(match[1]) : null;
+    };
+    const repeatedSignature = (node: Element): string => {
+      const cls = cleanText(node.getAttribute("class"), 100).toLowerCase()
+        .replace(/[a-f0-9]{5,}/g, "#hash").replace(/\d+/g, "#n");
+      const children = Array.from(node.children).slice(0, 8).map((child) => child.tagName.toLowerCase()).join(",");
+      return `${node.tagName.toLowerCase()}|${cls}|${children}`;
+    };
+    const signatures = new Map<string, number>();
+    for (const node of selectedNodes) signatures.set(repeatedSignature(node), (signatures.get(repeatedSignature(node)) || 0) + 1);
+    const groupIds = new Map<string, string>();
+    let groupIndex = 0;
+    for (const [signature, count] of signatures) if (count >= 2) groupIds.set(signature, `repeat-${++groupIndex}`);
+    const lineMeasure = (node: Element, rect: DOMRect, cs: CSSStyleDeclaration): { lineCount: number; measure: { widthPx: number; widthShare: number; charsPerLineEstimate: number } } => {
+      const text = textContent(node);
+      let lineCount = 0;
+      try {
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        lineCount = range.getClientRects().length;
+      } catch { /* some shadow/custom elements do not expose a range */ }
+      const lineHeight = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.35 || 16;
+      if (!lineCount && text) lineCount = Math.max(1, Math.round(rect.height / lineHeight));
+      const fontSize = parseFloat(cs.fontSize) || 16;
+      return {
+        lineCount: Math.max(0, lineCount),
+        measure: {
+          widthPx: Number(rect.width.toFixed(2)),
+          widthShare: Number((rect.width / vw).toFixed(5)),
+          charsPerLineEstimate: text ? Math.max(1, Math.round((rect.width / fontSize) * 1.8)) : 0,
+        },
+      };
+    };
+    const rawElements = selectedNodes.map((node, index) => {
+      const rectDom = node.getBoundingClientRect();
+      const rect = rectFor(node);
+      const cs = getComputedStyle(node);
+      const directText = Array.from(node.childNodes).filter((child) => child.nodeType === 3).map((child) => child.textContent || "").join(" ");
+      const text = textContent(node);
+      const parent = nearestSelectedParent(node);
+      const section = sectionFor(node);
+      const lm = lineMeasure(node, rectDom, cs);
+      const borderW = parseFloat(cs.borderTopWidth) || 0;
+      const z = cs.zIndex === "auto" ? 0 : parseInt(cs.zIndex) || 0;
+      return {
+        node,
+        id: idOf(node),
+        tag: node.tagName.toLowerCase(),
+        depth: nodePath(node).split("/").length,
+        parentId: parent ? idOf(parent) : null,
+        childCount: node.children.length,
+        repeatedGroup: groupIds.get(repeatedSignature(node)) || null,
+        domPath: nodePath(node),
+        zIndex: z,
+        stackingOrder: index,
+        overlapIds: [] as string[],
+        sectionRole: section?.role || null,
+        headingLevel: headingLevelFor(node),
+        landmarkRole: landmarkFor(node),
+        textRole: textRoleFor(node, text),
+        lineCount: lm.lineCount,
+        measure: lm.measure,
+        textSnippet: cleanText(directText || text, 200),
+        rect,
+        visibility: {
+          display: cs.display,
+          visibility: cs.visibility,
+          opacity: Number((parseFloat(cs.opacity || "1") || 0).toFixed(3)),
+          inViewport: rectDom.bottom > 0 && rectDom.top < vh,
+          visibleFraction: visibleFraction(rectDom),
+          occludedAtCenter: centerOccluded(node, rectDom),
+        },
+        color: cs.color,
+        backgroundColor: cs.backgroundColor,
+        borderColor: borderW > 0 ? cs.borderTopColor : null,
+        backgroundImage: cs.backgroundImage,
+        boxShadow: cs.boxShadow,
+        textShadow: cs.textShadow,
+        filter: cs.filter,
+        backdropFilter: (cs as any).backdropFilter || (cs as any).webkitBackdropFilter || "none",
+        borderRadius: parseFloat(cs.borderTopLeftRadius) || 0,
+        transitionProperty: cs.transitionProperty,
+        transitionDuration: cs.transitionDuration,
+        transitionTiming: cs.transitionTimingFunction,
+        animationName: cs.animationName,
+        fontFamily: cs.fontFamily,
+        fontWeight: parseInt(cs.fontWeight) || 400,
+        fontSize: parseFloat(cs.fontSize) || 0,
+        textTransform: cs.textTransform,
+        letterSpacing: cs.letterSpacing,
+        area: rect.width * rect.height,
+        aboveFold: rectDom.top < vh && rectDom.bottom > 0,
+      };
+    });
+    const overlapArea = (a: LayoutRect, b: LayoutRect): number => {
+      const left = Math.max(a.x, b.x);
+      const top = Math.max(a.y, b.y);
+      const right = Math.min(a.x + a.width, b.x + b.width);
+      const bottom = Math.min(a.y + a.height, b.y + b.height);
+      return Math.max(0, right - left) * Math.max(0, bottom - top);
+    };
+    const isAncestor = (a: Element, b: Element): boolean => a !== b && a.contains(b);
+    for (let i = 0; i < rawElements.length; i++) {
+      for (let j = i + 1; j < rawElements.length; j++) {
+        const a = rawElements[i]; const b = rawElements[j];
+        if (!a || !b) continue;
+        if (isAncestor(a.node, b.node) || isAncestor(b.node, a.node)) continue;
+        const inter = overlapArea(a.rect, b.rect);
+        const threshold = Math.max(16, Math.min(a.rect.width * a.rect.height, b.rect.width * b.rect.height) * 0.02);
+        if (inter > threshold) {
+          if (a.overlapIds.length < 12) a.overlapIds.push(b.id);
+          if (b.overlapIds.length < 12) b.overlapIds.push(a.id);
+        }
+      }
+    }
+    const sectionForRole = (node: Element): string | null => sectionFor(node)?.role || null;
+    const assetRoleFor = (node: Element, sectionRole: string | null): string => {
+      const text = metaText(node);
+      const alt = cleanText(node.getAttribute("alt"), 160).toLowerCase();
+      if (/logo|wordmark|brand/.test(text + " " + alt)) return "logo";
+      if (/screenshot|mockup|product|ui|dashboard|app/.test(text + " " + alt)) return "product-screenshot";
+      if (/diagram|chart|graph|flow|system|architecture/.test(text + " " + alt)) return "diagram";
+      if (sectionRole === "proof") return "proof-logo-or-badge";
+      if (sectionRole === "hero" || sectionRole === "marquee") return "hero-visual";
+      if (!alt) return "decorative-asset";
+      return "content-image";
+    };
+    const assets: AssetRecord[] = [];
+    for (const node of Array.from(document.querySelectorAll("img,video,canvas,svg,[role='img']"))) {
+      const rectDom = node.getBoundingClientRect();
+      const cs = getComputedStyle(node);
+      if (!isVisible(node, rectDom, cs)) continue;
+      const rect = rectFor(node);
+      const image = node as HTMLImageElement;
+      const video = node as HTMLVideoElement;
+      const naturalWidth = image.naturalWidth || video.videoWidth || 0;
+      const naturalHeight = image.naturalHeight || video.videoHeight || 0;
+      assets.push({
+        id: idOf(node),
+        tag: node.tagName.toLowerCase(),
+        role: assetRoleFor(node, sectionForRole(node)),
+        sectionRole: sectionForRole(node),
+        alt: node.getAttribute("alt"),
+        rect,
+        aspectRatio: Number(((naturalWidth && naturalHeight ? naturalWidth / naturalHeight : rect.width / Math.max(1, rect.height))).toFixed(5)),
+        naturalSize: naturalWidth && naturalHeight ? { width: naturalWidth, height: naturalHeight } : null,
+        objectFit: cs.objectFit || "fill",
+        objectPosition: cs.objectPosition || "50% 50%",
+        visible: rectDom.bottom > 0 && rectDom.top < vh,
+      });
+    }
+    const focalCandidates = sectionRecords.filter((s) => ["hero", "marquee", "proof", "features", "cta"].includes(s.role));
+    focalCandidates.sort((a, b) => {
+      const score = (s: SectionBoundary): number => (s.role === "hero" || s.role === "marquee" ? 1.6 : 1) * s.rect.areaShare;
+      return score(b) - score(a);
+    });
+    const focal = focalCandidates[0] || sectionRecords[0] || null;
+    const focalRegion = focal
+      ? { elementId: focal.id, role: focal.role, rect: focal.rect, reason: focal.role === "hero" ? "hero-section" : "largest-semantic-section" }
+      : { elementId: null, role: "unknown", rect: null, reason: "no-semantic-region" };
+    const elements = rawElements.map(({ node: _node, ...element }) => element);
+    return {
+      viewport: { name, width: vw, height: vh, deviceScaleFactor: window.devicePixelRatio || 1 },
+      document: { width: docWidth, height: docHeight },
+      elements,
+      sections: sectionRecords,
+      focalRegion,
+      assets,
+      screenshot: {
+        path: "",
+        viewport: { width: vw, height: vh },
+        deviceScaleFactor: window.devicePixelRatio || 1,
+        fullPage: true,
+        capturedAt: "",
+      },
+    };
+  }, { max: MAX_ELEMENTS, name: viewportName });
+}
+
+const LAYOUT_VIEWPORTS: Array<{ name: ViewportName; width: number; height: number }> = [
+  { name: "desktop", width: 1440, height: 900 },
+  { name: "mobile", width: 390, height: 844 },
+];
+
+function screenshotSlug(host: string): string {
+  return host.toLowerCase().replace(/[^a-z0-9.-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 160) || "site";
+}
+
+function relativeDataPath(absolutePath: string): string {
+  return relative(PROJECT_DIR, absolutePath).replace(/\\/g, "/");
+}
+
+async function crawlLayoutViewport(
+  browser: Browser,
+  host: string,
+  url: string,
+  viewport: { name: ViewportName; width: number; height: number },
+  timeoutMs: number,
+  richCapture = false,
+): Promise<{ layout: LayoutViewportRecord; fp: PageFingerprint } | null> {
+  let context;
+  try {
+    context = await browser.newContext({
+      userAgent: UA,
+      viewport: { width: viewport.width, height: viewport.height },
+      deviceScaleFactor: 1,
+    });
+    await context.addInitScript({ content: "window.__name=window.__name||function(f){return f;};" });
+    // Keep images and CSS available for truthful geometry, asset metadata, and screenshots.
+    // Abort only media streams, which otherwise make long pages hang indefinitely.
+    await context.route("**/*", (route) => {
+      if (route.request().resourceType() === "media") return route.abort();
+      return route.continue();
+    });
+    const page = await context.newPage();
+    if (richCapture) {
+      // Belt-and-braces: stub IntersectionObserver so below-the-fold content
+      // gated on IO (lazy images, reveal-on-scroll sections) hydrates even on
+      // SPAs whose own IO never fires headless without real scroll/paint timing.
+      await page.addInitScript(() => {
+        class IOStub {
+          private cb: IntersectionObserverCallback;
+          constructor(cb: IntersectionObserverCallback) {
+            this.cb = cb;
+          }
+          observe(el: Element): void {
+            Promise.resolve().then(() => {
+              this.cb(
+                [
+                  {
+                    target: el,
+                    isIntersecting: true,
+                    intersectionRatio: 1,
+                    boundingClientRect: el.getBoundingClientRect(),
+                    intersectionRect: el.getBoundingClientRect(),
+                    rootBounds: null,
+                    time: performance.now(),
+                  } as IntersectionObserverEntry,
+                ],
+                this as unknown as IntersectionObserver,
+              );
+            });
+          }
+          unobserve(): void {}
+          disconnect(): void {}
+          takeRecords(): IntersectionObserverEntry[] {
+            return [];
+          }
+        }
+        // @ts-expect-error headless lazy-load hydration stub, not a real IO
+        window.IntersectionObserver = IOStub;
+      });
+      // Navigate and wait for network idle so SPA hydration/XHR-driven content
+      // has a chance to settle; fall back to domcontentloaded + explicit wait
+      // if the site never goes idle (streaming/polling pages, etc).
+      try {
+        await page.goto(url, { waitUntil: "networkidle", timeout: timeoutMs });
+      } catch {
+        await page.goto(url, { waitUntil: "domcontentloaded", timeout: timeoutMs }).catch(() => undefined);
+        await page.waitForTimeout(1200);
+      }
+      // Wait for real content: race a semantic landmark against the visible
+      // text length settling, whichever resolves first.
+      await Promise.race([
+        page.waitForSelector("h1, main, [role=main]", { timeout: Math.min(timeoutMs, 6000) }).catch(() => undefined),
+        (async () => {
+          let prevLen = -1;
+          for (let i = 0; i < 10; i++) {
+            const len = await page.evaluate(() => document.body?.innerText?.length || 0).catch(() => 0);
+            if (len > 0 && len === prevLen) return;
+            prevLen = len;
+            await page.waitForTimeout(300);
+          }
+        })(),
+      ]);
+      // Progressive autoscroll to document bottom in viewport-height steps —
+      // fires real (non-stubbed) IO callbacks and scroll-keyed lazy-loaders —
+      // then settle back at the top before extracting geometry/screenshotting.
+      await page
+        .evaluate(async () => {
+          const step = Math.max(200, window.innerHeight);
+          let y = 0;
+          const total = () => document.documentElement.scrollHeight;
+          while (y < total()) {
+            y += step;
+            window.scrollTo(0, y);
+            await new Promise((r) => setTimeout(r, 220));
+          }
+          window.scrollTo(0, 0);
+        })
+        .catch(() => undefined);
+      await page.waitForTimeout(500);
+    } else {
+      await page.goto(url, { waitUntil: "domcontentloaded", timeout: timeoutMs });
+      await page.waitForTimeout(1200);
+    }
+    await page.evaluate(async () => {
+      if (document.fonts?.ready) await document.fonts.ready.catch(() => undefined);
+    }).catch(() => undefined);
+    const layout = await extractLayoutViewport(page, viewport.name);
+    // The legacy fingerprint is retained for compatibility, but only compute it
+    // once per page (desktop). The v2 geometry pass already owns both viewports.
+    const fp = viewport.name === "desktop"
+      ? (await extractFeatures(page)).fp
+      : { components: [], animationLibs: [], tailwindAnimate: [], gradientText: false, sparkleBadge: false };
+    const capturedAt = new Date().toISOString();
+    const screenshotDir = resolve(LAYOUT_SCREENSHOT_DIR_V2, screenshotSlug(host));
+    await mkdir(screenshotDir, { recursive: true });
+    const screenshotPath = resolve(screenshotDir, `${viewport.name}-${viewport.width}x${viewport.height}.png`);
+    await page.screenshot({ path: screenshotPath, fullPage: true, animations: "disabled" });
+    layout.screenshot = {
+      path: relativeDataPath(screenshotPath),
+      viewport: { width: viewport.width, height: viewport.height },
+      deviceScaleFactor: 1,
+      fullPage: true,
+      capturedAt,
+    };
+    return { layout, fp };
+  } catch {
+    return null;
+  } finally {
+    if (context) await context.close().catch(() => {});
+  }
+}
+
+function compareResponsive(desktop: LayoutViewportRecord, mobile: LayoutViewportRecord): ResponsiveTransform {
+  const desktopMap = new Map(desktop.elements.map((element) => [element.domPath, element]));
+  const mobileMap = new Map(mobile.elements.map((element) => [element.domPath, element]));
+  const hiddenOnMobile: string[] = [];
+  const shownOnMobile: string[] = [];
+  for (const [path, element] of desktopMap) {
+    const other = mobileMap.get(path);
+    if (!other || (element.visibility.opacity > 0 && other.visibility.opacity === 0)) hiddenOnMobile.push(path);
+  }
+  for (const [path, element] of mobileMap) {
+    const other = desktopMap.get(path);
+    if (!other || (element.visibility.opacity > 0 && other.visibility.opacity === 0)) shownOnMobile.push(path);
+  }
+  const stackExamples: string[] = [];
+  const common = [...desktopMap.entries()].filter(([path]) => mobileMap.has(path));
+  for (const [path, d] of common) {
+    const m = mobileMap.get(path)!;
+    if (d.rect.width < desktop.viewport.width * 0.72 && m.rect.width > mobile.viewport.width * 0.84 &&
+      d.rect.height > 0 && m.rect.height > 0 && (d.sectionRole || "") === (m.sectionRole || "")) {
+      stackExamples.push(path);
+    }
+    if (stackExamples.length >= 24) break;
+  }
+  const reorderExamples: string[] = [];
+  const groups = new Map<string, Array<[string, LayoutElement]>>();
+  for (const [path, d] of common) {
+    const key = d.sectionRole || "page";
+    const list = groups.get(key) || [];
+    list.push([path, d]);
+    groups.set(key, list);
+  }
+  for (const [role, entries] of groups) {
+    if (entries.length < 2) continue;
+    const desktopOrder = [...entries].sort((a, b) => a[1].rect.y - b[1].rect.y || a[1].rect.x - b[1].rect.x).map(([path]) => path);
+    const mobileOrder = entries.map(([path]) => [path, mobileMap.get(path)!] as [string, LayoutElement])
+      .sort((a, b) => a[1].rect.y - b[1].rect.y || a[1].rect.x - b[1].rect.x).map(([path]) => path);
+    if (desktopOrder.join("|") !== mobileOrder.join("|")) {
+      reorderExamples.push(`${role}:${desktopOrder.slice(0, 4).join(",")} -> ${mobileOrder.slice(0, 4).join(",")}`);
+    }
+  }
+  const desktopTextArea = Math.min(1, desktop.elements.filter((e) => e.textRole === "heading" || e.textRole === "body")
+    .reduce((sum, e) => sum + e.rect.areaShare, 0));
+  const mobileTextArea = Math.min(1, mobile.elements.filter((e) => e.textRole === "heading" || e.textRole === "body")
+    .reduce((sum, e) => sum + e.rect.areaShare, 0));
+  const desktopDensity = desktop.elements.length / Math.max(1, desktop.document.height / desktop.viewport.height);
+  const mobileDensity = mobile.elements.length / Math.max(1, mobile.document.height / mobile.viewport.height);
+  const sectionChanges: ResponsiveTransform["sectionChanges"] = [];
+  const mobileSections = new Map(mobile.sections.map((s) => [s.role, s]));
+  for (const section of desktop.sections) {
+    const other = mobileSections.get(section.role);
+    if (!other) continue;
+    sectionChanges.push({
+      role: section.role,
+      desktopHeightShare: section.heightShare,
+      mobileHeightShare: other.heightShare,
+      mobileComposition: other.composition,
+    });
+  }
+  const summaryParts: string[] = [];
+  if (stackExamples.length) summaryParts.push(`${stackExamples.length} blocks widen/stack`);
+  if (reorderExamples.length) summaryParts.push(`${reorderExamples.length} regions reorder`);
+  if (hiddenOnMobile.length) summaryParts.push(`${hiddenOnMobile.length} elements hide`);
+  if (shownOnMobile.length) summaryParts.push(`${shownOnMobile.length} elements appear`);
+  summaryParts.push(`density ${desktopDensity.toFixed(1)} -> ${mobileDensity.toFixed(1)}`);
+  return {
+    desktopViewport: { width: desktop.viewport.width, height: desktop.viewport.height },
+    mobileViewport: { width: mobile.viewport.width, height: mobile.viewport.height },
+    stack: { count: stackExamples.length, examples: stackExamples },
+    reorder: { count: reorderExamples.length, examples: reorderExamples },
+    hideShow: { hiddenOnMobile: hiddenOnMobile.slice(0, 80), shownOnMobile: shownOnMobile.slice(0, 80) },
+    density: {
+      desktopElementsPerViewport: Number(desktopDensity.toFixed(4)),
+      mobileElementsPerViewport: Number(mobileDensity.toFixed(4)),
+      desktopTextAreaShare: Number(desktopTextArea.toFixed(5)),
+      mobileTextAreaShare: Number(mobileTextArea.toFixed(5)),
+      change: Number((mobileDensity - desktopDensity).toFixed(4)),
+    },
+    sectionChanges,
+    summary: summaryParts.join("; "),
+  };
+}
+
+async function crawlLayoutSite(browser: Browser, host: string, url: string, timeoutMs: number, richCapture = false): Promise<LayoutSiteRaw> {
+  const captures: Partial<Record<ViewportName, { layout: LayoutViewportRecord; fp: PageFingerprint }>> = {};
+  for (const viewport of LAYOUT_VIEWPORTS) {
+    const capture = await crawlLayoutViewport(browser, host, url, viewport, timeoutMs, richCapture);
+    if (capture) captures[viewport.name] = capture;
+  }
+  const desktop = captures.desktop?.layout || null;
+  const mobile = captures.mobile?.layout || null;
+  const ok = !!desktop || !!mobile;
+  return {
+    schemaVersion: "geometry-crawl.v2",
+    host,
+    url,
+    ok,
+    ...(ok ? {} : { error: "both fixed viewport captures failed" }),
+    capturedAt: new Date().toISOString(),
+    desktop,
+    mobile,
+    responsiveTransform: desktop && mobile ? compareResponsive(desktop, mobile) : null,
+    fp: captures.desktop?.fp || captures.mobile?.fp || {
+      components: [], animationLibs: [], tailwindAnimate: [], gradientText: false, sparkleBadge: false,
+    },
+  };
 }
 
 // ===========================================================================
@@ -583,15 +1380,47 @@ async function emit(agg: Aggregates): Promise<void> {
 // ===========================================================================
 // DRIVER — concurrency pool, incremental NDJSON, resume by skipping done hosts.
 // ===========================================================================
-interface Args { limit: number | null; concurrency: number; timeout: number; fresh: boolean; }
+interface Args {
+  limit: number | null;
+  concurrency: number;
+  timeout: number;
+  fresh: boolean;
+  layoutV2: boolean;
+  rawV2: string | null;
+  retryPartial: boolean;
+  richCapture: boolean;
+  screenshotDir: string | null;
+  onlyHosts: string[] | null;
+}
 function parseArgs(argv: string[]): Args {
-  const out: Args = { limit: null, concurrency: 10, timeout: 15000, fresh: false };
+  const out: Args = {
+    limit: null,
+    concurrency: 10,
+    timeout: 15000,
+    fresh: false,
+    layoutV2: false,
+    rawV2: null,
+    retryPartial: false,
+    richCapture: false,
+    screenshotDir: null,
+    onlyHosts: null,
+  };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--limit") out.limit = parseInt(argv[++i], 10);
     else if (a === "--concurrency") out.concurrency = parseInt(argv[++i], 10);
     else if (a === "--timeout") out.timeout = parseInt(argv[++i], 10);
     else if (a === "--fresh") out.fresh = true;
+    else if (a === "--layout-v2") out.layoutV2 = true;
+    else if (a === "--raw-v2") out.rawV2 = argv[++i] || null;
+    else if (a === "--retry-partial") out.retryPartial = true;
+    // New capture recipe (networkidle nav + content wait + autoscroll +
+    // IntersectionObserver stub). Opt-in: does not change default behavior
+    // or default output paths.
+    else if (a === "--rich-capture") out.richCapture = true;
+    else if (a === "--screenshot-dir") out.screenshotDir = argv[++i] || null;
+    // Comma-separated host allowlist, for targeted re-crawl samples.
+    else if (a === "--only-hosts") out.onlyHosts = (argv[++i] || "").split(",").map((h) => h.trim()).filter(Boolean);
   }
   return out;
 }
@@ -608,8 +1437,144 @@ function loadDoneHosts(): Map<string, SiteRaw> {
   return done;
 }
 
+async function loadDoneLayoutHosts(): Promise<Set<string>> {
+  const done = new Set<string>();
+  if (!existsSync(LAYOUT_RAW_LOG_V2)) return done;
+  const input = createReadStream(LAYOUT_RAW_LOG_V2, { encoding: "utf8" });
+  const lines = createInterface({ input, crlfDelay: Infinity });
+  for await (const line of lines) {
+    const t = line.trim();
+    if (!t) continue;
+    // Host IDs are intentionally simple site-list hostnames. Extract only the
+    // small resume key instead of parsing a potentially multi-megabyte JSON line.
+    const host = t.match(/"host":"([^"]+)"/)?.[1];
+    if (t.includes('"schemaVersion":"geometry-crawl.v2"') && host) done.add(host);
+  }
+  return done;
+}
+
+async function summarizeLayoutRaw(sites: Array<{ host: string }>): Promise<{ records: number; ok: number; desktop: number; mobile: number; both: number }> {
+  const scoped = new Set(sites.map((site) => site.host));
+  const counts = { records: 0, ok: 0, desktop: 0, mobile: 0, both: 0 };
+  if (!existsSync(LAYOUT_RAW_LOG_V2)) return counts;
+  const input = createReadStream(LAYOUT_RAW_LOG_V2, { encoding: "utf8" });
+  const lines = createInterface({ input, crlfDelay: Infinity });
+  for await (const line of lines) {
+    const t = line.trim();
+    if (!t) continue;
+    const host = t.match(/"host":"([^"]+)"/)?.[1];
+    if (!t.includes('"schemaVersion":"geometry-crawl.v2"') || !host || !scoped.has(host)) continue;
+    const hasDesktop = t.includes('"desktop":{');
+    const hasMobile = t.includes('"mobile":{');
+    counts.records++;
+    if (t.includes('"ok":true,"capturedAt"')) counts.ok++;
+    if (hasDesktop) counts.desktop++;
+    if (hasMobile) counts.mobile++;
+    if (hasDesktop && hasMobile) counts.both++;
+  }
+  return counts;
+}
+
+async function loadIncompleteLayoutHosts(): Promise<Set<string>> {
+  const states = new Map<string, { desktop: boolean; mobile: boolean }>();
+  if (!existsSync(LAYOUT_RAW_LOG_V2)) return new Set();
+  const input = createReadStream(LAYOUT_RAW_LOG_V2, { encoding: "utf8" });
+  const lines = createInterface({ input, crlfDelay: Infinity });
+  for await (const line of lines) {
+    const t = line.trim();
+    if (!t) continue;
+    const host = t.match(/"host":"([^"]+)"/)?.[1];
+    if (!host || !t.includes('"schemaVersion":"geometry-crawl.v2"')) continue;
+    const current = states.get(host) || { desktop: false, mobile: false };
+    current.desktop ||= t.includes('"desktop":{');
+    current.mobile ||= t.includes('"mobile":{');
+    states.set(host, current);
+  }
+  return new Set([...states].filter(([, state]) => !state.desktop || !state.mobile).map(([host]) => host));
+}
+
+async function mainLayoutV2(args: Args): Promise<void> {
+  await mkdir(DATA_DIR, { recursive: true });
+  await mkdir(LAYOUT_SCREENSHOT_DIR_V2, { recursive: true });
+  let sites = JSON.parse(await readFile(SITE_LIST, "utf8")) as Array<{ url: string; host: string; source: string }>;
+  if (args.onlyHosts && args.onlyHosts.length) {
+    const allow = new Set(args.onlyHosts);
+    sites = sites.filter((s) => allow.has(s.host));
+  }
+  if (args.limit != null) sites = sites.slice(0, args.limit);
+  if (args.fresh && existsSync(LAYOUT_RAW_LOG_V2)) await writeFile(LAYOUT_RAW_LOG_V2, "");
+  const done = await loadDoneLayoutHosts();
+  const partial = args.retryPartial ? await loadIncompleteLayoutHosts() : new Set<string>();
+  const seenTodo = new Set<string>();
+  const todo = sites.filter((site) => {
+    if ((done.has(site.host) && !partial.has(site.host)) || seenTodo.has(site.host)) return false;
+    seenTodo.add(site.host);
+    return true;
+  });
+  console.log(`Layout v2 crawl: ${sites.length} sites in scope, ${done.size} already done, ${todo.length} to crawl.`);
+  console.log(`viewports=1440x900 + 390x844 concurrency=${args.concurrency} timeout=${args.timeout}ms\n`);
+  let completed = 0;
+  if (todo.length > 0) {
+    const browser = await chromium.launch({ headless: true });
+    try {
+      let index = 0;
+      let appendTail = Promise.resolve();
+      const worker = async (): Promise<void> => {
+        while (true) {
+          const myIndex = index++;
+          if (myIndex >= todo.length) return;
+          const site = todo[myIndex];
+          let record: LayoutSiteRaw;
+          try {
+            record = await crawlLayoutSite(browser, site.host, site.url, args.timeout, args.richCapture);
+          } catch (e) {
+            record = {
+              schemaVersion: "geometry-crawl.v2",
+              host: site.host,
+              url: site.url,
+              ok: false,
+              error: ("driver:" + (e as Error).message).slice(0, 240),
+              capturedAt: new Date().toISOString(),
+              desktop: null,
+              mobile: null,
+              responsiveTransform: null,
+              fp: { components: [], animationLibs: [], tailwindAnimate: [], gradientText: false, sparkleBadge: false },
+            };
+          }
+          // Serialize large NDJSON writes. Concurrent appendFile calls can
+          // interleave multi-megabyte records on Windows, corrupting lines.
+          const serialized = JSON.stringify(record) + "\n";
+          appendTail = appendTail.then(() => appendFile(LAYOUT_RAW_LOG_V2, serialized));
+          await appendTail;
+          completed++;
+          const mark = record.ok ? "ok" : "x ";
+          if (completed % 10 === 0 || !record.ok) {
+            const captures = [record.desktop ? "D" : "-", record.mobile ? "M" : "-"].join("");
+            console.log(`  [${completed}/${todo.length}] ${mark} ${record.host} ${captures}` + (record.error ? ` ${record.error}` : ""));
+          }
+        }
+      };
+      const pool = Array.from({ length: Math.max(1, args.concurrency) }, () => worker());
+      await Promise.all(pool);
+    } finally {
+      await browser.close();
+    }
+  }
+  const summary = await summarizeLayoutRaw(sites);
+  console.log(`\n=== LAYOUT V2 DONE ===`);
+  console.log(`records=${summary.records} ok=${summary.ok} desktop=${summary.desktop} mobile=${summary.mobile} paired=${summary.both}`);
+  console.log(`raw=${relativeDataPath(LAYOUT_RAW_LOG_V2)}`);
+  console.log(`screenshots=${relativeDataPath(LAYOUT_SCREENSHOT_DIR_V2)}`);
+}
+
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
+  if (args.rawV2) LAYOUT_RAW_LOG_V2 = resolve(args.rawV2);
+  if (args.screenshotDir) LAYOUT_SCREENSHOT_DIR_V2 = resolve(args.screenshotDir);
+  if (args.layoutV2) {
+    await mainLayoutV2(args);
+    return;
+  }
   await mkdir(DATA_DIR, { recursive: true });
 
   let sites = JSON.parse(await readFile(SITE_LIST, "utf8")) as Array<{ url: string; host: string; source: string }>;
