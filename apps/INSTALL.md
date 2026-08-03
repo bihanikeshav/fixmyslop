@@ -110,9 +110,11 @@ auditors return `{ verdict, reason, fix }`.
 
 ## 3b. Prompts (slash-commands)
 
-The MCP server also exposes 6 prompts (`prompts/list` · `prompts/get`) — canonical,
+The MCP server also exposes 7 prompts (`prompts/list` · `prompts/get`) — canonical,
 self-contained design workflows an MCP client can surface as slash-commands:
 
+- `explore` — show several genuinely different design directions (layout, fonts, color,
+  background, centrepiece) to pick from, grounded in your intent.
 - `improve_design` — take an existing UI through the full audit → fix loop.
 - `design_review` — critique a build against the hard gates without changing it.
 - `theme` — gather a brief, then call `design_system` for one coherent theme.

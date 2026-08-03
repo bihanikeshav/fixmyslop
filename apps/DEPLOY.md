@@ -29,8 +29,8 @@ Gives a URL like `https://ai-slop-font.<your-subdomain>.workers.dev`. Endpoints:
   `generate_palette`, `motion_tokens`, and the `check_*` / `audit_system` auditors), in addition to
   the named `/api/color`, `/api/palette`, `/api/fonts`, `/api/font`, `/api/structure`.
 - Skill install: `GET /skill` (shell installer) · `GET /skill/SKILL.md` (raw, self-contained skill)
-- MCP prompts: `prompts/list` (6 canonical verbs: `improve_design`, `design_review`,
-  `theme`, `colorize`, `typeset`, `polish`) · `prompts/get` (renders one as a message)
+- MCP prompts: `prompts/list` (7 canonical verbs: `explore`, `improve_design`,
+  `design_review`, `theme`, `colorize`, `typeset`, `polish`) · `prompts/get` (renders one)
 
 The MCP now exposes 20 tools: 5 color/font + 15 system (type, spacing, radius, shadow,
 layout, motion, controls) split into generators and auditors, plus the `design_system`

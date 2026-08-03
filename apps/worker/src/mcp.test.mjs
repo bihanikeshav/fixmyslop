@@ -14,7 +14,7 @@ test("initialize advertises prompts + carries server instructions with the two h
 
 test("prompts/list returns 6; prompts/get renders a message", async () => {
   const l = await call({ jsonrpc: "2.0", id: 2, method: "prompts/list" });
-  assert.equal(l.result.prompts.length, 6);
+  assert.equal(l.result.prompts.length, 7);
   const g = await call({ jsonrpc: "2.0", id: 3, method: "prompts/get", params: { name: "improve_design", arguments: {} } });
   assert.equal(g.result.messages[0].role, "user");
   assert.match(g.result.messages[0].content.text, /suggest_fonts|design_system/);

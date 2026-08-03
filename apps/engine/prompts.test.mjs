@@ -7,9 +7,9 @@ const REAL_TOOLS = new Set(["check_color","check_palette","suggest_fonts","check
   "design_system","audit_system","type_scale","spacing_scale","radius_scale","shadow","layout",
   "generate_palette","motion_tokens","check_type","check_spacing","check_radius","check_shadow","check_layout","check_motion"]);
 
-test("exactly the 6 core verbs", () => {
+test("exactly the 7 core verbs", () => {
   assert.deepEqual(VERBS.map((v) => v.name).sort(),
-    ["colorize","design_review","improve_design","polish","theme","typeset"]);
+    ["colorize","design_review","explore","improve_design","polish","theme","typeset"]);
 });
 
 test("every verb body cites only real tool names + asks for direction", () => {

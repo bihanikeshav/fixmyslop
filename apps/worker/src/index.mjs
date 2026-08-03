@@ -6,7 +6,7 @@
 
 import { engine, stats, STRUCTURE_ARCHETYPES, TOOL_BY_NAME } from "./tools.mjs";
 import { handleMcpPost, handleSse } from "./mcp.mjs";
-import { renderSkill, renderVerbFile, PREAMBLE } from "../../engine/prompts.mjs";
+import { renderSkill, renderVerbFile, PREAMBLE, VERBS } from "../../engine/prompts.mjs";
 import { renderReference, REFERENCE } from "../../engine/reference.mjs";
 import { renderInstall } from "./install-doc.mjs";
 
@@ -112,6 +112,7 @@ export default {
       if (pathname === "/skill") {
         const base = url.origin;
         const refKeys = REFERENCE.map((r) => r.key).join(" ");
+        const verbKeys = VERBS.map((v) => v.name).join(" ");
         const script = `#!/bin/sh
 # Install the fix-ai-slop design skill (staggered: a cheap index + on-demand passes).
 # SKILL.md is a cross-agent standard: this writes to ~/.claude/skills (read by Claude
@@ -122,7 +123,7 @@ DIR="$HOME/.claude/skills/$NAME"
 mkdir -p "$DIR"
 curl -fsSL "${base}/skill/SKILL.md" -o "$DIR/SKILL.md"
 curl -fsSL "${base}/skill/design-law.md" -o "$DIR/design-law.md"
-for V in improve_design design_review theme colorize typeset polish; do
+for V in ${verbKeys}; do
   curl -fsSL "${base}/skill/$V.md" -o "$DIR/$V.md"
 done
 mkdir -p "$DIR/reference"

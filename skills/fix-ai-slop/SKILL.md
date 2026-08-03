@@ -22,6 +22,7 @@ pass or chain several in order; decide from what the user actually asked for.
 
 | For | Load | Or prompt |
 |---|---|---|
+| Show the user several genuinely different design directions to pick from, grounded in their intent. | `explore.md` | `/fix-ai-slop:explore` |
 | Full flow: audit the current design and rebuild it distinctive + readable. | `improve_design.md` | `/fix-ai-slop:improve_design` |
 | Audit an existing page for slop and give fixes. | `design_review.md` | `/fix-ai-slop:design_review` |
 | Generate one coherent token system from a brief. | `theme.md` | `/fix-ai-slop:theme` |

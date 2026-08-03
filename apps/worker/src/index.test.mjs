@@ -27,7 +27,7 @@ test("GET /skill installs the staggered fix-ai-slop skill (index + passes)", asy
   const script = await s.text();
   assert.match(script, /NAME=fix-ai-slop/);
   assert.match(script, /SKILL\.md/);
-  assert.match(script, /for V in improve_design .* polish/);   // fetches the pass files
+  assert.match(script, /for V in explore .* polish/);   // fetches the pass files (dynamic from VERBS)
 });
 
 test("staggered skill files: SKILL.md index, a pass, the design law, and 404", async () => {
