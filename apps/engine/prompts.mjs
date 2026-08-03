@@ -7,7 +7,7 @@ export const PREAMBLE = "# Atelier — the design law\n\nYou are building or rev
 // Short server-level guidance, injected into the model's context by clients that honor
 // the MCP `instructions` field on connect — so the two most-broken rules ride along even
 // with no skill or prompt loaded. Keep it tight; it lands in the system prompt.
-export const INSTRUCTIONS = "ai-slop-font is a design engine: it judges and generates non-slop design tokens (color, fonts, spacing, radius, shadow, layout, motion) with deterministic math. When building or reviewing any UI, route every deterministic decision to these tools instead of guessing: first ask the user for direction (what it is, who it's for, the vibe) before building; call `design_system` for a coherent baseline or the per-domain tools; then audit with the `check_*` tools / `audit_system` and fix anything marked SLOP. Two rules the engine enforces — the most common ways AI designs break: FONTS — `suggest_fonts` returns a pairing; `pairing.body` is the readable face, NEVER set a display/novelty font as body text. LAYOUT — use the container tokens `layout` returns (maxWidth + paddingInline); NEVER re-add margin on top of `inner`, it double-counts and breaks alignment. For the full guided workflow the server exposes 6 prompts via prompts/list: improve_design, design_review, theme, colorize, typeset, polish.";
+export const INSTRUCTIONS = "fix-ai-slop is a design engine: it judges and generates non-slop design tokens (color, fonts, spacing, radius, shadow, layout, motion) with deterministic math. When building or reviewing any UI, route every deterministic decision to these tools instead of guessing: first ask the user for direction (what it is, who it's for, the vibe) before building; call `design_system` for a coherent baseline or the per-domain tools; then audit with the `check_*` tools / `audit_system` and fix anything marked SLOP. Two rules the engine enforces — the most common ways AI designs break: FONTS — `suggest_fonts` returns a pairing; `pairing.body` is the readable face, NEVER set a display/novelty font as body text. LAYOUT — use the container tokens `layout` returns (maxWidth + paddingInline); NEVER re-add margin on top of `inner`, it double-counts and breaks alignment. For the full guided workflow the server exposes 6 prompts via prompts/list: improve_design, design_review, theme, colorize, typeset, polish.";
 
 export const VERBS = [
   {
@@ -59,8 +59,49 @@ export function renderPrompt(name, args = {}) {
   };
 }
 
+const VERB_BY_NAME = Object.fromEntries(VERBS.map((v) => [v.name, v]));
+
+// The installable skill is STAGGERED: SKILL.md is a cheap index that carries the two
+// rules + a map of passes. Each pass loads on demand (renderVerbFile); the full design
+// law lives in design-law.md (= PREAMBLE). Loading the index is cheap; detail is pulled
+// only when the task needs it.
 export function renderSkill() {
-  const front = `---\nname: atelier\ndescription: Engine-backed design process — gather direction, forbid the median, one bold standout, and route every deterministic decision (color, fonts, spacing, radius, shadow, layout, motion) to the ai-slop-font engine. Self-contained.\nlicense: Apache-2.0. Adapted from impeccable.style and the personality skill.\n---\n`;
-  const verbs = VERBS.map((v) => `## ${v.name}\n${v.body}`).join("\n\n");
-  return `${front}\n${PREAMBLE}\n\n# Verbs\n\n${verbs}\n`;
+  const rows = VERBS.map((v) => `| ${v.description} | \`${v.name}.md\` | \`/fix-ai-slop:${v.name}\` |`).join("\n");
+  return `---
+name: fix-ai-slop
+description: Fix AI-slop design. Staggered skill — this index carries the two rules that break most AI UIs plus a map of passes you load on demand. Use when building or reviewing any UI, page, or component with the fix-ai-slop MCP tools.
+license: Apache-2.0. Adapted from impeccable.style and the personality skill.
+---
+
+# fix-ai-slop — index
+
+The \`fix-ai-slop\` MCP judges and generates non-slop design tokens (color, fonts,
+spacing, radius, shadow, layout, motion) with deterministic math. Route every
+deterministic decision to a tool; the ONE bold standout stays yours.
+
+## The two rules that break most AI designs — always apply
+- **Fonts:** \`suggest_fonts\` returns a pairing — \`pairing.body\` is the readable face.
+  NEVER set a display or novelty font as body / paragraph text.
+- **Layout:** use the \`container\` tokens from \`layout\` (maxWidth + paddingInline).
+  NEVER re-add margin on top of \`inner\` — it double-counts and breaks alignment.
+
+## Load a pass on demand
+Read only the file(s) the request needs — or invoke the matching MCP prompt. Run one
+pass or chain several in order; decide from what the user actually asked for.
+
+| For | Load | Or prompt |
+|---|---|---|
+${rows}
+
+For the complete design law (all five gates, forbid-the-median, the ONE-standout bar)
+load \`design-law.md\`. Unsure which pass? Load \`improve_design.md\` — it runs the full
+flow. Keep this index in context; pull detail only when you act on it.
+`;
+}
+
+// One pass, loaded on demand. Lean — the gates live in design-law.md / the index.
+export function renderVerbFile(name) {
+  const v = VERB_BY_NAME[name];
+  if (!v) return null;
+  return `# fix-ai-slop — ${name}\n\n${v.body}\n\n_The hard gates, forbid-the-median, and the ONE-standout bar live in \`design-law.md\` and the fix-ai-slop index — load them if they aren't already in context._\n`;
 }

@@ -6,7 +6,7 @@
 
 import { engine, stats, STRUCTURE_ARCHETYPES, TOOL_BY_NAME } from "./tools.mjs";
 import { handleMcpPost, handleSse } from "./mcp.mjs";
-import { renderSkill } from "../../engine/prompts.mjs";
+import { renderSkill, renderVerbFile, PREAMBLE } from "../../engine/prompts.mjs";
 import { renderInstall } from "./install-doc.mjs";
 
 const CORS = {
@@ -97,24 +97,38 @@ export default {
         return json(tool.run(args));
       }
 
-      // ---- skill routes ----
-      if (pathname === "/skill/SKILL.md") {
-        return new Response(renderSkill(), { headers: { ...CORS, "content-type": "text/markdown; charset=utf-8" } });
+      // ---- skill routes (staggered: index + on-demand pass files) ----
+      if (pathname.startsWith("/skill/") && pathname.endsWith(".md")) {
+        const name = pathname.slice("/skill/".length, -3); // strip "/skill/" and ".md"
+        let md = null;
+        if (name === "SKILL") md = renderSkill();
+        else if (name === "design-law") md = PREAMBLE;
+        else md = renderVerbFile(name);
+        if (md == null) return err(`unknown skill file: ${name}`, 404);
+        return new Response(md, { headers: { ...CORS, "content-type": "text/markdown; charset=utf-8" } });
       }
       if (pathname === "/skill") {
         const base = url.origin;
         const script = `#!/bin/sh
-# Install the ai-slop-font 'atelier' design skill. SKILL.md is a cross-agent standard:
-# this writes to ~/.claude/skills (read by Claude Code, and by Cursor & Codex for
-# compatibility) and ~/.agents/skills (the neutral cross-agent location).
+# Install the fix-ai-slop design skill (staggered: a cheap index + on-demand passes).
+# SKILL.md is a cross-agent standard: this writes to ~/.claude/skills (read by Claude
+# Code, and by Cursor & Codex for compatibility) and ~/.agents/skills (neutral location).
 set -e
-mkdir -p "$HOME/.claude/skills/atelier" "$HOME/.agents/skills/atelier"
-curl -fsSL "${base}/skill/SKILL.md" -o "$HOME/.claude/skills/atelier/SKILL.md"
-cp -f "$HOME/.claude/skills/atelier/SKILL.md" "$HOME/.agents/skills/atelier/SKILL.md" 2>/dev/null || true
-echo "Installed atelier skill (Claude Code / Cursor / Codex) -> ~/.claude/skills/atelier/SKILL.md"
-echo "Now connect the tools:"
-echo "  Claude Code:  claude mcp add --transport http ai-slop-font ${base}/mcp"
-echo "  Cursor:       add {\\"ai-slop-font\\":{\\"url\\":\\"${base}/mcp\\"}} to ~/.cursor/mcp.json"
+NAME=fix-ai-slop
+DIR="$HOME/.claude/skills/$NAME"
+mkdir -p "$DIR"
+curl -fsSL "${base}/skill/SKILL.md" -o "$DIR/SKILL.md"
+curl -fsSL "${base}/skill/design-law.md" -o "$DIR/design-law.md"
+for V in improve_design design_review theme colorize typeset polish; do
+  curl -fsSL "${base}/skill/$V.md" -o "$DIR/$V.md"
+done
+mkdir -p "$HOME/.agents/skills/$NAME"
+cp -f "$DIR"/*.md "$HOME/.agents/skills/$NAME/" 2>/dev/null || true
+echo "Installed fix-ai-slop skill (Claude Code / Cursor / Codex) -> $DIR"
+echo "Invoke it: /fix-ai-slop  (full guide, agent picks passes)  or  /fix-ai-slop:polish  (one pass)"
+echo "Connect the tools:"
+echo "  Claude Code:  claude mcp add --transport http fix-ai-slop ${base}/mcp"
+echo "  Cursor:       add {\\"fix-ai-slop\\":{\\"url\\":\\"${base}/mcp\\"}} to ~/.cursor/mcp.json"
 `;
         return new Response(script, { headers: { ...CORS, "content-type": "text/x-shellscript; charset=utf-8" } });
       }

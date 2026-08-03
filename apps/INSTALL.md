@@ -16,7 +16,7 @@ reproducible.
 
 ### Claude Code (CLI)
 ```bash
-claude mcp add --transport http ai-slop-font https://ai-slop-font.bihanikeshav.workers.dev/mcp
+claude mcp add --transport http fix-ai-slop https://ai-slop-font.bihanikeshav.workers.dev/mcp
 ```
 Then in a session: `/mcp` to confirm it's connected. Ask e.g. *"use ai-slop-font to
 check if #6366f1 is slop and suggest alternatives."*
@@ -26,7 +26,7 @@ Clients that speak remote Streamable HTTP directly:
 ```json
 {
   "mcpServers": {
-    "ai-slop-font": { "url": "https://ai-slop-font.bihanikeshav.workers.dev/mcp" }
+    "fix-ai-slop": { "url": "https://ai-slop-font.bihanikeshav.workers.dev/mcp" }
   }
 }
 ```
@@ -34,7 +34,7 @@ Clients that need a stdio bridge (older Claude Desktop): use `mcp-remote`:
 ```json
 {
   "mcpServers": {
-    "ai-slop-font": {
+    "fix-ai-slop": {
       "command": "npx",
       "args": ["mcp-remote", "https://ai-slop-font.bihanikeshav.workers.dev/mcp"]
     }
@@ -123,7 +123,7 @@ self-contained design workflows an MCP client can surface as slash-commands:
 Each prompt embeds the full Atelier design law (hard gates, tool table, self-check),
 so it works even without the companion skill installed.
 
-One-line skill install (drops the self-contained `atelier` skill into your project):
+One-line skill install (drops the self-contained `fix-ai-slop` skill into your project):
 ```bash
 curl -fsSL https://ai-slop-font.bihanikeshav.workers.dev/skill | sh
 ```
@@ -138,7 +138,7 @@ curl -fsSL https://ai-slop-font.bihanikeshav.workers.dev/skill | sh
 3. Before shipping, run the `check_*` auditors (or `audit_system`) over what you
    actually wrote — fix anything that comes back `SLOP`.
 
-The companion **`atelier`** skill wires exactly this flow into a design process:
+The companion **`fix-ai-slop`** skill wires exactly this flow into a design process:
 deterministic decisions go to these tools, the one bold standout stays human.
 
 ---

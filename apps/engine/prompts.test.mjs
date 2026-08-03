@@ -1,7 +1,7 @@
 // apps/engine/prompts.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { PREAMBLE, VERBS, renderPrompt, renderSkill } from "./prompts.mjs";
+import { PREAMBLE, VERBS, renderPrompt, renderSkill, renderVerbFile } from "./prompts.mjs";
 
 const REAL_TOOLS = new Set(["check_color","check_palette","suggest_fonts","check_font","structure_ideas",
   "design_system","audit_system","type_scale","spacing_scale","radius_scale","shadow","layout",
@@ -31,11 +31,26 @@ test("PREAMBLE is self-contained + carries the font/layout rules", () => {
   assert.match(PREAMBLE, /container|margin/i);
 });
 
-test("renderPrompt returns an MCP user message; renderSkill is self-contained md", () => {
+test("renderPrompt returns a self-contained MCP user message (full gates + verb)", () => {
   const p = renderPrompt("improve_design", {});
   assert.equal(p.messages[0].role, "user");
   assert.match(p.messages[0].content.text, /suggest_fonts|design_system/);
+});
+
+test("renderSkill is a cheap staggered index named fix-ai-slop", () => {
   const skill = renderSkill();
-  assert.match(skill, /^---[\s\S]*name:\s*atelier/);
+  assert.match(skill, /^---[\s\S]*name:\s*fix-ai-slop/);   // renamed
   assert.doesNotMatch(skill, /\.\.\/personality/);
+  assert.match(skill, /pairing\.body/);                     // the two rules live in the cheap index
+  assert.match(skill, /container/);
+  assert.match(skill, /improve_design\.md/);                // references on-demand pass files
+  assert.match(skill, /design-law\.md/);                    // references the full law
+  assert.ok(skill.length < PREAMBLE.length, "index must be cheaper than the full design law");
+});
+
+test("renderVerbFile returns one lean pass on demand; null for unknown", () => {
+  const f = renderVerbFile("polish");
+  assert.match(f, /# fix-ai-slop — polish/);
+  assert.match(f, /design-law\.md/);                        // points back to the full law
+  assert.equal(renderVerbFile("nope"), null);
 });

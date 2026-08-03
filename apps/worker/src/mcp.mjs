@@ -10,7 +10,7 @@ import { TOOLS, TOOL_BY_NAME } from "./tools.mjs";
 import { VERBS, renderPrompt, INSTRUCTIONS } from "../../engine/prompts.mjs";
 
 const PROTOCOL_VERSION = "2024-11-05";
-const SERVER_INFO = { name: "ai-slop-font", version: "1.0.0" };
+const SERVER_INFO = { name: "fix-ai-slop", version: "1.0.0" };
 
 const rpcResult = (id, result) => ({ jsonrpc: "2.0", id, result });
 const rpcError = (id, code, message, data) => ({

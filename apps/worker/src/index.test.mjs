@@ -21,17 +21,32 @@ test("unknown tool → 404", async () => {
   assert.equal(res.status, 404);
 });
 
-test("GET /skill returns an install script; /skill/SKILL.md returns the self-contained skill", async () => {
+test("GET /skill installs the staggered fix-ai-slop skill (index + passes)", async () => {
   const s = await worker.fetch(new Request("http://x/skill"));
   assert.equal(s.status, 200);
   const script = await s.text();
-  assert.match(script, /mkdir[^\n]*atelier/);
+  assert.match(script, /NAME=fix-ai-slop/);
   assert.match(script, /SKILL\.md/);
-  const md = await worker.fetch(new Request("http://x/skill/SKILL.md"));
-  assert.equal(md.status, 200);
-  const body = await md.text();
-  assert.match(body, /name:\s*atelier/);
-  assert.doesNotMatch(body, /\.\.\/personality/);
+  assert.match(script, /for V in improve_design .* polish/);   // fetches the pass files
+});
+
+test("staggered skill files: SKILL.md index, a pass, the design law, and 404", async () => {
+  const idx = await worker.fetch(new Request("http://x/skill/SKILL.md"));
+  assert.equal(idx.status, 200);
+  const idxBody = await idx.text();
+  assert.match(idxBody, /name:\s*fix-ai-slop/);
+  assert.doesNotMatch(idxBody, /\.\.\/personality/);
+
+  const pass = await worker.fetch(new Request("http://x/skill/polish.md"));
+  assert.equal(pass.status, 200);
+  assert.match(await pass.text(), /# fix-ai-slop — polish/);
+
+  const law = await worker.fetch(new Request("http://x/skill/design-law.md"));
+  assert.equal(law.status, 200);
+  assert.match(await law.text(), /Hard gates/);
+
+  const missing = await worker.fetch(new Request("http://x/skill/nope.md"));
+  assert.equal(missing.status, 404);
 });
 
 test("GET /install.md covers MCP + skill with the live origin", async () => {
@@ -40,7 +55,7 @@ test("GET /install.md covers MCP + skill with the live origin", async () => {
   assert.match(res.headers.get("content-type"), /text\/markdown/);
   const md = await res.text();
   assert.match(md, /Connect the MCP/);            // MCP section
-  assert.match(md, /atelier skill/);              // skill section
+  assert.match(md, /fix-ai-slop skill/);          // skill section
   assert.match(md, /example\.test\/mcp/);         // base URL interpolated from origin
   assert.match(md, /example\.test\/skill/);
   const alias = await worker.fetch(new Request("http://example.test/install"));
