@@ -341,22 +341,46 @@ export function createEngine({ corpus = [], brands = [], fonts = [] } = {}) {
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
   }
-  function generatePalette(seed = 1) {
+  // energy → accent chroma band (kept inside the gate). The caller expresses the
+  // subject's mood, not a number.
+  const ENERGY_CHROMA = { muted: [0.06, 0.11], calm: [0.06, 0.11], balanced: [0.10, 0.16], bold: [0.15, 0.20], vivid: [0.15, 0.20] };
+
+  // generatePalette({ hue?, energy?, accent?, seed? }) — INTENT-driven, not seed-driven.
+  // The agent grounds it in the subject: a target `hue` from the real material and/or an
+  // `energy` mood, or an `accent` hex to anchor on. `seed` is an internal reproducibility
+  // detail (the tool layer varies it), NOT something a caller should think about. A bare
+  // number is still accepted for back-compat.
+  function generatePalette(opts = {}) {
+    if (typeof opts === "number") opts = { seed: opts };
+    const { hue = null, energy = "balanced", accent = null, seed = 1 } = opts;
     const rand = mulberry32((seed >>> 0) || 1);
     const rnd = (lo, hi) => lo + rand() * (hi - lo);
     const buildHex = (L, C, H) => { const o = oklabToSrgb(oklchToOklab([L, C, H])); return o.inGamut ? o.hex : null; };
+    const [cLo, cHi] = ENERGY_CHROMA[energy] || ENERGY_CHROMA.balanced;
+    const wrap = (h) => ((h % 360) + 360) % 360;
+    // an accent around the material's hue (± small jitter) or free; energy sets chroma
     const freshAccent = () => {
-      for (let t = 0; t < 200; t++) {
-        const L = rnd(0.48, 0.66), C = rnd(0.10, 0.17), H = rand() * 360;
+      for (let t = 0; t < 300; t++) {
+        const H = hue != null ? wrap(hue + rnd(-14, 14)) : rand() * 360;
+        const L = rnd(0.48, 0.66), C = rnd(cLo, cHi);
         const lab = oklchToOklab([L, C, H]);
         if (isSafeAccentLab(lab, { minChroma: CONFIG.MIN_INTENTIONAL_CHROMA })) return buildHex(L, C, H);
       }
-      return "#1f6e4c";
+      return null;
     };
+    // honor a caller-provided accent hex, nudged non-slop if it isn't clean
+    const anchored = () => {
+      if (!accent) return null;
+      const chk = checkColor(accent);
+      if (chk.verdict === "SAFE" || chk.verdict === "NEUTRAL-ok") return chk.hex;
+      return (chk.alternatives && chk.alternatives[0] && chk.alternatives[0].hex) || null;
+    };
+    // neutral ground/ink, hue biased toward the accent so the palette reads cohesive
     const freshNeutral = (kind) => {
-      for (let t = 0; t < 200; t++) {
+      for (let t = 0; t < 300; t++) {
         const L = kind === "ink" ? rnd(0.15, 0.24) : rnd(0.93, 0.965);
-        const hex = buildHex(L, rnd(0.006, 0.02), rand() * 360);
+        const nH = hue != null ? wrap(hue + rnd(-30, 30)) : rand() * 360;
+        const hex = buildHex(L, rnd(0.006, 0.02), nH);
         if (!hex) continue;
         const v = classify(hex).verdict;
         if (v === "SAFE" || v === "NEUTRAL-ok") return hex;
@@ -364,16 +388,17 @@ export function createEngine({ corpus = [], brands = [], fonts = [] } = {}) {
       return kind === "ink" ? "#17150f" : "#eceae3";
     };
     for (let a = 0; a < 60; a++) {
-      const pal = { ground: freshNeutral("ground"), ink: freshNeutral("ink"), accent: freshAccent(), accent2: freshAccent() };
+      const acc = anchored() || freshAccent() || "#1f6e4c";
+      const pal = { ground: freshNeutral("ground"), ink: freshNeutral("ink"), accent: acc, accent2: freshAccent() || acc };
       const p = checkPalette(pal.ground, pal.ink, pal.accent, pal.accent2);
-      if (p.pass && p.contrast != null && p.contrast >= 4.5) return { ...pal, contrast: p.contrast, seed };
+      if (p.pass && p.contrast != null && p.contrast >= 4.5) return { ...pal, contrast: p.contrast, hue, energy };
     }
-    const fb = { ground: "#eceae3", ink: "#17150f", accent: "#b5522f", accent2: "#2f6b5e" };
-    return { ...fb, contrast: +contrastRatio(fb.ground, fb.ink).toFixed(2), seed };
+    const fb = { ground: "#eceae3", ink: "#17150f", accent: anchored() || "#b5522f", accent2: "#2f6b5e" };
+    return { ...fb, contrast: +contrastRatio(fb.ground, fb.ink).toFixed(2), hue, energy };
   }
-  function designSystem({ baseFont = 18, baseUnit = 4, ratio = "perfect-fourth", radiusBase = 8, seed = 1 } = {}) {
+  function designSystem({ baseFont = 18, baseUnit = 4, ratio = "perfect-fourth", radiusBase = 8, hue = null, energy = "balanced", accent = null, seed = 1 } = {}) {
     return {
-      palette: generatePalette(seed),
+      palette: generatePalette({ hue, energy, accent, seed }),
       type: SYS.typeScale({ base: baseFont, ratio }),
       spacing: SYS.spacingScale({ base: baseUnit }),
       radius: SYS.radiusScale({ base: radiusBase }),

@@ -17,6 +17,19 @@ test("generatePalette: deterministic + gate-passing", () => {
   assert.equal(eng.checkPalette(a.ground, a.ink, a.accent, a.accent2).pass, true);
 });
 
+test("generatePalette: intent-grounded (hue anchors accent, energy varies, accent nudged non-slop)", () => {
+  // a target hue from the subject's material anchors the accent hue (± jitter)
+  const green = eng.generatePalette({ hue: 150, energy: "bold", seed: 3 });
+  const [, , H] = eng.classify(green.accent).oklch ? [0, 0, eng.classify(green.accent).oklch.H] : [0, 0, 0];
+  assert.ok(H > 100 && H < 200, `hue-150 accent should be green-ish, got H${H}`);
+  assert.equal(eng.checkPalette(green.ground, green.ink, green.accent, green.accent2).pass, true);
+  // anchoring on a hard-banned hex nudges it off-slop
+  const anchored = eng.generatePalette({ accent: "#6366f1" });
+  assert.notEqual(anchored.accent.toLowerCase(), "#6366f1");
+  // no grounding + different seeds → genuine variety
+  assert.notEqual(eng.generatePalette({ seed: 11 }).accent, eng.generatePalette({ seed: 22 }).accent);
+});
+
 test("designSystem: full coherent theme", () => {
   const ds = eng.designSystem({ baseFont: 18, baseUnit: 4, ratio: "perfect-fourth", radiusBase: 8, seed: 3 });
   assert.ok(ds.palette.accent);

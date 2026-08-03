@@ -24,6 +24,16 @@ export const STRUCTURE_ARCHETYPES = [
 
 // Each tool: name, description, JSON-schema inputSchema, and a run() that calls
 // the engine. run() receives a plain args object (parsed from query or body).
+// Intent → palette options. Same `intent` string always yields the same palette
+// (reproducible + grounded); no grounding at all → a genuinely fresh roll each call.
+// Math.random is fine here — the tool layer, not the pure engine.
+const hashStr = (s) => { let h = 2166136261 >>> 0; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+const paletteOpts = (a) => {
+  a = a || {};
+  const seed = a.intent ? hashStr(String(a.intent)) : (a.seed != null ? Number(a.seed) : ((Math.random() * 0x7fffffff) >>> 0));
+  return { hue: a.hue != null ? Number(a.hue) : null, energy: a.energy || "balanced", accent: a.accent || null, seed };
+};
+
 export const TOOLS = [
   {
     name: "check_color",
@@ -83,15 +93,18 @@ export const TOOLS = [
   },
   {
     name: "design_system",
-    description: "Generate a complete, coherent design token system from a seed: gate-passing palette + modular type scale + spacing grid + radius scale + shadow elevation ramp + motion tokens + control sizing. The 'roll a whole theme' call.",
+    description: "Generate a complete, coherent design token system grounded in the subject: gate-passing palette + modular type scale + spacing grid + radius scale + shadow ramp + motion + control sizing. GROUND the palette in the subject's REAL material via hue/energy/accent/intent — not a seed. Omit them all for a genuinely fresh roll.",
     inputSchema: { type: "object", properties: {
       baseFont: { type: "number", description: "Base body font px (default 18)." },
       baseUnit: { type: "number", description: "Spacing grid unit px (default 4)." },
       ratio: { type: "string", description: "Type-scale ratio name or number (default perfect-fourth)." },
       radiusBase: { type: "number", description: "Base corner radius px (default 8)." },
-      seed: { type: "integer", description: "Deterministic seed for the palette (default 1)." },
+      hue: { type: "number", description: "Target accent hue 0–360 you derive from the subject's real material (terracotta ~40, forest ~150, ocean ~230). Grounds the palette." },
+      energy: { type: "string", enum: ["muted", "balanced", "bold"], description: "Mood → accent saturation. Default balanced." },
+      accent: { type: "string", description: "Anchor on an existing accent hex; nudged non-slop if needed." },
+      intent: { type: "string", description: "Free-text material/energy, e.g. 'coffee roastery, warm, industrial'. Grounds it AND makes it reproducible; omit for a fresh roll." },
     } },
-    run: (a) => engine.designSystem(a || {}),
+    run: (a) => engine.designSystem({ baseFont: a && a.baseFont, baseUnit: a && a.baseUnit, ratio: a && a.ratio, radiusBase: a && a.radiusBase, ...paletteOpts(a) }),
   },
   {
     name: "audit_system",
@@ -151,9 +164,14 @@ export const TOOLS = [
   },
   {
     name: "generate_palette",
-    description: "Generate a fresh, gate-passing palette {ground, ink, accent, accent2} from a numeric seed (deterministic). Passes the color slop gates and ≥4.5:1 ink-on-ground contrast.",
-    inputSchema: { type: "object", properties: { seed: { type: "integer", description: "Deterministic seed (default 1)." } } },
-    run: (a) => engine.generatePalette(Number(a && a.seed) || 1),
+    description: "Generate a fresh, gate-passing palette {ground, ink, accent, accent2} grounded in the subject. Derive the accent from the subject's REAL material — pass a target `hue` and/or `energy`, an `accent` hex to anchor, or a free-text `intent`. Passes the slop gates and ≥4.5:1 contrast. No seed to manage — omit everything for a genuinely fresh roll.",
+    inputSchema: { type: "object", properties: {
+      hue: { type: "number", description: "Target accent hue 0–360 from the subject's real material (terracotta ~40, forest ~150, ocean ~230)." },
+      energy: { type: "string", enum: ["muted", "balanced", "bold"], description: "Mood → accent saturation. Default balanced." },
+      accent: { type: "string", description: "Anchor on an existing accent hex; nudged non-slop if needed." },
+      intent: { type: "string", description: "Free-text material/energy, e.g. 'coffee roastery, warm'. Grounds + reproducible; omit for a fresh roll." },
+    } },
+    run: (a) => engine.generatePalette(paletteOpts(a)),
   },
   {
     name: "motion_tokens",
