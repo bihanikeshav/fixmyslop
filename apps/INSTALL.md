@@ -49,7 +49,7 @@ curl -s -X POST https://ai-slop-font.bihanikeshav.workers.dev/mcp \
   -H 'content-type: application/json' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
-You should see **20 tools**.
+You should see **24 tools**.
 
 ---
 
@@ -80,7 +80,7 @@ Legacy named routes also exist: `/api/color?hex=`, `/api/palette`, `/api/fonts?n
 
 ---
 
-## 3. The 20 tools
+## 3. The 24 tools
 
 **Color & font**
 - `check_color` — judge a hex for slop (banned defaults, overused corpus zones, brand
@@ -96,6 +96,17 @@ Legacy named routes also exist: `/api/color?hex=`, `/api/palette`, `/api/fonts?n
   spacing + radius + shadow ramp + motion + control sizing.
 - `audit_system` — judge a submitted token set across domains → per-domain verdicts +
   a 0–100 coherence score.
+
+**Connected engine (intent → genome)**
+- `resolve_intent` — normalize a StyleIntent: clamp dials to [0,1], fill the ones you
+  omit from surface/job design priors, flag contradictions, derive a reproducible seed.
+- `style_genome` — resolve ONE coherent direction (fonts + palette + layout family +
+  material + motion) from an intent, each with provenance and a fingerprint; pass
+  `recentFingerprints` so a re-roll diverges in composition, not just hue.
+- `suggest_layout` — ranked LayoutGenome candidates (section grammar + hierarchy +
+  material slots) for the page kind; a dashboard never gets a centered-hero landing.
+- `font_neighbors` — retrieve fonts from the visual/feature neighbor space with a HARD
+  body-readability gate (a body pick is never a display-only face); `like` = "more like X".
 
 **Generators** — `type_scale`, `spacing_scale`, `radius_scale`, `shadow`, `layout`,
 `generate_palette`, `motion_tokens`.

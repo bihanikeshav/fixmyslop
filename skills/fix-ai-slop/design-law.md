@@ -73,6 +73,9 @@ photos, extra widgets, or decorative dead cards.
 | Deciding… | Tool | Notes |
 |---|---|---|
 | Whole theme | `design_system` | one coherent pass; ground with `hue` / `energy` / `accent` / `intent` |
+| One coherent direction | `resolve_intent` → `style_genome` | normalize a StyleIntent, then resolve fonts+palette+layout+material together; feed prior fingerprints back to diverge |
+| Layout family | `suggest_layout` | interpretable LayoutGenome candidates (section grammar + material slots) for the page kind |
+| Fonts by neighbor | `font_neighbors` | 'more like X' visual neighbors + a hard body-readability gate |
 | Ideation / divergence | `structure_ideas` | forbid-the-median + the hero/centrepiece call |
 | Is a color OK? | `check_color` / `check_palette` | slop gate + passing alternatives |
 | Fresh palette | `generate_palette` | grounded, gate-passing, ≥4.5:1 |

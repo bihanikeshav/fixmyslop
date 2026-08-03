@@ -32,9 +32,11 @@ Gives a URL like `https://ai-slop-font.<your-subdomain>.workers.dev`. Endpoints:
 - MCP prompts: `prompts/list` (7 canonical verbs: `explore`, `improve_design`,
   `design_review`, `theme`, `colorize`, `typeset`, `polish`) · `prompts/get` (renders one)
 
-The MCP now exposes 20 tools: 5 color/font + 15 system (type, spacing, radius, shadow,
-layout, motion, controls) split into generators and auditors, plus the `design_system`
-flagship. All back onto the single pure `apps/engine` module.
+The MCP now exposes 24 tools: 5 color/font + 15 system (type, spacing, radius, shadow,
+layout, motion, controls) split into generators and auditors, the `design_system`
+flagship, plus 4 connected-engine tools (`resolve_intent`, `style_genome`,
+`suggest_layout`, `font_neighbors`) that resolve one coherent direction from a StyleIntent.
+All back onto the single pure `apps/engine` module.
 
 Point an MCP client at `https://ai-slop-font.<subdomain>.workers.dev/mcp`.
 

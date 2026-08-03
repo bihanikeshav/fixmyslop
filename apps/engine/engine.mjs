@@ -5,6 +5,45 @@
 // the MCP Worker. Logic is ported faithfully from viz/personality-test/{color/*,api.mjs}.
 
 import * as SYS from "./system.mjs";
+import fontSpaceBundle from "./data/font-space.json" with { type: "json" };
+
+// ===========================================================================
+// font-space.json hydration — Subsystem 4 (font-neighbor retrieval).
+//
+// The bundle is stored positionally (see scripts/build-service-bundle.mjs for
+// why: object keys and neighbor id strings repeated ~2000x is the difference
+// between ~550kb and ~1.7mb). Hydrate it once, here, into normal records.
+// ===========================================================================
+function hydrateFontSpace(bundle) {
+  const ids = bundle?.ids || [];
+  const entries = bundle?.entries || [];
+  const entryFields = bundle?.entryFields || [];
+  const metricKeys = bundle?.metricKeys || [];
+  if (!ids.length || !entries.length) return null;
+  const familyByIndex = new Array(ids.length);
+  const fi = entryFields.indexOf("family");
+  for (let i = 0; i < entries.length; i++) familyByIndex[i] = entries[i][fi];
+  const records = entries.map((row, i) => {
+    const obj = {};
+    entryFields.forEach((k, j) => { obj[k] = row[j]; });
+    const metrics = {};
+    metricKeys.forEach((k, j) => { metrics[k] = obj.metrics ? obj.metrics[j] : undefined; });
+    metrics.hasItalics = !!metrics.hasItalics;
+    const neighbors = (obj.neighbors || [])
+      .map(([nIdx, sim]) => (ids[nIdx] ? { id: ids[nIdx], family: familyByIndex[nIdx], sim } : null))
+      .filter(Boolean);
+    return {
+      id: ids[i], family: obj.family, category: obj.category, supplier: obj.supplier,
+      popularityRank: obj.popularityRank, trendingRank: obj.trendingRank, quality: obj.quality || 0,
+      isFoundational: !!obj.isFoundational, isBrandFont: !!obj.isBrandFont,
+      metrics, personality: obj.personality || {}, neighbors,
+    };
+  });
+  const byId = new Map(records.map((r) => [r.id, r]));
+  const byFamily = new Map(records.map((r) => [r.family.toLowerCase(), r]));
+  return { records, byId, byFamily };
+}
+const FONT_SPACE = hydrateFontSpace(fontSpaceBundle);
 
 // ===========================================================================
 // Color-space math (OKLab/OKLCH/ΔEok/WCAG) — pure. From color/color-space.mjs.
@@ -117,7 +156,7 @@ const POPULARITY_SLOP_TOP_N = 40;
 // ===========================================================================
 // Engine factory — inject {corpus:[{hex,weight}], brands:[{name,ic:[]}], fonts:[...]}
 // ===========================================================================
-export function createEngine({ corpus = [], brands = [], fonts = [] } = {}) {
+export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace = FONT_SPACE } = {}) {
   // pre-compute corpus labs + weights for the KDE
   const pts = corpus.map((c) => ({ lab: hexToOklab(c.hex), w: c.weight || 1 }));
   const brandLabs = brands.flatMap((b) => (b.ic || []).map((hex) => {
@@ -332,6 +371,92 @@ export function createEngine({ corpus = [], brands = [], fonts = [] } = {}) {
     };
   }
 
+  // retrieveFonts — Subsystem 4: rich, neighbor-aware retrieval over fontSpace
+  // (metrics + personality + precomputed visual neighbors). This is what the
+  // connected genome uses for type; suggestFonts stays as the light catalogue path.
+  // Falls back to the catalogue when the font-space bundle is absent.
+  const round3 = (x) => Math.round(x * 1000) / 1000;
+  const pick01 = (v) => (Number.isFinite(Number(v)) ? Number(v) : NaN);
+  const BODY_CATEGORIES = new Set(["serif", "sans-serif"]);
+  function overusePenalty(f) {
+    let p = 0;
+    if (AVOID_LIST.has((f.family || "").toLowerCase())) p += 1.0;
+    if (f.isBrandFont) p += 0.6;
+    const rank = f.popularityRank || 9999;
+    if (rank <= POPULARITY_SLOP_TOP_N) p += 0.8;
+    else if (rank <= 100) p += 0.4;
+    if ((f.trendingRank || 9999) <= 40) p += 0.3;
+    return p;
+  }
+  function readabilityChecks(f) {
+    const x = Number((f.metrics || {}).xHeightRatio);
+    // HARD body gate: a text workhorse must be serif/sans with a generous x-height.
+    // This is the structural fix for the "display serif as body" failure.
+    const bodySuitable = BODY_CATEGORIES.has(f.category) && (!Number.isFinite(x) || x >= 0.48);
+    return { bodySuitable, displaySuitable: true };
+  }
+  function featureDistanceFor(f, role, intent) {
+    const m = f.metrics || {};
+    const g = (k, d) => (Number.isFinite(Number(m[k])) ? Number(m[k]) : d);
+    const ideal = role === "body"
+      ? { xHeightRatio: 0.72, apertureOpenness: 0.6, strokeContrast: 0.2 }
+      : { xHeightRatio: 0.6, apertureOpenness: 0.5, strokeContrast: 0.45 };
+    let d2 = 0, n = 0;
+    for (const k of Object.keys(ideal)) { const dv = g(k, ideal[k]) - ideal[k]; d2 += dv * dv; n++; }
+    let dist = Math.sqrt(d2 / Math.max(1, n));
+    // personality nudge — only when both intent and the font carry a real signal.
+    if (intent && f.personality) {
+      const formal = pick01(intent.formality), prof = Number(f.personality.professional);
+      if (Number.isFinite(formal) && Number.isFinite(prof)) dist += Math.abs(formal - prof) * 0.4;
+      const energy = pick01(intent.energy), calm = Number(f.personality.calm);
+      if (Number.isFinite(energy) && Number.isFinite(calm)) dist += Math.abs((1 - energy) - calm) * 0.4;
+    }
+    return dist;
+  }
+  function retrieveFonts({ role = "display", intent = null, like = null, exclude = [], n = 6 } = {}) {
+    const space = fontSpace && fontSpace.records && fontSpace.records.length ? fontSpace : null;
+    if (!space) {
+      const picks = suggestFonts(n, { category: role === "body" ? "body" : "display" }).picks;
+      return picks.map((p) => ({
+        family: p.family, role, featureDistance: null, visualDistance: null, overusePenalty: null,
+        readabilityChecks: { bodySuitable: role === "body", displaySuitable: true },
+        neighbors: [], provenance: "catalogue-fallback",
+      }));
+    }
+    const ex = new Set((exclude || []).map((e) => String(e).toLowerCase()));
+    let pool = space.records, simById = null;
+    if (like) {
+      const seed = space.byFamily.get(String(like).toLowerCase()) || space.byId.get(String(like).toLowerCase());
+      if (seed && seed.neighbors.length) {
+        simById = new Map(seed.neighbors.map((nb) => [nb.id, nb.sim]));
+        pool = seed.neighbors.map((nb) => space.byId.get(nb.id)).filter(Boolean);
+      }
+    }
+    const scored = [];
+    for (const f of pool) {
+      if (ex.has((f.family || "").toLowerCase()) || ex.has((f.id || "").toLowerCase())) continue;
+      const rc = readabilityChecks(f);
+      if (role === "body" && !rc.bodySuitable) continue;   // never a display-only face for running text
+      const featureDistance = featureDistanceFor(f, role, intent);
+      const pen = overusePenalty(f);
+      const sim = simById ? (simById.get(f.id) || 0) : 0;
+      const fit = (f.quality || 0) * 1.2 - featureDistance - pen + sim * 1.5
+        + (role === "body" && f.isFoundational ? 0.6 : 0)
+        + (role === "display" && !f.isFoundational ? 0.3 : 0);
+      scored.push({
+        family: f.family, role, fit,
+        featureDistance: round3(featureDistance),
+        visualDistance: simById ? round3(1 - sim) : null,
+        overusePenalty: round3(pen),
+        readabilityChecks: rc,
+        neighbors: f.neighbors.slice(0, 6).map((nb) => nb.family),
+        provenance: "font-space.json",
+      });
+    }
+    scored.sort((a, b) => b.fit - a.fit);
+    return scored.slice(0, n).map(({ fit, ...rest }) => rest);
+  }
+
   // seeded PRNG — keeps generation deterministic + portable (no Math.random)
   function mulberry32(a) {
     return function () {
@@ -420,7 +545,7 @@ export function createEngine({ corpus = [], brands = [], fonts = [] } = {}) {
   }
 
   return {
-    checkColor, checkPalette, checkFont, suggestFonts, classify, nearestSafe, brandClone,
+    checkColor, checkPalette, checkFont, suggestFonts, retrieveFonts, classify, nearestSafe, brandClone,
     density: densityHex, contrastRatio, CONFIG,
     generatePalette, designSystem, auditSystem,
     ...SYS,

@@ -5,6 +5,9 @@
 // behaviour never drifts between the two surfaces.
 
 import { createEngine } from "../../engine/engine.mjs";
+import { resolveIntent } from "../../engine/intent.mjs";
+import { suggestLayout } from "../../engine/layout-families.mjs";
+import { styleGenome } from "../../engine/genome.mjs";
 import corpus from "../../engine/data/corpus.json" with { type: "json" };
 import brands from "../../engine/data/brands.json" with { type: "json" };
 import fonts from "../../engine/data/fonts.json" with { type: "json" };
@@ -32,6 +35,24 @@ const paletteOpts = (a) => {
   a = a || {};
   const seed = a.intent ? hashStr(String(a.intent)) : (a.seed != null ? Number(a.seed) : ((Math.random() * 0x7fffffff) >>> 0));
   return { hue: a.hue != null ? Number(a.hue) : null, energy: a.energy || "balanced", accent: a.accent || null, seed };
+};
+
+// StyleIntent input schema — shared by resolve_intent / style_genome / suggest_layout.
+// The agent supplies whatever it can infer from the brief; the engine fills the rest.
+const INTENT_PROPS = {
+  surface: { type: "string", description: "landing-page | dashboard | docs | app | marketing | portfolio | pricing | editorial" },
+  job: { type: "string", description: "the page's job, e.g. explain-and-convert, monitor, long-form." },
+  audience: { type: "array", items: { type: "string" }, description: "who it's for." },
+  contentModel: { type: "string", description: "e.g. product-with-proof, reference, gallery." },
+  theme: { type: "string", enum: ["light", "dark"] },
+  sourceBrief: { type: "string", description: "the original free-text brief, preserved verbatim." },
+  variation: { type: "integer", description: "distance from the previous candidate (re-roll knob)." },
+  seed: { type: "number", description: "reproducibility seed; omit for a fresh roll." },
+  // continuous dials in [0,1] — set what you can infer; the engine fills the rest from surface/job priors.
+  trustLevel: { type: "number" }, contentDensity: { type: "number" }, energy: { type: "number" },
+  warmth: { type: "number" }, formality: { type: "number" }, era: { type: "number" },
+  craft: { type: "number" }, experimentalism: { type: "number" }, motionIntensity: { type: "number" },
+  layoutVariance: { type: "number" }, materiality: { type: "number" }, contrastPreference: { type: "number" },
 };
 
 export const TOOLS = [
@@ -90,6 +111,35 @@ export const TOOLS = [
       properties: { brief: { type: "string", description: "Optional design brief (currently advisory; the archetype list is static)." } },
     },
     run: (_a) => ({ archetypes: STRUCTURE_ARCHETYPES }),
+  },
+  {
+    name: "resolve_intent",
+    description: "Normalize a StyleIntent: clamp dials to [0,1], fill the ones you omit from surface/job design priors, flag contradictions, and derive a reproducible seed. You supply the semantics (read the brief); this validates them — pure math, no model. Returns { intent, seed, warnings }.",
+    inputSchema: { type: "object", properties: INTENT_PROPS },
+    run: (a) => resolveIntent(a || {}),
+  },
+  {
+    name: "style_genome",
+    description: "Resolve ONE coherent design direction from a StyleIntent: font pairing (neighbor-retrieved + readability-gated), palette (OKLCH corpus), layout family, material slots, and motion — each with provenance, plus a fingerprint. Pass recentFingerprints[] (from genomes already shown this session) so a re-roll diverges in composition, not just hue. This is the connected engine — one call per direction.",
+    inputSchema: { type: "object", properties: { ...INTENT_PROPS, recentFingerprints: { type: "array", items: { type: "object" }, description: "fingerprints of genomes already shown this session, to diversify against." } } },
+    run: (a) => styleGenome(engine, a || {}, { seed: a && a.seed, recentFingerprints: (a && a.recentFingerprints) || [] }),
+  },
+  {
+    name: "suggest_layout",
+    description: "Retrieve ranked LayoutGenome candidates for an intent — interpretable layout families (section grammar + macro + hierarchy + material slots) with whenToUse / notFor / requiredContent / antiPatterns. Filters by page kind + dials, so a dashboard never gets a centered-hero landing family. Returns several candidates, best first. Supersedes structure_ideas.",
+    inputSchema: { type: "object", properties: { ...INTENT_PROPS, recentFingerprints: { type: "array", items: { type: "object" } } } },
+    run: (a) => { const r = resolveIntent(a || {}); return suggestLayout(r.intent, { recentFingerprints: (a && a.recentFingerprints) || [] }); },
+  },
+  {
+    name: "font_neighbors",
+    description: "Retrieve fonts from the visual/feature neighbor space with a HARD readability gate by role: a body pick is always a legible text workhorse, NEVER a display-only face. Use `like` for 'more like X' (precomputed visual neighbors). Returns candidates with feature/visual distances, overuse penalty, and readability checks.",
+    inputSchema: { type: "object", properties: {
+      role: { type: "string", enum: ["display", "body"], description: "default display." },
+      like: { type: "string", description: "a family to find visual neighbors of, e.g. \"Fraunces\"." },
+      exclude: { type: "array", items: { type: "string" }, description: "families to avoid (e.g. already-used pairs)." },
+      n: { type: "integer", minimum: 1, maximum: 24 },
+    } },
+    run: (a) => engine.retrieveFonts({ role: (a && a.role) || "display", like: (a && a.like) || null, exclude: (a && a.exclude) || [], n: Number(a && a.n) || 6 }),
   },
   {
     name: "design_system",

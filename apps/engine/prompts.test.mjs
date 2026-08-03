@@ -5,7 +5,8 @@ import { PREAMBLE, VERBS, renderPrompt, renderSkill, renderVerbFile } from "./pr
 
 const REAL_TOOLS = new Set(["check_color","check_palette","suggest_fonts","check_font","structure_ideas",
   "design_system","audit_system","type_scale","spacing_scale","radius_scale","shadow","layout",
-  "generate_palette","motion_tokens","check_type","check_spacing","check_radius","check_shadow","check_layout","check_motion"]);
+  "generate_palette","motion_tokens","check_type","check_spacing","check_radius","check_shadow","check_layout","check_motion",
+  "resolve_intent","style_genome","suggest_layout","font_neighbors"]);
 
 test("exactly the 7 core verbs", () => {
   assert.deepEqual(VERBS.map((v) => v.name).sort(),
