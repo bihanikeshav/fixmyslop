@@ -143,6 +143,14 @@ function inIndigoVioletBand(L, C, H) {
   return C > INDIGO_BAND_CHROMA && H >= INDIGO_BAND_LO && H <= INDIGO_BAND_HI
     && L >= INDIGO_BAND_L_LO && L <= INDIGO_BAND_L_HI;
 }
+// Generation-time avoidance is DELIBERATELY stricter than hardBanned()'s own C>0.12 cutoff: a
+// mid-saturation indigo (C 0.08-0.12, e.g. the #4866aa regression — oklch H265 C0.113 L0.52) still
+// reads as the collapsed AI-accent look even though it doesn't clear hardBanned's literal
+// design-law.md "S>55%" threshold. hardBanned() (used to classify an already-authored/caller-
+// supplied hex) keeps the stricter 0.12 cutoff; inBannedHueBand (used by isSafeAccentLab, i.e. only
+// on the GENERATION path) uses this lower one so generatePalette never draws that close to the line
+// in the first place.
+const INDIGO_GEN_AVOID_CHROMA = 0.08;
 export function hardBanned(hex) {
   const h = hex.toLowerCase();
   if (BANNED_HEXES.has(h)) return `literal slop hex ${h}`;
@@ -154,6 +162,8 @@ export function hardBanned(hex) {
 function inBannedHueBand([L, C, H]) {
   if (C < CONFIG.NEUTRAL_CHROMA) return false;
   if (inIndigoVioletBand(L, C, H)) return true;
+  if (H >= INDIGO_BAND_LO && H <= INDIGO_BAND_HI && C > INDIGO_GEN_AVOID_CHROMA
+    && L >= INDIGO_BAND_L_LO && L <= INDIGO_BAND_L_HI) return true;
   if (H >= 165 && H <= 222 && L >= 0.5) return true;
   return false;
 }
@@ -166,6 +176,51 @@ const AVOID_LIST = new Set([
   "general sans", "sora", "plus jakarta sans", "figtree", "epilogue", "satoshi",
 ]);
 const POPULARITY_SLOP_TOP_N = 40;
+
+// ===========================================================================
+// Novelty/gimmick display-face demotion — fonts.json/font-space.json carry no explicit
+// "novelty"/"gimmick" tag, so this is a name heuristic over a small, checked family of
+// bitmap/pixel display faces (verified against font-space.json: Bitcount + its 11 weight/
+// grid/ink/prop variants, Coral Pixels, Geist Pixel, Pixelify Sans, Rubik Pixels — no
+// collateral matches on legitimate families). WHY this exists: font-space.json's `quality`
+// field scores the entire Bitcount family at 0.89 — tied for the highest quality of any
+// display face in the bundle — which let retrieveFonts/freshnessScore treat a bitmap
+// novelty gimmick as the single best "distinctive" display pick, then explore.mjs's 4
+// directions each landed on a different Bitcount VARIANT (same family, 4 hats). A
+// characterful grotesque/serif/sans is "distinctive"; a pixel/bitmap gimmick is a novelty
+// prop — never the default display face. Only an explicitly very-high-experimentalism
+// intent (>0.85) may reach for one.
+const NOVELTY_DISPLAY_RX = /bitcount|pixel|bitmap|8-?bit|arcade|dingbat|wingding/i;
+const NOVELTY_EXPERIMENTALISM_THRESHOLD = 0.85;
+function isNoveltyDisplay(f) {
+  return !!f && f.category === "display" && NOVELTY_DISPLAY_RX.test(f.family || "");
+}
+function noveltyAllowed(intent) {
+  return !!intent && clamp01Local(intent.experimentalism, 0) > NOVELTY_EXPERIMENTALISM_THRESHOLD;
+}
+
+// ===========================================================================
+// familyRoot(name) — normalizes sibling font-face variants ("Bitcount Grid Single Ink",
+// "Bitcount Grid Double Ink", …) down to a shared root ("bitcount") so a caller asking to
+// exclude an already-used family also excludes its variants — the fix for 4 explore
+// directions each picking a different Bitcount VARIANT and reading as 4 distinct fonts
+// when they're one family wearing 4 hats. Only strips a small curated list of variant/
+// weight modifier words trailing the name — deliberately does NOT strip category words
+// (sans/serif/display/text/mono) that distinguish genuinely different type designs (e.g.
+// "Source Serif 4" must stay distinct from "Source Sans 3").
+// ===========================================================================
+const FAMILY_MODIFIER_WORDS = new Set([
+  "grid", "ink", "single", "double", "triple", "prop", "dot", "dotted", "pixel",
+  "wide", "narrow", "condensed", "expanded", "italic", "variable",
+  "rounded", "outline", "fill", "solid", "light", "medium", "black", "thin", "bold",
+]);
+export function familyRoot(name) {
+  const words = String(name || "").trim().split(/\s+/).filter(Boolean);
+  while (words.length > 1 && FAMILY_MODIFIER_WORDS.has(words[words.length - 1].toLowerCase())) {
+    words.pop();
+  }
+  return words.join(" ").toLowerCase();
+}
 
 // ===========================================================================
 // Surface-fit envelope — condition TYPE selection on intent (Subsystem 4 fix).
@@ -411,11 +466,13 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
   }
 
   // ---- fonts ----
-  function freshnessScore(f) {
+  function freshnessScore(f, { experimentalism = 0 } = {}) {
     if (!f) return -Infinity;
     if (AVOID_LIST.has(f.family.toLowerCase())) return -Infinity;
     if (f.isBrandFont) return -Infinity;
+    if (isNoveltyDisplay(f) && !(experimentalism > NOVELTY_EXPERIMENTALISM_THRESHOLD)) return -Infinity;
     let s = 0;
+    if (isNoveltyDisplay(f)) s -= 4.0; // allowed (very-high-experimentalism) but still never the default
     if (f.supplier && f.supplier !== "google") s += 1.0;   // was 2.5 — stop chasing the obscure indie tail
     if (!f.isFoundational) s += 0.6;
     const rank = f.popularityRank || 9999;
@@ -458,8 +515,9 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
     if (isSlop) return { ...base, verdict: "SLOP", isFoundational: false, why: `${f.family} is AI-monoculture slop (${slopWhy}) — do NOT use it for ANY role.`, alternatives: suggestFonts(4).picks };
     return { ...base, verdict: "FRESH", isFoundational: !!f.isFoundational, why: `${f.family} is not on the avoid-list and not top-tier popular (rank ${f.popularityRank ?? "?"}, supplier ${f.supplier}) — a distinctive choice.`, alternatives: [] };
   }
-  function suggestFonts(n = 4, { category = null } = {}) {
-    const disp = fonts.map((f) => ({ f, score: freshnessScore(f) })).filter((x) => x.score > -Infinity)
+  function suggestFonts(n = 4, { category = null, intent = null } = {}) {
+    const experimentalism = intent ? clamp01Local(intent.experimentalism, 0) : 0;
+    const disp = fonts.map((f) => ({ f, score: freshnessScore(f, { experimentalism }) })).filter((x) => x.score > -Infinity)
       .filter((x) => x.f.category === "display").sort((a, b) => b.score - a.score);
     const body = fonts.map((f) => ({ f, score: bodyScore(f) })).filter((x) => x.score > -Infinity)
       .sort((a, b) => b.score - a.score);
@@ -537,6 +595,11 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
       }));
     }
     const ex = new Set((exclude || []).map((e) => String(e).toLowerCase()));
+    // family-root exclusion: excluding "Bitcount" (or any family) also excludes its variants
+    // ("Bitcount Grid Single Ink", …) — the fix for 4 explore directions each landing on a
+    // DIFFERENT Bitcount variant (one novelty family wearing 4 hats) instead of 4 real families.
+    const exRoots = new Set([...ex].map((e) => familyRoot(e)));
+    const allowNovelty = noveltyAllowed(intent);
     let pool = space.records, simById = null;
     if (like) {
       const seed = space.byFamily.get(String(like).toLowerCase()) || space.byId.get(String(like).toLowerCase());
@@ -549,6 +612,8 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
     const scored = [];
     for (const f of pool) {
       if (ex.has((f.family || "").toLowerCase()) || ex.has((f.id || "").toLowerCase())) continue;
+      if (exRoots.has(familyRoot(f.family))) continue;
+      if (role === "display" && isNoveltyDisplay(f) && !allowNovelty) continue; // pixel/bitmap gimmick — never the default display face
       const rc = readabilityChecks(f, { allowMonospaceBody: envelope.functional });
       if (role === "body" && !rc.bodySuitable) continue;   // never a display-only face for running text
       if (role === "body" && envelope.functional && f.category === "serif") continue; // functional body/metric: sans-serif or monospace only, never serif
@@ -559,6 +624,7 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
       let fit = (f.quality || 0) * 1.2 - featureDistance - pen + sim * 1.5
         + (role === "body" && f.isFoundational ? 0.6 : 0)
         + (role === "display" && !f.isFoundational ? 0.3 : 0);
+      if (role === "display" && isNoveltyDisplay(f)) fit -= 4.0; // allowed at very-high-experimentalism, but never the default over a characterful non-gimmick face
       if (envelope.functional) {
         if (role === "display" && f.category === "sans-serif") fit += 0.4;   // restrained sans is the default functional head
         if (role === "display" && f.category === "serif" && envelope.formality >= 0.65) fit += 0.2; // high formality: serif/grotesque over novelty
@@ -634,29 +700,62 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
   // subject's mood, not a number.
   const ENERGY_CHROMA = { muted: [0.06, 0.11], calm: [0.06, 0.11], balanced: [0.10, 0.16], bold: [0.15, 0.20], vivid: [0.15, 0.20] };
 
-  // generatePalette({ hue?, energy?, accent?, seed? }) — INTENT-driven, not seed-driven.
+  // MOOD profiles — the ground/ink lightness+chroma envelope for a palette "story". Before this,
+  // freshNeutral() had ONE hard-coded ground band (L 0.93-0.965, C 0.006-0.02) no matter what —
+  // every direction's ground landed as a near-white pastel ("colors are missing"). `mood` lets a
+  // caller (explore.mjs spreads one per direction) pick a genuinely different color story: light
+  // paper, a real (non-black) dark ground, a richly tinted surface, or a stark high-contrast pair.
+  // `light` is EXACTLY the historical band (back-compat default — no caller passes mood → identical
+  // behavior to before this change). `secondaryHueOffset` (non-null moods only) is a second, safely
+  // -banded hue for a genuine secondary/semantic color beyond "accent2 = accent, just lighter".
+  const MOOD_PROFILES = {
+    light: {
+      groundL: [0.93, 0.965], groundC: [0.006, 0.02], inkL: [0.15, 0.24], inkC: [0.006, 0.02],
+      chromaBoost: 0, secondaryHueOffset: null, fbGround: "#eceae3", fbInk: "#17150f",
+    },
+    dark: {
+      groundL: [0.08, 0.17], groundC: [0.012, 0.04], inkL: [0.88, 0.96], inkC: [0.006, 0.02],
+      chromaBoost: 0.02, secondaryHueOffset: 150, fbGround: "#141210", fbInk: "#f2efe9",
+    },
+    tinted: {
+      groundL: [0.80, 0.89], groundC: [0.035, 0.07], inkL: [0.12, 0.20], inkC: [0.01, 0.03],
+      chromaBoost: 0.03, secondaryHueOffset: -130, fbGround: "#e3d9c9", fbInk: "#1c1710",
+    },
+    contrast: {
+      groundL: [0.97, 0.99], groundC: [0.004, 0.012], inkL: [0.03, 0.07], inkC: [0.006, 0.014],
+      chromaBoost: 0.05, secondaryHueOffset: 150, fbGround: "#f7f6f3", fbInk: "#0c0b09",
+    },
+  };
+
+  // generatePalette({ hue?, energy?, accent?, seed?, mood? }) — INTENT-driven, not seed-driven.
   // The agent grounds it in the subject: a target `hue` from the real material and/or an
   // `energy` mood, or an `accent` hex to anchor on. `seed` is an internal reproducibility
   // detail (the tool layer varies it), NOT something a caller should think about. A bare
-  // number is still accepted for back-compat.
+  // number is still accepted for back-compat. `mood` (default "light", back-compat) picks the
+  // ground/ink color story — see MOOD_PROFILES above.
   function generatePalette(opts = {}) {
     if (typeof opts === "number") opts = { seed: opts };
-    const { hue = null, energy = "balanced", accent = null, seed = 1 } = opts;
+    const { hue = null, energy = "balanced", accent = null, seed = 1, mood = "light" } = opts;
+    const profile = MOOD_PROFILES[mood] || MOOD_PROFILES.light;
     const rand = mulberry32((seed >>> 0) || 1);
     const rnd = (lo, hi) => lo + rand() * (hi - lo);
     const buildHex = (L, C, H) => { const o = oklabToSrgb(oklchToOklab([L, C, H])); return o.inGamut ? o.hex : null; };
-    const [cLo, cHi] = ENERGY_CHROMA[energy] || ENERGY_CHROMA.balanced;
+    const [cLoBase, cHiBase] = ENERGY_CHROMA[energy] || ENERGY_CHROMA.balanced;
+    const cLo = Math.min(0.22, cLoBase + profile.chromaBoost);
+    const cHi = Math.min(0.24, cHiBase + profile.chromaBoost);
     const wrap = (h) => ((h % 360) + 360) % 360;
-    // an accent around the material's hue (± small jitter) or free; energy sets chroma
-    const freshAccent = () => {
+    // an accent around a given hue center (± small jitter) or free; chroma band is caller-set —
+    // shared by the primary accent, accent2, and the (mood-gated) secondary hue below.
+    const freshAccentAt = (hueCenter, lo, hi) => {
       for (let t = 0; t < 300; t++) {
-        const H = hue != null ? wrap(hue + rnd(-14, 14)) : rand() * 360;
-        const L = rnd(0.48, 0.66), C = rnd(cLo, cHi);
+        const H = hueCenter != null ? wrap(hueCenter + rnd(-14, 14)) : rand() * 360;
+        const L = rnd(0.45, 0.68), C = rnd(lo, hi);
         const lab = oklchToOklab([L, C, H]);
         if (isSafeAccentLab(lab, { minChroma: CONFIG.MIN_INTENTIONAL_CHROMA })) return buildHex(L, C, H);
       }
       return null;
     };
+    const freshAccent = () => freshAccentAt(hue, cLo, cHi);
     // honor a caller-provided accent hex, nudged non-slop if it isn't clean
     const anchored = () => {
       if (!accent) return null;
@@ -664,26 +763,35 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
       if (chk.verdict === "SAFE" || chk.verdict === "NEUTRAL-ok") return chk.hex;
       return (chk.alternatives && chk.alternatives[0] && chk.alternatives[0].hex) || null;
     };
-    // neutral ground/ink, hue biased toward the accent so the palette reads cohesive
+    // neutral ground/ink, hue biased toward the accent so the palette reads cohesive. Lightness/
+    // chroma envelope comes from `profile` — this is what makes "dark"/"tinted"/"contrast" moods
+    // actually different color stories instead of always-near-white-pastel.
     const freshNeutral = (kind) => {
+      const [Llo, Lhi] = kind === "ink" ? profile.inkL : profile.groundL;
+      const [Clo, Chi] = kind === "ink" ? profile.inkC : profile.groundC;
       for (let t = 0; t < 300; t++) {
-        const L = kind === "ink" ? rnd(0.15, 0.24) : rnd(0.93, 0.965);
+        const L = rnd(Llo, Lhi);
         const nH = hue != null ? wrap(hue + rnd(-30, 30)) : rand() * 360;
-        const hex = buildHex(L, rnd(0.006, 0.02), nH);
+        const hex = buildHex(L, rnd(Clo, Chi), nH);
         if (!hex) continue;
         const v = classify(hex).verdict;
         if (v === "SAFE" || v === "NEUTRAL-ok") return hex;
       }
-      return kind === "ink" ? "#17150f" : "#eceae3";
+      return kind === "ink" ? profile.fbInk : profile.fbGround;
     };
     for (let a = 0; a < 60; a++) {
       const acc = anchored() || freshAccent() || "#1f6e4c";
       const pal = { ground: freshNeutral("ground"), ink: freshNeutral("ink"), accent: acc, accent2: freshAccent() || acc };
       const p = checkPalette(pal.ground, pal.ink, pal.accent, pal.accent2);
-      if (p.pass && p.contrast != null && p.contrast >= 4.5) return { ...pal, contrast: p.contrast, hue, energy };
+      if (p.pass && p.contrast != null && p.contrast >= 4.5) {
+        const secondary = profile.secondaryHueOffset != null && hue != null
+          ? freshAccentAt(wrap(hue + profile.secondaryHueOffset), cLoBase, cHiBase)
+          : null;
+        return { ...pal, secondary, contrast: p.contrast, hue, energy, mood };
+      }
     }
-    const fb = { ground: "#eceae3", ink: "#17150f", accent: anchored() || "#b5522f", accent2: "#2f6b5e" };
-    return { ...fb, contrast: +contrastRatio(fb.ground, fb.ink).toFixed(2), hue, energy };
+    const fb = { ground: profile.fbGround, ink: profile.fbInk, accent: anchored() || "#b5522f", accent2: "#2f6b5e", secondary: null };
+    return { ...fb, contrast: +contrastRatio(fb.ground, fb.ink).toFixed(2), hue, energy, mood };
   }
   function designSystem({ baseFont = 18, baseUnit = 4, ratio = "perfect-fourth", radiusBase = 8, hue = null, energy = "balanced", accent = null, seed = 1 } = {}) {
     return {

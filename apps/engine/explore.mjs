@@ -13,7 +13,7 @@
 // Every slot is assembled via `styleGenome`'s `{layout}` override (genome.mjs) so font/palette
 // retrieval still runs through the same gates every other caller gets.
 
-import { resolveIntent, hashToUint32, deriveBaseHue } from "./intent.mjs";
+import { resolveIntent, hashToUint32, deriveBaseHue, clampAwayFromBannedHue } from "./intent.mjs";
 import { suggestLayout, LAYOUT_FAMILIES } from "./layout-families.mjs";
 import { perturbAndValidate, validatePerturbed } from "./perturb.mjs";
 import { styleGenome } from "./genome.mjs";
@@ -253,7 +253,7 @@ function composeSlotGenome(slot, iv, seed, variant, usedHosts = []) {
 // then override the palette so directions spread hue instead of all reproducing the same one
 // (spec §4 step 6). `otherFingerprints` = every OTHER direction already finalized this call
 // (used both as font-exclusion memory and as the hue-separation set).
-function buildDirectionForSlot(engine, intentInput, intent, slot, iv, seed, variant, hueBase, energyBand, otherFingerprints, otherHues, callerRecent, theme, spreadCount, usedHosts) {
+function buildDirectionForSlot(engine, intentInput, intent, slot, iv, seed, variant, hueBase, energyBand, otherFingerprints, otherHues, callerRecent, theme, spreadCount, usedHosts, mood) {
   const composed = composeSlotGenome(slot, iv, seed, variant, usedHosts);
   const optionSeed = (seed + slot.index * MOD9 + variant * MOD2) >>> 0;
   const recentForCall = [...callerRecent, ...otherFingerprints];
@@ -266,22 +266,32 @@ function buildDirectionForSlot(engine, intentInput, intent, slot, iv, seed, vari
     // = 337.5 ≡ −22.5 mod 360), well under the ≥40° divergence floor. 360/spreadCount always lands
     // exactly on the floor or above for any spreadCount ≤ 9.
     const hueSpread = spreadCount > 0 ? 360 / spreadCount : 112.5;
-    optionHue = (hueBase + slot.index * hueSpread) % 360;
+    // hueBase itself is already clamped away from the banned bands (deriveBaseHue), but the
+    // additive per-slot spread is raw arithmetic and can walk it right back INTO a banned band
+    // (this is exactly how the hue-261/#4866aa leak happened: hueBase 81.5 + 2×90 = 261.5, squarely
+    // in the 215-280 indigo/violet band). Re-clamp every spread hue, not just the base.
+    optionHue = clampAwayFromBannedHue((hueBase + slot.index * hueSpread) % 360);
   } else {
     let attempt = 0, candidate = 0;
     while (attempt < 8) {
-      candidate = hashToUint32(`${seed}:hue:${slot.index}:${variant}:${attempt}`) % 360;
+      candidate = clampAwayFromBannedHue(hashToUint32(`${seed}:hue:${slot.index}:${variant}:${attempt}`) % 360);
       if (otherHues.every((u) => circularHueDiff(candidate, u) >= 40)) break;
       attempt++;
     }
     optionHue = candidate;
   }
-  let palette = engine.generatePalette({ energy: energyBand, seed: optionSeed, hue: optionHue });
+  let palette = engine.generatePalette({ energy: energyBand, seed: optionSeed, hue: optionHue, mood });
   // checkColorFit belt-and-suspenders — generatePalette's own gate already refuses to emit an
   // indigo/violet/fintech-blue or cyan/mint accent, so this is a defensive re-check only.
   const colorFit = engine.checkColorFit ? engine.checkColorFit(palette.accent, intent) : { pass: true };
   if (colorFit && !colorFit.pass && colorFit.fallback) {
     palette = { ...palette, accent: colorFit.fallback.hex, hue: colorFit.fallback.hue };
+  }
+  if (palette.secondary) {
+    const secondaryFit = engine.checkColorFit ? engine.checkColorFit(palette.secondary, intent) : { pass: true };
+    if (secondaryFit && !secondaryFit.pass && secondaryFit.fallback) {
+      palette = { ...palette, secondary: secondaryFit.fallback.hex };
+    }
   }
   // Recompute the background anchored to THIS direction's separated hue (spec §4 step 6's hue
   // separation applies to the palette computed above, after styleGenome already ran with the
@@ -358,6 +368,17 @@ export function exploreDirections(engine, intentInput = {}, { seed, recentFinger
     : deriveBaseHue(intent);
   const energyBand = intent.energy < 0.34 ? "muted" : intent.energy < 0.67 ? "balanced" : "bold";
 
+  // Per-direction color MOOD spread (design-law.md "colors are missing" fix): before this, every
+  // direction used generatePalette's one hard-coded ground band (near-white pastel) — 4 directions,
+  // 4 washed-out near-identical color stories. Rotate a fixed, distinct-story set across the slots
+  // (light paper / real dark ground / richly tinted / stark high-contrast — see engine.mjs
+  // MOOD_PROFILES) so the 4 directions are genuinely different color moods, not just different
+  // hues of the same wash. `moodOffset` (seed-derived) keeps two different prompts/seeds from
+  // always starting the rotation at the same mood, while staying deterministic for a given call.
+  const MOOD_ROTATION = ["light", "dark", "tinted", "contrast"];
+  const moodOffset = hashToUint32(`${useSeed}:mood-rotation`) % MOOD_ROTATION.length;
+  const moodFor = (index) => MOOD_ROTATION[(index + moodOffset) % MOOD_ROTATION.length];
+
   const variants = new Array(slots.length).fill(0);
   const directions = new Array(slots.length);
   const hues = new Array(slots.length);
@@ -374,7 +395,7 @@ export function exploreDirections(engine, intentInput = {}, { seed, recentFinger
       // different neighbors carry different macro numbers).
       const usedHosts = directions.slice(0, k).filter(Boolean).map((d) => d.retrieval?.host).filter(Boolean);
       const { direction, hue, bgFp, motionFp, warnings: w } = buildDirectionForSlot(
-        engine, intentInput, intent, slots[k], iv, useSeed, variants[k], hueBase, energyBand, others, otherHues, recentFingerprints, intent.theme, slots.length, usedHosts,
+        engine, intentInput, intent, slots[k], iv, useSeed, variants[k], hueBase, energyBand, others, otherHues, recentFingerprints, intent.theme, slots.length, usedHosts, moodFor(k),
       );
       directions[k] = direction;
       hues[k] = hue;

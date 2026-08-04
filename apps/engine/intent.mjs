@@ -152,7 +152,7 @@ const BANNED_HUE_BANDS = [
   [165, 222], // cyan/mint glow corridor (engine.mjs inBannedHueBand)
   [215, 280], // indigo/violet AI-accent / reflexive fintech-blue (design-law.md hard gate)
 ];
-function clampAwayFromBannedHue(h) {
+export function clampAwayFromBannedHue(h) {
   const wrapped = ((h % 360) + 360) % 360;
   for (const [lo, hi] of BANNED_HUE_BANDS) {
     if (wrapped >= lo && wrapped <= hi) {

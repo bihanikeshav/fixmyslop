@@ -25,13 +25,43 @@ function hashSections(sectionGrammar = []) {
   return h >>> 0;
 }
 
-function materialFromDial(m) {
+// Material/radius/shadow used to be IDENTICAL across all 4 explore directions: materialFromDial(m)
+// read only intent.materiality, which doesn't vary per-direction (same intent, 4 layout/font/color
+// directions), and every caller shared the same fixed radiusBase(11)/shadow(m*8) formula — so every
+// direction rendered the exact same 5.5/11/22/33 radius ramp and the exact same shadow language.
+// Fix: derive an EFFECTIVE materiality per direction from (a) the direction's own layout family
+// pageKind (a dashboard/tool-shaped family reads sharper/flatter by default; a marketing/landing
+// family reads a touch softer/more elevated) and (b) a deterministic seed+family jitter — since
+// explore.mjs already gives every direction its own seed (optionSeed), this jitter naturally
+// diverges direction-to-direction without needing any new threading.
+const TOOL_PAGE_KINDS = new Set(["dashboard", "data-admin", "app"]);
+const EXPRESSIVE_PAGE_KINDS = new Set(["marketing", "landing", "story", "product-with-proof", "brand"]);
+
+function materialityJitter(seed, key) {
+  const r = hashToUint32(`${seed}:material:${key || ""}`) / 4294967296;
+  return (r - 0.5) * 0.34; // deterministic ±0.17 spread, keyed on (seed, family)
+}
+
+function effectiveMateriality(intent, family, seed) {
+  let m = intent.materiality;
+  if (family) {
+    if (TOOL_PAGE_KINDS.has(family.pageKind)) m -= 0.14;
+    else if (EXPRESSIVE_PAGE_KINDS.has(family.pageKind)) m += 0.08;
+  }
+  m += materialityJitter(seed, family && family.name);
+  return clamp01(m);
+}
+
+function materialFromDial(m, { pageKind, energy = 0.5 } = {}) {
+  const accentTreatment = TOOL_PAGE_KINDS.has(pageKind)
+    ? "state-color-coded"
+    : energy > 0.6 ? "one-primary-plus-secondary" : "one-primary-plus-signal";
   return {
     radiusLanguage: m < 0.33 ? "tight-square" : m < 0.66 ? "controlled-mixed" : "soft-rounded",
     shadowLanguage: m < 0.33 ? "flat-or-hairline" : m < 0.66 ? "soft-low-elevation" : "layered-elevation",
     borderLanguage: m < 0.5 ? "selective-structural" : "minimal",
     surfaceTreatment: m > 0.66 ? "subtle-texture" : "none",
-    accentTreatment: "one-primary-plus-signal",
+    accentTreatment,
   };
 }
 
@@ -117,13 +147,18 @@ export function styleGenome(engine, intentInput = {}, { seed, recentFingerprints
   const layout = layoutOverride || (layouts ? layouts[0] || null : null);
 
   // ---- material (slots attached to the layout's hierarchy nodes, never sprayed) ----
-  const m = intent.materiality;
-  const matLang = materialFromDial(m);
   const family = layout ? FAMILY_BY_NAME.get(layout.family) : null;
+  const m = effectiveMateriality(intent, family, useSeed);
+  const matLang = materialFromDial(m, { pageKind: family && family.pageKind, energy: intent.energy });
+  // elevated/rounded directions (m > 0.55) get an ambient shadow tinted toward the direction's own
+  // accent hue (elevation reads as "this surface's material", not a generic drop-shadow); flatter/
+  // sharper directions keep a neutral shadow — this is also part of the material spread, not just
+  // radius.
+  const shadowHue = m > 0.55 && Number.isFinite(palette.hue) ? Math.round(palette.hue) : 0;
   const material = {
     ...matLang,
-    radii: engine.radiusScale({ base: Math.round(4 + m * 12) }),
-    shadow: engine.shadow(Math.round(m * 8), { hue: 0, alpha: 0.12 + m * 0.1 }),
+    radii: engine.radiusScale({ base: Math.round(4 + m * 14) }),
+    shadow: engine.shadow(Math.round(1 + m * 7), { hue: shadowHue, alpha: 0.10 + m * 0.14 }),
     slots: family ? family.materialSlots : [],   // hierarchy nodes that receive material — never every box
   };
 

@@ -187,3 +187,81 @@ test("exploreDirections: 3 canonical-style intents (no explicit hue) get distinc
   // expressive surfaces — the old bug produced the literal SAME hue for all 3.
   assert.ok(hues[0] !== hues[2] || hues[1] !== hues[2], `dashboard hue collided with the others: ${hues}`);
 });
+
+// ── §4 token-quality overhaul: no novelty-font monoculture, family diversity, richer/gate-clean
+// color moods, and material variety across the 4 explore() directions ───────────────────────────
+
+const DEVTOOL = {
+  surface: "landing-page", job: "explain-and-convert",
+  sourceBrief: "a landing page for a developer API platform / observability tool",
+};
+const NOVELTY_DISPLAY_RX = /bitcount|pixel|bitmap|8-?bit|arcade|dingbat|wingding/i;
+function familyRootFor(name) {
+  const words = String(name || "").trim().split(/\s+/).filter(Boolean);
+  const MOD = new Set([
+    "grid", "ink", "single", "double", "triple", "prop", "dot", "dotted", "pixel",
+    "wide", "narrow", "condensed", "expanded", "italic", "variable",
+    "rounded", "outline", "fill", "solid", "light", "medium", "black", "thin", "bold",
+  ]);
+  while (words.length > 1 && MOD.has(words[words.length - 1].toLowerCase())) words.pop();
+  return words.join(" ").toLowerCase();
+}
+
+test("no novelty-font (Bitcount/pixel/bitmap) display pick by default, across many seeds", () => {
+  for (let seed = 0; seed < 100; seed++) {
+    const g = styleGenome(engine, DEVTOOL, { seed });
+    const family = g.type.display && g.type.display.family;
+    assert.ok(!family || !NOVELTY_DISPLAY_RX.test(family), `seed ${seed}: novelty display face "${family}" picked without high experimentalism`);
+  }
+});
+
+test("a very-high-experimentalism intent MAY reach a novelty display face (retrieveFonts gate, not banned outright)", () => {
+  // n large enough to cover the whole font-space pool: novelty faces are heavily demoted (still
+  // never the DEFAULT top pick, even when allowed) but must remain reachable, not filtered out.
+  const picks = engine.retrieveFonts({ role: "display", intent: { experimentalism: 0.95 }, n: 3000 });
+  assert.ok(picks.some((p) => NOVELTY_DISPLAY_RX.test(p.family)), "expected at least one novelty face reachable at experimentalism 0.95");
+});
+
+test("a low/default-experimentalism intent never surfaces a novelty display face, even asking for every candidate", () => {
+  const picks = engine.retrieveFonts({ role: "display", intent: { experimentalism: 0.3 }, n: 2000 });
+  assert.ok(!picks.some((p) => NOVELTY_DISPLAY_RX.test(p.family)), "novelty face leaked through at low experimentalism");
+});
+
+test("exploreDirections: 4 directions resolve to 4 DISTINCT display font-family roots (not 4 variants of one novelty family)", () => {
+  for (const seed of [42, 1, 7, 123]) {
+    const { directions } = exploreDirections(engine, DEVTOOL, { seed, count: 4 });
+    const roots = directions.map((d) => familyRootFor(d.genome.type.display && d.genome.type.display.family));
+    assert.equal(new Set(roots).size, roots.length, `seed ${seed}: duplicate display family roots across directions: ${roots.join(", ")}`);
+    assert.ok(roots.every((r) => !NOVELTY_DISPLAY_RX.test(r)), `seed ${seed}: a direction's display root is a novelty face: ${roots.join(", ")}`);
+  }
+});
+
+test("exploreDirections: color moods vary across the 4 directions — not every ground is a near-white pastel", () => {
+  const { directions } = exploreDirections(engine, DEVTOOL, { seed: 42, count: 4 });
+  const moods = directions.map((d) => d.genome.color.mood);
+  assert.ok(new Set(moods).size > 1, `expected varied color moods, got ${moods.join(", ")}`);
+  // at least one direction must NOT be a near-white ground (the "colors are missing" failure).
+  const grounds = directions.map((d) => d.genome.color.ground);
+  const lightnesses = grounds.map((hex) => engine.classify(hex).oklch.L);
+  assert.ok(lightnesses.some((L) => L < 0.85), `expected at least one non-near-white ground, got L values ${lightnesses.map((l) => l.toFixed(2)).join(", ")}`);
+});
+
+test("exploreDirections: no accent/accent2/secondary lands in the 215-280 indigo/violet/fintech-blue band, across many seeds", () => {
+  for (let seed = 0; seed < 40; seed++) {
+    const { directions } = exploreDirections(engine, DEVTOOL, { seed, count: 4 });
+    for (const d of directions) {
+      for (const hex of [d.genome.color.accent, d.genome.color.accent2, d.genome.color.secondary].filter(Boolean)) {
+        const verdict = engine.checkColor(hex).verdict;
+        assert.notEqual(verdict, "HARD-BANNED", `seed ${seed} direction "${d.name}": ${hex} is HARD-BANNED`);
+      }
+    }
+  }
+});
+
+test("exploreDirections: material (radius base / shadow language) varies across the 4 directions", () => {
+  const { directions } = exploreDirections(engine, DEVTOOL, { seed: 42, count: 4 });
+  const radiusBases = directions.map((d) => d.genome.material.radii.md);
+  const shadowLangs = directions.map((d) => d.genome.material.shadowLanguage);
+  assert.ok(new Set(radiusBases).size > 1, `expected varied radius bases, got ${radiusBases.join(", ")}`);
+  assert.ok(new Set(shadowLangs).size > 1 || new Set(radiusBases).size > 1, `expected material to vary by direction (radius=${radiusBases.join(",")} shadow=${shadowLangs.join(",")})`);
+});
