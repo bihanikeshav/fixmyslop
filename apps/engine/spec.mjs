@@ -14,6 +14,7 @@
 // interpret.
 
 import { typeScale, spacingScale } from "./system.mjs";
+import { purposeForRole, centrepieceRoleOf } from "./section-purpose.mjs";
 
 const pct = (n) => `${Math.round((Number(n) || 0) * 100)}%`;
 const num = (n, d = 2) => (Number.isFinite(Number(n)) ? Number(n).toFixed(d).replace(/\.?0+$/, "") : String(n));
@@ -103,20 +104,37 @@ function layoutSection(genome) {
   const L = genome.layout || {};
   const macro = L.macro || {};
   const h = L.hierarchy || {};
-  const sections = (L.sectionGrammar || [])
-    .map((s, i) => `| ${i + 1} | ${s.role} | ${pct(s.heightShare)} of page height | ${s.focalPoint} | ${s.composition} | ${s.surface === "inverted" ? "inverted (dark band on a light theme, or vice-versa)" : "normal"} |`)
+  const grammar = L.sectionGrammar || [];
+  const centrepieceRole = centrepieceRoleOf(grammar);
+  const sections = grammar
+    .map((s, i) => {
+      const isCentrepiece = s.role === centrepieceRole;
+      const centrepieceNote = s.role === "hero"
+        ? " **← THE CENTREPIECE lives here — build it large, as the dominant visual/statement of the page, not just a headline.**"
+        : " **← THE CENTREPIECE lives here — build it large/edge-to-edge, filling this section. Do not shrink it into the hero or a small card.**";
+      const purpose = purposeForRole(s.role) + (isCentrepiece ? centrepieceNote : "");
+      return `| ${i + 1} | ${s.role} | ${pct(s.heightShare)} of page height | ${s.focalPoint} | ${s.composition} | ${s.surface === "inverted" ? "inverted (dark band on a light theme, or vice-versa)" : "normal"} | ${purpose} |`;
+    })
     .join("\n");
   const mobile = (genome.responsive?.collapseRules && genome.responsive.collapseRules[0]) || L.responsive?.mobileTransform || "stack sections full-width, preserve order";
+  const centrepieceIsHero = centrepieceRole === "hero";
+  const centrepieceRule = centrepieceRole
+    ? centrepieceIsHero
+      ? `The CENTREPIECE — this layout's one dominant visual/statement — belongs specifically in the **hero** section named above, built large there. It does not get pushed into a smaller section further down the page, and it does not get skipped because it's "handled elsewhere" — if the hero renders as a headline with no real dominant visual/statement, you have not followed this spec.`
+      : `The CENTREPIECE — this layout's one dominant visual/instrument/statement — belongs specifically in the **${centrepieceRole}** section named above, built large or edge-to-edge THERE. It does not belong in the hero as a small card, and it does not get skipped because it's "handled elsewhere" — if you build a small trace/demo card in the hero and leave the ${centrepieceRole} section blank, you have not followed this spec.`
+    : `Build every section fully — none may be left blank.`;
 
   return `## Layout
 
 Archetype: **${L.family || "unspecified"}** (page kind: ${L.pageKind || "n/a"})
 
-Build the page as EXACTLY these sections, in this exact order, top to bottom. \`heightShare\` is that section's approximate share of total page scroll height — use it to size the section, don't make every section the same height:
+Build the page as EXACTLY these sections, in this exact order, top to bottom. \`heightShare\` is that section's approximate share of total page scroll height — use it to size the section, don't make every section the same height. The "content purpose" column is not optional flavor text — it is what that section MUST contain:
 
-| # | section role | height share | focal point | composition | surface |
-|---|---|---|---|---|---|
+| # | section role | height share | focal point | composition | surface | content purpose |
+|---|---|---|---|---|---|---|
 ${sections}
+
+**No empty sections, no exceptions.** Build EVERY section above fully, with real content sized to its height share — no section may render as a blank/void band, a color-only placeholder, or a caption with nothing under it. ${centrepieceRule}
 
 Macro proportions:
 - Content max-width: ${pct(macro.contentWidthShare)} of viewport width (centered, generous side margins outside it)
@@ -143,12 +161,12 @@ Theme: **${theme}**. Use exactly these 4 colors, no others (tints/shades of them
 
 | role | hex | use for |
 |---|---|---|
-| background | \`${c.ground}\` | page background, section backgrounds (unless a section is marked "inverted" above — invert background/text there) |${c.surface ? `\n| surface | \`${c.surface}\` | cards, panels, elevated/nested surfaces — a second NEUTRAL, distinct in lightness from the page background, never a tint of the accent |` : ""}
+| background | \`${c.ground}\` | **NEUTRAL** — page background, section backgrounds (unless a section is marked "inverted" above — invert background/text there). Do NOT tint the page with the accent hue: this is a near-gray/off-white or true-neutral-dark ground, not a pastel wash of the brand color. |${c.surface ? `\n| surface | \`${c.surface}\` | **NEUTRAL** — cards, panels, elevated/nested surfaces — a second neutral, distinct in lightness from the page background. Never a tint of the accent. |` : ""}
 | text | \`${c.ink}\` | all body copy, headings |
 | accent (primary) | \`${c.accent}\` | primary CTA buttons, links, active/selected states, the single most important interactive element per screen |
 | accent (secondary) | \`${c.accent2}\` | secondary accents, badges, chart/data highlights — never the primary CTA |
 
-Neutrals dominate; the accent is scarce (60-30-10: background + surface carry the page, the accent earns attention by being rare, not by being everywhere). Contrast requirement: background/text pair measures ${num(c.contrast, 2)}:1 — this MUST stay at or above 4.5:1 (WCAG AA) for all body text. Do not lighten text or add translucency that would drop it below that.
+Neutrals dominate; the accent is scarce (60-30-10: background + surface carry the page as genuinely NEUTRAL ground — near-gray/off-white in light, true-neutral-dark in dark, only a whisper of hue if any — while the accent appears ONLY on CTAs, key data, and small emphasis). The saturated hue below is confident where it appears; it must not flood the ground. Contrast requirement: background/text pair measures ${num(c.contrast, 2)}:1 — this MUST stay at or above 4.5:1 (WCAG AA) for all body text. Do not lighten text or add translucency that would drop it below that.
 
 Accent hue: ${Math.round(Number(c.hue) || 0)}° (OKLCH). Do not introduce a second, unrelated hue family anywhere on the page — and do not let the accent hue bleed into background/surface at anything beyond a faint neutral tint.`;
 }

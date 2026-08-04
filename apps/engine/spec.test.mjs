@@ -36,3 +36,38 @@ test("genomeToSpec is a pure function of its genome argument (no genome mutation
   genomeToSpec(genome);
   assert.equal(JSON.stringify(genome), before);
 });
+
+// ── dead-space fix (design directive): every section carries a content purpose, the centrepiece
+// section is explicitly named, and a hard no-empty-section instruction is stated. ────────────────
+test("genomeToSpec names an explicit centrepiece section and states a no-empty-section rule", () => {
+  const genome = styleGenome(engine, intent, { seed: 42 });
+  const spec = genomeToSpec(genome);
+  const grammar = genome.layout.sectionGrammar;
+  // the centrepiece role (largest non-chrome section) must be named verbatim in the Layout section
+  const chromeRoles = new Set(["nav", "footer", "topbar", "appbar", "statusbar", "masthead", "page-header", "header", "filter-bar", "table-head", "pagination", "plan-toggle", "reading-header"]);
+  const nonChrome = grammar.filter((s) => !chromeRoles.has(s.role));
+  const expectedCentrepiece = nonChrome.reduce((best, s) => (!best || s.heightShare > best.heightShare ? s : best), null);
+  assert.ok(expectedCentrepiece, "fixture layout has no non-chrome section to be a centrepiece");
+  assert.match(spec, /THE CENTREPIECE lives here/, "no per-row centrepiece annotation found");
+  assert.ok(spec.includes(`**${expectedCentrepiece.role}**`), `centrepiece role "${expectedCentrepiece.role}" not named in the no-empty-section rule`);
+  assert.match(spec, /No empty sections, no exceptions\./, "missing the hard no-empty-section instruction");
+});
+
+test("genomeToSpec's Layout section table includes a content-purpose column for every row", () => {
+  const genome = styleGenome(engine, intent, { seed: 42 });
+  const spec = genomeToSpec(genome);
+  assert.match(spec, /\| # \| section role \| height share \| focal point \| composition \| surface \| content purpose \|/, "Layout table missing content-purpose column header");
+  // every section role's purpose text must appear somewhere in the spec (loosely — the row itself)
+  for (const s of genome.layout.sectionGrammar) {
+    // role appears at least once per row context — cheap smoke check that rows were emitted
+    assert.ok(spec.includes(`| ${s.role} |`), `no table row found for section role "${s.role}"`);
+  }
+});
+
+test("genomeToSpec labels ground/surface as NEUTRAL and instructs against tinting the page with the accent hue", () => {
+  const genome = styleGenome(engine, intent, { seed: 42 });
+  const spec = genomeToSpec(genome);
+  assert.match(spec, /\*\*NEUTRAL\*\*/, "ground/surface not explicitly labeled NEUTRAL");
+  assert.match(spec, /Do NOT tint the page with the accent hue/, "missing the explicit no-tint instruction");
+  assert.match(spec, /accent appears ONLY on CTAs, key data, and small emphasis/, "missing the 60-30-10 scarce-accent framing");
+});

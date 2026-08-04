@@ -10,12 +10,18 @@ import { round } from "./system.mjs";
 import { hashToUint32 } from "./intent.mjs";
 import { perturbAndValidate } from "./perturb.mjs";
 import { ROLE_ALIASES, CANONICAL_ROLES, canonicalRole } from "./role-aliases.mjs";
+import { SECTION_PURPOSE, DEFAULT_PURPOSE, CHROME_ROLES, purposeForRole, centrepieceRoleOf } from "./section-purpose.mjs";
 
 // §1.5 ROLE_ALIASES — re-exported here per spec §4 ("export ROLE_ALIASES from
 // layout-families.mjs"); the actual table lives in role-aliases.mjs (no deps) so both this module
 // and perturb.mjs can use canonicalRole() without a circular import (this module imports
 // perturb.mjs to wire perturbGenome into composeGenome — see §2 wiring below).
 export { ROLE_ALIASES, CANONICAL_ROLES, canonicalRole };
+
+// Dead-space fix (see section-purpose.mjs): re-exported here so consumers that already import the
+// families module (spec.mjs, tests) get the content-purpose map + centrepiece selection from the
+// same place they get sectionGrammar.
+export { SECTION_PURPOSE, DEFAULT_PURPOSE, CHROME_ROLES, purposeForRole, centrepieceRoleOf };
 
 const clamp01 = (n, fallback = 0.5) => {
   const x = Number(n);
