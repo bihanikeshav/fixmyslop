@@ -12,7 +12,7 @@ import assert from "node:assert/strict";
 import { createEngine } from "./engine.mjs";
 import { styleGenome } from "./genome.mjs";
 import { exploreDirections } from "./explore.mjs";
-import { deriveBaseHue, resolveIntent } from "./intent.mjs";
+import { deriveBaseHue, resolveIntent, deriveRegister, functionalScore } from "./intent.mjs";
 import corpus from "./data/corpus.json" with { type: "json" };
 import brands from "./data/brands.json" with { type: "json" };
 import fonts from "./data/fonts.json" with { type: "json" };
@@ -264,4 +264,117 @@ test("exploreDirections: material (radius base / shadow language) varies across 
   const shadowLangs = directions.map((d) => d.genome.material.shadowLanguage);
   assert.ok(new Set(radiusBases).size > 1, `expected varied radius bases, got ${radiusBases.join(", ")}`);
   assert.ok(new Set(shadowLangs).size > 1 || new Set(radiusBases).size > 1, `expected material to vary by direction (radius=${radiusBases.join(",")} shadow=${shadowLangs.join(",")})`);
+});
+
+// ── FIX 1: register↔personality font-subject-fit (design-director critique: blackletter/swash on
+// a dev-tool brief) ────────────────────────────────────────────────────────────────────────────
+
+test("deriveRegister: a landing-page-shaped dev/observability brief still registers technical-precise (functionalScore alone would miss it)", () => {
+  const resolved = resolveIntent(DEVTOOL).intent;
+  assert.ok(functionalScore(resolved) < 0.55, "sanity: this brief's dials alone don't clear the functional threshold");
+  assert.equal(deriveRegister(resolved), "technical-precise");
+});
+
+test("deriveRegister: an expressive/portfolio brief registers expressive-editorial", () => {
+  assert.equal(deriveRegister(resolveIntent(PORTFOLIO).intent), "expressive-editorial");
+});
+
+test("deriveRegister: a dashboard registers technical-precise via functionalScore alone (no brief keyword needed)", () => {
+  assert.equal(deriveRegister(resolveIntent(DASHBOARD).intent), "technical-precise");
+});
+
+test("classifyFontGenre: known regression faces classify as expected", () => {
+  assert.equal(engine.classifyFontGenre({ family: "Grenze Gotisch", category: "display" }), "blackletter");
+  assert.equal(engine.classifyFontGenre({ family: "Sansita Swashed", category: "display" }), "script");
+  assert.equal(engine.classifyFontGenre({ family: "Chivo Mono", category: "monospace" }), "mono");
+  assert.equal(engine.classifyFontGenre({ family: "Roboto", category: "sans-serif" }), "sans");
+  assert.equal(engine.classifyFontGenre({ family: "Alfa Slab One", category: "display" }), "slab");
+  assert.equal(engine.classifyFontGenre({ family: "Creepster", category: "display" }), "decorative");
+  assert.equal(engine.classifyFontGenre({ family: "Bitcount Single Ink", category: "display" }), "decorative");
+});
+
+test("checkTypeFit fires on the exact regression: Grenze Gotisch heading a dev-tool brief, even though the brief's functionalScore is < 0.55", () => {
+  const resolved = resolveIntent(DEVTOOL).intent;
+  const fit = engine.checkTypeFit({ display: "Grenze Gotisch", body: "Bricolage Grotesque" }, resolved);
+  assert.equal(fit.pass, false);
+  assert.ok(fit.violations.some((v) => v.role === "display" && v.genre === "blackletter"));
+  assert.notEqual(fit.fallback.display, "Grenze Gotisch");
+});
+
+test("checkTypeFit fires on the exact regression: Sansita Swashed heading a dev-tool brief", () => {
+  const resolved = resolveIntent(DEVTOOL).intent;
+  const fit = engine.checkTypeFit({ display: "Sansita Swashed", body: "Mulish" }, resolved);
+  assert.equal(fit.pass, false);
+  assert.ok(fit.violations.some((v) => v.role === "display" && v.genre === "script"));
+});
+
+test("checkTypeFit does NOT gate a blackletter face on an expressive/portfolio brief (register-appropriate elsewhere)", () => {
+  const resolved = resolveIntent(PORTFOLIO).intent;
+  const fit = engine.checkTypeFit({ display: "Grenze Gotisch", body: "Roboto" }, resolved);
+  assert.equal(fit.pass, true);
+});
+
+test("retrieveFonts: technical-precise register never surfaces blackletter/script/decorative for the display role, across many seeds/n", () => {
+  const resolved = resolveIntent(DEVTOOL).intent;
+  const BAD_GENRES = new Set(["blackletter", "script", "decorative"]);
+  const picks = engine.retrieveFonts({ role: "display", intent: resolved, n: 4000 });
+  for (const p of picks) {
+    const genre = engine.classifyFontGenre({ family: p.family, category: p.category });
+    assert.ok(!BAD_GENRES.has(genre), `dev-tool register surfaced a ${genre} display face: "${p.family}"`);
+  }
+});
+
+test("retrieveFonts: expressive-editorial register (portfolio) still reaches ornate-serif/script/decorative display faces (register mapping works both ways)", () => {
+  const resolved = resolveIntent(PORTFOLIO).intent;
+  const picks = engine.retrieveFonts({ role: "display", intent: resolved, n: 4000 });
+  const genres = new Set(picks.map((p) => engine.classifyFontGenre({ family: p.family, category: p.category })));
+  assert.ok(
+    ["ornate-serif", "display-other", "script", "slab"].some((g) => genres.has(g)),
+    `expected an expressive genre reachable for portfolio, got genres: ${[...genres].join(", ")}`,
+  );
+});
+
+test("exploreDirections: all 4 devtool directions resolve to technical-register-appropriate display faces (no blackletter/script/decorative), across many seeds", () => {
+  const BAD_GENRES = new Set(["blackletter", "script", "decorative"]);
+  for (const seed of [42, 1, 7, 123, 999]) {
+    const { directions } = exploreDirections(engine, DEVTOOL, { seed, count: 4 });
+    for (const d of directions) {
+      const family = d.genome.type.display && d.genome.type.display.family;
+      const category = d.genome.type.display && d.genome.type.display.category;
+      const genre = engine.classifyFontGenre({ family, category });
+      assert.ok(!BAD_GENRES.has(genre), `seed ${seed} direction "${d.name}": display face "${family}" is ${genre} — out of register for a dev-tool brief`);
+    }
+  }
+});
+
+// ── FIX 2: neutral-dominant palette + confident-but-scarce accent (60-30-10) ───────────────────
+
+test("generatePalette: ground and surface classify as NEUTRAL-ok (true low-chroma neutrals) across every mood, while accent stays confidently saturated", () => {
+  const MOODS = ["light", "dark", "tinted", "contrast"];
+  for (const mood of MOODS) {
+    for (let seed = 0; seed < 25; seed++) {
+      const pal = engine.generatePalette({ hue: 40, energy: "bold", seed, mood });
+      const groundOk = engine.classify(pal.ground);
+      const surfaceOk = engine.classify(pal.surface);
+      assert.ok(groundOk.oklch.C < engine.CONFIG.NEUTRAL_CHROMA, `mood ${mood} seed ${seed}: ground chroma ${groundOk.oklch.C.toFixed(3)} not neutral`);
+      assert.ok(surfaceOk.oklch.C < engine.CONFIG.NEUTRAL_CHROMA, `mood ${mood} seed ${seed}: surface chroma ${surfaceOk.oklch.C.toFixed(3)} not neutral`);
+      const accentOk = engine.classify(pal.accent);
+      assert.ok(accentOk.oklch.C >= engine.CONFIG.MIN_INTENTIONAL_CHROMA, `mood ${mood} seed ${seed}: accent chroma ${accentOk.oklch.C.toFixed(3)} too washed-out to read as a confident accent`);
+    }
+  }
+});
+
+test("generatePalette: surface is a distinct elevation from ground (not the same flat tone)", () => {
+  for (const mood of ["light", "dark", "tinted", "contrast"]) {
+    const pal = engine.generatePalette({ hue: 200 % 360, energy: "balanced", seed: 5, mood });
+    assert.notEqual(pal.surface, pal.ground, `mood ${mood}: surface should differ from ground`);
+  }
+});
+
+test("exploreDirections: devtool 4 directions all have neutral-dominant grounds (ground chroma stays low even in 'tinted'/'contrast' moods)", () => {
+  const { directions } = exploreDirections(engine, DEVTOOL, { seed: 42, count: 4 });
+  for (const d of directions) {
+    const g = engine.classify(d.genome.color.ground);
+    assert.ok(g.oklch.C < engine.CONFIG.NEUTRAL_CHROMA, `direction "${d.name}" (mood ${d.genome.color.mood}): ground chroma ${g.oklch.C.toFixed(3)} floods the page instead of staying neutral`);
+  }
 });

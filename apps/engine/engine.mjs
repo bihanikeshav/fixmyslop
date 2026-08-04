@@ -6,7 +6,7 @@
 
 import * as SYS from "./system.mjs";
 import fontSpaceBundle from "./data/font-space.json" with { type: "json" };
-import { deriveBaseHue, hashToUint32 } from "./intent.mjs";
+import { deriveBaseHue, hashToUint32, functionalScore, FUNCTIONAL_THRESHOLD, deriveRegister } from "./intent.mjs";
 
 // ===========================================================================
 // font-space.json hydration — Subsystem 4 (font-neighbor retrieval).
@@ -253,26 +253,85 @@ export function familyRoot(name) {
 //     display is free to use an actual `display` category face — that's the point
 //     of a brand/marketing surface having identity type.
 // ===========================================================================
-const FUNCTIONAL_THRESHOLD = 0.55;
 const clamp01Local = (v, fallback = 0.5) => {
   const n = Number(v);
   return Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : fallback;
 };
-function functionalScore(intent) {
-  if (!intent) return 0;
-  const cd = clamp01Local(intent.contentDensity);
-  const formality = clamp01Local(intent.formality);
-  const energy = clamp01Local(intent.energy);
-  return clamp01Local(0.4 * cd + 0.35 * formality + 0.25 * (1 - energy));
-}
 function surfaceFontEnvelope(intent) {
-  const score = functionalScore(intent);
+  const score = functionalScore(intent || {});
   return {
     functionalScore: score,
     functional: score >= FUNCTIONAL_THRESHOLD,
     formality: intent ? clamp01Local(intent.formality) : 0.5,
   };
 }
+
+// ===========================================================================
+// classifyFontGenre(f) + REGISTER_GENRE_RULES — FIX 1, the font-subject-fit gate.
+//
+// SIGNAL USED: font-space.json/fonts.json carry NO explicit genre/personality-of-form tag (the
+// `personality` field that exists is only {professional, calm} — a mood pair, not a genre). So,
+// same as isNoveltyDisplay above, this classifies from `category` (the one structural signal every
+// record has) + a small, checked family-name regex per genre + (when font-space metrics are
+// present) `metrics.strokeContrast` to split "restrained text serif" from "ornate/high-contrast
+// display serif" within the single `serif` category. Verified against font-space.json's actual
+// display-category names (see engine.test.mjs / type-color-fit.test.mjs) — not a guess.
+// ===========================================================================
+const BLACKLETTER_RX = /gotisch|fraktur|unifraktur|uncial|blackletter|textura\b|old\s*english/i;
+const SCRIPT_RX = /swash|script|cursiv|calligraph|brush|freehand|handjet|fasthand/i;
+const DECORATIVE_RX = /creepster|nosifer|butcherman|distress|graffiti|\bhorror\b|circus|western|jokerman|frighten|grunge|zombie|vampire|halloween|carnival/i;
+const SLAB_RX = /slab|rockwell|clarendon|antique\b|egyptienne|typewriter/i;
+const ORNATE_SERIF_STROKE_CONTRAST = 0.55;
+
+export function classifyFontGenre(f) {
+  if (!f) return "unknown";
+  const name = f.family || "";
+  if (BLACKLETTER_RX.test(name)) return "blackletter";
+  if (f.category === "handwriting" || SCRIPT_RX.test(name)) return "script";
+  if (isNoveltyDisplay(f) || (f.category === "display" && DECORATIVE_RX.test(name))) return "decorative";
+  if (SLAB_RX.test(name)) return "slab";
+  if (f.category === "monospace") return "mono";
+  if (f.category === "serif") {
+    const strokeContrast = Number(f.metrics && f.metrics.strokeContrast);
+    return Number.isFinite(strokeContrast) && strokeContrast >= ORNATE_SERIF_STROKE_CONTRAST ? "ornate-serif" : "serif";
+  }
+  if (f.category === "sans-serif") return "sans";
+  if (f.category === "display") return "display-other";
+  return "unknown";
+}
+
+// REGISTER → genre weighting (design-director fix: match font PERSONALITY to the SUBJECT'S
+// register, generalizing the functional/expressive novelty gate above). `exclude` genres are
+// filtered out entirely for that register's display role (not just demoted — a dev-tool brief
+// should never reach a blackletter/swash face, regardless of how experimental the intent dial is;
+// that dial governs how BOLD a pick is within the appropriate register, not whether the register
+// itself is honored). `demote`/`prefer` are soft fit adjustments (still reachable, just not the
+// default). Other registers keep their own appropriate personalities allowed.
+const REGISTER_GENRE_RULES = {
+  "technical-precise": {
+    exclude: new Set(["blackletter", "script", "decorative"]),
+    demote: new Set(["ornate-serif", "display-other"]),
+    prefer: new Set(["slab", "mono", "sans"]),
+  },
+  "neutral-corporate": {
+    exclude: new Set(["blackletter", "script", "decorative"]),
+    demote: new Set(["display-other"]),
+    prefer: new Set(["sans", "serif", "slab"]),
+  },
+  "friendly-consumer": {
+    exclude: new Set(["blackletter"]),
+    demote: new Set([]),
+    prefer: new Set(["script", "sans", "display-other"]),
+  },
+  "expressive-editorial": {
+    exclude: new Set([]),
+    demote: new Set([]),
+    prefer: new Set(["ornate-serif", "display-other", "script", "slab"]),
+  },
+};
+const genreRulesFor = (intent) => REGISTER_GENRE_RULES[deriveRegister(intent || {})] || REGISTER_GENRE_RULES["expressive-editorial"];
+const REGISTER_DEMOTE_PENALTY = 1.4;
+const REGISTER_PREFER_BONUS = 0.45;
 
 // seeded PRNG — keeps generation deterministic + portable (no Math.random). Exported at module
 // scope so other pure engine modules (e.g. perturb.mjs) can share the exact same stream algorithm
@@ -609,11 +668,13 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
       }
     }
     const envelope = surfaceFontEnvelope(intent);
+    const genreRules = genreRulesFor(intent);
     const scored = [];
     for (const f of pool) {
       if (ex.has((f.family || "").toLowerCase()) || ex.has((f.id || "").toLowerCase())) continue;
       if (exRoots.has(familyRoot(f.family))) continue;
       if (role === "display" && isNoveltyDisplay(f) && !allowNovelty) continue; // pixel/bitmap gimmick — never the default display face
+      if (role === "display" && genreRules.exclude.has(classifyFontGenre(f))) continue; // FIX 1: register↔personality mismatch (blackletter/script/decorative out of register for this subject)
       const rc = readabilityChecks(f, { allowMonospaceBody: envelope.functional });
       if (role === "body" && !rc.bodySuitable) continue;   // never a display-only face for running text
       if (role === "body" && envelope.functional && f.category === "serif") continue; // functional body/metric: sans-serif or monospace only, never serif
@@ -625,6 +686,11 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
         + (role === "body" && f.isFoundational ? 0.6 : 0)
         + (role === "display" && !f.isFoundational ? 0.3 : 0);
       if (role === "display" && isNoveltyDisplay(f)) fit -= 4.0; // allowed at very-high-experimentalism, but never the default over a characterful non-gimmick face
+      if (role === "display") {
+        const genre = classifyFontGenre(f);
+        if (genreRules.demote.has(genre)) fit -= REGISTER_DEMOTE_PENALTY;   // FIX 1: e.g. an ornate display-serif on a technical-precise register
+        else if (genreRules.prefer.has(genre)) fit += REGISTER_PREFER_BONUS; // FIX 1: e.g. a grotesk/geometric-sans/mono/slab on a technical-precise register
+      }
       if (envelope.functional) {
         if (role === "display" && f.category === "sans-serif") fit += 0.4;   // restrained sans is the default functional head
         if (role === "display" && f.category === "serif" && envelope.formality >= 0.65) fit += 0.2; // high formality: serif/grotesque over novelty
@@ -659,12 +725,16 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
    */
   function checkTypeFit({ display, body } = {}, intent = null) {
     const envelope = surfaceFontEnvelope(intent);
-    const categoryOf = (family) => {
+    const recordFor = (family) => {
       if (!family) return null;
       const rec = fontSpace && fontSpace.byFamily ? fontSpace.byFamily.get(String(family).toLowerCase()) : null;
-      if (rec) return rec.category;
+      if (rec) return rec;
       const f = findFont(family);
-      return f ? f.category : null;
+      return f ? { family: f.family, category: f.category, metrics: {} } : null;
+    };
+    const categoryOf = (family) => {
+      const rec = recordFor(family);
+      return rec ? rec.category : null;
     };
     const violations = [];
     const bodyCategory = categoryOf(body);
@@ -680,6 +750,21 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
         role: "display", family: display, category: displayCategory,
         reason: `functional/data-dense surface forbids decorative/novelty display faces on the heading role — "${display}" is ${displayCategory}; use a restrained sans (or serif if formality is also high)`,
       });
+    }
+    // FIX 1: register↔personality gate — independent of `envelope.functional` (a landing-page-shaped
+    // dev-tool brief doesn't clear the functional threshold on its dials alone, see deriveRegister's
+    // doc comment in intent.mjs, but its SUBJECT is still technical-precise and must never head with
+    // a blackletter/script/decorative face).
+    if (!violations.some((v) => v.role === "display")) {
+      const register = deriveRegister(intent);
+      const genreRules = genreRulesFor(intent);
+      const displayGenre = classifyFontGenre(recordFor(display));
+      if (genreRules.exclude.has(displayGenre)) {
+        violations.push({
+          role: "display", family: display, category: displayCategory, genre: displayGenre,
+          reason: `"${register}" register forbids a ${displayGenre} display face — "${display}" reads ${displayGenre}, out of register for this subject`,
+        });
+      }
     }
     if (!violations.length) return { pass: true, violations: [], fallback: null };
     const fallbackFor = (role, exclude) => {
@@ -700,30 +785,49 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
   // subject's mood, not a number.
   const ENERGY_CHROMA = { muted: [0.06, 0.11], calm: [0.06, 0.11], balanced: [0.10, 0.16], bold: [0.15, 0.20], vivid: [0.15, 0.20] };
 
-  // MOOD profiles — the ground/ink lightness+chroma envelope for a palette "story". Before this,
-  // freshNeutral() had ONE hard-coded ground band (L 0.93-0.965, C 0.006-0.02) no matter what —
-  // every direction's ground landed as a near-white pastel ("colors are missing"). `mood` lets a
+  // MOOD profiles — the ground/surface/ink lightness+chroma envelope for a palette "story". Before
+  // this, freshNeutral() had ONE hard-coded ground band (L 0.93-0.965, C 0.006-0.02) no matter what
+  // — every direction's ground landed as a near-white pastel ("colors are missing"). `mood` lets a
   // caller (explore.mjs spreads one per direction) pick a genuinely different color story: light
   // paper, a real (non-black) dark ground, a richly tinted surface, or a stark high-contrast pair.
   // `light` is EXACTLY the historical band (back-compat default — no caller passes mood → identical
   // behavior to before this change). `secondaryHueOffset` (non-null moods only) is a second, safely
   // -banded hue for a genuine secondary/semantic color beyond "accent2 = accent, just lighter".
+  //
+  // FIX 2 (neutral-dominant palette): `groundC`/`inkC` used to run as high as 0.035-0.07 for the
+  // "tinted" mood — well past CONFIG.NEUTRAL_CHROMA (0.04), i.e. not actually a neutral, just a
+  // paler wash of the SAME hue as the accent. With `ground` (page), `accent` (CTA/links) AND
+  // `accent2` (badges/chart highlights) all drawing from that one hue, the result was "one
+  // saturated hue floods the page" — no neutral counterweight, exactly the design-director
+  // critique. skills/fix-ai-slop/reference/color.md is explicit about the right magnitude: "tint
+  // neutrals ~0.005–0.02 chroma toward the brand hue" — a bare hint of undertone, not a pastel of
+  // it. Every mood's groundC/inkC now sits in that neighborhood (tinted/dark/contrast get a touch
+  // more room than pure "light" for perceptual presence, but all stay well clear of
+  // CONFIG.NEUTRAL_CHROMA). `accent`'s own chroma (ENERGY_CHROMA + chromaBoost, below) is
+  // UNCHANGED — the accent stays just as confident/saturated, it's just scarce now: one real
+  // neutral foundation (ground + a second `surface` elevation, see freshNeutral("surface")) with
+  // the saturated hue reserved for the accent/accent2 roles only (60-30-10, not 90-10 diluted
+  // wash-vs-wash).
   const MOOD_PROFILES = {
     light: {
       groundL: [0.93, 0.965], groundC: [0.006, 0.02], inkL: [0.15, 0.24], inkC: [0.006, 0.02],
-      chromaBoost: 0, secondaryHueOffset: null, fbGround: "#eceae3", fbInk: "#17150f",
+      surfaceLOffset: -0.05, chromaBoost: 0, secondaryHueOffset: null,
+      fbGround: "#eceae3", fbSurface: "#e1ddd2", fbInk: "#17150f",
     },
     dark: {
-      groundL: [0.08, 0.17], groundC: [0.012, 0.04], inkL: [0.88, 0.96], inkC: [0.006, 0.02],
-      chromaBoost: 0.02, secondaryHueOffset: 150, fbGround: "#141210", fbInk: "#f2efe9",
+      groundL: [0.08, 0.17], groundC: [0.012, 0.03], inkL: [0.88, 0.96], inkC: [0.006, 0.02],
+      surfaceLOffset: 0.05, chromaBoost: 0.02, secondaryHueOffset: 150,
+      fbGround: "#141210", fbSurface: "#201c17", fbInk: "#f2efe9",
     },
     tinted: {
-      groundL: [0.80, 0.89], groundC: [0.035, 0.07], inkL: [0.12, 0.20], inkC: [0.01, 0.03],
-      chromaBoost: 0.03, secondaryHueOffset: -130, fbGround: "#e3d9c9", fbInk: "#1c1710",
+      groundL: [0.80, 0.89], groundC: [0.014, 0.03], inkL: [0.12, 0.20], inkC: [0.008, 0.02],
+      surfaceLOffset: -0.06, chromaBoost: 0.03, secondaryHueOffset: -130,
+      fbGround: "#e3d9c9", fbSurface: "#d5c9b3", fbInk: "#1c1710",
     },
     contrast: {
       groundL: [0.97, 0.99], groundC: [0.004, 0.012], inkL: [0.03, 0.07], inkC: [0.006, 0.014],
-      chromaBoost: 0.05, secondaryHueOffset: 150, fbGround: "#f7f6f3", fbInk: "#0c0b09",
+      surfaceLOffset: -0.05, chromaBoost: 0.05, secondaryHueOffset: 150,
+      fbGround: "#f7f6f3", fbSurface: "#ebe9e4", fbInk: "#0c0b09",
     },
   };
 
@@ -763,25 +867,42 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
       if (chk.verdict === "SAFE" || chk.verdict === "NEUTRAL-ok") return chk.hex;
       return (chk.alternatives && chk.alternatives[0] && chk.alternatives[0].hex) || null;
     };
-    // neutral ground/ink, hue biased toward the accent so the palette reads cohesive. Lightness/
-    // chroma envelope comes from `profile` — this is what makes "dark"/"tinted"/"contrast" moods
-    // actually different color stories instead of always-near-white-pastel.
+    // neutral ground/surface/ink, hue biased toward the accent so the palette reads cohesive
+    // (skills/fix-ai-slop/reference/color.md: "tint neutrals ~0.005–0.02 chroma toward the brand
+    // hue"). Lightness/chroma envelope comes from `profile` — this is what makes "dark"/"tinted"/
+    // "contrast" moods actually different color stories instead of always-near-white-pastel, while
+    // staying genuinely NEUTRAL (low chroma) rather than a paler wash of the accent's own hue.
+    // `kind: "surface"` is a second neutral elevation (cards/panels) offset in lightness from
+    // `ground` by `profile.surfaceLOffset` — the "neutrals dominate" structure (ground + surface)
+    // that gives the scarce accent something to sit ON TOP of, instead of one flat wash.
+    const clampL = (v) => Math.min(0.99, Math.max(0.02, v));
     const freshNeutral = (kind) => {
       const [Llo, Lhi] = kind === "ink" ? profile.inkL : profile.groundL;
       const [Clo, Chi] = kind === "ink" ? profile.inkC : profile.groundC;
+      let lo = Llo, hi = Lhi;
+      if (kind === "surface") {
+        const off = profile.surfaceLOffset || 0;
+        lo = clampL(Llo + off); hi = clampL(Lhi + off);
+        if (lo > hi) { const t = lo; lo = hi; hi = t; }
+      }
       for (let t = 0; t < 300; t++) {
-        const L = rnd(Llo, Lhi);
+        const L = rnd(lo, hi);
         const nH = hue != null ? wrap(hue + rnd(-30, 30)) : rand() * 360;
         const hex = buildHex(L, rnd(Clo, Chi), nH);
         if (!hex) continue;
         const v = classify(hex).verdict;
         if (v === "SAFE" || v === "NEUTRAL-ok") return hex;
       }
-      return kind === "ink" ? profile.fbInk : profile.fbGround;
+      if (kind === "ink") return profile.fbInk;
+      if (kind === "surface") return profile.fbSurface;
+      return profile.fbGround;
     };
     for (let a = 0; a < 60; a++) {
       const acc = anchored() || freshAccent() || "#1f6e4c";
-      const pal = { ground: freshNeutral("ground"), ink: freshNeutral("ink"), accent: acc, accent2: freshAccent() || acc };
+      const pal = {
+        ground: freshNeutral("ground"), surface: freshNeutral("surface"), ink: freshNeutral("ink"),
+        accent: acc, accent2: freshAccent() || acc,
+      };
       const p = checkPalette(pal.ground, pal.ink, pal.accent, pal.accent2);
       if (p.pass && p.contrast != null && p.contrast >= 4.5) {
         const secondary = profile.secondaryHueOffset != null && hue != null
@@ -790,7 +911,10 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
         return { ...pal, secondary, contrast: p.contrast, hue, energy, mood };
       }
     }
-    const fb = { ground: profile.fbGround, ink: profile.fbInk, accent: anchored() || "#b5522f", accent2: "#2f6b5e", secondary: null };
+    const fb = {
+      ground: profile.fbGround, surface: profile.fbSurface, ink: profile.fbInk,
+      accent: anchored() || "#b5522f", accent2: "#2f6b5e", secondary: null,
+    };
     return { ...fb, contrast: +contrastRatio(fb.ground, fb.ink).toFixed(2), hue, energy, mood };
   }
   function designSystem({ baseFont = 18, baseUnit = 4, ratio = "perfect-fourth", radiusBase = 8, hue = null, energy = "balanced", accent = null, seed = 1 } = {}) {
@@ -818,6 +942,7 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
 
   return {
     checkColor, checkPalette, checkColorFit, checkFont, checkTypeFit, suggestFonts, retrieveFonts,
+    classifyFontGenre, deriveRegister,
     classify, nearestSafe, brandClone,
     density: densityHex, contrastRatio, CONFIG,
     generatePalette, designSystem, auditSystem,

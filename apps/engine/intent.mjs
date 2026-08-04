@@ -162,19 +162,90 @@ export function clampAwayFromBannedHue(h) {
   return wrapped;
 }
 
+// functionalScore(intent) — how "functional/data-dense/restrained" a surface is, in [0,1].
+// SHARED formula: deriveBaseHue (color) and engine.mjs's surfaceFontEnvelope/deriveRegister (type)
+// all read the SAME number, so color and type are conditioned on the same read of the surface —
+// a single source of truth instead of two copies that could drift.
+//   functionalScore = 0.4·contentDensity + 0.35·formality + 0.25·(1−energy)
+export const FUNCTIONAL_THRESHOLD = 0.55;
+export function functionalScore(intent = {}) {
+  const contentDensity = clamp01(intent && intent.contentDensity, 0.5);
+  const formality = clamp01(intent && intent.formality, 0.5);
+  const energy = clamp01(intent && intent.energy, 0.5);
+  return clamp01(0.4 * contentDensity + 0.35 * formality + 0.25 * (1 - energy));
+}
+
 export function deriveBaseHue(intent = {}) {
   const warmth = clamp01(intent.warmth, 0.5);
   const era = clamp01(intent.era, 0.5);
   const energy = clamp01(intent.energy, 0.5);
-  const contentDensity = clamp01(intent.contentDensity, 0.5);
-  const formality = clamp01(intent.formality, 0.5);
-  const functionalScore = clamp01(0.4 * contentDensity + 0.35 * formality + 0.25 * (1 - energy));
+  const fScore = functionalScore(intent);
 
   let hue = HUE_COOL - warmth * (HUE_COOL - HUE_WARM);
   hue -= (era - 0.5) * 30;
   hue -= (energy - 0.5) * 10;
-  hue += (functionalScore - 0.5) * 20;
+  hue += (fScore - 0.5) * 20;
   return clampAwayFromBannedHue(hue);
+}
+
+// ===========================================================================
+// deriveRegister(intent) — the intent → REGISTER bridge (FIX 1, font-subject-fit).
+//
+// WHY: retrieveFonts()/checkTypeFit only ever asked "is this surface functional?" (one boolean,
+// surfaceFontEnvelope's functionalScore >= 0.55) — a coarse gate that keeps a decorative face off
+// a dashboard's metrics, but says NOTHING about whether a display face's PERSONALITY suits the
+// SUBJECT. A "developer observability landing page" scores functionalScore ~0.44 (a landing page's
+// energy/formality priors don't clear the functional threshold) even though the SUBJECT is
+// unambiguously technical — so the functional-only gate let a blackletter/gothic face ("Grenze
+// Gotisch") and an italic swash script ("Sansita Swashed") both reach the heading role: neither
+// reads as "dev tool," both read as metal-band/whiskey-label and wedding-invite respectively. This
+// is the fix: a small, explicit REGISTER classification, read by engine.mjs's font-genre gate
+// (classifyFontGenre/REGISTER_GENRE_RULES) independent of the functional/expressive split above.
+//
+// SIGNAL: functionalScore alone (dashboards/consoles clear it on priors) OR an explicit
+// dev/technical marker on the intent's own categorical fields (surface/job/contentModel) OR a
+// small, checked keyword scan over sourceBrief — deterministic string matching (no AI/NLP), the
+// same class of check as isNoveltyDisplay's family-name regex in engine.mjs. This is what lets a
+// landing-page-shaped intent whose SUBJECT is a dev tool still register as technical-precise even
+// though its layout/energy dials look like any other landing page.
+// ===========================================================================
+export const REGISTERS = ["technical-precise", "neutral-corporate", "friendly-consumer", "expressive-editorial"];
+
+const TECHNICAL_SURFACES = new Set(["dashboard", "app", "docs"]);
+const TECHNICAL_JOBS = new Set(["monitor", "reference", "technical", "spec-sheet"]);
+const TECHNICAL_CONTENT_MODELS = new Set(["technical", "spec-sheet", "data-records", "reference"]);
+// Checked against the corpus of realistic dev/infra briefs this repo already uses in its own test
+// fixtures (type-color-fit.test.mjs, gen-4-directions.mjs) — "developer API platform / observability
+// tool" is the literal regression brief.
+const TECHNICAL_BRIEF_RX = /\b(developer|devtool|dev[- ]tool|api|sdk|\bcli\b|infra(?:structure)?|observability|monitoring|kubernetes|backend|database|terminal|engineering|devops|telemetry|\blogs?\b|\bmetrics\b|admin console|ops console|platform engineering)\b/i;
+
+function hasTechnicalSignal(intent) {
+  if (!intent) return false;
+  if (TECHNICAL_SURFACES.has(intent.surface)) return true;
+  if (TECHNICAL_JOBS.has(intent.job)) return true;
+  if (TECHNICAL_CONTENT_MODELS.has(intent.contentModel)) return true;
+  if (intent.sourceBrief && TECHNICAL_BRIEF_RX.test(String(intent.sourceBrief))) return true;
+  return false;
+}
+
+/**
+ * deriveRegister(intent) → one of REGISTERS.
+ *   technical-precise:   high functionalScore OR an explicit dev/technical marker — dev tools,
+ *                        dashboards, infra, developer/observability surfaces. Precise, engineered
+ *                        type only; blackletter/script/decorative type are out of register.
+ *   neutral-corporate:   high formality, not experimental, not technical — restrained business.
+ *   friendly-consumer:   warm + informal — playful/approachable type is in register here.
+ *   expressive-editorial: the default — creative/portfolio/brand surfaces; display/characterful
+ *                        type is the point, so nothing is excluded by register alone.
+ */
+export function deriveRegister(intent = {}) {
+  if (functionalScore(intent) >= FUNCTIONAL_THRESHOLD || hasTechnicalSignal(intent)) return "technical-precise";
+  const formality = clamp01(intent.formality, 0.5);
+  const warmth = clamp01(intent.warmth, 0.5);
+  const experimentalism = clamp01(intent.experimentalism, 0.5);
+  if (formality >= 0.62 && experimentalism < 0.55) return "neutral-corporate";
+  if (warmth >= 0.55 && formality < 0.5) return "friendly-consumer";
+  return "expressive-editorial";
 }
 
 function priorsFor(surface, job) {

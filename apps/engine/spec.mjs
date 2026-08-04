@@ -143,14 +143,14 @@ Theme: **${theme}**. Use exactly these 4 colors, no others (tints/shades of them
 
 | role | hex | use for |
 |---|---|---|
-| background | \`${c.ground}\` | page background, section backgrounds (unless a section is marked "inverted" above — invert background/text there) |
+| background | \`${c.ground}\` | page background, section backgrounds (unless a section is marked "inverted" above — invert background/text there) |${c.surface ? `\n| surface | \`${c.surface}\` | cards, panels, elevated/nested surfaces — a second NEUTRAL, distinct in lightness from the page background, never a tint of the accent |` : ""}
 | text | \`${c.ink}\` | all body copy, headings |
 | accent (primary) | \`${c.accent}\` | primary CTA buttons, links, active/selected states, the single most important interactive element per screen |
 | accent (secondary) | \`${c.accent2}\` | secondary accents, badges, chart/data highlights — never the primary CTA |
 
-Contrast requirement: background/text pair measures ${num(c.contrast, 2)}:1 — this MUST stay at or above 4.5:1 (WCAG AA) for all body text. Do not lighten text or add translucency that would drop it below that.
+Neutrals dominate; the accent is scarce (60-30-10: background + surface carry the page, the accent earns attention by being rare, not by being everywhere). Contrast requirement: background/text pair measures ${num(c.contrast, 2)}:1 — this MUST stay at or above 4.5:1 (WCAG AA) for all body text. Do not lighten text or add translucency that would drop it below that.
 
-Accent hue: ${Math.round(Number(c.hue) || 0)}° (OKLCH). Do not introduce a second, unrelated hue family anywhere on the page.`;
+Accent hue: ${Math.round(Number(c.hue) || 0)}° (OKLCH). Do not introduce a second, unrelated hue family anywhere on the page — and do not let the accent hue bleed into background/surface at anything beyond a faint neutral tint.`;
 }
 
 // ── background section ───────────────────────────────────────────────────────────────────────
