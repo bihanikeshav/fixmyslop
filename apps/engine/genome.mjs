@@ -7,7 +7,7 @@
 // Pure/deterministic: no Math.random, no Date.now. The color/font/material generators
 // come from the injected engine instance (createEngine), so this shares the same data.
 
-import { resolveIntent, clamp01, hashToUint32 } from "./intent.mjs";
+import { resolveIntent, clamp01, hashToUint32, deriveBaseHue } from "./intent.mjs";
 import { suggestLayout, LAYOUT_FAMILIES } from "./layout-families.mjs";
 import { canonicalRole } from "./role-aliases.mjs";
 import { deriveBackground } from "./background.mjs";
@@ -69,15 +69,48 @@ export function styleGenome(engine, intentInput = {}, { seed, recentFingerprints
   // Diversity memory → exclusions. Fingerprints may carry fontPair (families) + layoutFamily.
   const recentFamilies = recentFingerprints.flatMap((fp) => (fp && fp.fontPair) || []);
 
-  // ---- type (neighbor retrieval + readability gate) ----
-  const display = engine.retrieveFonts({ role: "display", intent, exclude: recentFamilies, n: 4 })[0] || null;
-  const body = engine.retrieveFonts({
+  // ---- type (neighbor retrieval + readability gate, surface-fit envelope conditioned on intent) ----
+  let display = engine.retrieveFonts({ role: "display", intent, exclude: recentFamilies, n: 4 })[0] || null;
+  let body = engine.retrieveFonts({
     role: "body", intent, n: 4,
     exclude: [...(display ? [display.family] : []), ...recentFamilies],
   })[0] || null;
+  // checkTypeFit — belt-and-suspenders re-check (retrieveFonts already filters by the same
+  // envelope, so this only fires via a path that bypassed it, e.g. the neighbor-seeded `like`
+  // pool); on a violation, swap in the nearest legible candidate for the offending role(s).
+  const typeFit = engine.checkTypeFit
+    ? engine.checkTypeFit({ display: display && display.family, body: body && body.family }, intent)
+    : { pass: true };
+  if (typeFit && !typeFit.pass) {
+    if (typeFit.violations.some((v) => v.role === "display")) {
+      display = engine.retrieveFonts({
+        role: "display", intent, n: 4,
+        exclude: [...recentFamilies, ...(display ? [display.family] : [])],
+      })[0] || display;
+    }
+    if (typeFit.violations.some((v) => v.role === "body")) {
+      body = engine.retrieveFonts({
+        role: "body", intent, n: 4,
+        exclude: [...recentFamilies, ...(body ? [body.family] : []), ...(display ? [display.family] : [])],
+      })[0] || body;
+    }
+  }
 
-  // ---- color (existing OKLCH corpus engine), grounded by energy + theme, reproducible by seed ----
-  const palette = engine.generatePalette({ energy: band(intent.energy), seed: useSeed });
+  // ---- color (existing OKLCH corpus engine), grounded by energy + intent-derived hue (warmth/
+  // era/energy/surface — design-law.md "Palette = intent, not seed") + theme, reproducible by seed.
+  // An explicit intentInput.hue (raw, pre-normalization — hue isn't a StyleIntent dial) still wins.
+  const explicitHue = Number.isFinite(Number(intentInput.hue))
+    ? (((Number(intentInput.hue) % 360) + 360) % 360)
+    : null;
+  const baseHue = explicitHue != null ? explicitHue : deriveBaseHue(intent);
+  let palette = engine.generatePalette({ energy: band(intent.energy), seed: useSeed, hue: baseHue });
+  // checkColorFit — belt-and-suspenders re-check against the design-law.md indigo/violet/
+  // fintech-blue + cyan/mint hard bans; generatePalette's own gate already refuses to emit either
+  // band, so this only fires if a caller-anchored accent slipped through some other path.
+  const colorFit = engine.checkColorFit ? engine.checkColorFit(palette.accent, intent) : { pass: true };
+  if (colorFit && !colorFit.pass && colorFit.fallback) {
+    palette = { ...palette, accent: colorFit.fallback.hex, hue: colorFit.fallback.hue };
+  }
 
   // ---- layout ----
   const layouts = layoutOverride ? null : suggestLayout(intent, { recentFingerprints });

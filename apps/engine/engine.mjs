@@ -6,6 +6,7 @@
 
 import * as SYS from "./system.mjs";
 import fontSpaceBundle from "./data/font-space.json" with { type: "json" };
+import { deriveBaseHue, hashToUint32 } from "./intent.mjs";
 
 // ===========================================================================
 // font-space.json hydration — Subsystem 4 (font-neighbor retrieval).
@@ -127,19 +128,32 @@ const BANNED_HEXES = new Set([
   "#6366f1", "#7c3aed", "#8b5cf6", "#818cf8", "#a78bfa", "#a855f7",
   "#2563eb", "#3b82f6", "#22d3ee", "#2dd4bf", "#67e8f9", "#5eead4",
 ]);
+// design-law.md hard gate ("Color"): "No indigo/violet AI-accent (hue ~215–280, S>55%,
+// mid lightness) ... No reflexive fintech-blue CTA." OKLCH chroma doesn't map 1:1 to
+// HSL saturation, but C>0.12 is the empirical equivalent of "S>55%" for sRGB-gamut
+// hues in this band (verified against the collapsed #1a89d1 fintech-blue regression:
+// oklch H244 C0.14 L0.61 — squarely inside 215-280/mid-lightness and just missed the
+// old, narrower 245-310/C>0.18 thresholds). "Mid lightness" = L in [0.3, 0.8] — near-
+// black/near-white tints of the same hue aren't the AI-accent look. The whole 215-280
+// span is banned (superseding the narrower legacy 1A/1E sub-bands below it used to
+// split at 264/245) — this is ONE band, not two, per the law's own wording.
+const INDIGO_BAND_LO = 215, INDIGO_BAND_HI = 280, INDIGO_BAND_CHROMA = 0.12;
+const INDIGO_BAND_L_LO = 0.3, INDIGO_BAND_L_HI = 0.8;
+function inIndigoVioletBand(L, C, H) {
+  return C > INDIGO_BAND_CHROMA && H >= INDIGO_BAND_LO && H <= INDIGO_BAND_HI
+    && L >= INDIGO_BAND_L_LO && L <= INDIGO_BAND_L_HI;
+}
 export function hardBanned(hex) {
   const h = hex.toLowerCase();
   if (BANNED_HEXES.has(h)) return `literal slop hex ${h}`;
   const [L, C, H] = hexToOklch(hex);
-  if (C > 0.18 && H >= 264 && H <= 310) return `1A indigo/violet (oklch H${H.toFixed(0)} C${C.toFixed(2)})`;
-  if (C > 0.18 && H >= 245 && H < 264 && L >= 0.45) return `1E fintech blue (oklch H${H.toFixed(0)} C${C.toFixed(2)} L${L.toFixed(2)})`;
+  if (inIndigoVioletBand(L, C, H)) return `indigo/violet AI-accent / reflexive fintech-blue (oklch H${H.toFixed(0)} C${C.toFixed(2)} L${L.toFixed(2)}) — banned per design-law.md hard gate (hue 215-280, S>55%, mid lightness)`;
   if (C >= 0.10 && H >= 170 && H <= 215 && L >= 0.65) return `1B electric cyan/mint (oklch H${H.toFixed(0)} C${C.toFixed(2)} L${L.toFixed(2)})`;
   return null;
 }
 function inBannedHueBand([L, C, H]) {
   if (C < CONFIG.NEUTRAL_CHROMA) return false;
-  if (H >= 250 && H <= 310) return true;
-  if (H >= 245 && H < 250 && L >= 0.45) return true;
+  if (inIndigoVioletBand(L, C, H)) return true;
   if (H >= 165 && H <= 222 && L >= 0.5) return true;
   return false;
 }
@@ -152,6 +166,58 @@ const AVOID_LIST = new Set([
   "general sans", "sora", "plus jakarta sans", "figtree", "epilogue", "satoshi",
 ]);
 const POPULARITY_SLOP_TOP_N = 40;
+
+// ===========================================================================
+// Surface-fit envelope — condition TYPE selection on intent (Subsystem 4 fix).
+//
+// WHY: retrieveFonts()/styleGenome() used to pick display/body faces purely from
+// feature-distance + popularity math, blind to what the intent said about the
+// surface. That let a loud pixel/display face (e.g. "Bitcount Single Ink") land on
+// a dashboard's headings/metrics — illegible, form fighting function — because
+// nothing gated category against contentDensity/formality/energy. This is that gate.
+//
+// FUNCTIONAL SCORE: a continuous [0,1] blend of the three intent dials the task
+// calls out — high contentDensity, high formality, low energy — weighted so a
+// single extreme dial alone (e.g. just high formality on an otherwise relaxed
+// intent) doesn't flip the whole envelope, but a genuinely data-dense/restrained
+// surface (dashboards, consoles, admin apps) clears the FUNCTIONAL_THRESHOLD on
+// its priors alone (see intent.mjs SURFACE_JOB_PRIORS: dashboard → cd .8, formality
+// .7, energy .35 → score ~.73). Expressive/brand surfaces (marketing, portfolio —
+// low density, high energy/experimentalism) stay well under it.
+//   functionalScore = 0.4·contentDensity + 0.35·formality + 0.25·(1−energy)
+//   FUNCTIONAL_THRESHOLD = 0.55
+//
+// ENVELOPE RULES (documented per the task):
+//   - functional (score ≥ 0.55): body/metric role MUST be sans-serif or monospace
+//     (serif dropped too — a data-dense surface wants a numeral-friendly workhorse,
+//     never a text serif); display/heading role forbids display + handwriting
+//     categories outright (no decorative/pixel/novelty face carries a metric or a
+//     functional heading) — a restrained sans (or a serif, if formality is also
+//     high — grotesque/serif reads more "restrained" than novelty) may head.
+//   - expressive (score < 0.55): body stays the existing serif/sans-serif gate;
+//     display is free to use an actual `display` category face — that's the point
+//     of a brand/marketing surface having identity type.
+// ===========================================================================
+const FUNCTIONAL_THRESHOLD = 0.55;
+const clamp01Local = (v, fallback = 0.5) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : fallback;
+};
+function functionalScore(intent) {
+  if (!intent) return 0;
+  const cd = clamp01Local(intent.contentDensity);
+  const formality = clamp01Local(intent.formality);
+  const energy = clamp01Local(intent.energy);
+  return clamp01Local(0.4 * cd + 0.35 * formality + 0.25 * (1 - energy));
+}
+function surfaceFontEnvelope(intent) {
+  const score = functionalScore(intent);
+  return {
+    functionalScore: score,
+    functional: score >= FUNCTIONAL_THRESHOLD,
+    formality: intent ? clamp01Local(intent.formality) : 0.5,
+  };
+}
 
 // seeded PRNG — keeps generation deterministic + portable (no Math.random). Exported at module
 // scope so other pure engine modules (e.g. perturb.mjs) can share the exact same stream algorithm
@@ -311,6 +377,39 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
     };
   }
 
+  /**
+   * checkColorFit(hex, intent) → { pass, verdict, hex, reason?, fallback? }
+   *
+   * The color-side sibling to checkTypeFit — the gate that catches a collapsed accent
+   * landing in the design-law.md hard-banned indigo/violet/reflexive-fintech-blue band
+   * (hue 215-280, S>55%, mid lightness — see hardBanned() above) OR the electric
+   * cyan/mint glow band, REGARDLESS of how it was produced (generatePalette already
+   * refuses to emit either band on its own gate-passing path, so a violation here means
+   * a caller-supplied/anchored accent, or an un-gated hex, bypassed that path). On a
+   * violation, `fallback` is NOT a random nearestSafe() nudge — it's a hue re-grounded
+   * in the intent's own material (deriveBaseHue: warmth/energy/era/surface, per
+   * "Palette = intent, not seed" in design-law.md), so the fix reads as this subject's
+   * color, not just "the first non-banned neighbor."
+   */
+  function checkColorFit(hex, intent = null) {
+    let cls;
+    try { cls = classify(hex); } catch { return { pass: false, verdict: "INVALID", hex, reason: `not a valid hex: ${hex}`, fallback: null }; }
+    if (cls.verdict !== "HARD-BANNED") return { pass: true, verdict: cls.verdict, hex: cls.hex, fallback: null };
+    const groundedHue = deriveBaseHue(intent || {});
+    const grounded = generatePalette({ hue: groundedHue, energy: "balanced", seed: hashToUint32(`checkColorFit:${cls.hex}`) });
+    return {
+      pass: false,
+      verdict: cls.verdict,
+      hex: cls.hex,
+      reason: cls.ban,
+      fallback: {
+        hex: grounded.accent,
+        hue: Math.round(groundedHue),
+        note: `re-grounded to the intent's own material hue (~${Math.round(groundedHue)}°, derived from warmth/energy/era/surface) instead of the banned band`,
+      },
+    };
+  }
+
   // ---- fonts ----
   function freshnessScore(f) {
     if (!f) return -Infinity;
@@ -400,11 +499,13 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
     if ((f.trendingRank || 9999) <= 40) p += 0.3;
     return p;
   }
-  function readabilityChecks(f) {
+  function readabilityChecks(f, { allowMonospaceBody = false } = {}) {
     const x = Number((f.metrics || {}).xHeightRatio);
-    // HARD body gate: a text workhorse must be serif/sans with a generous x-height.
+    // HARD body gate: a text workhorse must be serif/sans (or, on a functional/
+    // data-dense surface, monospace — numeral alignment) with a generous x-height.
     // This is the structural fix for the "display serif as body" failure.
-    const bodySuitable = BODY_CATEGORIES.has(f.category) && (!Number.isFinite(x) || x >= 0.48);
+    const catOk = BODY_CATEGORIES.has(f.category) || (allowMonospaceBody && f.category === "monospace");
+    const bodySuitable = catOk && (!Number.isFinite(x) || x >= 0.48);
     return { bodySuitable, displaySuitable: true };
   }
   function featureDistanceFor(f, role, intent) {
@@ -444,19 +545,29 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
         pool = seed.neighbors.map((nb) => space.byId.get(nb.id)).filter(Boolean);
       }
     }
+    const envelope = surfaceFontEnvelope(intent);
     const scored = [];
     for (const f of pool) {
       if (ex.has((f.family || "").toLowerCase()) || ex.has((f.id || "").toLowerCase())) continue;
-      const rc = readabilityChecks(f);
+      const rc = readabilityChecks(f, { allowMonospaceBody: envelope.functional });
       if (role === "body" && !rc.bodySuitable) continue;   // never a display-only face for running text
+      if (role === "body" && envelope.functional && f.category === "serif") continue; // functional body/metric: sans-serif or monospace only, never serif
+      if (role === "display" && envelope.functional && (f.category === "display" || f.category === "handwriting")) continue; // functional heading: no decorative/pixel/novelty face — checkTypeFit is the belt-and-suspenders re-check downstream
       const featureDistance = featureDistanceFor(f, role, intent);
       const pen = overusePenalty(f);
       const sim = simById ? (simById.get(f.id) || 0) : 0;
-      const fit = (f.quality || 0) * 1.2 - featureDistance - pen + sim * 1.5
+      let fit = (f.quality || 0) * 1.2 - featureDistance - pen + sim * 1.5
         + (role === "body" && f.isFoundational ? 0.6 : 0)
         + (role === "display" && !f.isFoundational ? 0.3 : 0);
+      if (envelope.functional) {
+        if (role === "display" && f.category === "sans-serif") fit += 0.4;   // restrained sans is the default functional head
+        if (role === "display" && f.category === "serif" && envelope.formality >= 0.65) fit += 0.2; // high formality: serif/grotesque over novelty
+        if (role === "body" && f.category === "monospace") fit += 0.2;       // numeral-heavy metrics read well in mono
+      } else if (role === "display" && f.category === "display") {
+        fit += 0.3; // expressive/brand surface: an actual display face is the point
+      }
       scored.push({
-        family: f.family, role, fit,
+        family: f.family, role, fit, category: f.category,
         featureDistance: round3(featureDistance),
         visualDistance: simById ? round3(1 - sim) : null,
         overusePenalty: round3(pen),
@@ -467,6 +578,56 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
     }
     scored.sort((a, b) => b.fit - a.fit);
     return scored.slice(0, n).map(({ fit, ...rest }) => rest);
+  }
+
+  /**
+   * checkTypeFit({ display, body }, intent) → { pass, violations, fallback }
+   *
+   * The surface-appropriateness GATE (sibling to checkColor/checkPalette) — the check that would
+   * have caught the dashboard-gets-Bitcount failure. Re-checks a resolved {display, body} font
+   * assignment against the SAME surface-fit envelope retrieveFonts() already filters candidates
+   * by (see surfaceFontEnvelope above), so a violation can only reach here via a path that bypassed
+   * retrieveFonts's own gate (e.g. a caller-supplied family, or the neighbor-seeded `like` pool).
+   * Never throws; `fallback` names the nearest legible replacement (retrieveFonts's own top pick
+   * for that role under the same intent) for each violating role, null for roles that already pass.
+   */
+  function checkTypeFit({ display, body } = {}, intent = null) {
+    const envelope = surfaceFontEnvelope(intent);
+    const categoryOf = (family) => {
+      if (!family) return null;
+      const rec = fontSpace && fontSpace.byFamily ? fontSpace.byFamily.get(String(family).toLowerCase()) : null;
+      if (rec) return rec.category;
+      const f = findFont(family);
+      return f ? f.category : null;
+    };
+    const violations = [];
+    const bodyCategory = categoryOf(body);
+    if (envelope.functional && bodyCategory && !["sans-serif", "monospace"].includes(bodyCategory)) {
+      violations.push({
+        role: "body", family: body, category: bodyCategory,
+        reason: `functional/data-dense surface (functionalScore ${envelope.functionalScore.toFixed(2)} ≥ ${FUNCTIONAL_THRESHOLD}) requires a sans-serif or monospace body/metric face — "${body}" is ${bodyCategory}`,
+      });
+    }
+    const displayCategory = categoryOf(display);
+    if (envelope.functional && displayCategory && ["display", "handwriting"].includes(displayCategory)) {
+      violations.push({
+        role: "display", family: display, category: displayCategory,
+        reason: `functional/data-dense surface forbids decorative/novelty display faces on the heading role — "${display}" is ${displayCategory}; use a restrained sans (or serif if formality is also high)`,
+      });
+    }
+    if (!violations.length) return { pass: true, violations: [], fallback: null };
+    const fallbackFor = (role, exclude) => {
+      const picks = retrieveFonts({ role, intent, n: 6, exclude: exclude ? [exclude] : [] });
+      return picks[0] ? picks[0].family : null;
+    };
+    return {
+      pass: false,
+      violations,
+      fallback: {
+        display: violations.some((v) => v.role === "display") ? fallbackFor("display", display) : display,
+        body: violations.some((v) => v.role === "body") ? fallbackFor("body", body) : body,
+      },
+    };
   }
 
   // energy → accent chroma band (kept inside the gate). The caller expresses the
@@ -548,7 +709,8 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
   }
 
   return {
-    checkColor, checkPalette, checkFont, suggestFonts, retrieveFonts, classify, nearestSafe, brandClone,
+    checkColor, checkPalette, checkColorFit, checkFont, checkTypeFit, suggestFonts, retrieveFonts,
+    classify, nearestSafe, brandClone,
     density: densityHex, contrastRatio, CONFIG,
     generatePalette, designSystem, auditSystem,
     ...SYS,

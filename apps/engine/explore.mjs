@@ -13,7 +13,7 @@
 // Every slot is assembled via `styleGenome`'s `{layout}` override (genome.mjs) so font/palette
 // retrieval still runs through the same gates every other caller gets.
 
-import { resolveIntent, hashToUint32 } from "./intent.mjs";
+import { resolveIntent, hashToUint32, deriveBaseHue } from "./intent.mjs";
 import { suggestLayout, LAYOUT_FAMILIES } from "./layout-families.mjs";
 import { perturbAndValidate, validatePerturbed } from "./perturb.mjs";
 import { styleGenome } from "./genome.mjs";
@@ -252,7 +252,7 @@ function composeSlotGenome(slot, iv, seed, variant, usedHosts = []) {
 // then override the palette so directions spread hue instead of all reproducing the same one
 // (spec §4 step 6). `otherFingerprints` = every OTHER direction already finalized this call
 // (used both as font-exclusion memory and as the hue-separation set).
-function buildDirectionForSlot(engine, intentInput, slot, iv, seed, variant, hueBase, energyBand, otherFingerprints, otherHues, callerRecent, theme, spreadCount, usedHosts) {
+function buildDirectionForSlot(engine, intentInput, intent, slot, iv, seed, variant, hueBase, energyBand, otherFingerprints, otherHues, callerRecent, theme, spreadCount, usedHosts) {
   const composed = composeSlotGenome(slot, iv, seed, variant, usedHosts);
   const optionSeed = (seed + slot.index * MOD9 + variant * MOD2) >>> 0;
   const recentForCall = [...callerRecent, ...otherFingerprints];
@@ -260,7 +260,12 @@ function buildDirectionForSlot(engine, intentInput, slot, iv, seed, variant, hue
 
   let optionHue;
   if (hueBase != null) {
-    optionHue = (hueBase + slot.index * 112.5) % 360;
+    // Evenly divide the circle by the actual slot count so no two directions collide — a fixed
+    // 112.5° step (360/3.2) put slot 0 and slot 3 only 22.5° apart for a 4-direction call (112.5×3
+    // = 337.5 ≡ −22.5 mod 360), well under the ≥40° divergence floor. 360/spreadCount always lands
+    // exactly on the floor or above for any spreadCount ≤ 9.
+    const hueSpread = spreadCount > 0 ? 360 / spreadCount : 112.5;
+    optionHue = (hueBase + slot.index * hueSpread) % 360;
   } else {
     let attempt = 0, candidate = 0;
     while (attempt < 8) {
@@ -270,7 +275,13 @@ function buildDirectionForSlot(engine, intentInput, slot, iv, seed, variant, hue
     }
     optionHue = candidate;
   }
-  const palette = engine.generatePalette({ energy: energyBand, seed: optionSeed, hue: optionHue });
+  let palette = engine.generatePalette({ energy: energyBand, seed: optionSeed, hue: optionHue });
+  // checkColorFit belt-and-suspenders — generatePalette's own gate already refuses to emit an
+  // indigo/violet/fintech-blue or cyan/mint accent, so this is a defensive re-check only.
+  const colorFit = engine.checkColorFit ? engine.checkColorFit(palette.accent, intent) : { pass: true };
+  if (colorFit && !colorFit.pass && colorFit.fallback) {
+    palette = { ...palette, accent: colorFit.fallback.hex, hue: colorFit.fallback.hue };
+  }
   // Recompute the background anchored to THIS direction's separated hue (spec §4 step 6's hue
   // separation applies to the palette computed above, after styleGenome already ran with the
   // pre-separation hue) — mirrors the palette override immediately below, same reasoning: every
@@ -337,9 +348,13 @@ export function exploreDirections(engine, intentInput = {}, { seed, recentFinger
   const { slots, remaining } = buildSlots(ranked, count);
   const pool = remaining.slice();
 
+  // Intent-conditioned base hue (design-law.md "Palette = intent, not seed" — warmth/era/energy/
+  // surface, see intent.mjs's deriveBaseHue). An explicit caller intentInput.hue still wins; the
+  // per-slot `+ slot.index*112.5` spread below still gives every direction its own hue, just
+  // centered on THIS intent instead of a seed-only hash that ignored intent entirely.
   const hueBase = Number.isFinite(Number(intentInput.hue))
     ? (((Number(intentInput.hue) % 360) + 360) % 360)
-    : null;
+    : deriveBaseHue(intent);
   const energyBand = intent.energy < 0.34 ? "muted" : intent.energy < 0.67 ? "balanced" : "bold";
 
   const variants = new Array(slots.length).fill(0);
@@ -358,7 +373,7 @@ export function exploreDirections(engine, intentInput = {}, { seed, recentFinger
       // different neighbors carry different macro numbers).
       const usedHosts = directions.slice(0, k).filter(Boolean).map((d) => d.retrieval?.host).filter(Boolean);
       const { direction, hue, bgFp, motionFp, warnings: w } = buildDirectionForSlot(
-        engine, intentInput, slots[k], iv, useSeed, variants[k], hueBase, energyBand, others, otherHues, recentFingerprints, intent.theme, slots.length, usedHosts,
+        engine, intentInput, intent, slots[k], iv, useSeed, variants[k], hueBase, energyBand, others, otherHues, recentFingerprints, intent.theme, slots.length, usedHosts,
       );
       directions[k] = direction;
       hues[k] = hue;

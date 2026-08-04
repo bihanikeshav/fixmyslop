@@ -112,6 +112,71 @@ function deriveSeed(intent) {
   return hashToUint32(`variation:${variation}`);
 }
 
+// ===========================================================================
+// deriveBaseHue(intent) — the intent → accent-hue bridge (design-law.md "Palette =
+// intent, not seed": ground `hue` in the subject's real material — terracotta ~40,
+// forest ~150, ocean ~230 — not a seed-independent roll).
+//
+// Before this, styleGenome()/exploreDirections() left the base hue to fall out of a
+// per-seed hash with NO intent dependence — since the resolved seed is derived only
+// from `variation`/`nonce` (deriveSeed above), any two different intents at the
+// default variation/no-nonce landed on the exact SAME hash-derived hue. This is the
+// fix: a deterministic, continuous function of warmth/era/energy/contentDensity/
+// formality that gives every distinct intent its own hue center, while still letting
+// an explicit caller-supplied `intentInput.hue` override it (genome.mjs/explore.mjs
+// both check for that first).
+//
+// SAFE CORRIDOR: interpolates between HUE_WARM (30°, terracotta/orange) and HUE_COOL
+// (150°, forest/teal-green) — deliberately NOT literal "blue" for the cool end, even
+// though design-law.md's own example says "ocean ~230": 230° sits inside the law's
+// OWN indigo/violet/fintech-blue hard-ban band (215-280, see engine.mjs hardBanned/
+// checkColorFit) once chroma clears ~S>55%, so a formula that could land there at
+// bold/vivid energy would routinely produce a banned accent and burn generatePalette's
+// retry budget. 30-150 has no such trap (verified against engine.mjs's hardBanned +
+// inBannedHueBand at every chroma/lightness combination generatePalette can draw).
+// The final clampAwayFromBannedHue() below is a second, defensive belt-and-suspenders
+// snap for the (rare) combination of simultaneous extreme dials that could otherwise
+// push the result to the edge of the corridor.
+//
+//   base    = HUE_COOL − warmth · (HUE_COOL − HUE_WARM)      // warmth: cool → warm
+//   era     -= (era − 0.5) · 30                              // heritage warms, futurist cools
+//   energy  -= (energy − 0.5) · 10                           // high energy reads warmer/hotter
+//   surface += (functionalScore − 0.5) · 20                  // functional/trustworthy surfaces skew cooler
+// where functionalScore = 0.4·contentDensity + 0.35·formality + 0.25·(1−energy) — the
+// SAME formula apps/engine/engine.mjs's surfaceFontEnvelope uses for the type gate, so
+// type and color are conditioned on the same "how functional is this surface" read.
+// ===========================================================================
+const HUE_WARM = 30;
+const HUE_COOL = 150;
+const BANNED_HUE_BANDS = [
+  [165, 222], // cyan/mint glow corridor (engine.mjs inBannedHueBand)
+  [215, 280], // indigo/violet AI-accent / reflexive fintech-blue (design-law.md hard gate)
+];
+function clampAwayFromBannedHue(h) {
+  const wrapped = ((h % 360) + 360) % 360;
+  for (const [lo, hi] of BANNED_HUE_BANDS) {
+    if (wrapped >= lo && wrapped <= hi) {
+      return wrapped - lo < hi - wrapped ? Math.max(0, lo - 2) : Math.min(360, hi + 2);
+    }
+  }
+  return wrapped;
+}
+
+export function deriveBaseHue(intent = {}) {
+  const warmth = clamp01(intent.warmth, 0.5);
+  const era = clamp01(intent.era, 0.5);
+  const energy = clamp01(intent.energy, 0.5);
+  const contentDensity = clamp01(intent.contentDensity, 0.5);
+  const formality = clamp01(intent.formality, 0.5);
+  const functionalScore = clamp01(0.4 * contentDensity + 0.35 * formality + 0.25 * (1 - energy));
+
+  let hue = HUE_COOL - warmth * (HUE_COOL - HUE_WARM);
+  hue -= (era - 0.5) * 30;
+  hue -= (energy - 0.5) * 10;
+  hue += (functionalScore - 0.5) * 20;
+  return clampAwayFromBannedHue(hue);
+}
+
 function priorsFor(surface, job) {
   const bySurface = SURFACE_JOB_PRIORS[surface];
   if (!bySurface) return null;

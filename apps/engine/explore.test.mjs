@@ -17,7 +17,13 @@ const landing = { surface: "landing-page", job: "explain-and-convert", sourceBri
 test("purity: explore.mjs carries no Math.random/Date.now/new Date in executable code", () => {
   const path = fileURLToPath(new URL("explore.mjs", import.meta.url));
   const src = readFileSync(path, "utf8");
-  const codeOnly = src.split("\n").map((line) => line.replace(/\/\/.*$/, "")).join("\n");
+  // no trailing `$` anchor: on a CRLF checkout (core.autocrlf=true), `.replace(/\/\/.*$/, "")`
+  // silently no-ops per line — `.` excludes the line-terminator `\r` left dangling after a `\n`-
+  // only split, so `.*` can't reach the position `$` (end-of-string, no /m flag) requires, and the
+  // whole match fails, leaving comment-only lines (like this file's own header) untouched. This is
+  // a pre-existing bug unrelated to the Subsystem 4 (type/color intent-conditioning) fix — caught
+  // because it happened to make THIS purity check false-positive on its own header comment.
+  const codeOnly = src.split("\n").map((line) => line.replace(/\/\/.*/, "")).join("\n");
   assert.ok(!/Math\.random/.test(codeOnly), "explore.mjs calls Math.random");
   assert.ok(!/Date\.now/.test(codeOnly), "explore.mjs calls Date.now");
   assert.ok(!/new Date/.test(codeOnly), "explore.mjs calls new Date");
