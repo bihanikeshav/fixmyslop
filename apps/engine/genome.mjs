@@ -133,7 +133,7 @@ export function styleGenome(engine, intentInput = {}, { seed, recentFingerprints
     ? deriveBackground(family, {
         materiality: intent.materiality, energy: intent.energy, layoutVariance: intent.layoutVariance,
         contentDensity: intent.contentDensity, contrastPreference: intent.contrastPreference, craft: intent.craft,
-        theme: intent.theme, hue: palette.hue,
+        formality: intent.formality, theme: intent.theme, hue: palette.hue,
       }, hashToUint32(`${useSeed}:background:${family.name}`))
     : null;
 

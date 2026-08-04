@@ -111,6 +111,7 @@ function ivFromIntent(intent) {
     energy: intent.energy,
     contrastPreference: intent.contrastPreference,
     craft: intent.craft,
+    formality: intent.formality,
   };
 }
 

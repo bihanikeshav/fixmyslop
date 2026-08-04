@@ -162,12 +162,26 @@ const PURPLE_LO = 255, PURPLE_HI = 305;          // S1 — violet/indigo band
 const CYAN_LO = 175, CYAN_HI = 205;              // S1 — cyan band
 const HUE_TRAVEL_DANGER = 25;
 const CHROMA_DANGER = 0.14;
-const GRID_OPACITY_MAX = 0.14;                    // S10 taste ceiling even where allowed
-const GRAIN_OPACITY_MAX = 0.08;                   // A5 taste ceiling
+const GRID_OPACITY_MAX = 0.22;                    // S10 taste ceiling even where allowed (raised — see
+                                                   // "make backgrounds visible" pass: 0.14 rendered as an
+                                                   // imperceptible haze; canvas-capable surfaces can carry
+                                                   // a real, working grid at this ceiling)
+const GRAIN_OPACITY_MAX = 0.18;                   // A5 taste ceiling (raised from 0.08 — see above; 0.035
+                                                   // default opacity was invisible on screen)
 const BAND_ALTERNATION_MAX = 0.72;                // S16
 const GLASS_FILL_OPACITY_MAX = 0.16;
 const OFFBLACK_MIN_L = 0.04, OFFWHITE_MAX_L = 0.97;
 const MIN_TINT_CHROMA = 0.006;
+
+// functionalScore — SAME formula as engine.mjs's surfaceFontEnvelope / intent.mjs's deriveBaseHue
+// (0.4·contentDensity + 0.35·formality + 0.25·(1−energy)), duplicated here rather than imported so
+// this module stays a pure fn of the `iv` dial bag every axis already receives (matches the existing
+// duplication pattern between engine.mjs and intent.mjs). Used to make the background axis
+// surface-aware: functional/dense surfaces (dashboards, consoles) want a quieter-but-present ground;
+// expressive/marketing surfaces can carry a visibly stronger field.
+function functionalScoreOf(iv) {
+  return clamp01(0.4 * clamp01(iv.contentDensity) + 0.35 * clamp01(iv.formality) + 0.25 * (1 - clamp01(iv.energy)));
+}
 
 const CANVAS_CAPABLE_PAGEKINDS = new Set(["dashboard", "data-admin", "app", "technical", "explain"]);
 const canvasCapable = (pageKind) => CANVAS_CAPABLE_PAGEKINDS.has(pageKind);
@@ -199,11 +213,15 @@ function defaultHue(family) {
 // layout-families.mjs deriveMaterial's band3-over-dials pattern. ────────────────────────────────
 function selectFieldTreatment(family, iv) {
   if (hasBandSlots(family)) return "A12-band-alternation";
-  const m = iv.materiality, e = iv.energy, lv = iv.layoutVariance, craft = iv.craft;
+  const m = iv.materiality, e = iv.energy, lv = iv.layoutVariance, craft = iv.craft, fs = iv.functionalScore;
   if (e > 0.75 && m < 0.3) return "A1-flat-saturated-escape";
   if (canvasCapable(family.pageKind) && lv < 0.4) {
     return m > 0.5 ? "A6-dot-grid" : "A7-line-grid";
   }
+  // expressive/bold surfaces (low functionalScore, energetic) earn a visibly stronger field even
+  // at moderate materiality/craft — design-law "earn the whitespace": a marketing surface with
+  // room to breathe should carry a real tonal wash, not default to a near-white plate.
+  if (fs < 0.45 && e >= 0.5 && m >= 0.45) return "A2-linear-gradient-tonal";
   if (m >= 0.66 && craft >= 0.45) return "A2-linear-gradient-tonal";
   if (m >= 0.4 && craft >= 0.6) return "A5-grain-fixed-overlay";
   if (hasFigureSlot(family) && m >= 0.5) return "A11-duotone-image";
@@ -214,27 +232,56 @@ function selectFieldTreatment(family, iv) {
 // taxonomy-authored (see report: A2/A5/A6/A7/A12 params below are taxonomy defaults, not mined —
 // no corpus field captures gradient stop count, grain scale, dot spacing, or band alternation rate
 // directly; only endpoint-hue clustering and %-of-sites tells are captured today).
+//
+// PERCEPTIBILITY + INTENT VARIANCE (design-law "backgrounds are a present design element, not a
+// whisper" pass): every branch below is a function of `iv.energy`/`iv.functionalScore`, not a flat
+// constant — expressive/bold surfaces (low functionalScore, high energy) carry a visibly stronger
+// field (more chroma, lower/higher lightness swing away from near-white/near-black); functional/
+// dense surfaces (high functionalScore) stay quieter but are NEVER back to near-untinted — the
+// floor everywhere is well above MIN_TINT_CHROMA so the ground always reads as a real hue.
 function baseParams(treatment, iv, hue) {
   const theme = iv.theme === "dark" ? "dark" : "light";
+  const e = clamp01(iv.energy);
+  const fs = clamp01(iv.functionalScore);
   switch (treatment) {
-    case "A1-flat-tinted-neutral":
-      return { hue, lightness: theme === "dark" ? 0.10 : 0.955, chroma: 0.012 };
+    case "A1-flat-tinted-neutral": {
+      // chroma: 0.020 (quiet/functional) .. 0.075 (bold/expressive) — visibly tinted either way.
+      const chroma = round(clampRange(0.03 + e * 0.045 - fs * 0.02, 0.02, 0.075), 4);
+      const lightness = theme === "dark"
+        ? round(clampRange(0.13 - e * 0.03 + fs * 0.02, 0.08, 0.18), 4)
+        : round(clampRange(0.93 - e * 0.05 + fs * 0.015, 0.85, 0.955), 4);
+      return { hue, lightness, chroma };
+    }
     case "A1-flat-saturated-escape":
       return { hue, lightness: 0.5, chroma: 0.16 };
-    case "A2-linear-gradient-tonal":
-      return { hue, hueDelta: 14, angle: 135, stopCount: 2, chroma: 0.08, lightness: theme === "dark" ? 0.22 : 0.9 };
-    case "A5-grain-fixed-overlay":
-      return { hue, lightness: theme === "dark" ? 0.12 : 0.94, chroma: 0.01, opacity: 0.035, scale: 128, monochrome: true, placement: "fixed" };
-    case "A6-dot-grid":
-      return { hue, lightness: theme === "dark" ? 0.14 : 0.92, chroma: 0.01, scale: 24, spacing: 24, opacity: 0.08 };
-    case "A7-line-grid":
-      return { hue, lightness: theme === "dark" ? 0.14 : 0.92, chroma: 0.01, scale: 1, spacing: 32, opacity: 0.08, contrast: 0.1 };
+    case "A2-linear-gradient-tonal": {
+      // chroma: 0.06 (restrained) .. 0.13 (bold) — stays clear of CHROMA_DANGER (0.14)/SAT_CAP (0.32).
+      const chroma = round(clampRange(0.07 + e * 0.06 - fs * 0.03, 0.055, 0.13), 4);
+      const lightness = theme === "dark"
+        ? round(clampRange(0.24 - e * 0.06, 0.14, 0.28), 4)
+        : round(clampRange(0.88 - e * 0.08, 0.72, 0.9), 4);
+      return { hue, hueDelta: 14, angle: 135, stopCount: 2, chroma, lightness };
+    }
+    case "A5-grain-fixed-overlay": {
+      // opacity: 0.06 (quiet) .. 0.16 (bold) — perceptible film-grain, was an invisible 0.035 flat.
+      const opacity = round(clampRange(0.09 + e * 0.06 - fs * 0.03, 0.06, 0.16), 4);
+      const chroma = round(clampRange(0.02 + e * 0.02, 0.016, 0.045), 4);
+      return { hue, lightness: theme === "dark" ? 0.12 : 0.93, chroma, opacity, scale: 128, monochrome: true, placement: "fixed" };
+    }
+    case "A6-dot-grid": {
+      const opacity = round(clampRange(0.13 - fs * 0.03 + e * 0.05, 0.09, 0.2), 4);
+      return { hue, lightness: theme === "dark" ? 0.15 : 0.91, chroma: 0.018, scale: 24, spacing: 24, opacity };
+    }
+    case "A7-line-grid": {
+      const opacity = round(clampRange(0.13 - fs * 0.03 + e * 0.05, 0.09, 0.2), 4);
+      return { hue, lightness: theme === "dark" ? 0.15 : 0.91, chroma: 0.018, scale: 1, spacing: 32, opacity, contrast: 0.1 };
+    }
     case "A11-duotone-image":
       return { hue, hueDelta: 40, contrast: 0.15, lightness: 0.4, chroma: 0.1 };
     case "A12-band-alternation":
       return { hue, hueCount: 2, alternationRate: 0.45, darkBandCount: 1 };
     default:
-      return { hue, lightness: theme === "dark" ? 0.10 : 0.955, chroma: 0.012 };
+      return { hue, lightness: theme === "dark" ? 0.13 : 0.93, chroma: 0.03 };
   }
 }
 
@@ -488,10 +535,11 @@ function gateBackground(bg, family) {
  * deriveBackground(family, iv, streamSeed) → BackgroundGenome
  *
  * `family`: a LAYOUT_FAMILIES entry (reads .pageKind, .materialSlots, .sectionGrammar, .name).
- * `iv`: {materiality, energy, layoutVariance, contentDensity, contrastPreference, craft} (0..1
- *   dials, same bag every other axis uses) plus optional `theme` ("light"/"dark") and `hue`
- *   (0-360 — an already-resolved accent hue to anchor the field on; falls back to a deterministic
- *   per-family hash hue when omitted).
+ * `iv`: {materiality, energy, layoutVariance, contentDensity, contrastPreference, craft, formality}
+ *   (0..1 dials, same bag every other axis uses — `formality` is optional, defaults to 0.5, and
+ *   only feeds functionalScore below) plus optional `theme` ("light"/"dark") and `hue` (0-360 — an
+ *   already-resolved accent hue to anchor the field on; falls back to a deterministic per-family
+ *   hash hue when omitted).
  * `streamSeed`: null/undefined → stable authored defaults, zero RNG draws. A number → run through
  *   BACKGROUND_PERTURB_V1, then gate.
  */
@@ -503,9 +551,11 @@ export function deriveBackground(family, iv = {}, streamSeed = null) {
     contentDensity: clamp01(iv.contentDensity),
     contrastPreference: clamp01(iv.contrastPreference),
     craft: clamp01(iv.craft),
+    formality: clamp01(iv.formality),
     theme: iv.theme === "dark" ? "dark" : "light",
     spreadIndex: Number.isFinite(Number(iv.spreadIndex)) ? Number(iv.spreadIndex) : undefined,
   };
+  ivn.functionalScore = functionalScoreOf(ivn);
   const hue = Number.isFinite(Number(iv.hue)) ? wrapHue(Number(iv.hue)) : defaultHue(family);
 
   const treatment = applyTreatmentSpread(selectFieldTreatment(family, ivn), ivn);

@@ -20,7 +20,8 @@ function ivFor(intentInput) {
   return {
     layoutVariance: intent.layoutVariance, contentDensity: intent.contentDensity,
     materiality: intent.materiality, energy: intent.energy,
-    contrastPreference: intent.contrastPreference, craft: intent.craft, theme: intent.theme,
+    contrastPreference: intent.contrastPreference, craft: intent.craft, formality: intent.formality,
+    theme: intent.theme,
   };
 }
 
@@ -195,6 +196,50 @@ test("diversity: same family across 5 seeds yields distinct background params (a
     treatments.add(bg.field.treatment);
   }
   assert.ok(seen.size >= 4, `expected mostly-distinct param sets across 5 seeds, got ${seen.size}`);
+});
+
+// ── PERCEPTIBILITY — backgrounds must be visibly present (above an opacity/chroma floor), and
+// distinct intents must land on genuinely different fields, not all collapse toward near-white
+// ("make backgrounds visible" pass — the old A5 default (opacity 0.035) and A1 default (chroma
+// 0.012) rendered as invisible). ─────────────────────────────────────────────────────────────────
+const PERCEPTIBLE_CHROMA_FLOOR = 0.018; // well above MIN_TINT_CHROMA (0.006) — a real, visible hue
+const PERCEPTIBLE_OPACITY_FLOOR = 0.05; // well above the old 0.035 grain default
+
+test("perceptibility: field params clear a visible-intensity floor (no-seed authored defaults)", () => {
+  const cases = [
+    ["hero-thesis-single", { surface: "landing-page", job: "explain-and-convert" }],
+    ["instrument-console", { surface: "dashboard", job: "monitor" }],
+    ["editorial-broadsheet", { surface: "blog-article", job: "read" }],
+  ];
+  for (const [familyName, intentInput] of cases) {
+    const family = FAMILY_BY_NAME.get(familyName);
+    const iv = ivFor(intentInput);
+    const bg = deriveBackground(family, iv, null);
+    const p = bg.field.params;
+    if (Number.isFinite(p.chroma)) {
+      assert.ok(p.chroma >= PERCEPTIBLE_CHROMA_FLOOR, `${familyName} chroma ${p.chroma} below perceptibility floor`);
+    }
+    if (Number.isFinite(p.opacity)) {
+      assert.ok(p.opacity >= PERCEPTIBLE_OPACITY_FLOOR, `${familyName} opacity ${p.opacity} below perceptibility floor`);
+    }
+  }
+});
+
+test("perceptibility: backgrounds vary visibly across ≥3 distinct intents (not all near-white)", () => {
+  const family = FAMILY_BY_NAME.get("hero-thesis-single");
+  const intents = [
+    { surface: "landing-page", job: "launch-announce", sourceBrief: "bold energetic product launch" },
+    { surface: "dashboard", job: "monitor", sourceBrief: "dense functional monitoring console" },
+    { surface: "blog-article", job: "read", sourceBrief: "calm long-form editorial read" },
+  ];
+  const signatures = intents.map((intentInput) => {
+    const iv = ivFor(intentInput);
+    const bg = deriveBackground(family, iv, null);
+    return { treatment: bg.field.treatment, lightness: bg.field.params.lightness, chroma: bg.field.params.chroma };
+  });
+  const distinctChroma = new Set(signatures.map((s) => s.chroma?.toFixed(3)));
+  const distinctLightness = new Set(signatures.map((s) => s.lightness?.toFixed(3)));
+  assert.ok(distinctChroma.size >= 2 || distinctLightness.size >= 2, `expected intents to visibly diverge, got ${JSON.stringify(signatures)}`);
 });
 
 test("diversity: hue rotates across seeds even when treatment stays put", () => {
