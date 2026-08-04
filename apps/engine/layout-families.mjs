@@ -7,6 +7,15 @@
 // The calling agent supplies a resolved StyleIntent; this module never reads free text.
 
 import { round } from "./system.mjs";
+import { hashToUint32 } from "./intent.mjs";
+import { perturbAndValidate } from "./perturb.mjs";
+import { ROLE_ALIASES, CANONICAL_ROLES, canonicalRole } from "./role-aliases.mjs";
+
+// §1.5 ROLE_ALIASES — re-exported here per spec §4 ("export ROLE_ALIASES from
+// layout-families.mjs"); the actual table lives in role-aliases.mjs (no deps) so both this module
+// and perturb.mjs can use canonicalRole() without a circular import (this module imports
+// perturb.mjs to wire perturbGenome into composeGenome — see §2 wiring below).
+export { ROLE_ALIASES, CANONICAL_ROLES, canonicalRole };
 
 const clamp01 = (n, fallback = 0.5) => {
   const x = Number(n);
@@ -38,6 +47,8 @@ export const LAYOUT_FAMILIES = [
       { role: "footer", heightShare: 0.12, focalPoint: "left", composition: "column-directory" },
     ],
     macro: { contentWidthShare: 0.78, columnCount: 2, splitRatio: 0.58, alignment: "left-led", whitespace: 0.62, contentDensity: 0.43 },
+    optionalSections: ["proof"],
+    swappableAdjacent: [["proof", "features"]],
     provenance: "hand-authored",
   },
   {
@@ -58,6 +69,8 @@ export const LAYOUT_FAMILIES = [
       { role: "footer", heightShare: 0.15, focalPoint: "left", composition: "quiet-directory" },
     ],
     macro: { contentWidthShare: 0.7, columnCount: 1, splitRatio: 0.5, alignment: "left-led", whitespace: 0.72, contentDensity: 0.3 },
+    optionalSections: [],
+    swappableAdjacent: [],
     provenance: "hand-authored",
   },
   {
@@ -79,6 +92,8 @@ export const LAYOUT_FAMILIES = [
       { role: "footer", heightShare: 0.12, focalPoint: "left", composition: "column-directory" },
     ],
     macro: { contentWidthShare: 0.82, columnCount: 2, splitRatio: 0.5, alignment: "alternating", whitespace: 0.58, contentDensity: 0.42 },
+    optionalSections: ["light-band"],
+    swappableAdjacent: [["dark-band", "light-band"]],
     provenance: "hand-authored",
   },
   {
@@ -101,6 +116,8 @@ export const LAYOUT_FAMILIES = [
       { role: "footer", heightShare: 0.08, focalPoint: "left", composition: "quiet-directory" },
     ],
     macro: { contentWidthShare: 0.74, columnCount: 2, splitRatio: 0.5, alignment: "alternating", whitespace: 0.66, contentDensity: 0.38 },
+    optionalSections: ["chapter-3"],
+    swappableAdjacent: [["chapter-1", "chapter-2"], ["chapter-2", "chapter-3"]],
     provenance: "hand-authored",
   },
   {
@@ -121,6 +138,8 @@ export const LAYOUT_FAMILIES = [
       { role: "footer", heightShare: 0.16, focalPoint: "left", composition: "column-directory" },
     ],
     macro: { contentWidthShare: 0.86, columnCount: 2, splitRatio: 0.55, alignment: "split", whitespace: 0.74, contentDensity: 0.26 },
+    optionalSections: ["proof"],
+    swappableAdjacent: [["statement", "proof"]],
     provenance: "hand-authored",
   },
   {
@@ -141,6 +160,8 @@ export const LAYOUT_FAMILIES = [
       { role: "footer", heightShare: 0.14, focalPoint: "left", composition: "column-directory" },
     ],
     macro: { contentWidthShare: 0.8, columnCount: 3, splitRatio: 0.62, alignment: "left-led", whitespace: 0.5, contentDensity: 0.55 },
+    optionalSections: ["pull-aside"],
+    swappableAdjacent: [["body-columns", "pull-aside"]],
     provenance: "hand-authored",
   },
   {
@@ -161,6 +182,8 @@ export const LAYOUT_FAMILIES = [
       { role: "footer", heightShare: 0.1, focalPoint: "left", composition: "quiet-directory" },
     ],
     macro: { contentWidthShare: 0.9, columnCount: 3, splitRatio: 0.24, alignment: "left-led", whitespace: 0.44, contentDensity: 0.5 },
+    optionalSections: ["related"],
+    swappableAdjacent: [["article-body", "related"]],
     provenance: "hand-authored",
   },
   {
@@ -181,6 +204,8 @@ export const LAYOUT_FAMILIES = [
       { role: "footer", heightShare: 0.08, focalPoint: "left", composition: "quiet-directory" },
     ],
     macro: { contentWidthShare: 0.88, columnCount: 2, splitRatio: 0.62, alignment: "left-led", whitespace: 0.52, contentDensity: 0.46 },
+    optionalSections: ["footnotes"],
+    swappableAdjacent: [["pane-body", "footnotes"]],
     provenance: "hand-authored",
   },
   {
@@ -201,6 +226,8 @@ export const LAYOUT_FAMILIES = [
       { role: "activity-log", heightShare: 0.18, focalPoint: "left", composition: "chronological-stream" },
     ],
     macro: { contentWidthShare: 0.96, columnCount: 12, splitRatio: 0.66, alignment: "grid-led", whitespace: 0.3, contentDensity: 0.78 },
+    optionalSections: ["status-strip"],
+    swappableAdjacent: [["secondary-metrics", "activity-log"]],
     provenance: "hand-authored",
   },
   {
@@ -222,6 +249,8 @@ export const LAYOUT_FAMILIES = [
       { role: "footer", heightShare: 0.08, focalPoint: "left", composition: "quiet-directory" },
     ],
     macro: { contentWidthShare: 0.98, columnCount: 12, splitRatio: 0.5, alignment: "grid-led", whitespace: 0.22, contentDensity: 0.86 },
+    optionalSections: ["filter-bar"],
+    swappableAdjacent: [["filter-bar", "table-head"]],
     provenance: "hand-authored",
   },
   {
@@ -242,6 +271,8 @@ export const LAYOUT_FAMILIES = [
       { role: "statusbar", heightShare: 0.08, focalPoint: "left", composition: "state-and-shortcuts" },
     ],
     macro: { contentWidthShare: 1.0, columnCount: 12, splitRatio: 0.72, alignment: "grid-led", whitespace: 0.28, contentDensity: 0.7 },
+    optionalSections: ["inspector-panel"],
+    swappableAdjacent: [["toolbar", "workspace"]],
     provenance: "hand-authored",
   },
   {
@@ -262,6 +293,8 @@ export const LAYOUT_FAMILIES = [
       { role: "footer", heightShare: 0.1, focalPoint: "left", composition: "quiet-directory" },
     ],
     macro: { contentWidthShare: 0.86, columnCount: 4, splitRatio: 0.5, alignment: "left-led", whitespace: 0.36, contentDensity: 0.72 },
+    optionalSections: ["diagram"],
+    swappableAdjacent: [["spec-groups", "diagram"]],
     provenance: "hand-authored",
   },
   {
@@ -282,6 +315,8 @@ export const LAYOUT_FAMILIES = [
       { role: "cta", heightShare: 0.12, focalPoint: "center", composition: "committed-single-action" },
     ],
     macro: { contentWidthShare: 1.0, columnCount: 1, splitRatio: 0.5, alignment: "center-anchored", whitespace: 0.6, contentDensity: 0.34 },
+    optionalSections: [],
+    swappableAdjacent: [["full-bleed-diagram", "annotation-flow"]],
     provenance: "hand-authored",
   },
   {
@@ -301,6 +336,8 @@ export const LAYOUT_FAMILIES = [
       { role: "contact", heightShare: 0.14, focalPoint: "center", composition: "direct-reach-out" },
     ],
     macro: { contentWidthShare: 0.94, columnCount: 6, splitRatio: 0.5, alignment: "grid-led", whitespace: 0.48, contentDensity: 0.44 },
+    optionalSections: ["selected-detail"],
+    swappableAdjacent: [["mosaic", "selected-detail"]],
     provenance: "hand-authored",
   },
   {
@@ -321,6 +358,8 @@ export const LAYOUT_FAMILIES = [
       { role: "cta", heightShare: 0.12, focalPoint: "center", composition: "committed-single-action" },
     ],
     macro: { contentWidthShare: 0.84, columnCount: 3, splitRatio: 0.5, alignment: "center-anchored", whitespace: 0.46, contentDensity: 0.56 },
+    optionalSections: ["faq"],
+    swappableAdjacent: [["comparison-matrix", "faq"]],
     provenance: "hand-authored",
   },
   // ── Crawl-derived families (data track, 2026-08-03): human-inspected clusters from the
@@ -345,6 +384,8 @@ export const LAYOUT_FAMILIES = [
       { role: "footer", heightShare: 0.08, focalPoint: "left", composition: "column-directory" },
     ],
     macro: { contentWidthShare: 0.86, columnCount: 3, splitRatio: 0.52, alignment: "left-led", whitespace: 0.5, contentDensity: 0.58 },
+    optionalSections: ["proof", "pricing"],
+    swappableAdjacent: [["features", "proof"], ["proof", "pricing"]],
     provenance: "crawl-derived",
     evidence: { clusterMemberCount: null, note: "input→output media tool; distinct from hero-thesis-single (a working surface, not a thesis)." },
   },
@@ -366,6 +407,8 @@ export const LAYOUT_FAMILIES = [
       { role: "footer", heightShare: 0.14, focalPoint: "left", composition: "column-directory" },
     ],
     macro: { contentWidthShare: 0.86, columnCount: 3, splitRatio: 0.55, alignment: "left-led", whitespace: 0.62, contentDensity: 0.42 },
+    optionalSections: [],
+    swappableAdjacent: [],
     provenance: "crawl-derived",
     evidence: { clusterMemberCount: null, note: "catalogue with a featured lead; distinct from editorial-broadsheet (single article) and gallery-mosaic (equal grid)." },
   },
@@ -387,6 +430,8 @@ export const LAYOUT_FAMILIES = [
       { role: "footer", heightShare: 0.08, focalPoint: "left", composition: "quiet-directory" },
     ],
     macro: { contentWidthShare: 0.9, columnCount: 3, splitRatio: 0.62, alignment: "left-led", whitespace: 0.54, contentDensity: 0.4 },
+    optionalSections: [],
+    swappableAdjacent: [],
     provenance: "crawl-derived",
     evidence: { clusterMemberCount: 4, representativeHost: "adv-r.hadley.nz", note: "nav + measured body + on-this-page rail; distinct from two-pane sidebar-doc (the right context rail is structural)." },
   },
@@ -397,6 +442,13 @@ export const LAYOUT_FAMILY_SCHEMA_KEYS = [
   "name", "pageKind", "whenToUse", "notFor", "dialCompatibility", "requiredContent",
   "antiPatterns", "mobileTransform", "materialSlots", "sectionGrammar", "macro", "provenance",
 ];
+
+// OPTIONAL schema keys (spec §4 "Families file"): `optionalSections` (roles perturbGenome may
+// drop, §2 step 6) and `swappableAdjacent` (adjacent role-pairs perturbGenome may swap, §2 step
+// 7). Optional so old/external family shapes (or a future mined-archetype pipeline that hasn't
+// authored them yet) still validate — perturb.mjs treats a missing key as `[]`. All 18 authored
+// families in this file DO carry both.
+export const LAYOUT_FAMILY_SCHEMA_KEYS_OPTIONAL = ["optionalSections", "swappableAdjacent"];
 
 // ── Surface → compatible page kinds. This is the hard gate that keeps a centered-hero landing
 // family off a dashboard, and a table off a brand page. Missing/unknown surface = no page-kind
@@ -517,7 +569,15 @@ function deriveMaterial(family, iv) {
 }
 
 // Compose a full LayoutGenome candidate from a family + intent.
-function composeGenome(family, intent, iv, recentFingerprints) {
+//
+// §2 wiring (closes spec §0 sameness leak #1 — "composeGenome is a verbatim copy"): when `seed`
+// is present, every candidate this family produces is run through perturbGenome/validatePerturbed
+// with amplitude = 0.35 + 0.65·layoutVariance, so two users whose intent resolves to the same
+// family no longer get a byte-identical skeleton. When `seed` is absent (the historical call
+// shape — no caller passed one before this change), amplitude is 0 and perturbAndValidate returns
+// the base genome unchanged: the no-seed path stays byte-for-byte identical to pre-perturbation
+// behavior, so existing tests/consumers are unaffected.
+function composeGenome(family, intent, iv, recentFingerprints, seed) {
   const macro = {
     ...family.macro,
     // contentDensity → whitespace; blend the family's authored value with the intent so the
@@ -525,7 +585,7 @@ function composeGenome(family, intent, iv, recentFingerprints) {
     contentDensity: round(iv.contentDensity, 2),
     whitespace: round(clamp01(0.4 * family.macro.whitespace + 0.6 * (1 - iv.contentDensity)), 2),
   };
-  return {
+  const base = {
     family: family.name,
     fit: fitFor(family, intent, recentFingerprints),
     pageKind: family.pageKind,
@@ -537,14 +597,23 @@ function composeGenome(family, intent, iv, recentFingerprints) {
     quality: { score: null, confidence: null, provenance: ["hand-authored"] },
     slop: { score: null, matchedRules: [] },
   };
+  if (seed == null) return base; // amplitude 0 — current byte-for-byte behavior, no draws at all
+  const amplitude = 0.35 + 0.65 * iv.layoutVariance;
+  const streamSeedFor = (rerollCount) => hashToUint32(`${seed}:${family.name}:0:${rerollCount}`);
+  return perturbAndValidate(base, family, streamSeedFor, iv, amplitude);
 }
 
 /**
- * suggestLayout(intent, { recentFingerprints }) → ranked LayoutGenome candidates (best first).
- * Pure, deterministic. Hard-gates by surface→pageKind and dial compatibility, then ranks by fit
- * minus a diversity penalty against recent fingerprints.
+ * suggestLayout(intent, { recentFingerprints, seed }) → ranked LayoutGenome candidates (best
+ * first). Pure, deterministic. Hard-gates by surface→pageKind and dial compatibility, then ranks
+ * by fit minus a diversity penalty against recent fingerprints.
+ *
+ * `seed` is OPTIONAL (spec §2 wiring). When present, every candidate is perturbed
+ * (amplitude = 0.35 + 0.65·layoutVariance — see composeGenome). When absent, amplitude is 0:
+ * byte-for-byte identical to the pre-perturbation behavior, so existing callers/tests are
+ * unaffected by this change.
  */
-export function suggestLayout(intent = {}, { recentFingerprints = [] } = {}) {
+export function suggestLayout(intent = {}, { recentFingerprints = [], seed = null } = {}) {
   const iv = {
     layoutVariance: dialOf(intent, "layoutVariance"),
     contentDensity: dialOf(intent, "contentDensity"),
@@ -556,7 +625,7 @@ export function suggestLayout(intent = {}, { recentFingerprints = [] } = {}) {
   const survivors = LAYOUT_FAMILIES.filter(
     (f) => pageKindAllowed(f, intent) && passesDialGate(f, intent),
   );
-  const candidates = survivors.map((f) => composeGenome(f, intent, iv, recentFingerprints));
+  const candidates = survivors.map((f) => composeGenome(f, intent, iv, recentFingerprints, seed));
   // Sort by fit desc; break ties by name for a stable, deterministic order.
   candidates.sort((a, b) => (b.fit - a.fit) || (a.family < b.family ? -1 : a.family > b.family ? 1 : 0));
   return candidates;

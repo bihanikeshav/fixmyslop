@@ -7,8 +7,11 @@
 // Pure/deterministic: no Math.random, no Date.now. The color/font/material generators
 // come from the injected engine instance (createEngine), so this shares the same data.
 
-import { resolveIntent, clamp01 } from "./intent.mjs";
+import { resolveIntent, clamp01, hashToUint32 } from "./intent.mjs";
 import { suggestLayout, LAYOUT_FAMILIES } from "./layout-families.mjs";
+import { canonicalRole } from "./role-aliases.mjs";
+import { deriveBackground } from "./background.mjs";
+import { deriveMotion } from "./motion.mjs";
 
 const FAMILY_BY_NAME = new Map(LAYOUT_FAMILIES.map((f) => [f.name, f]));
 
@@ -38,11 +41,18 @@ function motionFromDial(mi) {
 }
 
 /**
- * styleGenome(engine, intentInput, { seed?, recentFingerprints? }) → StyleGenome
+ * styleGenome(engine, intentInput, { seed?, recentFingerprints?, layout? }) → StyleGenome
  * Deterministic: same (intent, seed) → identical genome. Different recentFingerprints
  * → divergence in composition (layout family / font pair / accent), not just hue.
+ *
+ * `layout` (spec §4 explore wiring): an already-composed/perturbed LayoutGenome candidate
+ * (as produced by `suggestLayout`/`perturbAndValidate` in explore.mjs). When present, this
+ * skips the internal `suggestLayout` call entirely and uses the given layout verbatim — the
+ * caller (exploreDirections) owns family selection + perturbation for that direction. When
+ * `layout` is absent (the historical call shape), behavior is EXACTLY unchanged: internal
+ * `suggestLayout(intent, { recentFingerprints })` picks the top candidate, as before.
  */
-export function styleGenome(engine, intentInput = {}, { seed, recentFingerprints = [] } = {}) {
+export function styleGenome(engine, intentInput = {}, { seed, recentFingerprints = [], layout: layoutOverride = null } = {}) {
   const resolved = resolveIntent(intentInput);
   const intent = resolved.intent;
   const useSeed = Number.isFinite(Number(seed)) ? Number(seed) : resolved.seed;
@@ -70,8 +80,8 @@ export function styleGenome(engine, intentInput = {}, { seed, recentFingerprints
   const palette = engine.generatePalette({ energy: band(intent.energy), seed: useSeed });
 
   // ---- layout ----
-  const layouts = suggestLayout(intent, { recentFingerprints });
-  const layout = layouts[0] || null;
+  const layouts = layoutOverride ? null : suggestLayout(intent, { recentFingerprints });
+  const layout = layoutOverride || (layouts ? layouts[0] || null : null);
 
   // ---- material (slots attached to the layout's hierarchy nodes, never sprayed) ----
   const m = intent.materiality;
@@ -84,8 +94,35 @@ export function styleGenome(engine, intentInput = {}, { seed, recentFingerprints
     slots: family ? family.materialSlots : [],   // hierarchy nodes that receive material — never every box
   };
 
-  // ---- motion ----
-  const motion = { ...motionFromDial(intent.motionIntensity), tokens: engine.motionTokens() };
+  // ---- background (docs/background-material-taxonomy.md — the field/surface treatment axis,
+  // filling `family.materialSlots` alongside `material` above) ----
+  const background = family
+    ? deriveBackground(family, {
+        materiality: intent.materiality, energy: intent.energy, layoutVariance: intent.layoutVariance,
+        contentDensity: intent.contentDensity, contrastPreference: intent.contrastPreference, craft: intent.craft,
+        theme: intent.theme, hue: palette.hue,
+      }, hashToUint32(`${useSeed}:background:${family.name}`))
+    : null;
+
+  // ---- motion (docs/motion-interaction-taxonomy.md — the scroll/reveal/micro-interaction axis;
+  // `design` carries the full taxonomy-derived MotionGenome next to the legacy families/intensity
+  // dial fingerprint.mjs's motionFamily already reads, so existing consumers of `motion.families`
+  // are unaffected) ----
+  const motionDesign = family
+    ? deriveMotion(family, {
+        materiality: intent.materiality, energy: intent.energy, layoutVariance: intent.layoutVariance,
+        contentDensity: intent.contentDensity, contrastPreference: intent.contrastPreference, craft: intent.craft,
+        theme: intent.theme, hue: palette.hue,
+      }, hashToUint32(`${useSeed}:motion:${family.name}`))
+    : null;
+  const motion = { ...motionFromDial(intent.motionIntensity), tokens: engine.motionTokens(), design: motionDesign };
+
+  // §3 extension (ADDITIVE — penaltyFor/sectionOrderHash above stay on RAW roles; canonicalOrder
+  // here is used ONLY by the §3 distance math in fingerprint.mjs, per spec trap 7).
+  const canonicalOrder = layout ? layout.sectionGrammar.map((s) => canonicalRole(s.role)) : [];
+  const darkBands = layout
+    ? layout.sectionGrammar.map((s) => (s.surface === "inverted" ? "1" : "0")).join("")
+    : "";
 
   const fingerprint = {
     fontPair: [display && display.family, body && body.family].filter(Boolean),
@@ -97,6 +134,14 @@ export function styleGenome(engine, intentInput = {}, { seed, recentFingerprints
     shadowLanguage: matLang.shadowLanguage,
     accentStrategy: matLang.accentTreatment,
     motionFamily: motion.families[motion.families.length - 1],
+    // ── additive §3 fields ──
+    canonicalOrder,
+    splitRatio: layout && layout.macro ? layout.macro.splitRatio : null,
+    whitespace: layout && layout.macro ? layout.macro.whitespace : null,
+    contentWidthShare: layout && layout.macro ? layout.macro.contentWidthShare : null,
+    columnCount: layout && layout.macro ? layout.macro.columnCount : null,
+    headingScaleRatio: layout && layout.hierarchy ? layout.hierarchy.headingScaleRatio : null,
+    darkBands,
   };
 
   return {
@@ -112,8 +157,9 @@ export function styleGenome(engine, intentInput = {}, { seed, recentFingerprints
     },
     color: { ...palette, source: "corpus-plus-oklch" },
     layout,
-    layoutAlternatives: layouts.slice(1, 3),
+    layoutAlternatives: layouts ? layouts.slice(1, 3) : [],
     material,
+    background,
     motion,
     responsive: { collapseRules: layout && layout.responsive ? [layout.responsive.mobileTransform] : [] },
     fingerprint,
@@ -122,6 +168,8 @@ export function styleGenome(engine, intentInput = {}, { seed, recentFingerprints
       color: "OKLCH corpus engine (checkColor-gated)",
       layout: layout && layout.quality ? layout.quality.provenance : ["hand-authored"],
       material: "materiality dial → radius/shadow scales",
+      background: background ? background.provenance : [],
+      motion: motionDesign ? motionDesign.provenance : [],
     },
   };
 }

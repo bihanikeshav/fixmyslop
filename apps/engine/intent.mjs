@@ -95,7 +95,7 @@ export const SURFACE_JOB_PRIORS = {
 const NEUTRAL = 0.5;
 
 // FNV-1a-ish small string hash → uint32. Deterministic, no Math.random.
-function hashToUint32(str) {
+export function hashToUint32(str) {
   let h = 0x811c9dc5;
   const s = String(str);
   for (let i = 0; i < s.length; i++) {

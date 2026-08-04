@@ -153,6 +153,18 @@ const AVOID_LIST = new Set([
 ]);
 const POPULARITY_SLOP_TOP_N = 40;
 
+// seeded PRNG — keeps generation deterministic + portable (no Math.random). Exported at module
+// scope so other pure engine modules (e.g. perturb.mjs) can share the exact same stream algorithm
+// without going through createEngine().
+export function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 // ===========================================================================
 // Engine factory — inject {corpus:[{hex,weight}], brands:[{name,ic:[]}], fonts:[...]}
 // ===========================================================================
@@ -457,15 +469,6 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
     return scored.slice(0, n).map(({ fit, ...rest }) => rest);
   }
 
-  // seeded PRNG — keeps generation deterministic + portable (no Math.random)
-  function mulberry32(a) {
-    return function () {
-      a |= 0; a = (a + 0x6D2B79F5) | 0;
-      let t = Math.imul(a ^ (a >>> 15), 1 | a);
-      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-  }
   // energy → accent chroma band (kept inside the gate). The caller expresses the
   // subject's mood, not a number.
   const ENERGY_CHROMA = { muted: [0.06, 0.11], calm: [0.06, 0.11], balanced: [0.10, 0.16], bold: [0.15, 0.20], vivid: [0.15, 0.20] };
