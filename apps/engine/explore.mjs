@@ -15,7 +15,7 @@
 
 import { resolveIntent, hashToUint32 } from "./intent.mjs";
 import { suggestLayout, LAYOUT_FAMILIES } from "./layout-families.mjs";
-import { perturbAndValidate } from "./perturb.mjs";
+import { perturbAndValidate, validatePerturbed } from "./perturb.mjs";
 import { styleGenome } from "./genome.mjs";
 import { deriveBackground } from "./background.mjs";
 import { deriveMotion } from "./motion.mjs";
@@ -24,10 +24,84 @@ import {
   backgroundFingerprint, backgroundAxisDistance, BACKGROUND_AXIS_FLOOR,
   motionFingerprint, motionAxisDistance, MOTION_AXIS_FLOOR,
 } from "./divergence.mjs";
+import { retrieveLayouts, intentToQuery } from "./retrieval.mjs";
 
 const FAMILY_BY_NAME = new Map(LAYOUT_FAMILIES.map((f) => [f.name, f]));
 const MOD9 = 0x9E3779B9;
 const MOD2 = 0x2545F491;
+
+// ── layout retrieval channel (docs/layout-explorer-spec.md §4 extension, retrieval.mjs) ─────────
+// Integration decision (a) full crawl-genome→family conversion vs (b) retrieval-INFORMED
+// selection+parametrization of the existing curated families: we do (b). The 210-host clean-tier
+// crawl genomes have no requiredContent/antiPatterns/optionalSections/swappableAdjacent/
+// dialCompatibility — the contract perturb.mjs's gates (sectionsValid/macroValid/hierarchyValid)
+// and composeGenome depend on — and their sectionGrammar roles are the raw 10-role crawl vocabulary
+// (nav/hero/features/.../unknown), not the ~30 bespoke rendering roles the hand-authored families
+// use. Converting one wholesale would mean either inventing missing contract fields (shaky fidelity
+// — TODO for a future pass once the crawl schema grows those fields) or bypassing perturb.mjs's
+// validation entirely (unsafe). So retrieval instead GROUNDS an already-selected, already-gated
+// family's macro numbers toward its nearest real neighbor (groundMacroToNeighbor below), reusing
+// perturb.mjs's own validatePerturbed so a grounded direction can never leave the family's gates —
+// curated families stay the structural skeleton; retrieval supplies the real-world macro target.
+const TOOL_KINDS = new Set(["dashboard", "data-admin", "app"]);
+const RETRIEVAL_N = 5; // candidates pulled per slot before excluding already-used hosts
+const RETRIEVAL_GROUND_WEIGHT = 0.3; // blend toward the real host; never overwrite family character
+
+// retrieveForSlotBase(base, usedHosts) → nearest un-used real-corpus neighbor to `base` (a composed
+// LayoutGenome — has .macro/.hierarchy/.sectionGrammar/.pageKind) or null (empty/absent index, or
+// every candidate within RETRIEVAL_N already used by an earlier slot this call).
+function retrieveForSlotBase(base, usedHosts) {
+  const queryVector = intentToQuery(null, base);
+  if (!queryVector) return null;
+  const [top] = retrieveLayouts(queryVector, RETRIEVAL_N, { exclude: usedHosts });
+  return top || null;
+}
+
+// groundMacroToNeighbor(genome, family, neighborSummary) → genome with macro.{splitRatio,
+// whitespace, contentWidthShare, columnCount} nudged RETRIEVAL_GROUND_WEIGHT of the way toward the
+// retrieved real host's macro numbers, then re-validated with perturb.mjs's OWN validatePerturbed
+// against `family`'s gates (split-side preservation, whitespace/density coupling, TOOL_KINDS
+// contentWidthShare floor, 1/12-column guards) — reuses the existing invariants rather than
+// duplicating them. Falls back to the un-grounded genome, silently, if grounding would leave the
+// family's gates (never emits an out-of-gate genome).
+function groundMacroToNeighbor(genome, family, neighborSummary) {
+  const nm = neighborSummary && neighborSummary.macro;
+  if (!nm) return genome;
+  const w = RETRIEVAL_GROUND_WEIGHT;
+  const macro = { ...genome.macro };
+  const authoredSplit = Number.isFinite(family.macro?.splitRatio) ? family.macro.splitRatio : 0.5;
+
+  if (Number.isFinite(nm.splitRatio)) {
+    let v = macro.splitRatio * (1 - w) + nm.splitRatio * w;
+    v = Math.min(0.78, Math.max(0.34, v));
+    if (authoredSplit !== 0.5 && (v - 0.5) * (authoredSplit - 0.5) < 0) v = macro.splitRatio;
+    macro.splitRatio = Math.round(v * 10000) / 10000;
+  }
+  if (Number.isFinite(nm.whitespace)) {
+    let v = macro.whitespace * (1 - w) + nm.whitespace * w;
+    const density = Number.isFinite(macro.contentDensity) ? macro.contentDensity : 0.5;
+    const target = 1 - density;
+    if (Math.abs(v - target) > 0.35) v = target + Math.sign(v - target) * 0.35;
+    macro.whitespace = Math.min(0.85, Math.max(0.2, Math.round(v * 10000) / 10000));
+  }
+  if (Number.isFinite(nm.contentWidthShare)) {
+    const floor = TOOL_KINDS.has(family.pageKind) ? 0.9 : 0.6;
+    let v = macro.contentWidthShare * (1 - w) + nm.contentWidthShare * w;
+    v = Math.min(1.0, Math.max(floor, v));
+    macro.contentWidthShare = Math.round(v * 10000) / 10000;
+  }
+  if (Number.isFinite(nm.columnCount)) {
+    const authoredCols = family.macro?.columnCount;
+    let v = Math.round(macro.columnCount * (1 - w) + nm.columnCount * w);
+    if (v === 1 && authoredCols !== 1) v = macro.columnCount;
+    if (v === 12 && authoredCols !== 12) v = macro.columnCount;
+    macro.columnCount = v;
+  }
+
+  const grounded = { ...genome, macro };
+  const { ok, genome: validated } = validatePerturbed(grounded, family, genome);
+  return ok ? validated : genome;
+}
 
 function ivFromIntent(intent) {
   return {
@@ -118,16 +192,21 @@ function buildSlots(ranked, count) {
 }
 
 // Compose the perturbed LayoutGenome for one slot at a given reroll `variant`. Pure fn of
-// (slot, iv, seed, variant).
-function composeSlotGenome(slot, iv, seed, variant) {
+// (slot, iv, seed, variant, usedHosts) — usedHosts (real corpus hosts already grounded by earlier
+// slots THIS call) is only consulted by the retrieval channel, so it doesn't disturb determinism
+// of the perturbation itself (same seed/variant → same perturbed skeleton either way).
+function composeSlotGenome(slot, iv, seed, variant, usedHosts = []) {
   if (slot.kind === "corpus") {
     const amplitude = 0.35 + 0.65 * iv.layoutVariance;
     const streamSeedFor = (reroll) => hashToUint32(`${seed}:${slot.familyDef.name}:${slot.index}:${reroll}:${variant}`);
-    const genome = perturbAndValidate(slot.base, slot.familyDef, streamSeedFor, iv, amplitude);
+    let genome = perturbAndValidate(slot.base, slot.familyDef, streamSeedFor, iv, amplitude);
+    const retrieved = retrieveForSlotBase(slot.base, usedHosts);
+    if (retrieved) genome = groundMacroToNeighbor(genome, slot.familyDef, retrieved.layoutSummary);
     return {
       genome, family: slot.familyDef, warnings: [],
       provenance: "corpus-grounded",
-      groundedIn: slot.familyDef.evidence?.representativeHost ?? null,
+      groundedIn: retrieved ? retrieved.host : (slot.familyDef.evidence?.representativeHost ?? null),
+      retrieval: retrieved ? { host: retrieved.host, distance: retrieved.distance, bucket: retrieved.bucket } : null,
     };
   }
   // synthesized slot (spec §4 step 4)
@@ -158,11 +237,14 @@ function composeSlotGenome(slot, iv, seed, variant) {
     );
   }
   const streamSeedFor = (reroll) => hashToUint32(`${seed}:engine-synthesized:${slot.index}:${reroll}:${variant}`);
-  const genome = perturbAndValidate(blendedBase, slot.familyDefA, streamSeedFor, iv, amplitude);
+  let genome = perturbAndValidate(blendedBase, slot.familyDefA, streamSeedFor, iv, amplitude);
+  const retrieved = retrieveForSlotBase(slot.baseA, usedHosts);
+  if (retrieved) genome = groundMacroToNeighbor(genome, slot.familyDefA, retrieved.layoutSummary);
   return {
     genome, family: slot.familyDefA, warnings, parents,
     provenance: "engine-synthesized",
-    groundedIn: slot.familyDefA.evidence?.representativeHost ?? null,
+    groundedIn: retrieved ? retrieved.host : (slot.familyDefA.evidence?.representativeHost ?? null),
+    retrieval: retrieved ? { host: retrieved.host, distance: retrieved.distance, bucket: retrieved.bucket } : null,
   };
 }
 
@@ -170,8 +252,8 @@ function composeSlotGenome(slot, iv, seed, variant) {
 // then override the palette so directions spread hue instead of all reproducing the same one
 // (spec §4 step 6). `otherFingerprints` = every OTHER direction already finalized this call
 // (used both as font-exclusion memory and as the hue-separation set).
-function buildDirectionForSlot(engine, intentInput, slot, iv, seed, variant, hueBase, energyBand, otherFingerprints, otherHues, callerRecent, theme, spreadCount) {
-  const composed = composeSlotGenome(slot, iv, seed, variant);
+function buildDirectionForSlot(engine, intentInput, slot, iv, seed, variant, hueBase, energyBand, otherFingerprints, otherHues, callerRecent, theme, spreadCount, usedHosts) {
+  const composed = composeSlotGenome(slot, iv, seed, variant, usedHosts);
   const optionSeed = (seed + slot.index * MOD9 + variant * MOD2) >>> 0;
   const recentForCall = [...callerRecent, ...otherFingerprints];
   let genome = styleGenome(engine, intentInput, { seed: optionSeed, recentFingerprints: recentForCall, layout: composed.genome });
@@ -222,6 +304,7 @@ function buildDirectionForSlot(engine, intentInput, slot, iv, seed, variant, hue
     fit: composed.genome.fit,
     provenance: composed.provenance,
     groundedIn: composed.groundedIn,
+    retrieval: composed.retrieval ?? null,
   };
   if (composed.parents) direction.parents = composed.parents;
   return {
@@ -270,8 +353,12 @@ export function exploreDirections(engine, intentInput = {}, { seed, recentFinger
     for (let k = idx; k < slots.length; k++) {
       const others = directions.slice(0, k).filter(Boolean).map((d) => d.fingerprint);
       const otherHues = hues.slice(0, k).filter((h) => Number.isFinite(h));
+      // Real corpus hosts already grounded by earlier slots this call — excluded from this slot's
+      // retrieval so the 4 directions pull DISTINCT real neighbors (cross-axis divergence for free:
+      // different neighbors carry different macro numbers).
+      const usedHosts = directions.slice(0, k).filter(Boolean).map((d) => d.retrieval?.host).filter(Boolean);
       const { direction, hue, bgFp, motionFp, warnings: w } = buildDirectionForSlot(
-        engine, intentInput, slots[k], iv, useSeed, variants[k], hueBase, energyBand, others, otherHues, recentFingerprints, intent.theme, slots.length,
+        engine, intentInput, slots[k], iv, useSeed, variants[k], hueBase, energyBand, others, otherHues, recentFingerprints, intent.theme, slots.length, usedHosts,
       );
       directions[k] = direction;
       hues[k] = hue;
