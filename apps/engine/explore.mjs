@@ -32,8 +32,8 @@ const MOD2 = 0x2545F491;
 
 // ── layout retrieval channel (docs/layout-explorer-spec.md §4 extension, retrieval.mjs) ─────────
 // Integration decision (a) full crawl-genome→family conversion vs (b) retrieval-INFORMED
-// selection+parametrization of the existing curated families: we do (b). The 210-host clean-tier
-// crawl genomes have no requiredContent/antiPatterns/optionalSections/swappableAdjacent/
+// selection+parametrization of the existing curated families: we do (b). The 509-host
+// gallery-corpus-v1 crawl genomes have no requiredContent/antiPatterns/optionalSections/swappableAdjacent/
 // dialCompatibility — the contract perturb.mjs's gates (sectionsValid/macroValid/hierarchyValid)
 // and composeGenome depend on — and their sectionGrammar roles are the raw 10-role crawl vocabulary
 // (nav/hero/features/.../unknown), not the ~30 bespoke rendering roles the hand-authored families
@@ -206,7 +206,7 @@ function composeSlotGenome(slot, iv, seed, variant, usedHosts = []) {
       genome, family: slot.familyDef, warnings: [],
       provenance: "corpus-grounded",
       groundedIn: retrieved ? retrieved.host : (slot.familyDef.evidence?.representativeHost ?? null),
-      retrieval: retrieved ? { host: retrieved.host, distance: retrieved.distance, bucket: retrieved.bucket } : null,
+      retrieval: retrieved ? { host: retrieved.host, distance: retrieved.distance, source: retrieved.source } : null,
     };
   }
   // synthesized slot (spec §4 step 4)
@@ -244,7 +244,7 @@ function composeSlotGenome(slot, iv, seed, variant, usedHosts = []) {
     genome, family: slot.familyDefA, warnings, parents,
     provenance: "engine-synthesized",
     groundedIn: retrieved ? retrieved.host : (slot.familyDefA.evidence?.representativeHost ?? null),
-    retrieval: retrieved ? { host: retrieved.host, distance: retrieved.distance, bucket: retrieved.bucket } : null,
+    retrieval: retrieved ? { host: retrieved.host, distance: retrieved.distance, source: retrieved.source } : null,
   };
 }
 
