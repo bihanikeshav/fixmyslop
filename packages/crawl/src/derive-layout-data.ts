@@ -87,7 +87,7 @@ function pageKindOf(record: AnyRecord): string {
 // "pricing" and "testimonial" are NOT in this generic keyword table: both
 // need evidence beyond a bare word match (a nav link that says "Pricing", or
 // body copy that says "see reviews", must not flip the section's role) — see
-// PRICE_PATTERN and hasQuoteAttributionShape, checked explicitly before this
+// priceTokenCount and isTestimonialShape, checked explicitly before this
 // table is consulted in reclassifySectionRole.
 const SECTION_KEYWORD_RULES: Array<[string, RegExp]> = [
   ["faq", /\b(faq|frequently asked questions?)\b/i],
@@ -130,7 +130,36 @@ function elementsBySection(elements: AnyRecord[], sections: AnyRecord[]): Map<st
 // level down (child text like "$0/Monthly", "billed annually"). Search a
 // short aggregate of heading + child heading/body snippets so keyword rules
 // see what a human skimming the section would see.
-const PRICE_PATTERN = /\$\s?\d|\b\d+\s?\/\s?(mo|month|yr|year)\b|billed (annually|monthly)|per (seat|user)/i;
+// BUG 2 fix: the old PRICE_PATTERN (`\$\s?\d` alone) fired on a bare "$" next
+// to ANY number — view counts, dates, ordinary dollar amounts in body copy —
+// which is how a video-thumbnail grid with view counts (futuretools.io) or a
+// video+logo hero (groq.com) got mislabeled "pricing" with no pricing table
+// in sight. Real price evidence is a currency+number+period token
+// ("$49/mo", "$12 per user", "billed annually") OR a bare "$NN" sitting next
+// to a tier word (Free/Pro/Plus/Enterprise/...) — the shape of an actual
+// pricing card, not a passing dollar figure. priceTokenCount below counts
+// how many such tokens a section's text carries; 2+ (a tier structure) is
+// treated as strong evidence, but even a single real token is required
+// before pricing can fire at all — a lone bare number or view count never is.
+const PRICE_TOKEN_PATTERN = /\$\s?\d+(?:\.\d{1,2})?\s*(?:\/\s*|\s+per\s+)(mo|month|yr|year|user|seat)\b|\bbilled\s+(annually|monthly)\b|\bper\s+(seat|user)\b/gi;
+// "free" is deliberately excluded here: it's one of the most common words in
+// ordinary marketing copy ("Get $200 in free credits!", "try free for 30
+// days") and pairing it with any nearby "$NN" produced a false pricing hit
+// on futuretools.io's "$200 in free credits" promo blurb (measured) — a
+// promo, not a pricing tier. The remaining words are close to exclusively
+// used as actual plan-tier names.
+const TIER_WORD = /\b(pro|plus|premium|starter|enterprise|business|team|basic)\b/i;
+const BARE_PRICE = /\$\s?\d+(?:\.\d{1,2})?\b/g;
+function priceTokenCount(text: string): number {
+  let count = (text.match(PRICE_TOKEN_PATTERN) || []).length;
+  BARE_PRICE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = BARE_PRICE.exec(text))) {
+    const window = text.slice(Math.max(0, m.index - 25), m.index + 25);
+    if (TIER_WORD.test(window)) count++;
+  }
+  return count;
+}
 
 function sectionText(section: AnyRecord, childElements: AnyRecord[]): string {
   const heading = String(section.heading || "").trim();
@@ -163,35 +192,165 @@ function repeatedClusterCount(elements: AnyRecord[]): number {
 // up in nav links and section headings that aren't testimonial content at
 // all). Require quote punctuation plus a short name/role line, or a small
 // round avatar image, before granting the label.
-const QUOTE_PUNCT = /["“”‘’']/;
-function hasAttributionLine(childElements: AnyRecord[]): boolean {
-  return childElements.some((e) => {
+// Double quotes ONLY — a plain/curly single quote is indistinguishable from
+// an ordinary contraction/possessive apostrophe ("it's", "world's",
+// "Anthropic's models"), which appears in nearly any body of marketing copy.
+// Including it here (an earlier version of this pattern did) meant
+// hasQuoteAttributionShape could fire on almost any section that had a
+// contraction ANYWHERE plus a two-word Title-Case label anywhere else
+// (measured: it flipped anthropic.com's own features sections and hero to
+// "testimonial" — a regression caught by rerunning the vision eval after
+// broadening BUG 3, before this tightening pass).
+const QUOTE_PUNCT = /["“”]/;
+// A name/role line reads like "Jane Doe", "Jane Doe, CEO", "Jane Doe — Acme".
+const ATTRIBUTION_LINE_PATTERN = /^[A-Z][\p{L}.'-]+(\s+[A-Z][\p{L}.'-]+)+(\s*[,|—-].{0,40})?$/u;
+// A bare two-Title-Case-word phrase ("AI Humanizer", "AI Detector", "AI
+// Resume Rewriter") is indistinguishable from a bare person name by
+// ATTRIBUTION_LINE_PATTERN above — and product/tool names in exactly that
+// shape are common in feature grids and mega-menus (walterwrites.ai's tools
+// menu, measured: 62 such "label"-role product names). Requiring the
+// trailing ", Role"/"— Company" clause makes it MANDATORY rather than
+// optional for the repeated-cards path specifically (see
+// hasRepeatedTestimonialCards) — a role/company suffix after a name is
+// exactly what a product name never carries.
+const ATTRIBUTION_LINE_WITH_ROLE_PATTERN = /^[A-Z][\p{L}.'-]+(\s+[A-Z][\p{L}.'-]+)+\s*[,|—-]\s*\S.{1,40}$/u;
+function countAttributionLines(childElements: AnyRecord[]): number {
+  return childElements.filter((e) => {
     if (e.textRole !== "body" && e.textRole !== "label") return false;
     const text = String(e.textSnippet || "").trim();
     if (!text || text.length > 60) return false;
-    // A name/role line reads like "Jane Doe", "Jane Doe, CEO", "Jane Doe — Acme".
-    return /^[A-Z][\p{L}.'-]+(\s+[A-Z][\p{L}.'-]+)+(\s*[,|—-].{0,40})?$/u.test(text);
-  });
+    return ATTRIBUTION_LINE_PATTERN.test(text);
+  }).length;
+}
+function hasAttributionLine(childElements: AnyRecord[]): boolean {
+  return countAttributionLines(childElements) > 0;
 }
 function hasAvatarImage(childElements: AnyRecord[]): boolean {
   return childElements.some((e) =>
     e.tag === "img" && Number(e.rect?.width || 0) > 0 && Number(e.rect?.width || 0) <= 120 &&
     Number(e.rect?.height || 0) <= 120 && Number(e.borderRadius || 0) >= 40);
 }
-function hasQuoteAttributionShape(combinedText: string, childElements: AnyRecord[]): boolean {
-  if (QUOTE_PUNCT.test(combinedText) && hasAttributionLine(childElements)) return true;
-  return hasAvatarImage(childElements) && hasAttributionLine(childElements);
+function countAvatarImages(childElements: AnyRecord[]): number {
+  return childElements.filter((e) =>
+    e.tag === "img" && Number(e.rect?.width || 0) > 0 && Number(e.rect?.width || 0) <= 120 &&
+    Number(e.rect?.height || 0) <= 120 && Number(e.borderRadius || 0) >= 40).length;
 }
-const TESTIMONIAL_KEYWORD = /\b(testimonials?|what (our|customers) say|success stor(y|ies)|customer stor(y|ies))\b/i;
+// Quote text present (real quotation marks, not a contraction) PLUS either a
+// name/role attribution line or a round avatar corroborating it — this is
+// shapes #1 and #3 from the BUG 3 fix comment below. Quote punctuation is
+// required for BOTH: an avatar next to a name-line alone (no quote) is just
+// as likely a "meet the team"/about-page card as a testimonial, so it's not
+// sufficient on its own.
+function hasQuoteAttributionShape(combinedText: string, childElements: AnyRecord[]): boolean {
+  if (!QUOTE_PUNCT.test(combinedText)) return false;
+  return hasAttributionLine(childElements) || hasAvatarImage(childElements);
+}
+const TESTIMONIAL_KEYWORD = /\b(testimonials?|what (our\s+)?(customers?|users?|clients?)\s+(really\s+)?say|success stor(y|ies)|customer stor(y|ies))\b/i;
+// BUG 3 fix: the old gate required BOTH the literal keyword "testimonial"/
+// "what customers say" AND the quote+attribution shape — so a visible
+// customer-quote section that never uses that word (vanna.ai, walterwrites.ai,
+// datasquirrel.ai) fell through to "features"/"proof" instead (only 24
+// testimonial labels in the whole corpus). A section now qualifies on ANY of
+// three independent, evidence-based shapes, no keyword required:
+//   1. quote punctuation (real quote marks) + a short attribution line
+//   2. repeated CARDS: >=3 members of an actual repeatedGroup each carrying
+//      a short-ish body, alongside >=3 attribution lines or avatars — the
+//      repeatedGroup + raised count requirement is what keeps this from
+//      matching an ordinary 2-3-card feature/proof grid (a generic feature
+//      card's heading is easily mistaken for a "name" by the attribution
+//      regex; requiring 3+ *repeated* instances is the evidence that this is
+//      specifically a testimonial carousel/grid, not a features row)
+//   3. quote punctuation + an avatar image (folded into hasQuoteAttributionShape)
+// The literal keyword is still consulted but only as a last-resort weak
+// signal — see isTestimonialShape.
+// A repeated nav/footer link list (repeatedGroup-tagged short labels, e.g.
+// "Claude Code" / "Claude Design") satisfies a naive ">=3 repeated bodies,
+// >=3 Title-Case-looking labels ANYWHERE in the section" check just as
+// easily as an actual testimonial grid does — an early version of this
+// function measurably mislabeled anthropic.com's nav/footer link panels as
+// "testimonial". Require each repeated body to have an attribution-line (or
+// avatar) element SPATIALLY NEAR IT (same row, <150px vertical distance) —
+// modeling "this specific card has a name right under its quote" rather
+// than "the section contains some quotes and some names somewhere" — and
+// require >=3 such PAIRED rows before granting the shape.
+const QUOTE_BODY_LENGTH = { min: 20, max: 400 };
+function rowCenter(e: AnyRecord): number {
+  return Number(e.rect?.y || 0) + Number(e.rect?.height || 0) / 2;
+}
+function hasRepeatedTestimonialCards(childElements: AnyRecord[]): boolean {
+  const bodies = childElements.filter((e) => {
+    if (!e.repeatedGroup || e.textRole !== "body") return false;
+    const text = String(e.textSnippet || "").trim();
+    const len = text.length;
+    if (len < QUOTE_BODY_LENGTH.min || len > QUOTE_BODY_LENGTH.max) return false;
+    // A real quote/blurb is a written sentence and carries sentence-ending
+    // punctuation; a concatenated nav/footer/mega-menu link-label blob
+    // ("Claude Code for EnterpriseClaude Cowork@Claude...", "WRITING TOOLS
+    // AI Humanizer...AI Detector...") almost never does — this is what kept
+    // anthropic.com's and walterwrites.ai's menu panels out after the
+    // spatial-pairing check alone still let them through (measured).
+    return /[.!?]/.test(text);
+  });
+  if (bodies.length < 3) return false;
+  // "label" only, not "body": a name/role byline is captioning text, the
+  // same schema role a "$49/mo" price caption or a form-field label carries
+  // — a menu/feature grid's short marketing headline ("AI Detector", "AI
+  // Resume Rewriter") is tagged "heading" or "body", not "label", in this
+  // capture, so restricting to "label" is what keeps a tools mega-menu
+  // (walterwrites.ai, measured) from satisfying the attribution pairing
+  // just because its per-tool blurb happens to be 2 Title-Case words.
+  const attributions = childElements.filter((e) => {
+    if (e.textRole !== "label") return false;
+    const text = String(e.textSnippet || "").trim();
+    return text && text.length <= 60 && ATTRIBUTION_LINE_WITH_ROLE_PATTERN.test(text);
+  });
+  // Avatar-only pairing (no role-suffixed name) was dropped: a small round
+  // brand/sponsor badge (deeplearning.ai's "DeepLearning.AI"/"OpenAI" course
+  // logos, measured) is geometrically indistinguishable from a small round
+  // headshot by rect size + borderRadius alone, and repeated course/product
+  // cards routinely carry one next to a period-punctuated description —
+  // exactly this shape. The attribution-WITH-ROLE requirement (a mandatory
+  // ", Role"/"— Company" suffix) is the one signal in this function that a
+  // product/course card structurally never produces, so it's the only
+  // remaining corroborator here.
+  const nearAny = (body: AnyRecord, others: AnyRecord[]): boolean =>
+    others.some((o) => Math.abs(rowCenter(o) - rowCenter(body)) < 150);
+  const pairedWithAttribution = bodies.filter((b) => nearAny(b, attributions)).length;
+  return pairedWithAttribution >= 3;
+}
+function isTestimonialShape(section: AnyRecord, combinedText: string, childElements: AnyRecord[]): boolean {
+  if (hasQuoteAttributionShape(combinedText, childElements)) return true;
+  if (hasRepeatedTestimonialCards(childElements)) return true;
+  // Keyword alone (no shape corroboration) is weaker evidence but still
+  // real: a heading literally reading "Testimonials"/"What our customers
+  // say" above a card row is legitimate even if individual cards don't each
+  // carry a clean attribution-line match. Restricted to the section's OWN
+  // heading text — checking the full combined body/nav-link text let a nav
+  // link phrase like "Customer Stories" (matches the customerStor(y|ies)
+  // alternative) mislabel an unrelated hero/nav band as testimonial
+  // (groq.com, measured).
+  const headingText = `${section.heading || ""} ${childElements.filter((e) => e.textRole === "heading").map((e) => e.textSnippet || "").join(" ")}`;
+  return TESTIMONIAL_KEYWORD.test(headingText);
+}
 
 // A short, full-width band with one heading and 1-2 buttons/links and no
 // other content is a CTA band (agenta's yellow "Ship agents that actually
 // work" strip), not a second hero — heroes carry more supporting content and
 // usually sit at the very top of the page.
-function isCtaBandShape(section: AnyRecord, childElements: AnyRecord[]): boolean {
+//
+// BUG 1 fix: a real hero is frequently JUST a headline + 1-2 buttons — the
+// exact shape this function matches — so without a gate it steals the
+// topmost hero band (shields.io, wiley.com, murph.ai measured: real hero
+// labeled "cta"/"features", and enforceHeroSingleton then promoted the NEXT
+// band to "hero" instead). isTopFoldMaxHeading is true only for the
+// topmost-above-fold band carrying the page's largest (or near-largest)
+// heading — i.e. the one place a hero is expected to live. A cta-shaped band
+// is never granted the "cta" role there; it's left for the hero rule below.
+function isCtaBandShape(section: AnyRecord, childElements: AnyRecord[], isTopFoldMaxHeading = false): boolean {
   const heightShare = Number(section.rect?.normalized?.h ?? 1);
   const widthShare = Number(section.rect?.normalized?.w ?? 0);
   if (heightShare <= 0 || heightShare > 0.14 || widthShare < 0.6) return false;
+  if (isTopFoldMaxHeading) return false;
   const headings = childElements.filter((e) => e.textRole === "heading");
   const ctas = childElements.filter((e) => e.textRole === "cta");
   // childElements here are un-leaf-reduced (see elementsBySection); empty
@@ -219,8 +378,44 @@ function reclassifySectionRole(section: AnyRecord, childElements: AnyRecord[], o
   if (!excludeRoles.has(currentRole) && (currentRole === "nav" || currentRole === "footer")) return decide(currentRole, 1);
   const heading = String(section.heading || "").trim();
   const combinedText = sectionText(section, childElements);
-  if (!excludeRoles.has("pricing") && PRICE_PATTERN.test(combinedText)) return decide("pricing", 0.9);
-  if (!excludeRoles.has("testimonial") && TESTIMONIAL_KEYWORD.test(combinedText) && hasQuoteAttributionShape(combinedText, childElements)) return decide("testimonial", 0.9);
+  // Heading-size/position evidence, computed up front (moved ahead of the
+  // pricing/testimonial/cta checks below) so every role check that needs to
+  // avoid stealing the topmost above-fold max-heading band — reserved for
+  // hero — can share the same isTopFoldMaxHeading flag. See BUG 1's comment
+  // further down for the original CTA-vs-hero collision this was built for;
+  // BUG 3's broadened testimonial detection (no longer gated behind a
+  // literal keyword) turned out to have the exact same failure mode when a
+  // synthesized band merges real hero content with an adjacent testimonial
+  // card (socialsonic.com, measured: the merged band's testimonial evidence
+  // fired before the hero check ever got a look, demoting hero to a later,
+  // wrong band).
+  const sectionY = Number(section.rect?.y || 0);
+  const normY = Number(section.rect?.normalized?.y ?? (sectionY / 900));
+  const isAboveFold = normY < 0.6;
+  const topHeadingSize = Math.max(0, ...childElements.filter((e) => e.textRole === "heading").map((e) => Number(e.fontSize) || 0));
+  const pageMaxHeadingSize = Number(options.pageMaxHeadingSize || 0);
+  const isTopFontHeading = pageMaxHeadingSize > 0 && topHeadingSize > 0 && topHeadingSize >= pageMaxHeadingSize * 0.85;
+  const isTopFoldMaxHeading = isAboveFold && isTopFontHeading;
+  // BUG 2 fix: pricing now requires actual price-token evidence (currency +
+  // number + period, or a bare "$NN" beside a tier word) rather than any
+  // bare "$" next to any number — see priceTokenCount's comment above for
+  // why the old pattern false-fired on futuretools.io (view counts) and
+  // groq.com (a date/number near a stray "$"). >=2 tokens is a tier
+  // structure and gets higher confidence; a single real token is still
+  // sufficient to fire (a page can legitimately show one plan above the
+  // fold) but a bare number/date/view-count never is.
+  const priceTokens = priceTokenCount(combinedText);
+  if (!excludeRoles.has("pricing") && priceTokens >= 1) return decide("pricing", priceTokens >= 2 ? 0.9 : 0.75);
+  // BUG 3 fix: testimonial no longer requires the literal keyword — see
+  // isTestimonialShape for the three independent evidence shapes now
+  // accepted (quote+attribution, avatar+attribution, repeated
+  // quote/attribution cards); keyword-only is still one of those shapes.
+  // Gated the same way CTA is (see isTopFoldMaxHeading above): never claim
+  // the topmost above-fold max-heading band away from hero, even if a
+  // testimonial card happens to be merged into it.
+  if (!excludeRoles.has("testimonial") && !isTopFoldMaxHeading && isTestimonialShape(section, combinedText, childElements)) {
+    return decide("testimonial", TESTIMONIAL_KEYWORD.test(combinedText) ? 0.9 : 0.75);
+  }
   for (const [role, re] of SECTION_KEYWORD_RULES) {
     if (excludeRoles.has(role)) continue;
     if (re.test(combinedText)) return decide(role, 0.85);
@@ -235,12 +430,14 @@ function reclassifySectionRole(section: AnyRecord, childElements: AnyRecord[], o
   const hasAnyHeading = childElements.some((e) => e.textRole === "heading");
   const bodyCount = textRoleCounts.body || 0;
   const ctaCount = textRoleCounts.cta || 0;
-  const sectionY = Number(section.rect?.y || 0);
-  // A short full-width heading+button(s) band reads as a CTA band regardless
-  // of Y position — checked ahead of the hero rule's fallthrough so a
-  // low-on-page CTA strip (agenta's yellow "Ship agents that actually work")
-  // isn't left to the generic hero/features rules below.
-  if (!excludeRoles.has("cta") && isCtaBandShape(section, childElements)) return decide("cta", 0.8);
+  // BUG 1 fix: a CTA band and a hero band can share the exact same shape
+  // (headline + 1-2 buttons). Only grant "cta" when this ISN'T the topmost
+  // above-fold band carrying the page-max heading (isTopFoldMaxHeading,
+  // computed up top) — that band is reserved for the hero rule just below.
+  // Elsewhere (agenta's yellow "Ship agents that actually work" strip,
+  // lower on the page) the CTA-band check still fires regardless of Y
+  // position, same as before.
+  if (!excludeRoles.has("cta") && isCtaBandShape(section, childElements, isTopFoldMaxHeading)) return decide("cta", 0.8);
   // HERO v3 — burden of proof inverted. The old gate (sectionY<250 AND
   // banner/topHeading AND nonRepeatedBodyCount<=4) required a hero to be
   // short and near the very top, so real heroes with 5+ paragraphs or a
@@ -254,11 +451,6 @@ function reclassifySectionRole(section: AnyRecord, childElements: AnyRecord[], o
   // disqualifier; exactly-one-hero-per-page is enforced afterward by
   // enforceHeroSingleton, which also rescues pages where nothing here fired.
   if (!excludeRoles.has("hero")) {
-    const normY = Number(section.rect?.normalized?.y ?? (sectionY / 900));
-    const isAboveFold = normY < 0.6;
-    const topHeadingSize = Math.max(0, ...childElements.filter((e) => e.textRole === "heading").map((e) => Number(e.fontSize) || 0));
-    const pageMaxHeadingSize = Number(options.pageMaxHeadingSize || 0);
-    const isTopFontHeading = pageMaxHeadingSize > 0 && topHeadingSize > 0 && topHeadingSize >= pageMaxHeadingSize * 0.85;
     const elementHeroVotes = childElements.filter((e) => e.sectionRole === "hero").length;
     if (isAboveFold && hasAnyHeading && (isTopFontHeading || landmarks.has("banner") || elementHeroVotes > 0)) {
       return decide("hero", elementHeroVotes > 0 ? 0.9 : isTopFontHeading ? 0.85 : 0.75);
@@ -282,7 +474,15 @@ function reclassifySectionRole(section: AnyRecord, childElements: AnyRecord[], o
   const imageish = childElements.filter((e) => e.tag === "img" || e.tag === "svg").length;
   if (!excludeRoles.has("proof") && hasRepeatedSignal && !hasAnyHeading && childElements.length > 0 && imageish / childElements.length >= 0.5) return decide("proof", 0.7);
   if (hasRepeatedSignal || hasHeadingBodyCtaTriad) return decide("features", hasRepeatedSignal ? 0.65 : 0.6);
-  if (currentRole && currentRole !== "unknown" && !excludeRoles.has(currentRole)) return decide(currentRole, 0.5);
+  // BUG 2/3 fix: "pricing" and "testimonial" require positive evidence
+  // (priceTokenCount/isTestimonialShape above) EVERY time, including here —
+  // the raw crawl's own section.role pre-tag is not trustworthy evidence on
+  // its own for either (groq.com's top banner arrived pre-tagged "pricing"
+  // from the crawl with zero real price tokens in its text — a `#pricing`
+  // anchor-adjacent DOM heuristic upstream, not a pricing table — and would
+  // otherwise have silently survived to here since nothing else in this
+  // function claimed it).
+  if (currentRole && currentRole !== "unknown" && currentRole !== "pricing" && currentRole !== "testimonial" && !excludeRoles.has(currentRole)) return decide(currentRole, 0.5);
   return decide("unknown", 0);
 }
 
@@ -642,6 +842,88 @@ function cleanSections(record: AnyRecord): { sections: AnyRecord[]; bandRhythm: 
     }
   }
 
+  // BUG 4 fix — split a single OVERSIZED content section even on a page that
+  // already has >= 3 content sections and so never trips the page-level
+  // isUnderSegmented guard above (sobrief.com: one section is 79% of page
+  // height and swallows ~15 rows; wiley.com: 4 real bands got merged into
+  // one). Scoped to just the oversized section's own Y-range via
+  // synthesizeSectionBands, so the rest of an otherwise well-formed page —
+  // anthropic.com, agenta.ai — is left untouched: those pages have no single
+  // section anywhere near this tall AND this dense, so the gate never fires.
+  const { pageWidth: splitPageWidth, pageHeight: splitPageHeight } = sectionPageScale(result);
+  let splitAnyOversized = false;
+  // Bounded to 2 rounds: a first split can itself leave one residual
+  // oversized band (mac.eltima.com, measured: an 8600px wrapper section
+  // split down to a few real bands plus one still-large 63%-of-page
+  // leftover) when synthesizeSectionBands' own boundary signals were sparse
+  // across the FULL original range. A second pass, scoped to just that
+  // smaller leftover band, has a much better chance of finding internal
+  // boundaries. Bounded rather than looped-until-stable so a pathological
+  // page can never spin this pass indefinitely.
+  for (let round = 0; round < 2; round++) {
+  let splitThisRound = false;
+  for (let i = classified.length - 1; i >= 0; i--) {
+    const section = classified[i]!;
+    if (section.role === "nav" || section.role === "footer") continue;
+    if (Number(section.rect?.normalized?.h ?? 0) <= 0.5) continue;
+    const children = sectionElements.get(section.id) || [];
+    const headingCount = children.filter((e) => e.textRole === "heading").length;
+    const repeatedCount = children.filter((e) => e.repeatedGroup).length;
+    if (headingCount < 2 && repeatedCount < 6) continue;
+    const y0 = Number(section.rect.y);
+    const rawY1 = y0 + Number(section.rect.height);
+    // sobrief.com measured: the section's raw DOM rect claimed a height
+    // spanning ~79% of the page, but its own kept children only occupied
+    // the top ~6% of that span — the rest is a near-empty tail (an
+    // oversized/mismeasured wrapper, not real content rows to split).
+    // synthesizeSectionBands can't find internal boundaries in space with no
+    // elements, so it always returned exactly 1 band spanning just the real
+    // content and dropped the (memberless) empty remainder — correctly, but
+    // that result failed the ">=2 bands" guard below and the untouched
+    //79%-tall section survived unchanged. Clip the search range to the
+    // section's own real content extent (+ small padding) whenever that
+    // extent is well under half the claimed height, and accept a
+    // single-band result in that specific case: even without an internal
+    // split, replacing the section with a band sized to its ACTUAL content
+    // directly fixes the "swallows most of the page" measurement.
+    // Use the SAME source synthesizeSectionBands itself scans internally
+    // (nonContainerElements filtered by raw Y range) rather than `children`
+    // (elementsBySection's center-containment assignment, a materially
+    // different/smaller set here) — otherwise this empty-tail detection and
+    // synthesizeSectionBands's own internal notion of "where content ends"
+    // can disagree, as measured on an early version of this check.
+    const rangeKept = nonContainerElements(record).filter((e) => Number(e.rect?.y || 0) >= y0 - 1 && Number(e.rect?.y || 0) < rawY1);
+    const contentMaxY = rangeKept.length ? Math.max(y0, ...rangeKept.map((e) => Number(e.rect?.y || 0) + Number(e.rect?.height || 0))) : rawY1;
+    const hasEmptyTail = contentMaxY < y0 + (rawY1 - y0) * 0.5;
+    const y1 = hasEmptyTail ? Math.min(rawY1, contentMaxY + 60) : rawY1;
+    const bands = synthesizeSectionBands(record, y0, y1, splitPageWidth, splitPageHeight);
+    // Same "must actually split into >=2" guard as the page-level pass — a
+    // single band would just reproduce the oversized section untouched,
+    // UNLESS it's the empty-tail case above, where a single but much
+    // SMALLER band is itself the fix.
+    if (bands.length < 2 && !(hasEmptyTail && bands.length === 1)) continue;
+    classified.splice(i, 1, ...bands);
+    splitThisRound = true;
+    splitAnyOversized = true;
+  }
+  if (!splitThisRound) break;
+  // Refresh sectionElements before the next round (and before the
+  // post-loop reclassification below) so a second pass sees each new
+  // band's own children, not the pre-split parent's.
+  sectionElements = elementsBySection(visibleElements(record), classified);
+  for (const section of classified) {
+    if (section.role !== "unknown") continue;
+    const confidenceOut = { value: 0.5 };
+    section.role = reclassifySectionRole(section, sectionElements.get(section.id) || [], { pageMaxHeadingSize, confidenceOut });
+    section.roleConfidence = confidenceOut.value;
+  }
+  }
+  if (splitAnyOversized) {
+    const splitTotal = classified.reduce((sum, section) => sum + Math.max(0, Number(section.rect?.height || 0)), 0) || 1;
+    for (const section of classified) section.heightShare = round(Math.max(0, Number(section.rect?.height || 0)) / splitTotal, 5);
+    synthesized = true;
+  }
+
   enforcePositionalSingletons(classified, sectionElements);
   enforceHeroSingleton(classified, sectionElements, pageMaxHeadingSize);
   rescueUnknownSections(classified, sectionElements);
@@ -731,8 +1013,17 @@ function synthesizeSectionBands(record: AnyRecord, contentTop: number, contentBo
     Number(e.rect?.y || 0) >= contentTop - 1 && Number(e.rect?.y || 0) < contentBottom);
   if (kept.length < 6) return [];
   const sorted = [...kept].sort((a, b) => Number(a.rect.y) - Number(b.rect.y));
-  const headingBoundaries = sorted
+  // h1/h2 is the primary boundary signal, but some div-soup pages (measured:
+  // mac.eltima.com, a giant mis-measured wrapper section swallowing the
+  // whole page) mark every visible heading h3+ (card/testimonial titles,
+  // never an h1/h2 below the very top). Two or fewer h1/h2 boundaries isn't
+  // enough to split anything, so widen to ANY headingLevel in that case —
+  // still real heading elements, just not top-level ones.
+  const strictHeadingBoundaries = sorted
     .filter((e) => e.textRole === "heading" && Number(e.headingLevel) >= 1 && Number(e.headingLevel) <= 2)
+    .map((e) => Number(e.rect.y));
+  const headingBoundaries = strictHeadingBoundaries.length >= 2 ? strictHeadingBoundaries : sorted
+    .filter((e) => e.textRole === "heading" && Number.isFinite(Number(e.headingLevel)))
     .map((e) => Number(e.rect.y));
   const GAP_THRESHOLD = 150;
   const gapBoundaries: number[] = [];
