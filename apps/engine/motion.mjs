@@ -222,16 +222,63 @@ function selectTransitions() {
   };
 }
 
+// ── cross-axis divergence spread (deterministic, no RNG) — sibling of background.mjs's
+// applyTreatmentSpread: apps/engine/divergence.mjs's motionAxisDistance is what explore.mjs
+// enforces a floor on across the 4 directions. Rather than rejection-resample the perturbation
+// seed until intensity/reveal happen to spread, offset them by the caller's direction index —
+// `iv.spreadIndex` (0-based) / `iv.spreadCount` (how many directions total), both optional and
+// omitted by every non-explore caller, so the historical no-seed/no-spread behavior (and every
+// existing test) is unaffected. The intensity offset is capped at +/-2 around THIS intent's own
+// energy-derived intensity (never an absolute jump to a fixed high/low value) — spread happens
+// AROUND the intent, never away from it (task point 3: a calm intent's 4 directions all still read
+// calm, just distinct from each other). Reveal-treatment rotation only ever picks among
+// REVEAL_TREATMENTS, the same taste-safe set perturbMotion's own swap draw picks from.
+function applyIntensitySpread(intensity, iv) {
+  if (!Number.isFinite(iv.spreadIndex) || !Number.isFinite(iv.spreadCount) || iv.spreadCount < 2) return intensity;
+  const center = Math.floor((iv.spreadCount - 1) / 2);
+  const offset = clampRange(Math.trunc(iv.spreadIndex) - center, -2, 2);
+  return clampRange(Math.round(intensity + offset), 1, 10);
+}
+function applyRevealSpread(treatment, iv) {
+  if (treatment === "none" || !Number.isFinite(iv.spreadIndex)) return treatment;
+  const base = REVEAL_TREATMENTS.indexOf(treatment);
+  const idx = ((base < 0 ? 0 : base) + Math.max(0, Math.trunc(iv.spreadIndex))) % REVEAL_TREATMENTS.length;
+  return REVEAL_TREATMENTS[idx];
+}
+// EASING_SET (and REVEAL_TREATMENTS) top out at 3 taste-safe members, so with 4 directions this
+// rotation can't avoid one collision (index 3 always lands back on index 0's pick — pigeonhole).
+// That's fine: perturbMotion's own RNG-gated easing swap (draws 7/8) already covers the SAME
+// token-system move probabilistically; this just makes it happen DETERMINISTICALLY instead of
+// leaving 4 directions to coincidentally share a token by chance, same reasoning as
+// applyTreatmentSpread in background.mjs.
+function applyEasingSpread(iv) {
+  if (!Number.isFinite(iv.spreadIndex)) return null;
+  return EASING_SET[Math.max(0, Math.trunc(iv.spreadIndex)) % EASING_SET.length];
+}
+
 function selectMotion(family, iv, hue) {
-  const intensity = clampRange(Math.round(iv.energy * 10), 1, 10);
+  const baseIntensity = clampRange(Math.round(iv.energy * 10), 1, 10);
+  const intensity = applyIntensitySpread(baseIntensity, iv);
+  const reveal = selectReveal(intensity);
+  reveal.treatment = applyRevealSpread(reveal.treatment, iv);
+  const defaults = selectDefaults();
+  const spreadEasing = applyEasingSpread(iv);
+  const transitions = selectTransitions();
+  if (spreadEasing) {
+    defaults.enterEasing = spreadEasing;
+    reveal.easing = spreadEasing;
+    transitions.page.easing = spreadEasing;
+    transitions.section.easing = spreadEasing;
+    transitions.state.easing = spreadEasing;
+  }
   return {
-    defaults: selectDefaults(),
+    defaults,
     scroll: selectScroll(family, iv, intensity),
     heroFit: selectHeroFit(),
-    reveal: selectReveal(intensity),
+    reveal,
     scrollbar: selectScrollbar(iv, hue),
     micro: selectMicro(family, iv, intensity),
-    transitions: selectTransitions(),
+    transitions,
     crossCutting: { autoplayVideo: false, cursorFollower: false },
     intensity,
   };
@@ -509,6 +556,8 @@ export function deriveMotion(family, iv = {}, streamSeed = null) {
     layoutVariance: clamp01(iv.layoutVariance), contentDensity: clamp01(iv.contentDensity),
     contrastPreference: clamp01(iv.contrastPreference), craft: clamp01(iv.craft),
     theme: iv.theme === "dark" ? "dark" : "light",
+    spreadIndex: Number.isFinite(Number(iv.spreadIndex)) ? Number(iv.spreadIndex) : undefined,
+    spreadCount: Number.isFinite(Number(iv.spreadCount)) ? Number(iv.spreadCount) : undefined,
   };
   const hue = Number.isFinite(Number(iv.hue)) ? wrapHue(Number(iv.hue)) : defaultHue(family);
 

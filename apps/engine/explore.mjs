@@ -20,6 +20,10 @@ import { styleGenome } from "./genome.mjs";
 import { deriveBackground } from "./background.mjs";
 import { deriveMotion } from "./motion.mjs";
 import { distance, withinSetOk, vsRecentOk, RELAXED_FLOOR_D } from "./fingerprint.mjs";
+import {
+  backgroundFingerprint, backgroundAxisDistance, BACKGROUND_AXIS_FLOOR,
+  motionFingerprint, motionAxisDistance, MOTION_AXIS_FLOOR,
+} from "./divergence.mjs";
 
 const FAMILY_BY_NAME = new Map(LAYOUT_FAMILIES.map((f) => [f.name, f]));
 const MOD9 = 0x9E3779B9;
@@ -166,7 +170,7 @@ function composeSlotGenome(slot, iv, seed, variant) {
 // then override the palette so directions spread hue instead of all reproducing the same one
 // (spec §4 step 6). `otherFingerprints` = every OTHER direction already finalized this call
 // (used both as font-exclusion memory and as the hue-separation set).
-function buildDirectionForSlot(engine, intentInput, slot, iv, seed, variant, hueBase, energyBand, otherFingerprints, otherHues, callerRecent, theme) {
+function buildDirectionForSlot(engine, intentInput, slot, iv, seed, variant, hueBase, energyBand, otherFingerprints, otherHues, callerRecent, theme, spreadCount) {
   const composed = composeSlotGenome(slot, iv, seed, variant);
   const optionSeed = (seed + slot.index * MOD9 + variant * MOD2) >>> 0;
   const recentForCall = [...callerRecent, ...otherFingerprints];
@@ -190,14 +194,18 @@ function buildDirectionForSlot(engine, intentInput, slot, iv, seed, variant, hue
   // pre-separation hue) — mirrors the palette override immediately below, same reasoning: every
   // direction must carry its own hue end-to-end, not just in `color`. Same streamSeed-derivation
   // shape as the layout/palette per-slot seeds (namespaced so it never collides with them).
+  // spreadIndex/spreadCount (apps/engine/divergence.mjs) — deterministic cross-axis spread so the
+  // background/motion axes don't just rely on the per-direction streamSeed happening to land far
+  // apart; see background.mjs's applyTreatmentSpread / motion.mjs's applyIntensitySpread+
+  // applyRevealSpread for what these do.
   const bgStreamSeed = hashToUint32(`${seed}:background:${slot.index}:${variant}`);
-  const background = deriveBackground(composed.family, { ...iv, theme, hue: optionHue }, bgStreamSeed);
+  const background = deriveBackground(composed.family, { ...iv, theme, hue: optionHue, spreadIndex: slot.index, spreadCount }, bgStreamSeed);
 
   // Same reasoning, same shape, for the motion axis (docs/motion-interaction-taxonomy.md) — every
   // direction must carry its own distinct motion character end-to-end, not just in `genome.motion`
   // as first assembled by styleGenome (which ran before this direction's hue/family were final).
   const motionStreamSeed = hashToUint32(`${seed}:motion:${slot.index}:${variant}`);
-  const motionDesign = deriveMotion(composed.family, { ...iv, theme, hue: optionHue }, motionStreamSeed);
+  const motionDesign = deriveMotion(composed.family, { ...iv, theme, hue: optionHue, spreadIndex: slot.index, spreadCount }, motionStreamSeed);
   genome = {
     ...genome,
     color: { ...palette, source: "corpus-plus-oklch" },
@@ -216,7 +224,10 @@ function buildDirectionForSlot(engine, intentInput, slot, iv, seed, variant, hue
     groundedIn: composed.groundedIn,
   };
   if (composed.parents) direction.parents = composed.parents;
-  return { direction, hue: optionHue, warnings: composed.warnings };
+  return {
+    direction, hue: optionHue, warnings: composed.warnings,
+    bgFp: backgroundFingerprint(background), motionFp: motionFingerprint(motionDesign),
+  };
 }
 
 /**
@@ -251,17 +262,21 @@ export function exploreDirections(engine, intentInput = {}, { seed, recentFinger
   const variants = new Array(slots.length).fill(0);
   const directions = new Array(slots.length);
   const hues = new Array(slots.length);
+  const bgFps = new Array(slots.length);
+  const motionFps = new Array(slots.length);
   const slotWarnings = [];
 
   function rebuildFrom(idx) {
     for (let k = idx; k < slots.length; k++) {
       const others = directions.slice(0, k).filter(Boolean).map((d) => d.fingerprint);
       const otherHues = hues.slice(0, k).filter((h) => Number.isFinite(h));
-      const { direction, hue, warnings: w } = buildDirectionForSlot(
-        engine, intentInput, slots[k], iv, useSeed, variants[k], hueBase, energyBand, others, otherHues, recentFingerprints, intent.theme,
+      const { direction, hue, bgFp, motionFp, warnings: w } = buildDirectionForSlot(
+        engine, intentInput, slots[k], iv, useSeed, variants[k], hueBase, energyBand, others, otherHues, recentFingerprints, intent.theme, slots.length,
       );
       directions[k] = direction;
       hues[k] = hue;
+      bgFps[k] = bgFp;
+      motionFps[k] = motionFp;
       if (w.length) slotWarnings.push(...w);
     }
   }
@@ -273,11 +288,18 @@ export function exploreDirections(engine, intentInput = {}, { seed, recentFinger
   const reperturbAttempts = new Array(slots.length).fill(0);
   const swapAttempts = new Array(slots.length).fill(0);
 
+  // Cross-axis floors (apps/engine/divergence.mjs): withinSetOk already covers layout+type+hue
+  // (the combined fingerprint distance + its hard rules); background/motion never feed that
+  // fingerprint at all, so they need their own floor check here — feeding the SAME bounded-reroll
+  // loop withinSetOk already drives (reperturb bumps bgStreamSeed/motionStreamSeed too, so a
+  // background/motion collapse gets a genuine second roll, not just another layout attempt).
   function violatingIndices() {
     const v = new Set();
     for (let i = 0; i < directions.length; i++) {
       for (let j = i + 1; j < directions.length; j++) {
         if (!withinSetOk(directions[i].fingerprint, directions[j].fingerprint)) v.add(j);
+        if (backgroundAxisDistance(bgFps[i], bgFps[j]) < BACKGROUND_AXIS_FLOOR) v.add(j);
+        if (motionAxisDistance(motionFps[i], motionFps[j]) < MOTION_AXIS_FLOOR) v.add(j);
       }
       if (!vsRecentOk(directions[i].fingerprint, recentFingerprints)) v.add(i);
     }
@@ -313,14 +335,22 @@ export function exploreDirections(engine, intentInput = {}, { seed, recentFinger
     // Bounded reroll exhausted — accept per spec §3's relaxed floor (D>=0.35) rather than loop
     // forever; note it honestly so callers/calibration can see how often this fires.
     warnings.push("divergence-floor-relaxed");
-    let minPairwiseD = Infinity;
+    let minPairwiseD = Infinity, minBg = Infinity, minMotion = Infinity;
     for (let i = 0; i < directions.length; i++) {
       for (let j = i + 1; j < directions.length; j++) {
         minPairwiseD = Math.min(minPairwiseD, distance(directions[i].fingerprint, directions[j].fingerprint));
+        minBg = Math.min(minBg, backgroundAxisDistance(bgFps[i], bgFps[j]));
+        minMotion = Math.min(minMotion, motionAxisDistance(motionFps[i], motionFps[j]));
       }
     }
     if (Number.isFinite(minPairwiseD) && minPairwiseD < RELAXED_FLOOR_D) {
       warnings.push("divergence-below-relaxed-floor: bounded reroll exhausted without reaching D>=0.35 for at least one pair");
+    }
+    if (Number.isFinite(minBg) && minBg < BACKGROUND_AXIS_FLOOR) {
+      warnings.push("background-divergence-below-floor: bounded reroll exhausted without reaching the background-axis floor for at least one pair");
+    }
+    if (Number.isFinite(minMotion) && minMotion < MOTION_AXIS_FLOOR) {
+      warnings.push("motion-divergence-below-floor: bounded reroll exhausted without reaching the motion-axis floor for at least one pair");
     }
   }
 

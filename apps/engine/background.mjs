@@ -248,6 +248,47 @@ function swapGroupFor(treatment) {
   return null; // A12 (structural) / A11 (asset-bound) — never swapped
 }
 
+// ── cross-axis divergence spread (deterministic, no RNG) — apps/engine/divergence.mjs's
+// backgroundAxisDistance is what explore.mjs enforces a floor on across the 4 directions; rather
+// than rejection-resample the perturbation seed until treatments happen to spread, rotate the base
+// (unperturbed) treatment selection through its taste-safe swap group by the caller's direction
+// index. `iv.spreadIndex` = this direction's slot index (0-based), `iv.spreadCount` = how many
+// directions are being assembled together — both optional; omitted (the historical/non-explore
+// call shape) → identical behavior to before this addition, so the no-seed authored-default path
+// stays stable. Only ever picks among the SAME group `perturbField`'s swap gate already draws
+// from, so this can never push a direction into a less-safe treatment. ────────────────────────────
+function applyTreatmentSpread(treatment, iv) {
+  if (!Number.isFinite(iv.spreadIndex)) return treatment;
+  const group = swapGroupFor(treatment);
+  if (!group || group.length < 2) return treatment;
+  const base = group.indexOf(treatment);
+  const idx = ((base < 0 ? 0 : base) + Math.max(0, Math.trunc(iv.spreadIndex))) % group.length;
+  return group[idx];
+}
+
+// Swap groups top out at 3 members (FLAT_SWAP_GROUP), so with 4 directions the treatment rotation
+// above can't guarantee all 4 land on distinct treatments (pigeonhole) — the two that DO collide
+// on treatment still need to read as visually distinct fields, not near-duplicates. Nudge
+// lightness/chroma by a small, taste-safe, index-keyed offset (same rotation idea as
+// applyTreatmentSpread, just on the continuous params instead of the discrete treatment) BEFORE
+// perturbation/gating runs, so gateBackground's existing S12/S13/S14 bounds still have final say —
+// this can never push a value out of compliance, only vary where in the compliant range it lands.
+// Values are NOT monotonic in index — a swap-group has at most 3 members, so index 0 and index 3
+// always collide on the discrete treatment rotation (3 | (3-0)); these arrays put index 3 at an
+// extreme so the pairs that lose the treatment signal (0,3) / (1,3) / (2,3) still separate on
+// lightness+chroma, while 0/1/2 (which usually differ on treatment or family-driven hue already)
+// stay in a more moderate, unmistakably-still-"field" range.
+const LIGHTNESS_SPREAD = [0.025, -0.05, 0.055, -0.09];
+const CHROMA_SPREAD = [1.0, 1.8, 0.7, 2.6];
+function applyParamSpread(params, iv) {
+  if (!Number.isFinite(iv.spreadIndex)) return params;
+  const idx = Math.max(0, Math.trunc(iv.spreadIndex));
+  const p = { ...params };
+  if (Number.isFinite(p.lightness)) p.lightness = round(clampRange(p.lightness + LIGHTNESS_SPREAD[idx % LIGHTNESS_SPREAD.length], 0, 1), 4);
+  if (Number.isFinite(p.chroma)) p.chroma = round(Math.max(0, p.chroma * CHROMA_SPREAD[idx % CHROMA_SPREAD.length]), 4);
+  return p;
+}
+
 // ── BACKGROUND_PERTURB_V1 — determinism contract mirroring perturb.mjs's PERTURB_V1: every draw
 // below is taken from the mulberry32(streamSeed) stream in this FIXED order, EVERY TIME, even when
 // the parameter it feeds doesn't exist on the current treatment or the draw's result is a no-op.
@@ -463,11 +504,12 @@ export function deriveBackground(family, iv = {}, streamSeed = null) {
     contrastPreference: clamp01(iv.contrastPreference),
     craft: clamp01(iv.craft),
     theme: iv.theme === "dark" ? "dark" : "light",
+    spreadIndex: Number.isFinite(Number(iv.spreadIndex)) ? Number(iv.spreadIndex) : undefined,
   };
   const hue = Number.isFinite(Number(iv.hue)) ? wrapHue(Number(iv.hue)) : defaultHue(family);
 
-  const treatment = selectFieldTreatment(family, ivn);
-  const field = { treatment, category: "field", params: baseParams(treatment, ivn, hue), meta: BACKGROUND_TREATMENTS[treatment] || {} };
+  const treatment = applyTreatmentSpread(selectFieldTreatment(family, ivn), ivn);
+  const field = { treatment, category: "field", params: applyParamSpread(baseParams(treatment, ivn, hue), ivn), meta: BACKGROUND_TREATMENTS[treatment] || {} };
   let bg = {
     field, slots: baseSlots(family, hue), band: null,
     crossCutting: { gradientText: false, animated: { enabled: false, motionType: null, easing: null, respectsReducedMotion: true } },
