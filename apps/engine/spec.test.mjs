@@ -56,7 +56,7 @@ test("genomeToSpec names an explicit centrepiece section and states a no-empty-s
 test("genomeToSpec's Layout section table includes a content-purpose column for every row", () => {
   const genome = styleGenome(engine, intent, { seed: 42 });
   const spec = genomeToSpec(genome);
-  assert.match(spec, /\| # \| section role \| height share \| focal point \| composition \| surface \| content purpose \|/, "Layout table missing content-purpose column header");
+  assert.match(spec, /\| # \| section role \| relative emphasis \| focal point \| composition \| surface \| content purpose \|/, "Layout table missing content-purpose column header");
   // every section role's purpose text must appear somewhere in the spec (loosely — the row itself)
   for (const s of genome.layout.sectionGrammar) {
     // role appears at least once per row context — cheap smoke check that rows were emitted
@@ -70,4 +70,16 @@ test("genomeToSpec labels ground/surface as NEUTRAL and instructs against tintin
   assert.match(spec, /\*\*NEUTRAL\*\*/, "ground/surface not explicitly labeled NEUTRAL");
   assert.match(spec, /Do NOT tint the page with the accent hue/, "missing the explicit no-tint instruction");
   assert.match(spec, /accent appears ONLY on CTAs, key data, and small emphasis/, "missing the 60-30-10 scarce-accent framing");
+});
+
+// ── dead-space fix round 2: heightShare reframed as relative emphasis, not a height target ────────
+test("genomeToSpec reframes heightShare as relative emphasis, not a pixel/vh height target, and states the no-pad rule", () => {
+  const genome = styleGenome(engine, intent, { seed: 42 });
+  const spec = genomeToSpec(genome);
+  assert.match(spec, /RELATIVE EMPHASIS/, "heightShare not reframed as relative emphasis");
+  assert.match(spec, /NOT a pixel or vh height target/, "missing explicit 'not a height' framing");
+  assert.match(spec, /Do NOT set a fixed or min-height from it/, "missing the no-fixed-height instruction");
+  assert.match(spec, /do NOT pad a section with empty space to reach a size/, "missing the no-pad instruction");
+  assert.match(spec, /~150px of contiguous empty vertical space/, "missing the concrete empty-space ceiling");
+  assert.doesNotMatch(spec, /use it to size the section/, "old fixed-height wording for heightShare still present");
 });

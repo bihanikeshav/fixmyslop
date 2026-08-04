@@ -794,20 +794,20 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
   // behavior to before this change). `secondaryHueOffset` (non-null moods only) is a second, safely
   // -banded hue for a genuine secondary/semantic color beyond "accent2 = accent, just lighter".
   //
-  // FIX 2 (neutral-dominant palette): `groundC`/`inkC` used to run as high as 0.035-0.07 for the
-  // "tinted" mood — well past CONFIG.NEUTRAL_CHROMA (0.04), i.e. not actually a neutral, just a
-  // paler wash of the SAME hue as the accent. With `ground` (page), `accent` (CTA/links) AND
-  // `accent2` (badges/chart highlights) all drawing from that one hue, the result was "one
-  // saturated hue floods the page" — no neutral counterweight, exactly the design-director
-  // critique. skills/fix-ai-slop/reference/color.md is explicit about the right magnitude: "tint
-  // neutrals ~0.005–0.02 chroma toward the brand hue" — a bare hint of undertone, not a pastel of
-  // it. Every mood's groundC/inkC now sits in that neighborhood (tinted/dark/contrast get a touch
-  // more room than pure "light" for perceptual presence, but all stay well clear of
-  // CONFIG.NEUTRAL_CHROMA). `accent`'s own chroma (ENERGY_CHROMA + chromaBoost, below) is
-  // UNCHANGED — the accent stays just as confident/saturated, it's just scarce now: one real
-  // neutral foundation (ground + a second `surface` elevation, see freshNeutral("surface")) with
-  // the saturated hue reserved for the accent/accent2 roles only (60-30-10, not 90-10 diluted
-  // wash-vs-wash).
+  // FIX 2 (neutral-dominant palette, round 2): round 1 kept `groundC` under CONFIG.NEUTRAL_CHROMA
+  // (0.04) for every mood, but a real critic still saw "the whole page washed in one hue" for
+  // light/tinted/contrast — only `dark` read as neutral. The bug wasn't chroma, it was LIGHTNESS:
+  // "tinted" put its ground at L 0.80-0.89, a full step down from a true off-white (~0.93+). At
+  // that lightness even a "legal" C 0.014-0.03 tint reads as a saturated pastel wash (all-sage,
+  // all-pink) covering the entire canvas, not a whisper of undertone — because the eye judges
+  // colorfulness relative to how far a surface sits from white/black, not chroma in isolation, and
+  // `surface` inherited the same low-but-nonzero chroma band across every card/panel on the page,
+  // so the wash didn't stop at the ground either. `tinted`'s ground AND surface are now pinned to
+  // the same near-neutral lightness+chroma neighborhood as `light`/`dark`/`contrast` — genuinely
+  // neutral, not just numerically under a threshold. Its "tinted" character moves entirely to
+  // things that are meant to be scarce/expressive: a stronger `chromaBoost` on the accent, and a
+  // `secondaryHueOffset` that gives accent2/badges/chart-highlights (and any ONE inverted/dark
+  // feature band a build adds) their own distinct hue — never the canvas or the general surface.
   const MOOD_PROFILES = {
     light: {
       groundL: [0.93, 0.965], groundC: [0.006, 0.02], inkL: [0.15, 0.24], inkC: [0.006, 0.02],
@@ -820,9 +820,9 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
       fbGround: "#141210", fbSurface: "#201c17", fbInk: "#f2efe9",
     },
     tinted: {
-      groundL: [0.80, 0.89], groundC: [0.014, 0.03], inkL: [0.12, 0.20], inkC: [0.008, 0.02],
-      surfaceLOffset: -0.06, chromaBoost: 0.03, secondaryHueOffset: -130,
-      fbGround: "#e3d9c9", fbSurface: "#d5c9b3", fbInk: "#1c1710",
+      groundL: [0.90, 0.94], groundC: [0.006, 0.018], inkL: [0.12, 0.20], inkC: [0.006, 0.02],
+      surfaceLOffset: -0.10, chromaBoost: 0.04, secondaryHueOffset: -130,
+      fbGround: "#e9e6df", fbSurface: "#d8d4ca", fbInk: "#1c1710",
     },
     contrast: {
       groundL: [0.97, 0.99], groundC: [0.004, 0.012], inkL: [0.03, 0.07], inkC: [0.006, 0.014],

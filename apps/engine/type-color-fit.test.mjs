@@ -378,3 +378,30 @@ test("exploreDirections: devtool 4 directions all have neutral-dominant grounds 
     assert.ok(g.oklch.C < engine.CONFIG.NEUTRAL_CHROMA, `direction "${d.name}" (mood ${d.genome.color.mood}): ground chroma ${g.oklch.C.toFixed(3)} floods the page instead of staying neutral`);
   }
 });
+
+// ── FIX 2 round 2: chroma-under-threshold wasn't enough — "tinted" put its ground at a mid
+// lightness (L 0.80-0.89) where even legal chroma reads as a saturated pastel wash covering the
+// whole canvas. Neutral now means BOTH low chroma AND a lightness close to true white/black —
+// checked with a tighter chroma cap (0.02, well inside CONFIG.NEUTRAL_CHROMA's 0.04) and an
+// explicit lightness-extremity floor per mood, across all 4 moods including 'tinted'. ────────────
+test("generatePalette: ground+surface stay genuinely neutral (tight chroma AND near-white/near-black lightness) across all 4 moods, not just under the classifier threshold", () => {
+  const MOODS = ["light", "dark", "tinted", "contrast"];
+  // 'dark' was already neutral pre-fix and keeps a slightly wider band (up to 0.03) for perceptual
+  // presence on a dark ground; the other 3 moods (the ones the critic flagged) are held to 0.02.
+  const tightCap = (mood) => (mood === "dark" ? 0.032 : 0.022);
+  for (const mood of MOODS) {
+    for (let seed = 0; seed < 20; seed++) {
+      const pal = engine.generatePalette({ hue: 300, energy: "bold", seed, mood });
+      const g = engine.classify(pal.ground).oklch;
+      const s = engine.classify(pal.surface).oklch;
+      assert.ok(g.C <= tightCap(mood), `mood ${mood} seed ${seed}: ground chroma ${g.C.toFixed(3)} exceeds the tight neutral cap — still reads as a tint, not a neutral`);
+      assert.ok(s.C <= tightCap(mood), `mood ${mood} seed ${seed}: surface chroma ${s.C.toFixed(3)} exceeds the tight neutral cap`);
+      // near-white for light-ground moods, near-black for the dark mood — never a mid-tone pastel.
+      if (mood === "dark") {
+        assert.ok(g.L <= 0.20, `mood dark seed ${seed}: ground L ${g.L.toFixed(3)} is not near-black`);
+      } else {
+        assert.ok(g.L >= 0.88, `mood ${mood} seed ${seed}: ground L ${g.L.toFixed(3)} is not near-white — a mid-lightness ground reads as a colored wash even at low chroma`);
+      }
+    }
+  }
+});

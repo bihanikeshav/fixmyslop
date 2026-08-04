@@ -113,7 +113,7 @@ function layoutSection(genome) {
         ? " **← THE CENTREPIECE lives here — build it large, as the dominant visual/statement of the page, not just a headline.**"
         : " **← THE CENTREPIECE lives here — build it large/edge-to-edge, filling this section. Do not shrink it into the hero or a small card.**";
       const purpose = purposeForRole(s.role) + (isCentrepiece ? centrepieceNote : "");
-      return `| ${i + 1} | ${s.role} | ${pct(s.heightShare)} of page height | ${s.focalPoint} | ${s.composition} | ${s.surface === "inverted" ? "inverted (dark band on a light theme, or vice-versa)" : "normal"} | ${purpose} |`;
+      return `| ${i + 1} | ${s.role} | ${pct(s.heightShare)} emphasis (not a height) | ${s.focalPoint} | ${s.composition} | ${s.surface === "inverted" ? "inverted (dark band on a light theme, or vice-versa)" : "normal"} | ${purpose} |`;
     })
     .join("\n");
   const mobile = (genome.responsive?.collapseRules && genome.responsive.collapseRules[0]) || L.responsive?.mobileTransform || "stack sections full-width, preserve order";
@@ -128,13 +128,13 @@ function layoutSection(genome) {
 
 Archetype: **${L.family || "unspecified"}** (page kind: ${L.pageKind || "n/a"})
 
-Build the page as EXACTLY these sections, in this exact order, top to bottom. \`heightShare\` is that section's approximate share of total page scroll height — use it to size the section, don't make every section the same height. The "content purpose" column is not optional flavor text — it is what that section MUST contain:
+Build the page as EXACTLY these sections, in this exact order, top to bottom. \`heightShare\` is that section's RELATIVE EMPHASIS — which sections matter most — NOT a pixel or vh height target. Do NOT set a fixed or min-height from it, and do NOT pad a section with empty space to reach a size. Let CONTENT determine each section's actual height: a large share means MORE content, bigger type, or a richer/denser visual in that section — never a tall empty band. No section, of any height share, may contain more than ~150px of contiguous empty vertical space. The "content purpose" column is not optional flavor text — it is what that section MUST contain:
 
-| # | section role | height share | focal point | composition | surface | content purpose |
+| # | section role | relative emphasis | focal point | composition | surface | content purpose |
 |---|---|---|---|---|---|---|
 ${sections}
 
-**No empty sections, no exceptions.** Build EVERY section above fully, with real content sized to its height share — no section may render as a blank/void band, a color-only placeholder, or a caption with nothing under it. ${centrepieceRule}
+**No empty sections, no exceptions.** Build EVERY section above fully, with real content proportional to its emphasis — no section may render as a blank/void band, a color-only placeholder, or a caption with nothing under it. A high-emphasis section that is sparse on content is a spec violation just as much as a missing section is. ${centrepieceRule}
 
 Macro proportions:
 - Content max-width: ${pct(macro.contentWidthShare)} of viewport width (centered, generous side margins outside it)
