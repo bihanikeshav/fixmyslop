@@ -13,6 +13,15 @@ const IX = {
 };
 const IX_LABEL = { surfaces: "Surfaces", color: "Color", imagery: "Imagery", controls: "Controls", compose: "Layout", type: "Type", copy: "Copy", motion: "Motion" };
 
+// Favicon = the brand lockup (bordered square + inner filled square). The inner
+// square's colour tracks whichever octagon node is hovered; default = ink.
+function setFavicon(inner) {
+  const link = document.getElementById("favicon");
+  if (!link) return;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="8" y="8" width="84" height="84" fill="none" stroke="${IX.ink}" stroke-width="8"/><rect x="32" y="32" width="36" height="36" fill="${inner}"/></svg>`;
+  link.href = "data:image/svg+xml," + encodeURIComponent(svg);
+}
+
 // physics + geometry
 const IX_R = 37, IX_RINF = 36;        // vertex radius / proximity influence radius (% of stage)
 const IX_BASE = 20, IX_GROW = 76;     // 20 → 96px blob
@@ -419,6 +428,11 @@ function IndexLayer({ onRoute, onReset, active }) {
     clearTimeout(swapRef.current);
     swapRef.current = setTimeout(() => { setDisp({ idx: latestRef.current }); setAnim("in"); }, IX_BURST);
     return undefined;
+  }, [activeIdx]);
+
+  // favicon inner-square colour follows the hovered octagon node (default ink)
+  useEffectIx(() => {
+    setFavicon(activeIdx != null && pages[activeIdx] ? pages[activeIdx].dot : IX.ink);
   }, [activeIdx]);
 
   useEffectIx(() => {

@@ -28,8 +28,9 @@ function SlopLayer({ onLiberate, onSkip }) {
       {/* glass nav */}
       <nav style={{ flex: "0 0 auto", position: "relative", zIndex: 30, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 40px", background: "rgba(15,23,42,.5)", backdropFilter: "blur(14px)", borderBottom: "1px solid rgba(255,255,255,.08)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, fontWeight: 800, fontSize: 18 }}>
-          <span style={{ width: 28, height: 28, borderRadius: 8, display: "grid", placeItems: "center", background: "#c8175a" }}>
-            <span style={{ width: 11, height: 11, borderRadius: 2, background: "#fff" }} />
+          <span style={{ width: 26, height: 26, position: "relative", flex: "0 0 auto", display: "inline-block" }}>
+            <span style={{ position: "absolute", inset: 0, border: "2px solid #fff" }} />
+            <span style={{ position: "absolute", inset: 7, background: "#fff" }} />
           </span>
           fixmyslop
         </div>
