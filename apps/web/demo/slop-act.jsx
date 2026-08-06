@@ -15,7 +15,7 @@ function SlopMarquee({ reverse, speed, items }) {
   );
 }
 
-function SlopLayer({ onLiberate }) {
+function SlopLayer({ onLiberate, onSkip }) {
   const fonts = window.SLOP.SLOP_FONTS;
   const half = Math.ceil(fonts.length / 2);
   const gradText = {
@@ -28,11 +28,14 @@ function SlopLayer({ onLiberate }) {
       {/* glass nav */}
       <nav style={{ flex: "0 0 auto", position: "relative", zIndex: 30, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 40px", background: "rgba(15,23,42,.5)", backdropFilter: "blur(14px)", borderBottom: "1px solid rgba(255,255,255,.08)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, fontWeight: 800, fontSize: 18 }}>
-          <span style={{ width: 28, height: 28, borderRadius: 9, display: "grid", placeItems: "center", background: `linear-gradient(135deg,${slopIndigo},#a775eb)`, fontSize: 14 }}>✨</span>
-          slop<span style={{ color: slopViolet }}>·</span>o<span style={{ color: slopViolet }}>·</span>meter
+          <span style={{ width: 28, height: 28, borderRadius: 8, display: "grid", placeItems: "center", background: "#c8175a" }}>
+            <span style={{ width: 11, height: 11, borderRadius: 2, background: "#fff" }} />
+          </span>
+          fixmyslop
         </div>
-        <div style={{ display: "flex", gap: 26, alignItems: "center", fontSize: 14, color: "rgba(255,255,255,.7)" }}>
+        <div style={{ display: "flex", gap: 22, alignItems: "center", fontSize: 14, color: "rgba(255,255,255,.7)" }}>
           <span>Features</span><span>Pricing</span><span>Docs</span>
+          <span onClick={onSkip} style={{ cursor: "pointer", color: "rgba(255,255,255,.92)", borderBottom: "1px solid rgba(255,255,255,.35)", paddingBottom: 1 }}>Skip intro →</span>
           <button style={{ background: `linear-gradient(135deg,${slopIndigo},#a775eb)`, color: "#fff", borderRadius: 9999, padding: "9px 20px", fontWeight: 600, boxShadow: "0 8px 24px -6px rgba(99,102,241,.7)" }}>Get started →</button>
         </div>
       </nav>
@@ -54,7 +57,11 @@ function SlopLayer({ onLiberate }) {
           The indigo gradient. The glass nav. The pill buttons. Inter for everything.
           You've seen this site a thousand times.
         </p>
-        <div style={{ position: "relative", display: "grid", placeItems: "center", marginTop: "clamp(2px,1vh,10px)" }}>
+      </div>
+
+      {/* liberate — bottom-anchored so it lines up with Layer 1's circle (continuous click target) */}
+      <div style={{ flex: "0 0 auto", position: "relative", zIndex: 10, display: "grid", placeItems: "center", padding: "0 24px clamp(16px,3vh,40px)" }}>
+        <div style={{ position: "relative", display: "grid", placeItems: "center" }}>
           <span className="pulse-ring" style={{ position: "absolute", width: 208, height: 208, borderRadius: "50%", border: "2px solid rgba(255,255,255,.5)", pointerEvents: "none" }} />
           <LiberateButton label="press here to get liberated" center="Liberate" sub="break the defaults"
             onPress={onLiberate} ring="#0f172a" fill="#fff" fg="#0f172a" />

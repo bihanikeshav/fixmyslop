@@ -15,7 +15,7 @@ function SecondOrderLayer({ onLiberate }) {
     <div style={{ height: "100vh", overflow: "hidden", boxSizing: "border-box", background: bg, color: bone, fontFamily: "'Cormorant Garamond', serif", position: "relative", display: "flex", flexDirection: "column" }}>
       {/* luxe hairline nav */}
       <div style={{ flex: "0 0 auto", borderBottom: hair, display: "flex", alignItems: "center", justifyContent: "center", padding: "14px 0", position: "relative" }}>
-        <span style={{ fontFamily: "'Playfair Display', serif", fontStyle: "italic", fontSize: 22, letterSpacing: ".03em" }}>Slop&#8209;o&#8209;meter</span>
+        <span style={{ fontFamily: "'Playfair Display', serif", fontStyle: "italic", fontSize: 22, letterSpacing: ".03em" }}>fixmyslop</span>
         <span style={{ position: "absolute", right: 40, fontFamily: "'Cormorant Garamond', serif", fontSize: 13, letterSpacing: ".34em", textTransform: "uppercase", color: gold }}>Maison</span>
       </div>
 

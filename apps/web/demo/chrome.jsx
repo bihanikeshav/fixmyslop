@@ -10,7 +10,7 @@ function Wordmark({ theme, tag }) {
         <span style={{ position: "absolute", inset: 6, background: theme.accent }} />
       </span>
       <span style={{ fontFamily: theme.mono, fontWeight: 600, fontSize: 12.5, letterSpacing: ".26em", textTransform: "uppercase", color: theme.ink }}>
-        Slop&#8202;\&#8202;o&#8202;\&#8202;meter
+        fixmyslop
       </span>
       {tag && <span style={{ fontFamily: theme.mono, fontSize: 10.5, letterSpacing: ".18em", textTransform: "uppercase", color: theme.ink, opacity: .45, borderLeft: `1px solid ${theme.ink}33`, paddingLeft: 11 }}>{tag}</span>}
     </div>

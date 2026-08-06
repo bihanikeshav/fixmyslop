@@ -72,6 +72,7 @@ function App() {
   };
 
   const liberate = (e) => { setOrg(e, setOrigin); setStage((s) => Math.min(2, s + 1)); };
+  const skipIntro = () => { setOrigin({ x: 0.5, y: 0.46 }); setStage(2); };
   const resetAll = () => { setPageOpen(false); setTimeout(() => setPageKey(null), 700); setStage(0); };
 
   const openPage = (key, e) => {
@@ -102,7 +103,7 @@ function App() {
 
   return (
     <React.Fragment>
-      <div style={layerStyle(0)}><SlopLayer onLiberate={liberate} /></div>
+      <div style={layerStyle(0)}><SlopLayer onLiberate={liberate} onSkip={skipIntro} /></div>
       <div style={layerStyle(1)}><SecondOrderLayer onLiberate={liberate} /></div>
       <div style={layerStyle(2)}><IndexLayer onRoute={openPage} onReset={resetAll} active={stage === 2 && !pageKey} /></div>
 
