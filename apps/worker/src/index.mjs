@@ -1,6 +1,6 @@
 // index.mjs — the Cloudflare Worker entry.
 //
-// Exposes the ai-slop-font engine as BOTH a REST JSON API (what the web app
+// Exposes the fixmyslop engine as BOTH a REST JSON API (what the web app
 // calls) and a remote MCP server (POST /mcp, GET /sse). The engine is pure and
 // instantiated once at module scope (see tools.mjs).
 
@@ -149,7 +149,7 @@ echo "  Cursor:       add {\\"fix-ai-slop\\":{\\"url\\":\\"${base}/mcp\\"}} to ~
       // ---- index / 404 ----
       if (pathname === "/" || pathname === "") {
         return json({
-          name: "ai-slop-font",
+          name: "fixmyslop",
           install: "/install.md",
           rest: ["/api/color?hex=", "/api/palette", "/api/fonts?n=&category=", "/api/font?family=", "/api/structure", "/health"],
           mcp: { streamableHttp: "POST /mcp", sse: "GET /sse", prompts: "prompts/list · prompts/get" },

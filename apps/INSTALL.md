@@ -1,4 +1,4 @@
-# ai-slop-font — install & use
+# fixmyslop — install & use
 
 A remote **MCP server** (and plain REST API) that gives an LLM a deterministic,
 math-based design engine: it *judges* colors, fonts, spacing, radius, shadows,
@@ -6,7 +6,7 @@ layout and motion for AI-slop, and *generates* fresh, gate-passing values — a 
 coherent theme from one call. No model, no vibes; every verdict is closed-form and
 reproducible.
 
-**Endpoint:** `https://ai-slop-font.bihanikeshav.workers.dev`
+**Endpoint:** `https://fixmyslop.bihanikeshav.workers.dev`
 - MCP (Streamable HTTP): `POST /mcp`  · SSE clients: `GET /sse`
 - REST: `GET|POST /api/tool/<name>` (every tool) · `GET /health`
 
@@ -16,9 +16,9 @@ reproducible.
 
 ### Claude Code (CLI)
 ```bash
-claude mcp add --transport http fix-ai-slop https://ai-slop-font.bihanikeshav.workers.dev/mcp
+claude mcp add --transport http fix-ai-slop https://fixmyslop.bihanikeshav.workers.dev/mcp
 ```
-Then in a session: `/mcp` to confirm it's connected. Ask e.g. *"use ai-slop-font to
+Then in a session: `/mcp` to confirm it's connected. Ask e.g. *"use fixmyslop to
 check if #6366f1 is slop and suggest alternatives."*
 
 ### Claude Desktop / Cursor / Windsurf (JSON config)
@@ -26,7 +26,7 @@ Clients that speak remote Streamable HTTP directly:
 ```json
 {
   "mcpServers": {
-    "fix-ai-slop": { "url": "https://ai-slop-font.bihanikeshav.workers.dev/mcp" }
+    "fix-ai-slop": { "url": "https://fixmyslop.bihanikeshav.workers.dev/mcp" }
   }
 }
 ```
@@ -36,7 +36,7 @@ Clients that need a stdio bridge (older Claude Desktop): use `mcp-remote`:
   "mcpServers": {
     "fix-ai-slop": {
       "command": "npx",
-      "args": ["mcp-remote", "https://ai-slop-font.bihanikeshav.workers.dev/mcp"]
+      "args": ["mcp-remote", "https://fixmyslop.bihanikeshav.workers.dev/mcp"]
     }
   }
 }
@@ -45,7 +45,7 @@ Restart the client after editing its config.
 
 ### Verify the connection
 ```bash
-curl -s -X POST https://ai-slop-font.bihanikeshav.workers.dev/mcp \
+curl -s -X POST https://fixmyslop.bihanikeshav.workers.dev/mcp \
   -H 'content-type: application/json' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
@@ -59,7 +59,7 @@ Every tool is reachable at `/api/tool/<name>` — `GET` with query params, or `P
 with a JSON body.
 
 ```bash
-BASE=https://ai-slop-font.bihanikeshav.workers.dev
+BASE=https://fixmyslop.bihanikeshav.workers.dev
 
 # Is this color AI-slop? → verdict + fresh alternatives
 curl "$BASE/api/tool/check_color?hex=6366f1"
@@ -138,7 +138,7 @@ so it works even without the companion skill installed.
 
 One-line skill install (drops the self-contained `fix-ai-slop` skill into your project):
 ```bash
-curl -fsSL https://ai-slop-font.bihanikeshav.workers.dev/skill | sh
+curl -fsSL https://fixmyslop.bihanikeshav.workers.dev/skill | sh
 ```
 
 ---

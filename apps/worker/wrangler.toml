@@ -1,4 +1,4 @@
-name = "ai-slop-font"
+name = "fixmyslop"
 main = "src/index.mjs"
 compatibility_date = "2025-01-01"
 

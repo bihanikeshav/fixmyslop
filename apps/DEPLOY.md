@@ -1,4 +1,4 @@
-# Deploying ai-slop-font to Cloudflare
+# Deploying fixmyslop to Cloudflare
 
 Two independent deploys, both free-tier. One-time: `npx wrangler login`.
 
@@ -21,7 +21,7 @@ cd apps/worker
 npx wrangler deploy
 ```
 
-Gives a URL like `https://ai-slop-font.<your-subdomain>.workers.dev`. Endpoints:
+Gives a URL like `https://fixmyslop.<your-subdomain>.workers.dev`. Endpoints:
 - MCP (Streamable HTTP): `POST /mcp` · SSE: `GET /sse`
 - REST: `/api/color?hex=` · `/api/palette` · `/api/fonts?n=` · `/api/font?family=` · `/api/structure` · `/health`
 - REST (per-tool): `GET|POST /api/tool/<name>` for every MCP tool
@@ -38,19 +38,19 @@ flagship, plus 4 connected-engine tools (`resolve_intent`, `style_genome`,
 `suggest_layout`, `font_neighbors`) that resolve one coherent direction from a StyleIntent.
 All back onto the single pure `apps/engine` module.
 
-Point an MCP client at `https://ai-slop-font.<subdomain>.workers.dev/mcp`.
+Point an MCP client at `https://fixmyslop.<subdomain>.workers.dev/mcp`.
 
 ## 2. Web (theme-builder)
 
 Static — no build step. From the repo root:
 
 ```bash
-npx wrangler pages deploy apps/web --project-name ai-slop-font
+npx wrangler pages deploy apps/web --project-name fixmyslop
 ```
 
 ## 3. Post-deploy wiring (optional)
 
-- The site's MCP panel shows a placeholder URL (`mcp.ai-slop-font.dev`). After the
+- The site's MCP panel shows a placeholder URL (`mcp.fixmyslop.dev`). After the
   worker deploys, update the `#mcpcfg` block in `apps/web/index.html` to the real
   workers.dev URL (or attach a custom domain in the Cloudflare dashboard and use that).
 - To refresh the data later: re-run the crawl (`packages/crawl`), then

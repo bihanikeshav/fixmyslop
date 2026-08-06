@@ -1,4 +1,4 @@
-# ai-slop-font Worker
+# fixmyslop Worker
 
 A Cloudflare Worker that wraps the pure `apps/engine` query engine and exposes it
 two ways:
@@ -89,4 +89,4 @@ npx wrangler login   # one-time, opens a browser
 npx wrangler deploy
 ```
 
-This publishes to `https://ai-slop-font.<your-subdomain>.workers.dev`.
+This publishes to `https://fixmyslop.<your-subdomain>.workers.dev`.

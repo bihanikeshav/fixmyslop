@@ -1,5 +1,5 @@
 {
-  "name": "@ai-slop-font/core",
+  "name": "@fixmyslop/core",
   "version": "0.1.0",
   "description": "Deterministic Brain: quality metrics, role classification, anti-inductive recommendation, slop scoring.",
   "type": "module",

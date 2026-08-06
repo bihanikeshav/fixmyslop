@@ -1,4 +1,4 @@
-// engine.mjs — the ai-slop-font query engine, PURE and portable (browser + Worker).
+// engine.mjs — the fixmyslop query engine, PURE and portable (browser + Worker).
 //
 // No fs, no child_process, no Date.now/Math.random. Data (corpus/brands/fonts) is
 // injected via createEngine(), so the same module powers the CLI, the web UI, and

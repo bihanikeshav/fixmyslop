@@ -1,9 +1,9 @@
 {
-  "name": "ai-slop-font-worker",
+  "name": "fixmyslop-worker",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Cloudflare Worker wrapping the ai-slop-font engine as a REST API and a remote MCP server.",
+  "description": "Cloudflare Worker wrapping the fixmyslop engine as a REST API and a remote MCP server.",
   "scripts": {
     "dev": "wrangler dev --port 8788",
     "deploy": "wrangler deploy"

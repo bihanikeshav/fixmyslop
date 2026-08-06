@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CACHE = ROOT / "data" / "fonts-cache"
 OUT = ROOT / "data" / "external" / "velvetyne"
 OUT.mkdir(parents=True, exist_ok=True)
-UA = {"User-Agent": "Mozilla/5.0 (ai-slop-font)"}
+UA = {"User-Agent": "Mozilla/5.0 (fixmyslop)"}
 WEIGHTS = {"thin": 100, "extralight": 200, "light": 300, "book": 400, "roman": 400,
            "regular": 400, "normal": 400, "medium": 500, "semibold": 600, "demibold": 600,
            "bold": 700, "extrabold": 800, "black": 900, "heavy": 900}

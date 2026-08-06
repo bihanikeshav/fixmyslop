@@ -11,7 +11,7 @@
 import { writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import type { Observation } from "@ai-slop-font/core";
+import type { Observation } from "@fixmyslop/core";
 import { VIBES } from "./vibes.js";
 import { slugify } from "./sources/gfonts.js";
 import {

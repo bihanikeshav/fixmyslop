@@ -323,8 +323,8 @@ const ENGINE_HTML = `
           </div>
         </div>
         <div>
-          <pre id="mcpcfg"><span class="k">"ai-slop-font"</span>: {
-  <span class="k">"url"</span>: "https://ai-slop-font.bihanikeshav.workers.dev/mcp"
+          <pre id="mcpcfg"><span class="k">"fixmyslop"</span>: {
+  <span class="k">"url"</span>: "https://fixmyslop.bihanikeshav.workers.dev/mcp"
 }</pre>
           <button class="btn sm ghost copy" id="copycfg" style="color:var(--paper);border-color:var(--paper)">Copy config</button>
         </div>
@@ -340,7 +340,7 @@ const ENGINE_HTML = `
       Palette Lab · Type Foundry · MCP<br>
       Corpus refreshed from 1,279 AI-product sites<br>
       Fonts: Google · Fontshare · Velvetyne · Uncut<br>
-      © 2026 ai-slop-font
+      © 2026 fixmyslop
     </div>
   </div>
 </footer>

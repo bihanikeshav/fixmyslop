@@ -1,4 +1,4 @@
-/** @ai-slop-font/core — the deterministic Brain. */
+/** @fixmyslop/core — the deterministic Brain. */
 
 export * from "./types.js";
 export * from "./metrics.js";

@@ -18,12 +18,12 @@ import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, resolve } from "node:path";
 import opentype from "opentype.js";
-import { objectiveQuality, compositeQuality, type FontMetrics } from "@ai-slop-font/core";
+import { objectiveQuality, compositeQuality, type FontMetrics } from "@fixmyslop/core";
 import type { IndexedFont } from "./types.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = resolve(HERE, "../../../data");
-const LEGACY_UA = "Mozilla/5.0 (compatible; ai-slop-font/0.1)";
+const LEGACY_UA = "Mozilla/5.0 (compatible; fixmyslop/0.1)";
 const CONCURRENCY = 6;
 
 interface Pt {
