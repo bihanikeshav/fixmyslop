@@ -270,6 +270,22 @@ export function resolveIntent(intent = {}) {
     warnings.push(`unknown surface "${surface}" — using neutral (0.5) dial defaults`);
   }
 
+  // Brief-key tolerance (robustness fix): the SUBJECT text drives deriveRegister → font-register fit
+  // (a "developer/observability" brief must register technical-precise, or the display role defaults
+  // to out-of-register decorative/script type). The canonical key is `sourceBrief`, but a caller —
+  // especially an LLM agent — will very reasonably pass `brief`/`prompt`/`description`/`subject`.
+  // Silently dropping those produced plausible-but-wrong type with no signal. Accept the aliases,
+  // canonicalize, and WARN so the caller learns the real key instead of shipping degraded output.
+  const BRIEF_ALIASES = ["sourceBrief", "brief", "prompt", "description", "subject"];
+  let sourceBrief = "";
+  let briefKeyUsed = null;
+  for (const k of BRIEF_ALIASES) {
+    if (intent[k] != null && String(intent[k]).trim() !== "") { sourceBrief = String(intent[k]); briefKeyUsed = k; break; }
+  }
+  if (briefKeyUsed && briefKeyUsed !== "sourceBrief") {
+    warnings.push(`brief supplied as "${briefKeyUsed}" — the canonical key is "sourceBrief"; used it anyway (it drives type register/fit, so prefer sourceBrief)`);
+  }
+
   const normalized = {
     surface,
     job,
@@ -279,7 +295,7 @@ export function resolveIntent(intent = {}) {
     references: Array.isArray(intent.references) ? intent.references : [],
     variation: Number.isFinite(Number(intent.variation)) ? Math.trunc(Number(intent.variation)) : 0,
     seed: typeof intent.seed === "number" && Number.isFinite(intent.seed) ? intent.seed : null,
-    sourceBrief: intent.sourceBrief != null ? String(intent.sourceBrief) : "",
+    sourceBrief,
   };
 
   for (const dial of DIALS) {
@@ -303,7 +319,7 @@ export function resolveIntent(intent = {}) {
     warnings.push("dark theme + low contrastPreference — contradictory: dark surfaces need higher contrast to stay legible");
   }
 
-  const seed = deriveSeed({ ...intent, variation: normalized.variation });
+  const seed = deriveSeed({ ...intent, sourceBrief, variation: normalized.variation });
 
   return { intent: normalized, seed, warnings };
 }

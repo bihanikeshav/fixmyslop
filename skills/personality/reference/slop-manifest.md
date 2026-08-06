@@ -3,8 +3,9 @@
 The fingerprints of AI-generated UIs (2024–2025). In step 4 of the process, turn
 the relevant ones into hard constraints for your build. Sources: the public
 taxonomy at impeccable.style/slop (49 rules), the DON'Ts in Anthropic's and
-impeccable's frontend-design skills, and this repo's own measured signal (the
-generated block at the bottom). uupm.cc (UI/UX Pro Max) is cited as corroboration:
+impeccable's frontend-design skills, tasteskill.dev (Leonxlnx/taste-skill, "the
+anti-slop frontend framework" — tells tagged `tasteskill` below), and this repo's
+own measured signal (the generated block at the bottom). uupm.cc (UI/UX Pro Max) is cited as corroboration:
 even a popular design database defaults to these (its SaaS palette is #2563EB, its
 Micro-SaaS palette indigo #6366F1, its first pairings Inter/Poppins/Open Sans) —
 which is exactly why they read as generic.
@@ -35,7 +36,14 @@ which is exactly why they read as generic.
 - Gradient text on headings/metrics — decorative, not meaningful.
 - Gray text on colored backgrounds — washed out; use a shade of the bg.
 - Cream/beige "tasteful" page background reached for by reflex.
-- Pure #000 / #fff — always tint; they don't occur in nature.
+- Pure #000 / #fff — always tint; they don't occur in nature. Off-black (near-black
+  warm/cool gray, e.g. zinc-950) and off-white; neutrals carry a little chroma
+  (~0.005–0.02) toward the brand hue. `tasteskill`
+- Over-saturated accent fill — keep an accent's saturation under ~80%; a neutral base
+  (zinc/slate/stone) plus ONE committed accent beats a loud, evenly-saturated palette. `tasteskill`
+- Alpha as a crutch — rgba washes everywhere. Heavy transparency usually means an
+  incomplete palette; define explicit surface/overlay colors per elevation instead
+  (keep alpha for focus rings / interactive states). `tasteskill`
 
 ## Layout & space
 - Hero metric layout — big number, small label, three stats, gradient accent.
@@ -46,14 +54,33 @@ which is exactly why they read as generic.
 - Line length over ~80 characters.
 - Centering everything — left-aligned + asymmetry reads more designed.
 - Wrapping everything in a card; not everything needs a container.
+- Card by reflex — use a card ONLY when elevation communicates real hierarchy;
+  otherwise group with `border-t`, `divide-y`, or negative space. Never nest cards. `tasteskill`
+- Section-theme inversion — a band styled so differently it reads as a separate site
+  mid-scroll. Keep ONE page theme; sections may re-rhythm (band dark/light) but must not
+  feel like a different website. `tasteskill`
 
 ## Visual details
 - Glassmorphism everywhere — blur/glass/glow as decoration, not layering.
+- Glass without the craft — `backdrop-filter` with no 1px inner border
+  (`border-white/10`), no inset highlight (`inset 0 1px 0 rgba(255,255,255,.1)` for edge
+  refraction), and no solid-fill fallback under `prefers-reduced-transparency`. Use glass
+  only to solve a real layering problem; when you do, add all three. `tasteskill`
 - Thick accent border on one side of a rounded card — the most recognizable tell.
 - Hairline border + wide diffuse shadow ("ghost card").
 - Repeating-gradient stripes as surface decoration.
+- Decorative grid / dot-grid / radial spotlight halo with no function — a grid, dot
+  lattice, or accent glow that supports no canvas, map, or measurement task. Use product
+  structure or a plain field instead. `tasteskill`
 - Extreme border-radius (24px+ on a small card) — everything becomes a soft blob.
+- Mixed radius scale — cards, inputs and buttons on unrelated radii. Pick ONE scale
+  (all-sharp / all-soft ~12–16px / all-pill) and lock it; mix only with a documented rule. `tasteskill`
 - Rounded rectangles with generic drop shadows — safe, forgettable.
+- Untinted drop shadows — pure-black shadow on a light background. Tint the shadow to the
+  background hue; in dark mode get depth from a lighter surface, not a shadow. `tasteskill`
+- Grain/noise on a scrolling container — put grain on a single fixed,
+  `pointer-events-none` overlay (`fixed inset-0 pointer-events-none`) only, never on a
+  scroller (a perf tell as well as a taste one). `tasteskill`
 - Sparklines / tiny charts as decoration that convey nothing.
 - Claude-drawn illustrative SVG — figures, objects, scenes, mascots, spot illustration.
   Reads amateur every time. Use an icon library + real components; custom SVG only for a
@@ -117,6 +144,10 @@ testing (an unguided build fell straight into it). Avoid the cluster, not one it
 - **01 / 02 / 03** numbered editorial step markers.
 - **Three-stat hero-metric block** (big number, small label, ×3).
 - Vibe: "we're the calm, human, anti-AI tool" — signalled by warm serif + ruled paper.
+- Rotate the palette family across builds — if the last premium build was cream+brass,
+  this one must not be. tasteskill bans the cream+brass "premium consumer" default outright;
+  the fix is grounding the palette in THIS subject's world, not swapping to the next
+  fashionable alternative (cream+brass → warm-off-white+earthy is just the next default). `tasteskill`
 The tell: this look says *"tasteful"* without any connection to the actual subject.
 Escaping slop is NOT picking the current fashionable alternative — it is grounding
 the choice in THIS subject's world (see `distinctiveness.md` → "name the category

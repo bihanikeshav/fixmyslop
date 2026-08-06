@@ -169,6 +169,11 @@ const GRID_OPACITY_MAX = 0.22;                    // S10 taste ceiling even wher
 const GRAIN_OPACITY_MAX = 0.18;                   // A5 taste ceiling (raised from 0.08 — see above; 0.035
                                                    // default opacity was invisible on screen)
 const BAND_ALTERNATION_MAX = 0.72;                // S16
+// Font↔layout↔background complement: below this air level the resolved layout is tight/dense, so
+// busy/textured field treatments (grain, dot/line grid) are suppressed in favor of a flat or tonal
+// field — "no matrix/dots behind a tight layout". Only enforced when a RESOLVED layoutWhitespace
+// signal is present (iv.air finite); absent → pre-coupling behavior, additive for existing callers.
+const DENSE_AIR_MAX = 0.3;
 const GLASS_FILL_OPACITY_MAX = 0.16;
 const OFFBLACK_MIN_L = 0.04, OFFWHITE_MAX_L = 0.97;
 const MIN_TINT_CHROMA = 0.006;
@@ -214,8 +219,11 @@ function defaultHue(family) {
 function selectFieldTreatment(family, iv) {
   if (hasBandSlots(family)) return "A12-band-alternation";
   const m = iv.materiality, e = iv.energy, lv = iv.layoutVariance, craft = iv.craft, fs = iv.functionalScore;
+  // tight: the RESOLVED layout is dense/cramped → refuse busy texture/pattern fields (they only read
+  // well with air). Only fires when iv.air is finite (a resolved layoutWhitespace was threaded in).
+  const tight = Number.isFinite(iv.air) && iv.air < DENSE_AIR_MAX;
   if (e > 0.75 && m < 0.3) return "A1-flat-saturated-escape";
-  if (canvasCapable(family.pageKind) && lv < 0.4) {
+  if (canvasCapable(family.pageKind) && lv < 0.4 && !tight) {
     return m > 0.5 ? "A6-dot-grid" : "A7-line-grid";
   }
   // expressive/bold surfaces (low functionalScore, energetic) earn a visibly stronger field even
@@ -223,7 +231,7 @@ function selectFieldTreatment(family, iv) {
   // room to breathe should carry a real tonal wash, not default to a near-white plate.
   if (fs < 0.45 && e >= 0.5 && m >= 0.45) return "A2-linear-gradient-tonal";
   if (m >= 0.66 && craft >= 0.45) return "A2-linear-gradient-tonal";
-  if (m >= 0.4 && craft >= 0.6) return "A5-grain-fixed-overlay";
+  if (m >= 0.4 && craft >= 0.6 && !tight) return "A5-grain-fixed-overlay";
   if (hasFigureSlot(family) && m >= 0.5) return "A11-duotone-image";
   return "A1-flat-tinted-neutral";
 }
@@ -554,8 +562,12 @@ export function deriveBackground(family, iv = {}, streamSeed = null) {
     formality: clamp01(iv.formality),
     theme: iv.theme === "dark" ? "dark" : "light",
     spreadIndex: Number.isFinite(Number(iv.spreadIndex)) ? Number(iv.spreadIndex) : undefined,
+    layoutWhitespace: Number.isFinite(Number(iv.layoutWhitespace)) ? clamp01(iv.layoutWhitespace) : undefined,
   };
   ivn.functionalScore = functionalScoreOf(ivn);
+  // air: finite ONLY when a resolved layoutWhitespace was passed — keeps the tight-gate additive
+  // (absent → no suppression, existing callers unchanged).
+  ivn.air = Number.isFinite(ivn.layoutWhitespace) ? ivn.layoutWhitespace : undefined;
   const hue = Number.isFinite(Number(iv.hue)) ? wrapHue(Number(iv.hue)) : defaultHue(family);
 
   const treatment = applyTreatmentSpread(selectFieldTreatment(family, ivn), ivn);

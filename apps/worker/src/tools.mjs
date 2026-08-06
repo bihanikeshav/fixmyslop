@@ -8,6 +8,7 @@ import { createEngine } from "../../engine/engine.mjs";
 import { resolveIntent } from "../../engine/intent.mjs";
 import { suggestLayout } from "../../engine/layout-families.mjs";
 import { styleGenome } from "../../engine/genome.mjs";
+import { exploreDirections } from "../../engine/explore.mjs";
 import corpus from "../../engine/data/corpus.json" with { type: "json" };
 import brands from "../../engine/data/brands.json" with { type: "json" };
 import fonts from "../../engine/data/fonts.json" with { type: "json" };
@@ -45,7 +46,7 @@ const INTENT_PROPS = {
   audience: { type: "array", items: { type: "string" }, description: "who it's for." },
   contentModel: { type: "string", description: "e.g. product-with-proof, reference, gallery." },
   theme: { type: "string", enum: ["light", "dark"] },
-  sourceBrief: { type: "string", description: "the original free-text brief, preserved verbatim." },
+  sourceBrief: { type: "string", description: "the original free-text brief/subject, verbatim (e.g. 'a developer API platform / observability tool'). IMPORTANT: this drives type REGISTER — a technical/dev subject here keeps display type precise (slab/sans/mono) instead of defaulting to decorative/script faces. Aliases brief/prompt/description/subject are also accepted (with a warning)." },
   variation: { type: "integer", description: "distance from the previous candidate (re-roll knob)." },
   seed: { type: "number", description: "reproducibility seed; omit for a fresh roll." },
   // continuous dials in [0,1] — set what you can infer; the engine fills the rest from surface/job priors.
@@ -123,6 +124,16 @@ export const TOOLS = [
     description: "Resolve ONE coherent design direction from a StyleIntent: font pairing (neighbor-retrieved + readability-gated), palette (OKLCH corpus), layout family, material slots, and motion — each with provenance, plus a fingerprint. Pass recentFingerprints[] (from genomes already shown this session) so a re-roll diverges in composition, not just hue. This is the connected engine — one call per direction.",
     inputSchema: { type: "object", properties: { ...INTENT_PROPS, recentFingerprints: { type: "array", items: { type: "object" }, description: "fingerprints of genomes already shown this session, to diversify against." } } },
     run: (a) => styleGenome(engine, a || {}, { seed: a && a.seed, recentFingerprints: (a && a.recentFingerprints) || [] }),
+  },
+  {
+    name: "explore_directions",
+    description: "Produce FOUR genuinely divergent design directions from ONE StyleIntent in ONE call — the corpus-grounded direction explorer (spec: docs/layout-explorer-spec.md §4). 3 directions are corpus-grounded (distinct layout families, greedily chosen for maximum divergence, each perturbed); 1 is engine-synthesized (a blend of two families' macro stance). Each direction spreads layout family, font pairing, AND palette hue, and passes a within-set divergence gate (falling back to a bounded reroll, noted in `warnings` when the floor is relaxed). Pass recentFingerprints[] from genomes already shown this session to diversify against those too. Returns { directions:[{name,genome,fingerprint,fit,provenance,groundedIn,parents?}×count], warnings }. Supersedes manually looping style_genome 4×.",
+    inputSchema: { type: "object", properties: {
+      ...INTENT_PROPS,
+      recentFingerprints: { type: "array", items: { type: "object" }, description: "fingerprints of genomes already shown this session, to diversify against." },
+      count: { type: "integer", description: "how many directions (default 4 = 3 corpus-grounded + 1 engine-synthesized).", minimum: 1, maximum: 8 },
+    } },
+    run: (a) => exploreDirections(engine, a || {}, { seed: a && a.seed, recentFingerprints: (a && a.recentFingerprints) || [], count: (a && a.count) || 4 }),
   },
   {
     name: "suggest_layout",

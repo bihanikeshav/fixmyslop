@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cleared — set aside the right amount, automatically</title>
+<script>document.documentElement.classList.add('js')</script>
+<link rel="preconnect" href="https://api.fontshare.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=array@400,700&f[]=technor@400,500,600,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* greenbar ledger paper */
+    --paper:#e7efe3;
+    --bar:#dde8d6;          /* alternating greenbar band */
+    --card:#eef3ea;         /* raised sheet */
+    --ink:#191a17;          /* carbon */
+    --ink-2:#4c5247;        /* muted carbon */
+    --ink-3:#7d8475;        /* faint */
+    --rule:#b6c2ad;         /* green-gray hairline */
+    --rule-2:#cdd6c4;
+    --stamp:#c0362c;        /* rubber-stamp red */
+    --stamp-deep:#992a22;
+    --kept:#cfdac4;         /* "yours" band (open) */
+    --aside:#22251f;        /* "set aside" band (carbon, locked) */
+
+    --display:"Array",system-ui,sans-serif;
+    --body:"Technor",system-ui,sans-serif;
+    --mono:"Spline Sans Mono",ui-monospace,monospace;
+
+    --sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:24px;
+    --sp-6:32px;--sp-7:48px;--sp-8:72px;--sp-9:112px;
+
+    --maxw:1120px;
+    --e-out:cubic-bezier(.16,1,.3,1);
+    --e-io:cubic-bezier(.65,0,.35,1);
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;
+    font-family:var(--body);
+    color:var(--ink);
+    background:var(--paper);
+    /* greenbar continuous-form paper: horizontal alternating bands */
+    background-image:repeating-linear-gradient(
+      to bottom,
+      var(--paper) 0, var(--paper) 27px,
+      var(--bar) 27px, var(--bar) 54px);
+    line-height:1.5;
+    font-size:17px;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--stamp);color:#fff}
+  a{color:inherit}
+  h1,h2,h3{margin:0;font-weight:400;line-height:1}
+  p{margin:0}
+
+  .wrap{max-width:var(--maxw);margin-inline:auto;padding-inline:var(--sp-5)}
+
+  /* ---- the sheet: a bordered ledger page floating on the greenbar ---- */
+  .sheet{
+    background:var(--card);
+    border:1.5px solid var(--ink);
+  }
+
+  /* ---------- masthead ---------- */
+  .top{border-bottom:1.5px solid var(--ink)}
+  .top .wrap{display:flex;align-items:center;justify-content:space-between;
+    gap:var(--sp-5);padding-block:var(--sp-3)}
+  .mark{font-family:var(--display);font-weight:700;font-size:25px;
+    letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:10px}
+  .mark .dot{width:11px;height:11px;background:var(--stamp);display:inline-block;
+    transform:rotate(45deg)}
+  nav{display:flex;align-items:center;gap:var(--sp-5);font-family:var(--mono);
+    font-size:13px;letter-spacing:.02em;text-transform:uppercase}
+  nav a{text-decoration:none;color:var(--ink-2);padding:4px 2px;border-bottom:2px solid transparent;
+    transition:color .15s var(--e-out),border-color .15s var(--e-out)}
+  nav a:hover{color:var(--ink);border-color:var(--stamp)}
+  nav a:focus-visible{outline:2px solid var(--stamp);outline-offset:3px}
+  .btn{
+    font-family:var(--mono);font-size:13px;letter-spacing:.06em;text-transform:uppercase;
+    background:var(--stamp);color:#fff;border:1.5px solid var(--ink);
+    padding:10px 18px;cursor:pointer;text-decoration:none;display:inline-flex;
+    align-items:center;gap:8px;box-shadow:3px 3px 0 var(--ink);
+    transition:transform .12s var(--e-out),background .15s}
+  .btn:hover{transform:translate(-1px,-1px);background:var(--stamp-deep)}
+  .btn:active{transform:translate(2px,2px)}
+  .btn:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+  .btn.ghost{background:transparent;color:var(--ink)}
+  .btn.ghost:hover{background:var(--paper)}
+
+  /* ---------- hero ---------- */
+  .hero .wrap{padding-block:var(--sp-8) var(--sp-7)}
+  .eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--stamp);display:flex;align-items:center;gap:10px;margin-bottom:var(--sp-5)}
+  .eyebrow::before{content:"";flex:0 0 34px;height:2px;background:var(--stamp)}
+  h1{font-family:var(--display);font-weight:700;
+    font-size:clamp(44px,8vw,108px);letter-spacing:-.01em;text-transform:uppercase;max-width:14ch}
+  h1 .u{color:var(--stamp);position:relative;white-space:nowrap}
+  h1 .u::after{content:"";position:absolute;left:0;right:0;bottom:.04em;height:.09em;
+    background:var(--stamp);transform:scaleX(1);transform-origin:left}
+  .lede{margin-top:var(--sp-5);font-size:clamp(18px,2.2vw,22px);color:var(--ink-2);
+    max-width:52ch;line-height:1.45}
+  .hero-cta{margin-top:var(--sp-6);display:flex;gap:var(--sp-4);flex-wrap:wrap;align-items:center}
+  .hero-note{font-family:var(--mono);font-size:12px;color:var(--ink-3);letter-spacing:.02em}
+
+  /* ---------- the Withholding Ledger (standout) ---------- */
+  .ledger{margin-top:var(--sp-7)}
+  .ledger-head{display:flex;justify-content:space-between;align-items:flex-end;
+    flex-wrap:wrap;gap:var(--sp-4);border-bottom:1.5px solid var(--ink);
+    padding-bottom:var(--sp-3);margin-bottom:var(--sp-5)}
+  .ledger-title{font-family:var(--display);text-transform:uppercase;font-size:20px;letter-spacing:.08em}
+  .ledger-sub{font-family:var(--mono);font-size:12px;color:var(--ink-3);letter-spacing:.04em;margin-top:6px}
+  .readout{display:flex;gap:var(--sp-6);flex-wrap:wrap}
+  .ro{font-family:var(--mono)}
+  .ro .k{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+  .ro .v{font-size:26px;font-weight:500;font-variant-numeric:tabular-nums;display:block;margin-top:2px}
+  .ro.aside .v{color:var(--stamp)}
+
+  .chart-scroll{overflow-x:auto;padding-bottom:var(--sp-2)}
+  .chart{display:grid;grid-template-columns:repeat(12,1fr);gap:clamp(4px,1.1vw,16px);
+    align-items:end;height:300px;min-width:680px;border-bottom:1.5px solid var(--ink);
+    position:relative}
+  .col{display:flex;flex-direction:column;justify-content:flex-end;height:100%;position:relative}
+  .stack{display:flex;flex-direction:column;justify-content:flex-end;height:100%;
+    transform-origin:bottom;cursor:default}
+  .seg{width:100%;display:block}
+  .seg.kept{background:var(--kept);border:1px solid var(--rule)}
+  .seg.aside{background:var(--aside)}
+  .col:hover .seg.kept{border-color:var(--ink)}
+  .col:hover .seg.aside{background:#000}
+  .mlabels{display:grid;grid-template-columns:repeat(12,1fr);gap:clamp(4px,1.1vw,16px);
+    min-width:680px;margin-top:var(--sp-2);font-family:var(--mono);font-size:11px;
+    color:var(--ink-3);text-align:center;letter-spacing:.04em}
+  /* quarterly deadline stamps */
+  .due{position:absolute;top:-6px;z-index:3;pointer-events:none;
+    font-family:var(--mono);font-size:10px;line-height:1.2;letter-spacing:.04em;
+    color:var(--stamp);border:1.5px solid var(--stamp);padding:3px 6px;
+    text-transform:uppercase;background:var(--card);transform:rotate(-4deg);transform-origin:center}
+  .due b{font-weight:500;font-variant-numeric:tabular-nums}
+  .due::after{content:"";position:absolute;left:50%;top:100%;width:1px;height:300px;
+    background:repeating-linear-gradient(to bottom,var(--stamp) 0 4px,transparent 4px 9px);opacity:.5}
+  .legend{display:flex;gap:var(--sp-5);flex-wrap:wrap;margin-top:var(--sp-5);
+    font-family:var(--mono);font-size:12px;color:var(--ink-2);letter-spacing:.03em}
+  .legend span{display:flex;align-items:center;gap:8px}
+  .sw{width:16px;height:16px;display:inline-block;border:1px solid var(--ink)}
+  .sw.kept{background:var(--kept)}.sw.aside{background:var(--aside)}
+
+  .tip{position:fixed;z-index:40;background:var(--ink);color:var(--paper);
+    font-family:var(--mono);font-size:12px;line-height:1.5;padding:8px 10px;
+    border:1px solid var(--ink);pointer-events:none;display:none;max-width:240px}
+  .tip.on{display:block}
+  .tip .gross{font-weight:500;letter-spacing:.04em}
+  .tip .row{display:flex;justify-content:space-between;gap:14px}
+  .tip .row.a{color:#f0a59e}
+
+  /* ---------- section frame ---------- */
+  section{position:relative}
+  .band{border-top:1.5px solid var(--ink)}
+  .sec-head{display:flex;align-items:baseline;gap:var(--sp-4);margin-bottom:var(--sp-6);flex-wrap:wrap}
+  .sec-no{font-family:var(--mono);font-size:13px;color:var(--stamp);letter-spacing:.1em}
+  h2{font-family:var(--display);text-transform:uppercase;font-size:clamp(28px,4.4vw,52px);
+    letter-spacing:-.005em}
+  .sec-lede{font-family:var(--mono);font-size:13px;color:var(--ink-3);letter-spacing:.03em;
+    margin-left:auto;max-width:34ch;line-height:1.6}
+
+  /* ---------- the receipt ---------- */
+  .split .wrap{padding-block:var(--sp-8);display:grid;grid-template-columns:1.05fr .95fr;
+    gap:var(--sp-8);align-items:center}
+  .receipt{background:var(--card);border:1.5px solid var(--ink);box-shadow:5px 5px 0 rgba(25,26,23,.16);
+    font-family:var(--mono);font-size:15px;font-variant-numeric:tabular-nums}
+  .receipt .rh{display:flex;justify-content:space-between;padding:14px 18px;
+    border-bottom:1.5px dashed var(--ink);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
+  .li{display:flex;justify-content:space-between;padding:11px 18px;border-bottom:1px solid var(--rule-2)}
+  .li .lbl{color:var(--ink-2)}
+  .li.minus .amt{color:var(--stamp)}
+  .li.minus .lbl::before{content:"– ";color:var(--stamp)}
+  .li.aside-total{background:var(--paper);border-top:1.5px solid var(--ink);border-bottom:1.5px solid var(--ink)}
+  .li.aside-total .lbl,.li.aside-total .amt{color:var(--stamp);font-weight:500}
+  .li.keep-total{padding:18px;display:flex;justify-content:space-between;align-items:baseline}
+  .li.keep-total .lbl{font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+  .li.keep-total .amt{font-family:var(--display);font-size:34px}
+  .perf{height:0;border:0;border-top:2px dashed var(--ink);margin:0}
+  .split-copy h2{margin-bottom:var(--sp-4)}
+  .split-copy p{color:var(--ink-2);max-width:42ch;margin-bottom:var(--sp-4)}
+  .split-copy .meta{font-family:var(--mono);font-size:13px;color:var(--ink-3);letter-spacing:.02em}
+
+  /* ---------- steps ---------- */
+  .steps .wrap{padding-block:var(--sp-8)}
+  .step-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1.5px solid var(--ink);
+    background:var(--ink)}
+  .step{background:var(--card);padding:var(--sp-6) var(--sp-5)}
+  .step:not(:last-child){border-right:1.5px solid var(--ink)}
+  .step .icn{width:44px;height:44px;border:1.5px solid var(--ink);display:flex;
+    align-items:center;justify-content:center;color:var(--stamp);margin-bottom:var(--sp-4)}
+  .step .icn svg{width:22px;height:22px}
+  .step .sn{font-family:var(--mono);font-size:12px;color:var(--ink-3);letter-spacing:.1em;margin-bottom:8px}
+  .step h3{font-family:var(--display);text-transform:uppercase;font-size:22px;letter-spacing:.03em;margin-bottom:var(--sp-3)}
+  .step p{color:var(--ink-2);font-size:16px}
+
+  /* ---------- pricing ---------- */
+  .price .wrap{padding-block:var(--sp-8)}
+  .plans{display:grid;grid-template-columns:1fr 1fr;border:1.5px solid var(--ink);background:var(--ink);gap:1.5px}
+  .plan{background:var(--card);padding:var(--sp-6)}
+  .plan .pn{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+  .plan .amt{font-family:var(--display);font-size:clamp(40px,6vw,64px);margin:var(--sp-3) 0;display:flex;align-items:baseline;gap:6px}
+  .plan .amt small{font-family:var(--mono);font-size:14px;color:var(--ink-3);letter-spacing:.04em}
+  .plan.feat{background:var(--ink);color:var(--paper)}
+  .plan.feat .pn{color:var(--stamp)}
+  .plan.feat .ck{color:var(--paper)}
+  .plan ul{list-style:none;padding:0;margin:var(--sp-4) 0 var(--sp-5);font-family:var(--mono);font-size:14px}
+  .plan li{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--rule-2)}
+  .plan.feat li{border-color:#34382f}
+  .plan .ck{color:var(--stamp);flex:0 0 auto}
+  .plan .ck svg{width:16px;height:16px;display:block;margin-top:3px}
+
+  /* ---------- footer ---------- */
+  footer{border-top:1.5px solid var(--ink);margin-top:var(--sp-8)}
+  footer .wrap{padding-block:var(--sp-7);display:flex;justify-content:space-between;
+    align-items:flex-start;gap:var(--sp-6);flex-wrap:wrap}
+  .stamp{font-family:var(--display);text-transform:uppercase;font-size:clamp(30px,5vw,52px);
+    color:var(--stamp);border:3px solid var(--stamp);padding:8px 18px;transform:rotate(-5deg);
+    letter-spacing:.05em}
+  .fcols{display:flex;gap:var(--sp-8);flex-wrap:wrap;font-family:var(--mono);font-size:13px}
+  .fcol h4{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin:0 0 10px;font-weight:400}
+  .fcol a{display:block;color:var(--ink-2);text-decoration:none;padding:4px 0}
+  .fcol a:hover{color:var(--stamp)}
+  .fine{font-family:var(--mono);font-size:11px;color:var(--ink-3);line-height:1.7;max-width:46ch}
+
+  /* ---------- responsive ---------- */
+  @media(max-width:860px){
+    .split .wrap{grid-template-columns:1fr;gap:var(--sp-6)}
+    .step-grid{grid-template-columns:1fr}
+    .step:not(:last-child){border-right:0;border-bottom:1.5px solid var(--ink)}
+    .plans{grid-template-columns:1fr}
+    .sec-lede{margin-left:0}
+  }
+  @media(max-width:560px){
+    nav .nlink{display:none}
+    .readout{gap:var(--sp-5)}
+    h1{font-size:clamp(38px,12vw,60px)}
+  }
+
+  /* ---------- motion (render-safe, gated) ---------- */
+  @media(prefers-reduced-motion:no-preference){
+    html.js .stack{transform:scaleY(0)}
+    html.js .stack.in{transform:scaleY(1);transition:transform .7s var(--e-out)}
+    html.js .due{opacity:0;transform:rotate(-4deg) scale(1.5)}
+    html.js .due.in{opacity:1;transform:rotate(-4deg) scale(1);
+      transition:opacity .25s var(--e-out),transform .35s var(--e-io)}
+    html.js .reveal{opacity:0;transform:translateY(16px)}
+    html.js .reveal.in{opacity:1;transform:translateY(0);transition:opacity .5s var(--e-out),transform .5s var(--e-out)}
+  }
+</style>
+</head>
+<body>
+
+<header class="top sheet" style="box-shadow:none;border-left:0;border-right:0;border-top:0">
+  <div class="wrap">
+    <div class="mark"><span class="dot"></span>Cleared</div>
+    <nav>
+      <a class="nlink" href="#ledger">The Ledger</a>
+      <a class="nlink" href="#how">How it works</a>
+      <a class="nlink" href="#price">Pricing</a>
+      <a href="#" >Sign in</a>
+      <a class="btn" href="#price">Start a return</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<section class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Self-employed tax, on autopilot</p>
+    <h1>Know exactly<br>what's <span class="u">yours</span>.</h1>
+    <p class="lede">Cleared watches every deposit a client sends, skims the tax slice the
+      moment it lands, and files your quarterlies for you. No April surprise. No spreadsheet
+      you keep meaning to update.</p>
+    <div class="hero-cta">
+      <a class="btn" href="#price">Start a return →</a>
+      <a class="btn ghost" href="#how">See how it splits</a>
+      <span class="hero-note">No SSN to look around · read-only bank link</span>
+    </div>
+
+    <!-- ============ THE WITHHOLDING LEDGER (standout) ============ -->
+    <div class="ledger" id="ledger">
+      <div class="ledger-head">
+        <div>
+          <div class="ledger-title">The Withholding Ledger</div>
+          <div class="ledger-sub">2025 · sole-proprietor · 1099 income, split on arrival</div>
+        </div>
+        <div class="readout">
+          <div class="ro"><span class="k">Earned</span><span class="v">$66,600</span></div>
+          <div class="ro aside"><span class="k">Set aside for tax</span><span class="v">$19,980</span></div>
+          <div class="ro"><span class="k">Yours, free & clear</span><span class="v">$46,620</span></div>
+        </div>
+      </div>
+
+      <div class="chart-scroll">
+        <div class="chart" id="chart" role="img"
+          aria-label="Monthly 1099 income for 2025, each month split into the portion kept and the portion set aside for tax, with four quarterly estimated-tax payment deadlines marked.">
+          <!-- 12 columns. kept = 70% (open), aside = 30% (carbon). px heights from a 300px plot. -->
+          <div class="col" data-m="January"  data-g="4,200" data-k="2,940" data-a="1,260">
+            <div class="stack"><div class="seg kept" style="height:90px"></div><div class="seg aside" style="height:39px"></div></div>
+          </div>
+          <div class="col" data-m="February" data-g="3,100" data-k="2,170" data-a="930">
+            <div class="stack"><div class="seg kept" style="height:67px"></div><div class="seg aside" style="height:28px"></div></div>
+          </div>
+          <div class="col" data-m="March" data-g="6,800" data-k="4,760" data-a="2,040">
+            <div class="stack"><div class="seg kept" style="height:146px"></div><div class="seg aside" style="height:63px"></div></div>
+            <div class="due" style="right:-14px"><span>Due Apr 15</span><br><b>$4,230</b></div>
+          </div>
+          <div class="col" data-m="April" data-g="2,400" data-k="1,680" data-a="720">
+            <div class="stack"><div class="seg kept" style="height:52px"></div><div class="seg aside" style="height:22px"></div></div>
+          </div>
+          <div class="col" data-m="May" data-g="5,200" data-k="3,640" data-a="1,560">
+            <div class="stack"><div class="seg kept" style="height:112px"></div><div class="seg aside" style="height:48px"></div></div>
+            <div class="due" style="right:-14px"><span>Due Jun 15</span><br><b>$2,280</b></div>
+          </div>
+          <div class="col" data-m="June" data-g="7,400" data-k="5,180" data-a="2,220">
+            <div class="stack"><div class="seg kept" style="height:160px"></div><div class="seg aside" style="height:68px"></div></div>
+          </div>
+          <div class="col" data-m="July" data-g="3,600" data-k="2,520" data-a="1,080">
+            <div class="stack"><div class="seg kept" style="height:78px"></div><div class="seg aside" style="height:33px"></div></div>
+          </div>
+          <div class="col" data-m="August" data-g="4,800" data-k="3,360" data-a="1,440">
+            <div class="stack"><div class="seg kept" style="height:104px"></div><div class="seg aside" style="height:44px"></div></div>
+            <div class="due" style="right:-14px"><span>Due Sep 15</span><br><b>$4,740</b></div>
+          </div>
+          <div class="col" data-m="September" data-g="9,100" data-k="6,370" data-a="2,730">
+            <div class="stack"><div class="seg kept" style="height:196px"></div><div class="seg aside" style="height:84px"></div></div>
+          </div>
+          <div class="col" data-m="October" data-g="5,500" data-k="3,850" data-a="1,650">
+            <div class="stack"><div class="seg kept" style="height:118px"></div><div class="seg aside" style="height:51px"></div></div>
+          </div>
+          <div class="col" data-m="November" data-g="6,200" data-k="4,340" data-a="1,860">
+            <div class="stack"><div class="seg kept" style="height:134px"></div><div class="seg aside" style="height:57px"></div></div>
+          </div>
+          <div class="col" data-m="December" data-g="8,300" data-k="5,810" data-a="2,490">
+            <div class="stack"><div class="seg kept" style="height:179px"></div><div class="seg aside" style="height:76px"></div></div>
+            <div class="due" style="right:-14px"><span>Due Jan 15</span><br><b>$8,730</b></div>
+          </div>
+        </div>
+      </div>
+      <div class="mlabels" aria-hidden="true">
+        <span>JAN</span><span>FEB</span><span>MAR</span><span>APR</span><span>MAY</span><span>JUN</span>
+        <span>JUL</span><span>AUG</span><span>SEP</span><span>OCT</span><span>NOV</span><span>DEC</span>
+      </div>
+      <div class="legend">
+        <span><i class="sw kept"></i> Yours — safe to spend (70%)</span>
+        <span><i class="sw aside"></i> Set aside for tax (30%, est.)</span>
+        <span style="color:var(--stamp)"><i class="sw" style="background:var(--card);border-color:var(--stamp)"></i> Quarterly 1040-ES filed for you</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ the receipt ============ -->
+<section class="split band" id="how">
+  <div class="wrap">
+    <div class="split-copy">
+      <div class="sec-head" style="display:block">
+        <span class="sec-no">01 — The split</span>
+        <h2>Every deposit, cut the second it lands</h2>
+      </div>
+      <p>A client pays a $6,800 invoice on a Tuesday. Before it ever feels like spending money,
+        Cleared moves the tax slice into a separate vault and tells you the only number that
+        matters: what's actually yours.</p>
+      <p>The rate tracks your real bracket as the year fills in — no flat 30% guess that leaves
+        you short in Q4.</p>
+      <p class="meta">Worked example · 1099-NEC · single filer · CA</p>
+    </div>
+
+    <div class="receipt" aria-label="Worked split of one $6,800 payment">
+      <div class="rh"><span>Deposit · INV-0412</span><span>Apr 08</span></div>
+      <div class="li"><span class="lbl">Gross received</span><span class="amt">$6,800.00</span></div>
+      <div class="li minus"><span class="lbl">Self-employment tax (15.3%)</span><span class="amt">$1,040.40</span></div>
+      <div class="li minus"><span class="lbl">Federal estimate (12%)</span><span class="amt">$816.00</span></div>
+      <div class="li minus"><span class="lbl">State estimate, CA (5.6%)</span><span class="amt">$340.00</span></div>
+      <div class="li aside-total"><span class="lbl">Set aside for tax</span><span class="amt">$2,196.40</span></div>
+      <hr class="perf">
+      <div class="li keep-total"><span class="lbl">Yours, safe to spend</span><span class="amt">$4,603.60</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ steps ============ -->
+<section class="steps band">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-no">02</span>
+      <h2>Three filings. Zero&nbsp;panic.</h2>
+      <p class="sec-lede">Set it up once in about four minutes. The rest of the year runs without you.</p>
+    </div>
+    <div class="step-grid">
+      <div class="step reveal">
+        <div class="icn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
+        <div class="sn">STEP 01</div>
+        <h3>Link your income</h3>
+        <p>Connect the accounts your gigs pay into. Read-only — Cleared can see deposits, never move your money out.</p>
+      </div>
+      <div class="step reveal">
+        <div class="icn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><path d="M8.12 8.12 12 12"/><path d="M20 4 8.12 15.88"/><circle cx="6" cy="18" r="3"/><path d="M14.8 14.8 20 20"/></svg></div>
+        <div class="sn">STEP 02</div>
+        <h3>We skim each deposit</h3>
+        <p>Every payment is split on arrival. The tax slice lands in an FDIC-insured vault earning interest until it's owed.</p>
+      </div>
+      <div class="step reveal">
+        <div class="icn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></div>
+        <div class="sn">STEP 03</div>
+        <h3>We file the 1040-ES</h3>
+        <p>Four times a year we prep your estimated payment and pay it from the vault. You get a receipt; you do nothing.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ pricing ============ -->
+<section class="price band" id="price">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-no">03</span>
+      <h2>Priced like a line item</h2>
+      <p class="sec-lede">Flat monthly. Cancel before any quarter. The interest the vault earns usually covers it.</p>
+    </div>
+    <div class="plans">
+      <div class="plan">
+        <div class="pn">Solo</div>
+        <div class="amt">$12<small>/ mo</small></div>
+        <ul>
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Auto-split on every deposit</li>
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Federal + one state quarterly filing</li>
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Interest-earning tax vault</li>
+        </ul>
+        <a class="btn ghost" href="#" style="width:100%;justify-content:center">Start solo</a>
+      </div>
+      <div class="plan feat">
+        <div class="pn">Studio</div>
+        <div class="amt">$29<small>/ mo</small></div>
+        <ul>
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Everything in Solo, multi-state</li>
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>S-corp & 1099 contractor payouts</li>
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>A human CPA on the year-end return</li>
+        </ul>
+        <a class="btn" href="#" style="width:100%;justify-content:center">Start studio</a>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="stamp">Filed.</div>
+    <div class="fcols">
+      <div class="fcol"><h4>Product</h4><a href="#ledger">The Ledger</a><a href="#how">The split</a><a href="#price">Pricing</a></div>
+      <div class="fcol"><h4>Company</h4><a href="#">About</a><a href="#">Security</a><a href="#">Careers</a></div>
+      <div class="fcol"><h4>Legal</h4><a href="#">Terms</a><a href="#">Privacy</a><a href="#">Disclosures</a></div>
+    </div>
+    <p class="fine">Cleared is a software service, not a CPA firm or law firm; filings are
+      reviewed by licensed preparers. Estimates shown are illustrative. Banking services
+      provided by partner banks, Member FDIC. © 2025 Cleared, Inc.</p>
+  </div>
+</footer>
+
+<div class="tip" id="tip" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  var rm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // signature load gesture: columns rise, deadline stamps thud in (staggered)
+  if(!rm){
+    var stacks = document.querySelectorAll('.stack');
+    var dues = document.querySelectorAll('.due');
+    var io = new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if(!e.isIntersecting) return;
+        stacks.forEach(function(s,i){ setTimeout(function(){ s.classList.add('in'); }, 60+i*55); });
+        dues.forEach(function(d,i){ setTimeout(function(){ d.classList.add('in'); }, 900+i*140); });
+        io.disconnect();
+      });
+    },{threshold:.25});
+    var chart = document.getElementById('chart');
+    if(chart) io.observe(chart);
+
+    var rev = new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); rev.unobserve(e.target); } });
+    },{threshold:.1,rootMargin:'0px 0px 240px 0px'});
+    document.querySelectorAll('.reveal').forEach(function(n,i){ n.style.transitionDelay=(i*70)+'ms'; rev.observe(n); });
+
+    // safety net: never leave gated content hidden if an observer misses
+    // (odd timing, no scroll, prerender/screenshot) — reveal everything after a beat.
+    setTimeout(function(){
+      document.querySelectorAll('.reveal,.stack,.due').forEach(function(n){ n.classList.add('in'); });
+    },1500);
+  }
+
+  // ledger tooltip — enhancement only; the bars already read on their own
+  var tip = document.getElementById('tip');
+  document.querySelectorAll('.col').forEach(function(col){
+    function show(ev){
+      var m=col.dataset.m, g=col.dataset.g, k=col.dataset.k, a=col.dataset.a;
+      tip.innerHTML='<div class="gross">'+m+' · $'+g+'</div>'+
+        '<div class="row"><span>Yours</span><span>$'+k+'</span></div>'+
+        '<div class="row a"><span>Set aside</span><span>$'+a+'</span></div>';
+      tip.classList.add('on');
+      var x=(ev.touches?ev.touches[0].clientX:ev.clientX), y=(ev.touches?ev.touches[0].clientY:ev.clientY);
+      var w=tip.offsetWidth, vw=window.innerWidth;
+      tip.style.left=Math.min(x+14, vw-w-12)+'px';
+      tip.style.top=Math.max(12, y-tip.offsetHeight-12)+'px';
+    }
+    function hide(){ tip.classList.remove('on'); }
+    col.addEventListener('mousemove',show);
+    col.addEventListener('mouseleave',hide);
+    col.addEventListener('focus',show); col.addEventListener('blur',hide);
+    col.setAttribute('tabindex','0');
+    col.setAttribute('aria-label', col.dataset.m+': earned $'+col.dataset.g+', yours $'+col.dataset.k+', set aside $'+col.dataset.a);
+  });
+})();
+</script>
+</body>
+</html>

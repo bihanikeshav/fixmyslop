@@ -300,6 +300,37 @@ export function classifyFontGenre(f) {
   return "unknown";
 }
 
+// ===========================================================================
+// fontPresence(f) → [0,1] — a display face's visual ASSERTIVENESS / how space-hungry it is.
+//
+// The font↔layout coupling axis (user ask): a wide/bold/high-contrast display face commands space
+// and only reads well with air around it; a neutral grotesque/mono sits quietly in a dense layout.
+// So retrieveFonts (below) matches a face's presence to the resolved layout's `layoutAir` — never a
+// space-hungry face crammed into a tight layout. Derived from the SAME signals every other type
+// gate uses: classifyFontGenre (the structural genre) + font-space metrics (strokeContrast,
+// counterSize, xHeightRatio). Degrades to the genre base alone when metrics are absent — never throws.
+// Pure/deterministic.
+// ===========================================================================
+const PRESENCE_GENRE_BASE = {
+  decorative: 0.9, blackletter: 0.85, "display-other": 0.82, "ornate-serif": 0.78,
+  script: 0.6, slab: 0.55,
+  serif: 0.4, sans: 0.35,
+  mono: 0.25, unknown: 0.5,
+};
+export function fontPresence(f) {
+  if (!f) return 0.5;
+  let p = PRESENCE_GENRE_BASE[classifyFontGenre(f)] ?? 0.5;
+  const m = f.metrics || {};
+  const num = (k) => (Number.isFinite(Number(m[k])) ? Number(m[k]) : NaN);
+  const sc = num("strokeContrast");
+  if (Number.isFinite(sc)) p += 0.25 * (sc - 0.3);   // high stroke contrast reads more present
+  const cs = num("counterSize");
+  if (Number.isFinite(cs)) p += 0.10 * (cs - 0.5);   // large counters = bigger footprint on the page
+  const xh = num("xHeightRatio");
+  if (Number.isFinite(xh)) p += 0.10 * (xh - 0.6);   // tall x-height reads larger at a given point size
+  return Math.min(1, Math.max(0, p));
+}
+
 // REGISTER → genre weighting (design-director fix: match font PERSONALITY to the SUBJECT'S
 // register, generalizing the functional/expressive novelty gate above). `exclude` genres are
 // filtered out entirely for that register's display role (not just demoted — a dev-tool brief
@@ -332,6 +363,13 @@ const REGISTER_GENRE_RULES = {
 const genreRulesFor = (intent) => REGISTER_GENRE_RULES[deriveRegister(intent || {})] || REGISTER_GENRE_RULES["expressive-editorial"];
 const REGISTER_DEMOTE_PENALTY = 1.4;
 const REGISTER_PREFER_BONUS = 0.45;
+// Font↔layout presence coupling (soft bias, never a hard filter — variety must survive).
+// MISMATCH is asymmetric-by-construction: it only bites when presence > layoutAir (a space-hungry
+// face in a too-tight layout — the failure the user called out); a quiet face in an airy layout is
+// not penalized by it, only mildly un-rewarded by MATCH. Magnitudes sit alongside the register
+// bonuses so they reorder sensibly without ever dominating quality/readability.
+const PRESENCE_MISMATCH = 0.9;
+const PRESENCE_MATCH = 0.4;
 
 // seeded PRNG — keeps generation deterministic + portable (no Math.random). Exported at module
 // scope so other pure engine modules (e.g. perturb.mjs) can share the exact same stream algorithm
@@ -643,7 +681,7 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
     }
     return dist;
   }
-  function retrieveFonts({ role = "display", intent = null, like = null, exclude = [], n = 6 } = {}) {
+  function retrieveFonts({ role = "display", intent = null, like = null, exclude = [], n = 6, layoutAir = undefined } = {}) {
     const space = fontSpace && fontSpace.records && fontSpace.records.length ? fontSpace : null;
     if (!space) {
       const picks = suggestFonts(n, { category: role === "body" ? "body" : "display" }).picks;
@@ -697,6 +735,18 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
         if (role === "body" && f.category === "monospace") fit += 0.2;       // numeral-heavy metrics read well in mono
       } else if (role === "display" && f.category === "display") {
         fit += 0.3; // expressive/brand surface: an actual display face is the point
+      }
+      // ── font↔layout presence coupling (only when the caller supplied resolved layoutAir; absent
+      // → identical to pre-coupling behavior, back-compat). ──
+      if (Number.isFinite(layoutAir)) {
+        if (role === "display") {
+          const presence = fontPresence(f);
+          fit -= PRESENCE_MISMATCH * Math.max(0, presence - layoutAir); // space-hungry face in a tight layout: the worst case
+          fit += PRESENCE_MATCH * (1 - Math.abs(presence - layoutAir)); // reward presence ≈ air
+        } else if (role === "body" && layoutAir < 0.4) {
+          const xh = Number((f.metrics || {}).xHeightRatio);
+          if (Number.isFinite(xh)) fit += 0.2 * Math.max(0, xh - 0.6); // dense layout: favor a legible high-x-height body
+        }
       }
       scored.push({
         family: f.family, role, fit, category: f.category,
@@ -942,7 +992,7 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
 
   return {
     checkColor, checkPalette, checkColorFit, checkFont, checkTypeFit, suggestFonts, retrieveFonts,
-    classifyFontGenre, deriveRegister,
+    classifyFontGenre, fontPresence, deriveRegister,
     classify, nearestSafe, brandClone,
     density: densityHex, contrastRatio, CONFIG,
     generatePalette, designSystem, auditSystem,

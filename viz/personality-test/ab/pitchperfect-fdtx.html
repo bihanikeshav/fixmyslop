@@ -117,7 +117,7 @@ nav {
   align-items: center;
   justify-content: space-between;
   padding: 1.25rem 2.5rem;
-  background: rgba(6,5,4,0.96);
+  background: #0a0807;
   border-bottom: 1px solid var(--mist);
 }
 
@@ -294,7 +294,7 @@ html.js .hero-actions {
   content: '';
   position: absolute;
   inset: 0;
-  background: rgba(255,255,255,0.15);
+  background: #f0a060;
   transform: translateX(-101%);
   transition: transform 0.3s var(--ease-out);
 }
@@ -319,7 +319,7 @@ html.js .hero-actions {
 .btn-ghost svg { width: 18px; height: 18px; transition: transform 0.2s ease; }
 .btn-ghost:hover svg { transform: scale(1.15); }
 
-/* Stat pills */
+/* Stats row */
 .hero-stats {
   display: flex;
   gap: 2rem;
@@ -366,7 +366,7 @@ html.js .raga-badge {
   animation: fadeIn 1s ease 1.1s forwards;
 }
 .raga-badge-inner {
-  background: rgba(15,12,10,0.96);
+  background: #0f0c0a;
   border: 1px solid rgba(232,137,42,0.25);
   padding: 1.5rem 2rem;
   position: relative;
@@ -442,7 +442,7 @@ html.js .raga-badge {
 .conf-bar {
   flex: 1;
   height: 2px;
-  background: rgba(245,237,224,0.1);
+  background: #181614;
   position: relative;
   overflow: hidden;
 }
@@ -464,11 +464,11 @@ html.js .raga-badge {
 }
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(20px); }
+  from { transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.98); }
+  from { transform: scale(0.98); }
   to   { opacity: 1; transform: scale(1); }
 }
 
@@ -496,7 +496,7 @@ html.js .raga-badge {
   flex: 1;
   max-width: 60px;
   height: 1px;
-  background: rgba(232,137,42,0.4);
+  background: #6b4018;
 }
 
 .section-title {
@@ -529,7 +529,7 @@ html.js .raga-badge {
   align-items: center;
   justify-content: space-between;
   padding: 0.85rem 1.5rem;
-  background: rgba(255,255,255,0.025);
+  background: #111009;
   border-bottom: 1px solid rgba(245,237,224,0.07);
 }
 .topbar-left {
@@ -574,7 +574,7 @@ html.js .raga-badge {
   width: 6px;
   height: 6px;
   background: var(--ruby);
-  border-radius: 50%;
+  border-radius: 3px;
   animation: blink 1.1s ease-in-out infinite;
 }
 @keyframes blink {
@@ -678,7 +678,7 @@ canvas#rollCanvas {
   top: 0;
   bottom: 0;
   width: 2px;
-  background: rgba(245,237,224,0.15);
+  background: #201e1b;
   pointer-events: none;
   z-index: 10;
 }
@@ -726,7 +726,7 @@ html.js .ornament-flash { opacity: 0; }
 .pitch-meter-bar {
   width: 4px;
   height: 180px;
-  background: rgba(245,237,224,0.07);
+  background: #141210;
   border-radius: 2px;
   position: relative;
   overflow: hidden;
@@ -809,7 +809,7 @@ html.js .ornament-flash { opacity: 0; }
 .xp-bar {
   flex: 1;
   height: 3px;
-  background: rgba(245,237,224,0.07);
+  background: #141210;
   overflow: hidden;
 }
 .xp-fill {
@@ -908,7 +908,7 @@ html.js .ornament-flash { opacity: 0; }
   gap: 1rem;
   padding: 0.9rem 1.5rem;
   border-top: 1px solid rgba(245,237,224,0.07);
-  background: rgba(255,255,255,0.015);
+  background: #100d0b;
 }
 .ctrl-btn {
   font-family: var(--ff-mono);
@@ -962,7 +962,7 @@ html.js .ornament-flash { opacity: 0; }
 .raga-select-wrap select {
   font-family: var(--ff-mono);
   font-size: 0.68rem;
-  background: rgba(255,255,255,0.04);
+  background: #0f0d0c;
   border: 1px solid rgba(245,237,224,0.12);
   color: var(--gold);
   padding: 0.35rem 0.7rem;
@@ -986,7 +986,7 @@ html.js .ornament-flash { opacity: 0; }
   left: 50%;
   bottom: 100%;
   transform: translateX(-50%) translateY(10px);
-  background: rgba(15,12,10,0.95);
+  background: #0f0c0a;
   border: 1px solid var(--teal);
   padding: 0.5rem 1.2rem;
   font-family: var(--ff-mono);
@@ -1017,7 +1017,7 @@ html.js .feedback-toast { opacity: 0; }
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1px;
-  background: rgba(245,237,224,0.06);
+  background: #111009;
   margin-top: 3rem;
   position: relative;
 }
@@ -1029,7 +1029,7 @@ html.js .feedback-toast { opacity: 0; }
   overflow: hidden;
   transition: background 0.25s ease;
 }
-.feature-card:hover { background: rgba(15,12,10,0.98); }
+.feature-card:hover { background: #0e0c0a; }
 
 .feature-card::before {
   content: '';

@@ -1,7 +1,7 @@
 ---
 name: fix-ai-slop
 description: Fix AI-slop design. Staggered skill — this index carries the two rules that break most AI UIs plus a map of passes you load on demand. Use when building or reviewing any UI, page, or component with the fix-ai-slop MCP tools.
-license: Apache-2.0. Adapted from impeccable.style, the personality skill, and the UI/UX Design Index (Kole Jain, Juxtopposed, Mizko, DesignCourse, Jesse Showalter, Charli Marie, Flux Academy).
+license: Apache-2.0. Adapted from impeccable.style, the personality skill, tasteskill.dev (Leonxlnx/taste-skill), and the UI/UX Design Index (Kole Jain, Juxtopposed, Mizko, DesignCourse, Jesse Showalter, Charli Marie, Flux Academy).
 ---
 
 # fix-ai-slop — index

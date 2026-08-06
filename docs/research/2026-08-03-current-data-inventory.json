@@ -1,0 +1,84 @@
+{
+  "generatedAt": "2026-08-03",
+  "source": "local repository audit",
+  "sites": {
+    "siteList": 1279,
+    "featureCrawlRecords": 1279,
+    "usableFeatureRecords": 1248,
+    "crossGateCandidates": 176,
+    "crossGateIsQualityLabel": false
+  },
+  "currentFeatureCrawl": {
+    "captures": [
+      "color",
+      "backgroundColor",
+      "borderColor",
+      "backgroundImage",
+      "boxShadow",
+      "textShadow",
+      "filter",
+      "backdropFilter",
+      "borderRadius",
+      "transitionProperty",
+      "transitionDuration",
+      "transitionTiming",
+      "animationName",
+      "fontFamily",
+      "fontWeight",
+      "fontSize",
+      "textTransform",
+      "letterSpacing",
+      "area",
+      "aboveFold"
+    ],
+    "missingForLayoutLearning": [
+      "elementGeometry",
+      "domHierarchy",
+      "semanticSections",
+      "textRoles",
+      "screenshots",
+      "responsiveTransforms",
+      "focalAssetRoles"
+    ]
+  },
+  "observedStyleSignals": {
+    "boxShadowSites": 959,
+    "glowShadowSites": 354,
+    "glassSites": 598,
+    "textShadowSites": 124,
+    "gradientTextSites": 195,
+    "pillSites": 708,
+    "bentoSites": 651,
+    "sparkleBadgeSites": 131,
+    "dropShadowFilterSites": 75
+  },
+  "fonts": {
+    "indexedFonts": 2075,
+    "serviceBundleFonts": 2075,
+    "visualEmbeddingFonts": 1930,
+    "deepVisualEmbeddingFonts": 2060,
+    "hybridNeighborFonts": 2067,
+    "liveMcpUsesVisualEmbeddings": false,
+    "liveMcpUsesCatalogueRanking": true
+  },
+  "colors": {
+    "aggregatedCorpusPoints": 1971,
+    "usesOklchMath": true,
+    "usesContrastChecks": true,
+    "usesBrandCollisionChecks": true
+  },
+  "layout": {
+    "staticArchetypes": 5,
+    "layoutLatentSpaceInLiveMcp": false,
+    "layoutGeneratorInLiveMcp": false,
+    "currentLayoutIsDeterministicMath": true
+  },
+  "implementationFlags": {
+    "intentIsSemanticallyParsed": false,
+    "intentCurrentlyInfluencesSeed": true,
+    "promptAuthoringIncluded": false,
+    "positiveQualityCorpus": false,
+    "unifiedSlopQualityLabels": false,
+    "renderAcceptanceLoop": false
+  }
+}

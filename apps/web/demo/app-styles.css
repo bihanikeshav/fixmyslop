@@ -1,0 +1,81 @@
+/* ===== Slop-o-meter base ===== */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: #0f172a;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+#root { min-height: 100vh; }
+button { font: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+input { font: inherit; }
+a { color: inherit; }
+
+/* ---------- SLOP keyframes (the tells we mock) ---------- */
+@keyframes slopPulse { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
+@keyframes slopBounce { 0%,100% { transform: translateY(0);} 50% { transform: translateY(-7px);} }
+@keyframes slopSpin { to { transform: rotate(360deg); } }
+@keyframes slopFadeUp { from { opacity: 0; transform: translateY(24px);} to { opacity: 1; transform: translateY(0);} }
+@keyframes slopGradient { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
+@keyframes marquee { from { transform: translateX(0);} to { transform: translateX(-50%);} }
+@keyframes marqueeRev { from { transform: translateX(-50%);} to { transform: translateX(0);} }
+
+.slop-fade { animation: slopFadeUp .7s cubic-bezier(.2,.7,.3,1) both; }
+.slop-pulse { animation: slopPulse 2s ease-in-out infinite; }
+
+/* ---------- ANTI-SLOP mechanical motion ---------- */
+@keyframes needleSwing {
+  0% { transform: rotate(-92deg); }
+  55% { transform: rotate(8deg); }
+  72% { transform: rotate(-6deg); }
+  86% { transform: rotate(3deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes countTick { from { opacity: .3; } to { opacity: 1; } }
+@keyframes glitchShift {
+  0%,100% { transform: translate(0,0); clip-path: inset(0 0 0 0); }
+  20% { transform: translate(-2px,1px); clip-path: inset(0 0 62% 0); }
+  40% { transform: translate(2px,-1px); clip-path: inset(40% 0 0 0); }
+  60% { transform: translate(-1px,0); clip-path: inset(0 0 28% 0); }
+  80% { transform: translate(1px,1px); clip-path: inset(72% 0 0 0); }
+}
+@keyframes strikeIn { from { transform: scaleX(0);} to { transform: scaleX(1);} }
+@keyframes assembleIn {
+  0% { opacity: 0; transform: translateY(8px) skewX(8deg); filter: blur(3px); }
+  100% { opacity: 1; transform: translateY(0) skewX(0); filter: blur(0); }
+}
+@keyframes barRise { from { transform: scaleY(0);} to { transform: scaleY(1);} }
+@keyframes sweep { from { left: -30%; } to { left: 130%; } }
+
+.glitch { animation: glitchShift .42s steps(2) 1; }
+.assemble > * { animation: assembleIn .5s cubic-bezier(.2,.8,.2,1) both; }
+
+/* liberation button */
+.liberate-btn:hover { transform: scale(1.045) !important; }
+.liberate-btn:active { transform: scale(.98) !important; }
+.circle-fix:hover { transform: scale(1.07); }
+.circle-fix:active { transform: scale(.96); }
+.back-tab { cursor: pointer; }
+@keyframes pulseRing { 0% { transform: scale(1); opacity: .55; } 100% { transform: scale(1.5); opacity: 0; } }
+.pulse-ring { animation: pulseRing 2.4s ease-out infinite; }
+
+/* scanline / halftone texture utility */
+.scanlines::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background-image: repeating-linear-gradient(0deg, rgba(0,0,0,.06) 0 1px, transparent 1px 3px);
+  mix-blend-mode: multiply; z-index: 2;
+}
+.halftone {
+  background-image: radial-gradient(currentColor 1px, transparent 1.4px);
+  background-size: 7px 7px;
+}
+
+/* utility */
+.mono-num { font-variant-numeric: tabular-nums; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; }
+}

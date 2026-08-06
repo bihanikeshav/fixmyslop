@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createEngine } from "./engine.mjs";
+import { createEngine, fontPresence } from "./engine.mjs";
 import corpus from "./data/corpus.json" with { type: "json" };
 import brands from "./data/brands.json" with { type: "json" };
 import fonts from "./data/fonts.json" with { type: "json" };
@@ -52,6 +52,37 @@ test("exclude removes a family from the results", () => {
   const first = engine.retrieveFonts({ role: "display", n: 5 })[0];
   const excluded = engine.retrieveFonts({ role: "display", n: 5, exclude: [first.family] });
   assert.ok(!excluded.some((r) => r.family.toLowerCase() === first.family.toLowerCase()));
+});
+
+// ── font↔layout presence coupling ─────────────────────────────────────────────────────────────
+test("fontPresence: display/ornate > neutral sans > mono", () => {
+  const disp = fontPresence({ category: "display", family: "Bold Display", metrics: { strokeContrast: 0.6, counterSize: 0.6, xHeightRatio: 0.7 } });
+  const sans = fontPresence({ category: "sans-serif", family: "Neutral Grotesk", metrics: { strokeContrast: 0.1, counterSize: 0.5, xHeightRatio: 0.6 } });
+  const mono = fontPresence({ category: "monospace", family: "Code Mono", metrics: { strokeContrast: 0.05, counterSize: 0.45, xHeightRatio: 0.55 } });
+  assert.ok(disp > sans, `display ${disp} should exceed sans ${sans}`);
+  assert.ok(sans > mono, `sans ${sans} should exceed mono ${mono}`);
+  for (const p of [disp, sans, mono]) assert.ok(p >= 0 && p <= 1, `presence ${p} in range`);
+});
+
+test("fontPresence: degrades to the genre base when metrics are absent (no crash)", () => {
+  const p = fontPresence({ category: "display", family: "Foo" });
+  assert.ok(Number.isFinite(p) && p > 0.5, "a display face with no metrics still reads high-presence");
+  assert.equal(fontPresence(null), 0.5);
+});
+
+test("layoutAir couples display presence: an airy layout surfaces higher-presence faces than a tight one", () => {
+  const airy = engine.retrieveFonts({ role: "display", n: 8, layoutAir: 0.9 });
+  const tight = engine.retrieveFonts({ role: "display", n: 8, layoutAir: 0.1 });
+  assert.ok(airy.length && tight.length);
+  const meanPresence = (rs) => rs.reduce((s, r) => s + fontPresence({ category: r.category, family: r.family }), 0) / rs.length;
+  assert.ok(meanPresence(airy) > meanPresence(tight),
+    `airy mean presence ${meanPresence(airy).toFixed(3)} should exceed tight ${meanPresence(tight).toFixed(3)}`);
+});
+
+test("layoutAir absent → identical to pre-coupling results (back-compat)", () => {
+  const implicit = engine.retrieveFonts({ role: "display", n: 6 }).map((r) => r.family);
+  const explicitUndef = engine.retrieveFonts({ role: "display", n: 6, layoutAir: undefined }).map((r) => r.family);
+  assert.deepEqual(implicit, explicitUndef);
 });
 
 test("fallback: no font-space bundle → catalogue-fallback shape, no crash", () => {

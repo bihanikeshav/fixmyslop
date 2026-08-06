@@ -8,6 +8,24 @@ test("schema descriptor exports the dial list", () => {
   assert.ok(SURFACE_JOB_PRIORS.dashboard);
 });
 
+test("brief aliases: brief/prompt/description/subject canonicalize to sourceBrief and warn", () => {
+  for (const key of ["brief", "prompt", "description", "subject"]) {
+    const { intent, warnings } = resolveIntent({ surface: "landing-page", job: "explain-and-convert", [key]: "a developer observability tool" });
+    assert.equal(intent.sourceBrief, "a developer observability tool", `${key} should populate sourceBrief`);
+    assert.ok(warnings.some((w) => w.includes(key) && w.includes("sourceBrief")), `${key} should warn about the canonical key`);
+  }
+  // canonical key: no warning
+  const { intent, warnings } = resolveIntent({ sourceBrief: "x" });
+  assert.equal(intent.sourceBrief, "x");
+  assert.ok(!warnings.some((w) => w.includes("canonical key")), "sourceBrief should not warn");
+});
+
+test("brief aliases feed the seed so the same brief is stable across keys", () => {
+  const a = resolveIntent({ surface: "landing-page", sourceBrief: "dev observability tool" }).seed;
+  const b = resolveIntent({ surface: "landing-page", brief: "dev observability tool" }).seed;
+  assert.equal(a, b, "sourceBrief and brief should derive the same seed");
+});
+
 test("out-of-range dials clamp to [0,1]", () => {
   const { intent } = resolveIntent({
     surface: "landing-page",

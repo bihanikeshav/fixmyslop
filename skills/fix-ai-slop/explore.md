@@ -8,29 +8,40 @@ something concrete about the subject, never four arbitrary rolls.
 
 Turn what you learned into a StyleIntent — surface, job, and the feel expressed as dials
 (energy, warmth, craft, experimentalism, layoutVariance, materiality…), with the brief
-kept verbatim in sourceBrief — and normalize it with `resolve_intent`. Then produce FOUR
-genuinely divergent directions by calling `style_genome` four times. THIS is the key:
-pass every prior direction's fingerprint back in the recentFingerprints argument on the
-next call, so the engine forces each new direction to diverge in layout family, font
-pairing, and palette instead of recoloring one idea. Nudge a different dial per call
-(more experimental, denser, warmer) so the four spread across the space.
+kept verbatim in sourceBrief — and normalize it with `resolve_intent`. Then call
+`explore_directions` ONCE. It assembles FOUR genuinely divergent directions in one shot —
+3 corpus-grounded (distinct layout families, greedily chosen for maximum divergence,
+each perturbed) + 1 engine-synthesized (blended macro stance from two families) — and
+already enforces the divergence gate internally (layout family, font pairing, AND
+palette hue all spread; a bounded reroll runs on your behalf if two directions land too
+close, noted in `warnings` when it has to relax the floor). If you have fingerprints from
+directions already shown this session, pass them in `recentFingerprints` so this call
+diverges from those too. There is no manual fingerprint-threading loop anymore — one call
+does it.
 
-Each genome returns a complete, gate-passing direction: a layout family (section grammar
-+ hierarchy), a font pairing (display + a readability-gated body — never a display face
-as body), a palette (accent hex, checkColor-gated), material, and motion — each with
-provenance. Add one line per direction on how the centrepiece lives HERE: the same
-standout realized differently (an instrument in one, a typographic statement in another).
-To hand-verify, run `check_palette` / `check_font`; to swap a pairing for a nearer visual
-neighbor, `font_neighbors`.
+Each returned direction carries a complete, gate-passing genome: a layout family
+(section grammar + hierarchy), a font pairing (display + a readability-gated body —
+never a display face as body), a palette (accent hex, checkColor-gated), material, and
+motion — plus `provenance` ("corpus-grounded" or "engine-synthesized"), `groundedIn`
+(the real host a corpus-grounded family was mined from, when known), and `parents` for
+the synthesized direction. Your job per direction: give it a name for its feel (never
+'Option 1' or the raw family name), and write one line on how the centrepiece lives
+HERE — the same standout realized differently (an instrument in one, a typographic
+statement in another). To hand-verify, run `check_palette` / `check_font`; to swap a
+pairing for a nearer visual neighbor, `font_neighbors`.
 
-Present the four compactly: name each for its feel (never 'Option 1'), with its layout
-family, fonts, palette (accent hex), background, and centrepiece line. Then ask which to
-build; on their pick, hand off to improve_design (or theme) to build that one for real,
-carrying that direction's genome as the spec.
+Present the four compactly: name, layout family, fonts, palette (accent hex),
+background, the centrepiece line, and — when present — what it's grounded in (a real
+site) or what it's synthesized from (its two parent families). If `warnings` mentions a
+relaxed divergence floor, that's honest signal the corpus is thin for this surface
+(expected for docs/dashboard/app pageKinds until more mined archetypes ship) — don't
+hide it, just don't dwell on it. Then ask which to build; on their pick, hand off to
+improve_design (or theme) to build that one for real, carrying that direction's genome
+as the spec.
 
-Self-check: did you feed each shown direction's fingerprint into the next `style_genome`
-call — the thing that actually makes the four diverge? Are they different on layout AND
-font AND palette, not one idea recolored? Is each grounded in the subject or stated
-intent? Did you hand the user a clear pick with a real centrepiece line for each?
+Self-check: did you make ONE `explore_directions` call (not four `style_genome` calls)?
+Did you present all four with a real centrepiece line for each? Did you surface
+`groundedIn` where present? Is each grounded in the subject or stated intent, not an
+arbitrary roll?
 
 _The hard gates, forbid-the-median, and the ONE-centrepiece bar live in `design-law.md` and the fix-ai-slop index — load them if they aren't already in context._

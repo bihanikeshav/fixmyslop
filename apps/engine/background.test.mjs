@@ -37,6 +37,24 @@ test("purity: background.mjs carries no Math.random/Date.now/new Date in executa
   assert.ok(!/new Date/.test(codeOnly), "calls new Date");
 });
 
+// ── font↔layout↔background air-gate ─────────────────────────────────────────────────────────────
+test("air-gate: a tight resolved layout (low layoutWhitespace) suppresses busy grid/grain fields", () => {
+  const family = FAMILY_BY_NAME.get("instrument-console"); // canvas-capable (dashboard)
+  const baseIv = { materiality: 0.7, energy: 0.4, layoutVariance: 0.2, contentDensity: 0.3, contrastPreference: 0.5, craft: 0.5, formality: 0.5, theme: "light", hue: 220 };
+  // No resolved whitespace signal → pre-coupling behavior: the canvas grid is allowed.
+  const absent = deriveBackground(family, baseIv, null);
+  assert.ok(["A6-dot-grid", "A7-line-grid"].includes(absent.field.treatment),
+    `expected a canvas grid when air is unknown, got ${absent.field.treatment}`);
+  // Same call, but the resolved layout is tight (low whitespace) → grid/grain suppressed.
+  const tight = deriveBackground(family, { ...baseIv, layoutWhitespace: 0.15 }, null);
+  assert.ok(!["A6-dot-grid", "A7-line-grid", "A5-grain-fixed-overlay"].includes(tight.field.treatment),
+    `a tight layout must not carry a busy/textured field, got ${tight.field.treatment}`);
+  // An airy resolved layout keeps the canvas grid (texture earned).
+  const airy = deriveBackground(family, { ...baseIv, layoutWhitespace: 0.7 }, null);
+  assert.ok(["A6-dot-grid", "A7-line-grid"].includes(airy.field.treatment),
+    `an airy layout should still earn a canvas grid, got ${airy.field.treatment}`);
+});
+
 // ── determinism ───────────────────────────────────────────────────────────────────────────────
 test("determinism: same (family, iv, streamSeed) → identical BackgroundGenome", () => {
   const iv = ivFor({ surface: "landing-page", job: "explain-and-convert" });

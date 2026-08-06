@@ -12,7 +12,7 @@ test("initialize advertises prompts + carries server instructions with the two h
   assert.match(r.result.instructions, /container|margin/); // layout rule rides along
 });
 
-test("prompts/list returns 6; prompts/get renders a message", async () => {
+test("prompts/list returns 7; prompts/get renders a message", async () => {
   const l = await call({ jsonrpc: "2.0", id: 2, method: "prompts/list" });
   assert.equal(l.result.prompts.length, 7);
   const g = await call({ jsonrpc: "2.0", id: 3, method: "prompts/get", params: { name: "improve_design", arguments: {} } });

@@ -17,3 +17,11 @@ _Craft knowledge to draw on, not a template. The gates in design-law.md are the 
 - Light primary: mid-dark (600/700); dark primary: lighter mid (300/400).
 - Dark surfaces get LIGHTER as they elevate — double the perceptual distance; a dark card is never darker than the page.
 - Dim pure white text on dark; brighten borders. Charts: separate data palette; may break brand monotony on purpose.
+
+**Surface rules (tasteskill.dev)**
+- Off-black / off-white, never pure `#000`/`#fff`; tint neutrals ~0.005–0.02 chroma toward the brand hue — pure black/white/gray don't occur in nature.
+- Neutral base + ONE accent, saturation < 80% — a rare committed accent beats an evenly-saturated palette. Gate with `check_color` / `check_palette`.
+- Tint shadows to the background hue; no pure-black drop shadows on light. Alpha everywhere is a smell (incomplete palette) — define explicit surface/overlay colors per elevation, keep alpha for focus/interactive states.
+- One radius scale, locked (all-sharp / all-soft ~12–16px / all-pill); mix only with a rule. `radius_scale` / `check_radius`.
+- Glass only over real layering: `backdrop-filter` + 1px inner border + inset highlight + solid fallback under `prefers-reduced-transparency`. Grain/noise on a fixed `pointer-events-none` overlay only, never on scrollers.
+- Rotate the palette family across builds; refuse category defaults (tasteskill bans cream+brass "premium") — ground in THIS subject, not the next fashionable alternative.

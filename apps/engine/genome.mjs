@@ -8,7 +8,7 @@
 // come from the injected engine instance (createEngine), so this shares the same data.
 
 import { resolveIntent, clamp01, hashToUint32, deriveBaseHue } from "./intent.mjs";
-import { suggestLayout, LAYOUT_FAMILIES } from "./layout-families.mjs";
+import { suggestLayout, LAYOUT_FAMILIES, CHROME_ROLES } from "./layout-families.mjs";
 import { canonicalRole } from "./role-aliases.mjs";
 import { deriveBackground } from "./background.mjs";
 import { deriveMotion } from "./motion.mjs";
@@ -36,6 +36,27 @@ function hashSections(sectionGrammar = []) {
 // diverges direction-to-direction without needing any new threading.
 const TOOL_PAGE_KINDS = new Set(["dashboard", "data-admin", "app"]);
 const EXPRESSIVE_PAGE_KINDS = new Set(["marketing", "landing", "story", "product-with-proof", "brand"]);
+
+// Hero-led page kinds carry a SINGLE-VIEWPORT hero: their first content section is a deliberate
+// first screen that must fit one viewport (declared in the genome so the render honors it and
+// render-qa enforces it — see the fold-contract). Tool/doc/reading kinds (dashboard/app/docs/…)
+// have no single-screen hero, so their first section is NOT flagged.
+const HERO_LED_PAGE_KINDS = new Set(["landing", "marketing", "product-with-proof", "brand", "story", "explain", "portfolio", "pricing"]);
+
+// annotateSingleViewport — a LATE, PURE annotation: mark the hero (first non-chrome section)
+// `singleViewport: true` for hero-led page kinds. It runs AFTER the fingerprint is computed and
+// returns a NEW layout object (never mutates the shared layoutOverride explore.mjs passes in), and
+// the fingerprint only ever hashes section ROLE/surface — so this can never change which direction
+// gets selected. Absence of the flag = not single-viewport (tool/doc heroes, later sections).
+function annotateSingleViewport(layout, family) {
+  if (!layout || !Array.isArray(layout.sectionGrammar)) return layout;
+  const pageKind = family ? family.pageKind : layout.pageKind;
+  if (!HERO_LED_PAGE_KINDS.has(pageKind)) return layout;
+  const heroIdx = layout.sectionGrammar.findIndex((s) => s && !CHROME_ROLES.has(s.role));
+  if (heroIdx < 0) return layout;
+  const sectionGrammar = layout.sectionGrammar.map((s, i) => (i === heroIdx ? { ...s, singleViewport: true } : s));
+  return { ...layout, sectionGrammar };
+}
 
 function materialityJitter(seed, key) {
   const r = hashToUint32(`${seed}:material:${key || ""}`) / 4294967296;
@@ -99,10 +120,24 @@ export function styleGenome(engine, intentInput = {}, { seed, recentFingerprints
   // Diversity memory → exclusions. Fingerprints may carry fontPair (families) + layoutFamily.
   const recentFamilies = recentFingerprints.flatMap((fp) => (fp && fp.fontPair) || []);
 
-  // ---- type (neighbor retrieval + readability gate, surface-fit envelope conditioned on intent) ----
-  let display = engine.retrieveFonts({ role: "display", intent, exclude: recentFamilies, n: 4 })[0] || null;
+  // ---- layout (resolved FIRST so type + background can couple to its geometry) ----
+  const layouts = layoutOverride ? null : suggestLayout(intent, { recentFingerprints });
+  const layout = layoutOverride || (layouts ? layouts[0] || null : null);
+  // layoutAir ∈ [0,1] — how much breathing room this layout has (higher = airier). Drives the
+  // font↔layout presence coupling (an airy layout can carry a high-presence display face; a tight/
+  // dense one wants a neutral, low-presence face) AND the background air-gate below. Undefined when
+  // no layout resolved → retrieveFonts falls back to pre-coupling behavior.
+  const layoutMacro = layout && layout.macro ? layout.macro : null;
+  const layoutAir = layoutMacro
+    ? (Number.isFinite(layoutMacro.whitespace)
+        ? clamp01(layoutMacro.whitespace)
+        : (Number.isFinite(layoutMacro.contentDensity) ? clamp01(1 - layoutMacro.contentDensity) : undefined))
+    : undefined;
+
+  // ---- type (neighbor retrieval + readability gate + surface-fit envelope; presence coupled to layoutAir) ----
+  let display = engine.retrieveFonts({ role: "display", intent, exclude: recentFamilies, n: 4, layoutAir })[0] || null;
   let body = engine.retrieveFonts({
-    role: "body", intent, n: 4,
+    role: "body", intent, n: 4, layoutAir,
     exclude: [...(display ? [display.family] : []), ...recentFamilies],
   })[0] || null;
   // checkTypeFit — belt-and-suspenders re-check (retrieveFonts already filters by the same
@@ -114,13 +149,13 @@ export function styleGenome(engine, intentInput = {}, { seed, recentFingerprints
   if (typeFit && !typeFit.pass) {
     if (typeFit.violations.some((v) => v.role === "display")) {
       display = engine.retrieveFonts({
-        role: "display", intent, n: 4,
+        role: "display", intent, n: 4, layoutAir,
         exclude: [...recentFamilies, ...(display ? [display.family] : [])],
       })[0] || display;
     }
     if (typeFit.violations.some((v) => v.role === "body")) {
       body = engine.retrieveFonts({
-        role: "body", intent, n: 4,
+        role: "body", intent, n: 4, layoutAir,
         exclude: [...recentFamilies, ...(body ? [body.family] : []), ...(display ? [display.family] : [])],
       })[0] || body;
     }
@@ -141,10 +176,6 @@ export function styleGenome(engine, intentInput = {}, { seed, recentFingerprints
   if (colorFit && !colorFit.pass && colorFit.fallback) {
     palette = { ...palette, accent: colorFit.fallback.hex, hue: colorFit.fallback.hue };
   }
-
-  // ---- layout ----
-  const layouts = layoutOverride ? null : suggestLayout(intent, { recentFingerprints });
-  const layout = layoutOverride || (layouts ? layouts[0] || null : null);
 
   // ---- material (slots attached to the layout's hierarchy nodes, never sprayed) ----
   const family = layout ? FAMILY_BY_NAME.get(layout.family) : null;
@@ -167,7 +198,11 @@ export function styleGenome(engine, intentInput = {}, { seed, recentFingerprints
   const background = family
     ? deriveBackground(family, {
         materiality: intent.materiality, energy: intent.energy, layoutVariance: intent.layoutVariance,
-        contentDensity: intent.contentDensity, contrastPreference: intent.contrastPreference, craft: intent.craft,
+        // RESOLVED layout density + whitespace (not just the intent dial) so the background axis
+        // COMPLEMENTS the actual geometry — no busy texture/pattern behind a tight/dense layout.
+        contentDensity: layoutMacro && Number.isFinite(layoutMacro.contentDensity) ? layoutMacro.contentDensity : intent.contentDensity,
+        layoutWhitespace: layoutMacro && Number.isFinite(layoutMacro.whitespace) ? layoutMacro.whitespace : undefined,
+        contrastPreference: intent.contrastPreference, craft: intent.craft,
         formality: intent.formality, theme: intent.theme, hue: palette.hue,
       }, hashToUint32(`${useSeed}:background:${family.name}`))
     : null;
@@ -224,7 +259,7 @@ export function styleGenome(engine, intentInput = {}, { seed, recentFingerprints
       note: "display carries identity; body carries running text — never swap them.",
     },
     color: { ...palette, source: "corpus-plus-oklch" },
-    layout,
+    layout: annotateSingleViewport(layout, family),
     layoutAlternatives: layouts ? layouts.slice(1, 3) : [],
     material,
     background,
