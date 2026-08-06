@@ -18,7 +18,7 @@ const IX_LABEL = { surfaces: "Surfaces", color: "Color", imagery: "Imagery", con
 function setFavicon(inner) {
   const link = document.getElementById("favicon");
   if (!link) return;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="8" y="8" width="84" height="84" fill="none" stroke="${IX.ink}" stroke-width="8"/><rect x="32" y="32" width="36" height="36" fill="${inner}"/></svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="16" fill="#ffffff"/><rect x="12" y="12" width="76" height="76" fill="none" stroke="${IX.ink}" stroke-width="8"/><rect x="34" y="34" width="32" height="32" fill="${inner}"/></svg>`;
   link.href = "data:image/svg+xml," + encodeURIComponent(svg);
 }
 
@@ -324,11 +324,14 @@ const ENGINE_HTML = `
       <div class="mcp-grid">
         <div>
           <div class="mcp-tools">
-            <div><span class="t">check_color</span>(hex) → verdict, slop, brand-clone, fixes</div>
-            <div><span class="t">check_palette</span>(ground, ink, accent) → pass / fail</div>
-            <div><span class="t">suggest_fonts</span>(n) → fresh display + body pairing</div>
-            <div><span class="t">check_font</span>(family) → slop or fresh + alternatives</div>
-            <div><span class="t">structure_ideas</span>(brief) → layout archetypes</div>
+            <div><span class="t">explore_directions</span>(brief) → several distinct, non-slop directions</div>
+            <div><span class="t">design_system</span>(brief) → full token system: color · type · space · radius · motion</div>
+            <div><span class="t">style_genome</span>(intent) → one complete design genome</div>
+            <div><span class="t">check_color</span>(hex) · <span class="t">generate_palette</span> → verdicts + non-slop palettes</div>
+            <div><span class="t">suggest_fonts</span>(n) · <span class="t">check_font</span>(family) → fresh pairings + slop check</div>
+            <div><span class="t">suggest_layout</span> · <span class="t">structure_ideas</span>(brief) → layout archetypes</div>
+            <div><span class="t">audit_system</span>(html) → find &amp; fix slop in an existing design</div>
+            <div style="opacity:.55;font-size:.9em">…25 tools in all — plus spacing / radius / shadow / motion scales, font_neighbors &amp; more</div>
           </div>
         </div>
         <div>
