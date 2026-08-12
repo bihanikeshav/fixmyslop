@@ -6,7 +6,7 @@ test("GET /health reports release version", async () => {
   const response = await worker.fetch(new Request("http://x/health"));
   const body = await response.json();
   assert.equal(body.ok, true);
-  assert.equal(body.version, "0.1.2");
+  assert.equal(body.version, "0.1.3");
 });
 
 test("GET /api/tool/shadow?elevation=4 returns a layered shadow", async () => {
@@ -76,8 +76,8 @@ test("GET /install.md covers MCP + skill with the live origin", async () => {
   assert.equal(res.status, 200);
   assert.match(res.headers.get("content-type"), /text\/markdown/);
   const md = await res.text();
-  assert.match(md, /Connect the MCP/);            // MCP section
-  assert.match(md, /fixmyslop skill/);          // skill section
+  assert.match(md, /MCP endpoint/);               // MCP section
+  assert.match(md, /Optional skill/);             // skill section
   assert.match(md, /example\.test\/mcp/);         // base URL interpolated from origin
   assert.match(md, /example\.test\/skill/);
   assert.match(md, /grok mcp add/);
@@ -85,11 +85,12 @@ test("GET /install.md covers MCP + skill with the live origin", async () => {
   assert.match(md, /\.codex\/config\.toml/);
   assert.match(md, /\.cursor\/mcp\.json/);
   assert.match(md, /windsurf\/mcp_config\.json/);
-  assert.match(md, /mcp\.servers/);
+  assert.match(md, /"mcp":\{"servers"/);
   assert.match(md, /\.vscode\/mcp\.json/);
   assert.match(md, /cline mcp add/);
   assert.match(md, /server_url/);
-  assert.match(md, /live tool catalog/);
+  assert.doesNotMatch(md, /Tool catalog/);         // install page stays lean
+  assert.ok(md.length < 5000, `install guide grew to ${md.length} bytes`);
   assert.doesNotMatch(md, /\b\d+ tools\b/, "install guide must not hard-code a drifting tool count");
   const alias = await worker.fetch(new Request("http://example.test/install"));
   assert.equal(alias.status, 200);                // /install alias also works
