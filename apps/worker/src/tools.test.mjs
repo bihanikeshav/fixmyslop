@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { TOOL_BY_NAME } from "./tools.mjs";
 
 test("new tools exist and run", () => {
-  for (const n of ["design_system", "type_scale", "shadow", "layout", "generate_palette", "check_shadow", "check_svg", "audit_system", "connected_style_genome", "connected_explore_directions", "connected_build_spec", "connected_v2_catalog", "dashboard_system", "fluid_components", "check_dashboard_layout"]) {
+  for (const n of ["design_system", "type_scale", "shadow", "layout", "generate_palette", "check_shadow", "check_svg", "audit_system", "connected_style_genome", "connected_explore_directions", "connected_build_spec", "connected_v2_catalog", "dashboard_system", "fluid_components", "magic_ui_component", "check_magic_ui_composition", "check_dashboard_layout"]) {
     assert.ok(TOOL_BY_NAME[n], `missing tool ${n}`);
   }
   assert.ok(TOOL_BY_NAME.type_scale.run({ base: 16, ratio: 1.25 }).length > 1);
@@ -16,6 +16,11 @@ test("new tools exist and run", () => {
   assert.ok(connected.material.component.dialect);
   assert.ok(connected.expression.schemaVersion);
   assert.ok(TOOL_BY_NAME.connected_v2_catalog.run().fontEntries > 2000);
+
+  const component = TOOL_BY_NAME.magic_ui_component.run({ role: "cta", sourceBrief: "a field research console", variation: 1 });
+  assert.match(component.provider.install, /@magicui\//);
+  assert.ok(component.selection.variant.options.length >= 3);
+  assert.equal(TOOL_BY_NAME.check_magic_ui_composition.run({ components: [{ slug: component.selection.slug, role: "cta", motion: "none" }], reducedMotion: true }).verdict, "CLEAN");
 });
 
 test("dashboard tools expose geometry math, Fluid source installs, and implementation audit", () => {

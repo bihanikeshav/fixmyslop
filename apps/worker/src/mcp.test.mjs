@@ -7,7 +7,7 @@ const call = async (msg) => JSON.parse(await (await handleMcpPost(new Request("h
 test("initialize advertises prompts + carries server instructions with the two hard rules", async () => {
   const r = await call({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} });
   assert.ok(r.result.capabilities.prompts);
-  assert.equal(r.result.serverInfo.version, "0.1.3");
+  assert.equal(r.result.serverInfo.version, "0.1.4");
   assert.equal(typeof r.result.instructions, "string");
   assert.match(r.result.instructions, /pairing\.body/);   // fonts rule rides along
   assert.match(r.result.instructions, /container|margin/); // layout rule rides along
@@ -24,7 +24,7 @@ test("prompts/list returns 7; prompts/get renders a message", async () => {
 test("MCP tools/list exposes connected, dashboard, Fluid, and validation paths", async () => {
   const list = await call({ jsonrpc: "2.0", id: 4, method: "tools/list" });
   const names = new Set(list.result.tools.map((tool) => tool.name));
-  for (const name of ["connected_style_genome", "connected_build_spec", "connected_v2_catalog", "check_svg", "dashboard_system", "fluid_components", "check_dashboard_layout"]) assert.ok(names.has(name), name);
+  for (const name of ["connected_style_genome", "connected_build_spec", "connected_v2_catalog", "check_svg", "dashboard_system", "fluid_components", "magic_ui_component", "check_magic_ui_composition", "check_dashboard_layout"]) assert.ok(names.has(name), name);
 });
 
 test("MCP tools/call returns computed dashboard geometry and Fluid registry URLs", async () => {
@@ -38,4 +38,17 @@ test("MCP tools/call returns computed dashboard geometry and Fluid registry URLs
   assert.equal(payload.schemaVersion, "dashboard-system.v1");
   assert.equal(payload.math.columns, 12);
   assert.ok(payload.fluid.components.every((item) => item.registryUrl.startsWith("https://www.fluidfunctionalism.com/r/")));
+});
+
+test("MCP tools/call returns a Magic UI recipe and composition budget", async () => {
+  const result = await call({
+    jsonrpc: "2.0",
+    id: 6,
+    method: "tools/call",
+    params: { name: "magic_ui_component", arguments: { role: "feature-grid", sourceBrief: "a research catalog" } },
+  });
+  const payload = JSON.parse(result.result.content[0].text);
+  assert.equal(payload.schemaVersion, "magic-ui-component.v1");
+  assert.match(payload.provider.install, /@magicui\//);
+  assert.equal(payload.motion.budget.highMotionComponentsPerViewport, 1);
 });

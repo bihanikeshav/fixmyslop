@@ -109,6 +109,7 @@ over any example here.
 | Typography — type scales, roles, product vs marketing type | `reference/typography.md` |
 | Color systems — ramps, semantics, dark mode, 60-30-10 in apps | `reference/color.md` |
 | Components — buttons, cards, tables, forms, interaction states, density, nested surfaces, AI surfaces | `reference/components.md` |
+| Magic UI component grammar — component selection, variants, motion composition, registry integration | `reference/magic-ui-components.md` |
 | Professional product UI — the craft behind Linear/Vercel/Stripe/Cloudflare — restraint, density, interaction, without cloning | `reference/product-ui.md` |
 | Dashboards & data UI — sidebar + object list + charts, density, statuses | `reference/dashboards.md` |
 | Landing & marketing — hero, craft levels, narrative, CTAs | `reference/landing.md` |

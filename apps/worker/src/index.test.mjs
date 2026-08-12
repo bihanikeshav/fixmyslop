@@ -6,7 +6,7 @@ test("GET /health reports release version", async () => {
   const response = await worker.fetch(new Request("http://x/health"));
   const body = await response.json();
   assert.equal(body.ok, true);
-  assert.equal(body.version, "0.1.3");
+  assert.equal(body.version, "0.1.4");
 });
 
 test("GET /api/tool/shadow?elevation=4 returns a layered shadow", async () => {

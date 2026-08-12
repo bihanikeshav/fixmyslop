@@ -6,6 +6,7 @@
 
 import * as SYS from "./system.mjs";
 import * as DASH from "./dashboard.mjs";
+import * as COMP from "./components.mjs";
 import fontSpaceBundle from "./data/font-space.json" with { type: "json" };
 import fontRuntimeBundle from "./data/font-runtime.v1.json" with { type: "json" };
 import { deriveBaseHue, hashToUint32, functionalScore, FUNCTIONAL_THRESHOLD, deriveRegister } from "./intent.mjs";
@@ -1286,5 +1287,6 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
     generatePalette, shadeRamp, semanticColors, designSystem, auditSystem,
     ...SYS,
     ...DASH,
+    ...COMP,
   };
 }

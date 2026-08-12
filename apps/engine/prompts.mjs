@@ -128,6 +128,24 @@ for (const verb of VERBS) {
   }
 }
 
+// Magic UI work has a similarly strict composition budget: the registry supplies
+// the primitive, while fixmyslop decides how many effects earn a place in a view.
+const MAGIC_UI_WORKFLOW = `
+
+## Magic UI component contract
+
+When a page needs animated copy/paste components, load ` + "`reference/magic-ui-components.md`" + ` and call
+` + "`magic_ui_component`" + ` for the role, variant, state matrix, responsive fallback, and install command.
+Start with one visual anchor plus one supporting effect. Use ` + "`check_magic_ui_composition`" + ` before shipping;
+it blocks stacked high-motion loops, ambient effects acting as content, unpausable autoplay, long-form text animation,
+missing keyboard/focus behavior, and effects above the opacity budget. Prefer the current ` + "`@magicui/*`" + ` registry
+implementation and prop/className customization; do not recreate a lookalike. Preserve semantic content, 44px touch
+targets, a coarse-pointer fallback, and ` + "`prefers-reduced-motion`" + ` behavior.
+`;
+for (const verb of VERBS) {
+  if (["improve_design", "design_review", "polish", "explore"].includes(verb.name)) verb.body += MAGIC_UI_WORKFLOW;
+}
+
 export function renderPrompt(name, args = {}) {
   const v = VERBS.find((x) => x.name === name);
   if (!v) throw new Error(`unknown prompt: ${name}`);

@@ -38,6 +38,17 @@ context, density context, or springs to manufacture personality. Before ship, pa
 implemented coordinates, component source records, and decorative layers to
 `check_dashboard_layout`; a SLOP verdict blocks shipping.
 
+## Magic UI component contract
+
+When a page needs animated copy/paste components, load `reference/magic-ui-components.md` and call
+`magic_ui_component` for the role, variant, state matrix, responsive fallback, and install command.
+Start with one visual anchor plus one supporting effect. Use `check_magic_ui_composition` before shipping;
+it blocks stacked high-motion loops, ambient effects acting as content, unpausable autoplay, long-form text animation,
+missing keyboard/focus behavior, and effects above the opacity budget. Prefer the current `@magicui/*` registry
+implementation and prop/className customization; do not recreate a lookalike. Preserve semantic content, 44px touch
+targets, a coarse-pointer fallback, and `prefers-reduced-motion` behavior.
+
+
 ## Connected one-shot path
 
 For a real subject brief, use `connected_style_genome` once, `connected_explore_directions` once for alternatives, or `connected_build_spec` for the markdown handoff. Keep `sourceBrief` verbatim, pass `recentFingerprints` when re-rolling, and use the selected body face for running text. Read the v2 `type.accent`, `material.component`, `material.texture`, and `expression` fields; implement one centrepiece with mobile and reduced-motion fallbacks. This subject-connected path supersedes manual four-call loops when it is available.

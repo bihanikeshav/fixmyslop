@@ -171,6 +171,31 @@ export const TOOLS = [
     run: (a) => engine.fluidComponents(a || {}),
   },
   {
+    name: "magic_ui_component",
+    description: "Choose and spec one Magic UI registry component using its reusable component grammar: one visual anchor, one supporting effect, explicit variants, semantic states, responsive fallbacks, and reduced-motion behavior. Returns the current @magicui install command plus an implementation-quality handoff. This borrows the open-source component logic; it does not recreate or clone the registry source.",
+    inputSchema: { type: "object", properties: {
+      component: { type: "string", description: "Optional Magic UI slug, e.g. bento-grid, marquee, magic-card, blur-fade, shiny-button." },
+      role: { type: "string", enum: ["hero", "social-proof", "feature-grid", "product-proof", "cta", "ambient", "text", "metric", "navigation", "supporting"], description: "What the component must do; used to choose a component when slug is omitted." },
+      surface: { type: "string", enum: ["landing", "dashboard", "app", "docs", "marketing"], description: "Where the component will live." },
+      sourceBrief: { type: "string", description: "The real subject or product brief; grounds the variation choice." },
+      variation: { type: "integer", description: "Deterministic variation index; change it to explore a different treatment." },
+      motion: { type: "string", enum: ["auto", "none", "subtle", "expressive"], description: "Motion budget; auto uses the component's safe default." },
+      density: { type: "string", enum: ["compact", "default", "cozy"] },
+      interactive: { type: "boolean", description: "Whether to include the full interactive state matrix." },
+    } },
+    run: (a) => engine.magicUiComponent(a || {}),
+  },
+  {
+    name: "check_magic_ui_composition",
+    description: "Audit a Magic UI component stack for the quality rules that make effects feel intentional: one anchor, one supporting effect, no stacked high-motion loops, no ambient-as-content, pauseable autoplay, readable text, keyboard/focus support, and reduced-motion fallbacks. Returns SLOP/CLEAN with fixable issue codes.",
+    inputSchema: { type: "object", properties: {
+      surface: { type: "string", enum: ["landing", "dashboard", "app", "docs", "marketing"] },
+      reducedMotion: { type: "boolean", description: "Whether a prefers-reduced-motion path is implemented." },
+      components: { type: "array", items: { type: "object" }, description: "[{slug, role, motionIntensity|motion, interactive, keyboard, focusVisible, autoplay, pauseOnHover|pauseOnFocus, contentLength, opacity}]." },
+    }, required: ["components"] },
+    run: (a) => engine.checkMagicUiComposition(a || {}),
+  },
+  {
     name: "check_dashboard_layout",
     description: "Audit proposed dashboard coordinates and implementation provenance. Checks viewport bounds, 4/8px grid alignment, non-overlay region collisions, Fluid registry sourcing, component density, and decorative-layer limits. Returns a deterministic dashboard_system baseline when violations exist.",
     inputSchema: {

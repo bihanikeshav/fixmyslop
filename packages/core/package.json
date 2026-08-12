@@ -1,6 +1,6 @@
 {
   "name": "@fixmyslop/core",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Deterministic Brain: quality metrics, role classification, anti-inductive recommendation, slop scoring.",
   "type": "module",
   "main": "./dist/index.js",
