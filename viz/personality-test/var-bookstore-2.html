@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Page & Co. — Independent Bookstore</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Chivo+Mono:ital,wght@0,300;0,400;0,700;1,300&display=swap" rel="stylesheet">
+
+<style>
+  /* ─── TOKENS ─────────────────────────────────────── */
+  :root {
+    --ground:   #EFEFF0;      /* cool near-white, not cream */
+    --ink:      #19161A;      /* near-black, very slight plum tint */
+    --ink-mid:  #4A424D;      /* mid tone for secondary text */
+    --ink-faint:#B0AAB4;      /* faint rule / divider */
+    --accent:   #8B3A3A;      /* oxblood — bookbinding cloth + library stamp ink */
+    --accent-dim:#C47A7A;     /* lighter for large type usage */
+    --mono:     'Chivo Mono', 'Courier Prime', monospace;
+    --display:  'Bebas Neue', 'Arial Narrow', sans-serif;
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    font-size: 16px;
+    background: var(--ground);
+    color: var(--ink);
+  }
+
+  body {
+    background: var(--ground);
+    min-height: 100vh;
+    font-family: var(--mono);
+    font-weight: 300;
+    line-height: 1.6;
+  }
+
+  /* ─── HERO — FULL-BLEED POSTER ───────────────────── */
+  .hero {
+    min-height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    grid-template-columns: 1fr;
+    position: relative;
+    overflow: hidden;
+    padding: 0;
+  }
+
+  /* Thin oxblood rule — top strip */
+  .hero::before {
+    content: '';
+    display: block;
+    height: 4px;
+    background: var(--accent);
+    width: 100%;
+  }
+
+  /* ─── HEADER ─────────────────────────────────────── */
+  .header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 1.25rem 2.5rem 0;
+  }
+
+  .wordmark {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 0.78rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+
+  .nav {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+  }
+
+  .nav a {
+    font-family: var(--mono);
+    font-weight: 300;
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-mid);
+    text-decoration: none;
+  }
+
+  .nav a:hover {
+    color: var(--accent);
+  }
+
+  /* ─── CLOCK SECTION ──────────────────────────────── */
+  .clock-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 2.5rem 0;
+    gap: 0;
+    position: relative;
+  }
+
+  /* The clock itself */
+  .clock-wrap {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    flex-shrink: 0;
+  }
+
+  .clock-svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Live label above clock */
+  .clock-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.6rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .clock-label::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    /* subtle pulse — respects reduced-motion */
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .clock-label::before {
+      animation: none;
+    }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.35; }
+  }
+
+  /* ─── GIANT GENRE — THE STANDOUT ─────────────────── */
+  /* This is the "Genre Clock" standout: the current hour maps to a
+     reading genre displayed at full-bleed poster scale in condensed type. */
+  .genre-block {
+    width: 100%;
+    text-align: center;
+    padding: 0 1rem;
+    line-height: 1;
+    overflow: hidden;
+  }
+
+  .genre-name {
+    font-family: var(--display);
+    /* Condensed/compressed display — ultra-narrow, fills viewport width */
+    font-size: clamp(5rem, 18vw, 13rem);
+    line-height: 0.9;
+    letter-spacing: 0.01em;
+    color: var(--ink);
+    display: block;
+    /* The standout renders in markup immediately, no JS required */
+  }
+
+  /* Static fallback genre shown when JS is off */
+  .genre-name[data-js-hidden] {
+    display: none;
+  }
+
+  .genre-subline {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    font-weight: 300;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-mid);
+    margin-top: 0.5rem;
+  }
+
+  /* ─── TIME READOUT ───────────────────────────────── */
+  .time-readout {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    color: var(--ink-mid);
+    margin-top: 0.4rem;
+  }
+
+  /* ─── HERO FOOTER ────────────────────────────────── */
+  .hero-footer {
+    border-top: 1px solid var(--ink-faint);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    padding: 1.25rem 2.5rem;
+    gap: 1rem;
+  }
+
+  .hero-footer-item {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    font-weight: 300;
+    color: var(--ink-mid);
+    letter-spacing: 0.06em;
+  }
+
+  .hero-footer-item strong {
+    display: block;
+    font-weight: 700;
+    color: var(--ink);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.2rem;
+  }
+
+  .hero-footer-item:last-child {
+    text-align: right;
+  }
+
+  /* ─── SUPPORTING SECTION — STAFF PICKS ──────────── */
+  .section-picks {
+    padding: 4rem 2.5rem;
+    border-top: 4px solid var(--ink);
+    max-width: 100%;
+  }
+
+  .section-heading {
+    font-family: var(--display);
+    font-size: clamp(3rem, 8vw, 6rem);
+    line-height: 0.92;
+    letter-spacing: 0.01em;
+    color: var(--ink);
+    margin-bottom: 0.3rem;
+  }
+
+  .section-deck {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    font-weight: 300;
+    letter-spacing: 0.08em;
+    color: var(--ink-mid);
+    margin-bottom: 3rem;
+    max-width: 48ch;
+    line-height: 1.7;
+  }
+
+  /* ─── PICKS GRID — NOT CARD GRID ─────────────────── */
+  /* Broken grid: 3 items, but last one bleeds right and has accent rule */
+  .picks-list {
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0;
+    border-top: 1px solid var(--ink-faint);
+  }
+
+  .pick {
+    padding: 1.75rem 1.5rem 1.75rem 0;
+    border-right: 1px solid var(--ink-faint);
+    position: relative;
+  }
+
+  .pick:last-child {
+    border-right: none;
+    padding-right: 0;
+  }
+
+  .pick:first-child {
+    /* Broken grid: first item gets accent left rule */
+    border-left: 3px solid var(--accent);
+    padding-left: 1.25rem;
+  }
+
+  .pick-genre-tag {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+
+  .pick-title {
+    font-family: var(--display);
+    font-size: clamp(1.5rem, 3vw, 2.2rem);
+    line-height: 1;
+    letter-spacing: 0.01em;
+    color: var(--ink);
+    margin-bottom: 0.4rem;
+  }
+
+  .pick-author {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    font-weight: 300;
+    color: var(--ink-mid);
+    letter-spacing: 0.06em;
+    margin-bottom: 0.85rem;
+  }
+
+  .pick-note {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    font-weight: 300;
+    line-height: 1.65;
+    color: var(--ink-mid);
+    font-style: italic;
+    max-width: 28ch;
+  }
+
+  .pick-staff {
+    display: block;
+    margin-top: 0.75rem;
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+
+  /* ─── EVENTS STRIP ───────────────────────────────── */
+  .events-strip {
+    border-top: 1px solid var(--ink-faint);
+    padding: 2rem 2.5rem;
+    display: flex;
+    align-items: baseline;
+    gap: 2.5rem;
+    overflow-x: auto;
+  }
+
+  .events-label {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .event-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    flex-shrink: 0;
+  }
+
+  .event-date {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-mid);
+  }
+
+  .event-name {
+    font-family: var(--display);
+    font-size: 1.1rem;
+    line-height: 1;
+    color: var(--ink);
+  }
+
+  .event-type {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    font-weight: 300;
+    color: var(--ink-mid);
+    letter-spacing: 0.06em;
+  }
+
+  /* ─── FOOTER ─────────────────────────────────────── */
+  .site-footer {
+    border-top: 4px solid var(--ink);
+    padding: 2rem 2.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .footer-wordmark {
+    font-family: var(--display);
+    font-size: 2.2rem;
+    line-height: 1;
+    color: var(--ink);
+    letter-spacing: 0.02em;
+  }
+
+  .footer-address {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    font-weight: 300;
+    color: var(--ink-mid);
+    letter-spacing: 0.06em;
+    line-height: 1.6;
+    text-align: right;
+  }
+
+  /* ─── RESPONSIVE ─────────────────────────────────── */
+  @media (max-width: 680px) {
+    .header { padding: 1rem 1.25rem 0; }
+    .nav { gap: 1rem; }
+    .clock-area { padding: 1.5rem 1.25rem 0; }
+    .genre-block { padding: 0 0.5rem; }
+    .hero-footer { grid-template-columns: 1fr; padding: 1rem 1.25rem; }
+    .hero-footer-item:last-child { text-align: left; }
+    .section-picks { padding: 2.5rem 1.25rem; }
+    .picks-list { grid-template-columns: 1fr; }
+    .pick { border-right: none; border-bottom: 1px solid var(--ink-faint); padding: 1.25rem 0; }
+    .pick:first-child { padding-left: 1rem; }
+    .events-strip { padding: 1.25rem; }
+    .site-footer { flex-direction: column; gap: 1rem; padding: 1.5rem 1.25rem; }
+    .footer-address { text-align: left; }
+  }
+</style>
+</head>
+
+<body>
+
+<!-- ═══════════════════════════════════════════════════
+     HERO — Full-bleed type poster
+     THE GENRE CLOCK standout renders entirely in markup;
+     JS updates the genre + clock hands; noscript shows current state.
+     ═══════════════════════════════════════════════════ -->
+<main>
+<section class="hero" aria-label="Genre Clock — recommended reading for this hour">
+
+  <!-- Top rule is CSS ::before -->
+
+  <header class="header" role="banner">
+    <span class="wordmark">Page &amp; Co.</span>
+    <nav aria-label="Main navigation">
+      <ul class="nav">
+        <li><a href="#picks">Staff Picks</a></li>
+        <li><a href="#events">Events</a></li>
+        <li><a href="#visit">Visit</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <div class="clock-area">
+
+    <p class="clock-label" aria-live="polite" aria-atomic="true">
+      Reading now
+    </p>
+
+    <!-- ── THE GENRE CLOCK ────────────────────────────
+         SVG clock face. Hours 1–12 are genre-labeled on the dial.
+         Clock hands update via JS. On load the hands show the actual
+         current time; the JS fallback renders genre + time as text.
+    ──────────────────────────────────────────────────── -->
+    <div class="clock-wrap" role="img" aria-label="Genre clock showing recommended genre for the current hour">
+      <svg class="clock-svg" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+
+        <!-- Face -->
+        <circle cx="110" cy="110" r="106" fill="none" stroke="#B0AAB4" stroke-width="1.5"/>
+        <circle cx="110" cy="110" r="2" fill="#8B3A3A"/>
+
+        <!-- Hour tick marks + genre labels at each position -->
+        <!-- Genres mapped to 12-hour positions:
+             12=Literary Fiction, 1=Essays, 2=Journalism/Memoir,
+             3=Biography, 4=Science, 5=History, 6=Cookbooks/Craft,
+             7=Travel, 8=Poetry, 9=Short Stories, 10=Mystery,
+             11=Horror/Weird Fiction
+        -->
+
+        <!-- 12 o'clock — Literary Fiction -->
+        <line x1="110" y1="8" x2="110" y2="20" stroke="#8B3A3A" stroke-width="2"/>
+        <text x="110" y="36" text-anchor="middle" font-family="'Chivo Mono',monospace" font-size="5.5" fill="#4A424D" letter-spacing="0.05em">LIT. FICTION</text>
+
+        <!-- 1 o'clock — Essays -->
+        <line x1="165.2" y1="24.9" x2="159.4" y2="35" stroke="#B0AAB4" stroke-width="1.2"/>
+        <text x="174" y="48" text-anchor="middle" font-family="'Chivo Mono',monospace" font-size="5.5" fill="#4A424D" letter-spacing="0.05em">ESSAYS</text>
+
+        <!-- 2 o'clock — Memoir -->
+        <line x1="205" y1="64.5" x2="194.7" y2="70.5" stroke="#B0AAB4" stroke-width="1.2"/>
+        <text x="200" y="88" text-anchor="middle" font-family="'Chivo Mono',monospace" font-size="5.5" fill="#4A424D" letter-spacing="0.05em">MEMOIR</text>
+
+        <!-- 3 o'clock — Biography -->
+        <line x1="216" y1="110" x2="204" y2="110" stroke="#B0AAB4" stroke-width="1.2"/>
+        <text x="207" y="124" text-anchor="middle" font-family="'Chivo Mono',monospace" font-size="5.5" fill="#4A424D" letter-spacing="0.05em">BIOGRAPHY</text>
+
+        <!-- 4 o'clock — Science -->
+        <line x1="205" y1="155.5" x2="194.7" y2="149.5" stroke="#B0AAB4" stroke-width="1.2"/>
+        <text x="200" y="168" text-anchor="middle" font-family="'Chivo Mono',monospace" font-size="5.5" fill="#4A424D" letter-spacing="0.05em">SCIENCE</text>
+
+        <!-- 5 o'clock — History -->
+        <line x1="165.2" y1="195.1" x2="159.4" y2="185" stroke="#B0AAB4" stroke-width="1.2"/>
+        <text x="164" y="198" text-anchor="middle" font-family="'Chivo Mono',monospace" font-size="5.5" fill="#4A424D" letter-spacing="0.05em">HISTORY</text>
+
+        <!-- 6 o'clock — Cookbooks -->
+        <line x1="110" y1="212" x2="110" y2="200" stroke="#B0AAB4" stroke-width="1.2"/>
+        <text x="110" y="215" text-anchor="middle" font-family="'Chivo Mono',monospace" font-size="5.5" fill="#4A424D" letter-spacing="0.05em">COOKBOOKS</text>
+
+        <!-- 7 o'clock — Travel -->
+        <line x1="54.8" y1="195.1" x2="60.6" y2="185" stroke="#B0AAB4" stroke-width="1.2"/>
+        <text x="50" y="196" text-anchor="middle" font-family="'Chivo Mono',monospace" font-size="5.5" fill="#4A424D" letter-spacing="0.05em">TRAVEL</text>
+
+        <!-- 8 o'clock — Poetry -->
+        <line x1="15" y1="155.5" x2="25.3" y2="149.5" stroke="#B0AAB4" stroke-width="1.2"/>
+        <text x="22" y="166" text-anchor="middle" font-family="'Chivo Mono',monospace" font-size="5.5" fill="#4A424D" letter-spacing="0.05em">POETRY</text>
+
+        <!-- 9 o'clock — Short Stories -->
+        <line x1="4" y1="110" x2="16" y2="110" stroke="#B0AAB4" stroke-width="1.2"/>
+        <text x="22" y="125" text-anchor="middle" font-family="'Chivo Mono',monospace" font-size="5.5" fill="#4A424D" letter-spacing="0.05em">STORIES</text>
+
+        <!-- 10 o'clock — Mystery -->
+        <line x1="15" y1="64.5" x2="25.3" y2="70.5" stroke="#B0AAB4" stroke-width="1.2"/>
+        <text x="22" y="60" text-anchor="middle" font-family="'Chivo Mono',monospace" font-size="5.5" fill="#4A424D" letter-spacing="0.05em">MYSTERY</text>
+
+        <!-- 11 o'clock — Weird Fiction -->
+        <line x1="54.8" y1="24.9" x2="60.6" y2="35" stroke="#B0AAB4" stroke-width="1.2"/>
+        <text x="54" y="46" text-anchor="middle" font-family="'Chivo Mono',monospace" font-size="5.5" fill="#4A424D" letter-spacing="0.05em">WEIRD</text>
+
+        <!-- Hour hand — updated by JS; default points to 12 (Literary Fiction) -->
+        <line id="hand-hour"
+              x1="110" y1="110"
+              x2="110" y2="50"
+              stroke="#19161A" stroke-width="3.5"
+              stroke-linecap="round"
+              transform-origin="110 110"/>
+
+        <!-- Minute hand -->
+        <line id="hand-minute"
+              x1="110" y1="110"
+              x2="110" y2="30"
+              stroke="#4A424D" stroke-width="2"
+              stroke-linecap="round"
+              transform-origin="110 110"/>
+
+        <!-- Center dot over hands -->
+        <circle cx="110" cy="110" r="4" fill="#8B3A3A"/>
+
+        <!-- Genre highlight arc — JS updates this to show which genre is current -->
+        <!-- Arc from current hour position, drawn in accent color -->
+        <path id="genre-arc"
+              d="M 110 8 A 102 102 0 0 1 165.2 24.9"
+              fill="none" stroke="#8B3A3A" stroke-width="3"
+              stroke-linecap="round" opacity="0.7"/>
+      </svg>
+    </div>
+
+    <!-- THE STANDOUT: genre displayed at poster scale in condensed type -->
+    <!-- Static fallback: visible immediately, JS replaces text content -->
+    <div class="genre-block" aria-live="polite" aria-atomic="true">
+      <span class="genre-name" id="genre-display">LITERARY FICTION</span>
+      <p class="genre-subline" id="genre-subline">recommended for this hour</p>
+    </div>
+
+    <p class="time-readout" id="time-readout" aria-live="polite">
+      <!-- JS fills: "10:42 AM — mystery hour" -->
+    </p>
+
+  </div><!-- .clock-area -->
+
+  <!-- ── HERO FOOTER ────────────────────────────────── -->
+  <footer class="hero-footer">
+    <div class="hero-footer-item">
+      <strong>Location</strong>
+      14 Elm Street, between Oak &amp; Cedar
+    </div>
+    <div class="hero-footer-item">
+      <strong>Hours</strong>
+      Mon–Sat 9–8 &nbsp;·&nbsp; Sun 10–6
+    </div>
+    <div class="hero-footer-item">
+      <strong>Next Event</strong>
+      <span id="next-event-label">Author Reading · This Saturday</span>
+    </div>
+  </footer>
+
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════
+     SUPPORTING SECTION — Staff Picks
+     ═══════════════════════════════════════════════════ -->
+<section class="section-picks" id="picks" aria-label="Staff picks">
+
+  <h2 class="section-heading">STAFF<br>PICKS</h2>
+  <p class="section-deck">
+    Not algorithms. Not bestseller lists. Books we've actually read and can't stop talking about.
+  </p>
+
+  <ul class="picks-list">
+
+    <li class="pick">
+      <p class="pick-genre-tag">Literary Fiction</p>
+      <h3 class="pick-title">THE DISPOSSESSED</h3>
+      <p class="pick-author">Ursula K. Le Guin</p>
+      <p class="pick-note">"A novel about two worlds and one physicist — but really about what it means to own something, or to be owned."</p>
+      <span class="pick-staff">— Meridian, Floor Staff</span>
+    </li>
+
+    <li class="pick">
+      <p class="pick-genre-tag">History</p>
+      <h3 class="pick-title">EMPIRE OF COTTON</h3>
+      <p class="pick-author">Sven Beckert</p>
+      <p class="pick-note">"You'll never look at a cotton shirt the same way. Dense but gripping — the kind of history that rewires how you see the present."</p>
+      <span class="pick-staff">— Olu, Events Lead</span>
+    </li>
+
+    <li class="pick">
+      <p class="pick-genre-tag">Essays</p>
+      <h3 class="pick-title">THE COLLECTED SCHIZOPHRENIAS</h3>
+      <p class="pick-author">Esmé Weijun Wang</p>
+      <p class="pick-note">"The most precise book about being a sick person I have ever read. Precision is its kindness."</p>
+      <span class="pick-staff">— Sam, Buyer</span>
+    </li>
+
+  </ul>
+
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════
+     EVENTS STRIP
+     ═══════════════════════════════════════════════════ -->
+<div class="events-strip" id="events" aria-label="Upcoming events">
+  <span class="events-label">Upcoming</span>
+
+  <div class="event-item">
+    <span class="event-date">Sat Jun 14</span>
+    <span class="event-name">MIRIAM TOEWS</span>
+    <span class="event-type">Reading + Conversation · 7 PM</span>
+  </div>
+
+  <div class="event-item">
+    <span class="event-date">Thu Jun 19</span>
+    <span class="event-name">OCEAN VUONG</span>
+    <span class="event-type">Poetry Reading · 6:30 PM</span>
+  </div>
+
+  <div class="event-item">
+    <span class="event-date">Sat Jun 28</span>
+    <span class="event-name">KIDS' STORY HOUR</span>
+    <span class="event-type">Ages 4–8 · 10 AM · Free</span>
+  </div>
+
+  <div class="event-item">
+    <span class="event-date">Fri Jul 4</span>
+    <span class="event-name">JENNY ZHANG</span>
+    <span class="event-type">Reading + Signing · 7 PM</span>
+  </div>
+
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     FOOTER
+     ═══════════════════════════════════════════════════ -->
+<footer class="site-footer" id="visit">
+  <span class="footer-wordmark">PAGE &amp; CO.</span>
+  <address class="footer-address" style="font-style:normal;">
+    14 Elm Street &nbsp;·&nbsp; Open today 9 AM – 8 PM<br>
+    hello@pageandco.com &nbsp;·&nbsp; 555-0174
+  </address>
+</footer>
+
+</main><!-- /main -->
+
+
+<script>
+/* ─── THE GENRE CLOCK ────────────────────────────────────────────────────────
+   Maps each of the 12 clock-hours to a reading genre.
+   Updates the giant condensed type (the standout) + the SVG hands in real time.
+   Degrades to the static fallback in markup if JS is disabled.
+
+   Hour → Genre mapping (grounded in reading rhythm / time of day):
+   12:00 → Literary Fiction  (midnight & noon — the liminal hours)
+    1:00 → Essays            (early morning solitude)
+    2:00 → Memoir            (memory hour)
+    3:00 → Biography         (historical morning)
+    4:00 → Science           (rational daylight)
+    5:00 → History           (afternoon context)
+    6:00 → Cookbooks         (dinner hour)
+    7:00 → Travel            (early evening wandering)
+    8:00 → Poetry            (golden hour)
+    9:00 → Short Stories     (late evening, short attention)
+   10:00 → Mystery           (night falls — prime mystery hour)
+   11:00 → Weird Fiction     (the late hour, the strange thoughts)
+────────────────────────────────────────────────────────────────────────────── */
+
+const GENRES = [
+  'LITERARY FICTION', // 12
+  'ESSAYS',           // 1
+  'MEMOIR',           // 2
+  'BIOGRAPHY',        // 3
+  'SCIENCE',          // 4
+  'HISTORY',          // 5
+  'COOKBOOKS',        // 6
+  'TRAVEL',           // 7
+  'POETRY',           // 8
+  'SHORT STORIES',    // 9
+  'MYSTERY',          // 10
+  'WEIRD FICTION',    // 11
+];
+
+const GENRE_SUBLINES = [
+  'for the liminal hours',
+  'for the early hours',
+  'for remembering',
+  'for learning who came before',
+  'for the rational light',
+  'for afternoon context',
+  'for the dinner hour',
+  'for early evening wandering',
+  'for the golden hour',
+  'for before sleep',
+  'for when night falls',
+  'for the strange late hour',
+];
+
+// Arc coordinates for the 12 tick positions on the clock face (r=102, center=110,110)
+// Pre-computed: 110 + 102*sin(θ), 110 - 102*cos(θ) for θ = hour * 30°
+const TICK_COORDS = [
+  [110, 8],       // 12
+  [161, 25],      // 1
+  [199, 61],      // 2
+  [212, 110],     // 3
+  [199, 159],     // 4
+  [161, 195],     // 5
+  [110, 212],     // 6
+  [59, 195],      // 7
+  [21, 159],      // 8
+  [8, 110],       // 9
+  [21, 61],       // 10
+  [59, 25],       // 11
+];
+
+function describeArc(hour) {
+  // Arc from 12 o'clock position to the current hour's position (going clockwise)
+  const [ex, ey] = TICK_COORDS[hour];
+  if (hour === 0) {
+    // Full circle for 12
+    return `M 110 8 A 102 102 0 1 1 109.99 8`;
+  }
+  const largeArc = hour > 6 ? 1 : 0;
+  return `M 110 8 A 102 102 0 ${largeArc} 1 ${ex} ${ey}`;
+}
+
+function updateClock() {
+  const now   = new Date();
+  const h24   = now.getHours();
+  const h12   = h24 % 12;       // 0–11
+  const min   = now.getMinutes();
+  const sec   = now.getSeconds();
+
+  // ── Genre (based on 12-hour position) ────────────────
+  const genre = GENRES[h12];
+  const subline = GENRE_SUBLINES[h12];
+
+  const genreEl   = document.getElementById('genre-display');
+  const sublineEl = document.getElementById('genre-subline');
+  if (genreEl)   genreEl.textContent   = genre;
+  if (sublineEl) sublineEl.textContent = subline;
+
+  // ── Time readout ──────────────────────────────────────
+  const ampm   = h24 < 12 ? 'AM' : 'PM';
+  const hDisp  = h12 === 0 ? 12 : h12;
+  const minStr = String(min).padStart(2, '0');
+  const readEl = document.getElementById('time-readout');
+  if (readEl) readEl.textContent = `${hDisp}:${minStr} ${ampm}`;
+
+  // ── SVG hour hand ─────────────────────────────────────
+  // Degrees: 0° at 12, clockwise. Each hour = 30°; each minute = 0.5°
+  const hourDeg   = (h12 * 30) + (min * 0.5);
+  const minuteDeg = (min * 6)  + (sec * 0.1);
+
+  const hourHand   = document.getElementById('hand-hour');
+  const minuteHand = document.getElementById('hand-minute');
+  const arcEl      = document.getElementById('genre-arc');
+
+  if (hourHand)   hourHand.setAttribute('transform',   `rotate(${hourDeg}, 110, 110)`);
+  if (minuteHand) minuteHand.setAttribute('transform', `rotate(${minuteDeg}, 110, 110)`);
+
+  // ── Genre arc highlight ────────────────────────────────
+  if (arcEl) arcEl.setAttribute('d', describeArc(h12));
+}
+
+// Run immediately on load (no blank-until-scroll)
+updateClock();
+
+// Then tick every second
+setInterval(updateClock, 1000);
+</script>
+
+</body>
+</html>

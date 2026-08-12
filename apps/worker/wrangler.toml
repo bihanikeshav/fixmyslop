@@ -1,0 +1,17 @@
+name = "fixmyslop"
+main = "src/index.mjs"
+compatibility_date = "2026-08-11"
+
+# JSON is imported directly (import corpus from "../../engine/data/corpus.json")
+# and bundled at build time — Workers have no runtime fs. The engine is pure, so
+# no nodejs_compat flag is required.
+
+# Static frontend (apps/web) served from the SAME Worker via Cloudflare Static Assets.
+# Assets are matched FIRST for GET/HEAD: "/" → apps/web/index.html (the UI at root),
+# "/demo/*", "/vendor/*", "/viz/*" → their files. Any path with no matching asset
+# (POST /mcp, /api/*, /install, /skill, /health, GET /sse) falls through to the Worker
+# below, so the API + MCP + install surfaces are unchanged. not_found_handling stays
+# default ("none") so unknown paths hit the Worker's 404, not index.html.
+[assets]
+directory = "../web"
+binding = "ASSETS"

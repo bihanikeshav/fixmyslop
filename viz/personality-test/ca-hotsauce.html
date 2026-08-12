@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inferno — Small-Batch Hot Sauce</title>
+<meta name="description" content="Three fiery flavors. Grown local. Bottled small. Inferno hot sauce.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+
+<script>document.documentElement.classList.add('js')</script>
+
+<style>
+/* ─── Tokens ──────────────────────────────────────────────────────── */
+:root {
+  --ground:   #FFFAF2;
+  --ink:      #1A0A00;
+  --red:      #D42B00;
+  --mono:     'IBM Plex Mono', 'Courier New', monospace;
+  --display:  'Bungee', 'Arial Black', sans-serif;
+
+  /* Spacing scale: 4 8 12 16 24 32 48 64 96 */
+  --s4:  4px;
+  --s8:  8px;
+  --s12: 12px;
+  --s16: 16px;
+  --s24: 24px;
+  --s32: 32px;
+  --s48: 48px;
+  --s64: 64px;
+  --s96: 96px;
+
+  /* Flavor colors — derived from real pepper hues, not defaults */
+  /* All pass WCAG AA (4.5:1) on #FFFAF2 ground */
+  --c1: #B84D00;  /* habanero deep amber-orange  hue≈25°  L=0.155 → 4.93:1  */
+  --c2: #D42B00;  /* ghost pepper red             hue≈11°  L=0.157 → 4.88:1  */
+  --c3: #8C0500;  /* reaper deep crimson          hue≈4°   L=0.060 → 12.4:1  */
+
+  /* Tinted row backgrounds — very light tints of each flavor */
+  --bg1: #FFF5EC;
+  --bg2: #FFF0EB;
+  --bg3: #FFEDEC;
+
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in:  cubic-bezier(0.4, 0, 1, 1);
+}
+
+/* ─── Reset & base ─────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
+}
+
+body { overflow-x: hidden; }
+
+::selection { background: var(--red); color: var(--ground); }
+
+/* Custom scrollbar — on-concept */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--ground); }
+::-webkit-scrollbar-thumb { background: var(--red); border-radius: 0; }
+::-webkit-scrollbar-thumb:hover { background: var(--ink); }
+
+/* ─── Skip link ────────────────────────────────────────────────────── */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: var(--s8);
+  background: var(--ink);
+  color: var(--ground);
+  padding: var(--s8) var(--s16);
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  z-index: 100;
+  text-decoration: none;
+}
+.skip-link:focus { left: var(--s16); outline: 3px solid var(--red); outline-offset: 2px; }
+
+/* ─── Site nav ─────────────────────────────────────────────────────── */
+.site-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--s12) var(--s32);
+  background: var(--ground);
+  border-bottom: 1.5px solid var(--ink);
+}
+
+.nav-wordmark {
+  font-family: var(--display);
+  font-size: 1.125rem;
+  letter-spacing: 0.03em;
+  color: var(--ink);
+  text-decoration: none;
+}
+.nav-wordmark span { color: var(--red); }
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: var(--s32);
+  list-style: none;
+}
+
+.nav-links a {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+  text-decoration: none;
+  transition: color 180ms var(--ease-out);
+}
+.nav-links a:hover { color: var(--red); }
+.nav-links a:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.nav-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s8);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ground);
+  background: var(--ink);
+  border: 1.5px solid var(--ink);
+  padding: var(--s8) var(--s16);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 180ms var(--ease-out), color 180ms var(--ease-out),
+              transform 120ms var(--ease-out);
+}
+.nav-cta:hover { background: var(--red); border-color: var(--red); }
+.nav-cta:active { transform: scale(0.97); }
+.nav-cta:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+.nav-cta i { width: 14px; height: 14px; }
+
+/* ─── Hero poster ──────────────────────────────────────────────────── */
+.hero {
+  padding-top: 57px; /* nav height */
+  border-bottom: 1.5px solid var(--ink);
+}
+
+/* Kicker strip */
+.hero-kicker {
+  display: flex;
+  align-items: center;
+  gap: var(--s16);
+  padding: var(--s12) var(--s32);
+  border-bottom: 1.5px solid var(--ink);
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.6;
+}
+.kicker-sep { color: var(--red); }
+
+/* ─── The Heat Ladder: standout ─────────────────────────────────────
+   Three stacked full-width flavor bands.
+   The STANDOUT: each band shows flavor name at poster scale, Scoville
+   in huge mono, and a data-driven SVG heat bar (computed from log-scale
+   Scoville position). Hover triggers SHU count-up + background flush.
+   All SVG geometry computed from data — no drawn objects.
+──────────────────────────────────────────────────────────────────── */
+.heat-ladder {
+  display: flex;
+  flex-direction: column;
+}
+
+.flavor-band {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  align-items: start;
+  padding: var(--s48) var(--s32) var(--s32);
+  border-bottom: 1.5px solid var(--ink);
+  background: var(--ground);
+  cursor: default;
+  transition: background 300ms var(--ease-out);
+  overflow: hidden;
+  min-height: 200px;
+}
+
+.flavor-band:last-child { border-bottom: none; }
+
+/* Per-flavor accent color via data attribute */
+.flavor-band[data-flavor="1"] { --fc: var(--c1); --fbg: var(--bg1); }
+.flavor-band[data-flavor="2"] { --fc: var(--c2); --fbg: var(--bg2); }
+.flavor-band[data-flavor="3"] { --fc: var(--c3); --fbg: var(--bg3); }
+
+.flavor-band:hover,
+.flavor-band:focus-within { background: var(--fbg); }
+
+/* Left column: name + SHU stack */
+.flavor-left {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.flavor-name {
+  font-family: var(--display);
+  font-size: clamp(3.5rem, 8vw, 7.5rem);
+  line-height: 0.88;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-wrap: balance;
+  /* Bold type move: tight negative leading stacks + all-caps lockup */
+}
+
+.flavor-name .flavor-heat-word {
+  /* Heat intensity word in accent color */
+  color: var(--fc);
+}
+
+.flavor-shu {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s8);
+  margin-top: var(--s16);
+}
+
+.shu-number {
+  font-family: var(--mono);
+  font-size: clamp(1.5rem, 3.5vw, 2.75rem);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: var(--fc);
+  letter-spacing: -0.02em;
+  min-width: 12ch; /* prevent layout shift during count-up */
+}
+
+.shu-label {
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.5;
+  padding-bottom: 2px;
+}
+
+/* Right column: heat position badge */
+.flavor-badge {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--s4);
+  padding-left: var(--s24);
+}
+
+.badge-rank {
+  font-family: var(--display);
+  font-size: clamp(4rem, 9vw, 8rem);
+  line-height: 0.85;
+  color: var(--ink);
+  opacity: 0.06;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+
+.badge-tag {
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  /* Use ink for text (18.8:1 on any bg) — flavor accent on border only */
+  color: var(--ink);
+  border: 2px solid var(--fc);
+  padding: var(--s4) var(--s8);
+  background: transparent;
+}
+
+/* Bottom row: the data-driven heat bar — spans full width */
+.flavor-bar-row {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  margin-top: var(--s24);
+}
+
+.heat-bar-label {
+  font-family: var(--mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.4;
+  margin-bottom: var(--s8);
+}
+
+/* SVG heat bar wrapper */
+.heat-bar-svg {
+  display: block;
+  width: 100%;
+  height: 32px;
+  overflow: visible;
+}
+
+/* SVG elements: fill-box for transform-origin to work on SVG nodes */
+.heat-fill, .heat-dot { transform-box: fill-box; }
+
+/* ─── Scale ruler at bottom of hero ────────────────────────────────── */
+.scoville-ruler {
+  padding: var(--s24) var(--s32);
+  border-top: 1.5px solid var(--ink);
+  background: var(--ground);
+}
+
+.ruler-label {
+  font-family: var(--mono);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.4;
+  margin-bottom: var(--s12);
+}
+
+.ruler-svg {
+  display: block;
+  width: 100%;
+  height: 48px;
+  overflow: visible;
+}
+
+/* ─── Products / supporting section ────────────────────────────────── */
+.section-products {
+  padding: var(--s96) var(--s32);
+  border-top: 1.5px solid var(--ink);
+}
+
+.section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s32);
+  padding-bottom: var(--s32);
+  border-bottom: 1.5px solid var(--ink);
+  margin-bottom: var(--s48);
+  flex-wrap: wrap;
+}
+
+.section-title {
+  font-family: var(--display);
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  line-height: 0.9;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.section-meta {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+  opacity: 0.5;
+  max-width: 36ch;
+  line-height: 1.6;
+}
+
+/* Product table — real semantic table, not a card grid */
+.product-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 0.875rem;
+}
+
+.product-table caption {
+  font-family: var(--mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.4;
+  text-align: left;
+  margin-bottom: var(--s16);
+  caption-side: top;
+}
+
+.product-table th {
+  font-family: var(--mono);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.5;
+  text-align: left;
+  padding: var(--s12) var(--s16) var(--s12) 0;
+  border-bottom: 1.5px solid var(--ink);
+}
+
+.product-table th:last-child { text-align: right; padding-right: 0; }
+
+.product-table td {
+  padding: var(--s24) var(--s16) var(--s24) 0;
+  border-bottom: 1px solid rgba(26, 10, 0, 0.15);
+  vertical-align: top;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.product-table td:last-child { text-align: right; padding-right: 0; }
+
+.product-table tr:last-child td { border-bottom: none; }
+
+.td-name {
+  font-family: var(--display);
+  font-size: 1.125rem;
+  line-height: 1.1;
+}
+
+.td-heat {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
+.td-heat.h1 { color: var(--c1); }
+.td-heat.h2 { color: var(--c2); }
+.td-heat.h3 { color: var(--c3); }
+
+.td-action a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s8);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ground);
+  background: var(--ink);
+  border: 1.5px solid var(--ink);
+  padding: var(--s8) var(--s12);
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 180ms var(--ease-out), border-color 180ms var(--ease-out),
+              transform 120ms var(--ease-out);
+}
+.td-action a:hover {
+  background: var(--fc, var(--red));
+  border-color: var(--fc, var(--red));
+}
+.td-action a:active { transform: scale(0.97); }
+.td-action a:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+.td-action a i { width: 14px; height: 14px; flex-shrink: 0; }
+
+/* Flavor color for each row's action button */
+tr[data-flavor="1"] { --fc: var(--c1); }
+tr[data-flavor="2"] { --fc: var(--c2); }
+tr[data-flavor="3"] { --fc: var(--c3); }
+
+/* ─── Where to find us ──────────────────────────────────────────────── */
+.section-find {
+  padding: var(--s64) var(--s32);
+  border-top: 1.5px solid var(--ink);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s64);
+  align-items: start;
+}
+
+.find-heading {
+  font-family: var(--display);
+  font-size: clamp(1.75rem, 4vw, 3rem);
+  line-height: 0.9;
+  color: var(--ink);
+  margin-bottom: var(--s24);
+  text-wrap: balance;
+}
+
+.find-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+
+.find-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--s12);
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  color: var(--ink);
+  padding: var(--s12) 0;
+  border-bottom: 1px solid rgba(26, 10, 0, 0.15);
+}
+.find-list li:last-child { border-bottom: none; }
+.find-list i { width: 16px; height: 16px; color: var(--red); flex-shrink: 0; }
+
+.find-cta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s16);
+  justify-content: flex-start;
+}
+
+.find-cta p {
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  color: var(--ink);
+  opacity: 0.7;
+  max-width: 36ch;
+  line-height: 1.6;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s8);
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ground);
+  background: var(--red);
+  border: 1.5px solid var(--red);
+  padding: var(--s12) var(--s24);
+  text-decoration: none;
+  cursor: pointer;
+  width: fit-content;
+  transition: background 180ms var(--ease-out), border-color 180ms var(--ease-out),
+              transform 120ms var(--ease-out);
+}
+.btn-primary:hover { background: var(--ink); border-color: var(--ink); }
+.btn-primary:active { transform: scale(0.97); }
+.btn-primary:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.btn-primary i { width: 16px; height: 16px; }
+
+/* ─── Footer ────────────────────────────────────────────────────────── */
+.site-footer {
+  padding: var(--s32);
+  border-top: 1.5px solid var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s16);
+  flex-wrap: wrap;
+}
+
+.footer-mark {
+  font-family: var(--display);
+  font-size: 1rem;
+  color: var(--ink);
+}
+.footer-mark span { color: var(--red); }
+
+.footer-copy {
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  color: var(--ink);
+  opacity: 0.4;
+  letter-spacing: 0.04em;
+}
+
+/* ─── Motion — reveal recipe (render-safe: content visible without JS) ─ */
+.reveal {
+  transition: opacity 450ms var(--ease-out), transform 450ms var(--ease-out);
+}
+html.js .reveal { opacity: 0; transform: translateY(20px); }
+html.js .reveal.in { opacity: 1; transform: none; }
+
+/* Stagger children via CSS var --i */
+html.js .stagger > * {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 400ms var(--ease-out), transform 400ms var(--ease-out);
+  transition-delay: calc(var(--i, 0) * 60ms);
+}
+html.js .stagger.in > * { opacity: 1; transform: none; }
+
+/* ─── prefers-reduced-motion ────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ─── Responsive ────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .site-nav { padding: var(--s12) var(--s16); }
+  .nav-links { display: none; }
+
+  .hero-kicker { padding: var(--s12) var(--s16); flex-wrap: wrap; gap: var(--s8); }
+
+  .flavor-band {
+    padding: var(--s32) var(--s16) var(--s24);
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+  .flavor-badge { grid-column: 1; grid-row: 2; flex-direction: row; align-items: center; gap: var(--s12); padding-left: 0; margin-top: var(--s8); }
+  .badge-rank { font-size: 3rem; opacity: 0.08; }
+
+  .scoville-ruler { padding: var(--s16); }
+
+  .section-products { padding: var(--s64) var(--s16); }
+  .section-header { padding-bottom: var(--s24); margin-bottom: var(--s32); }
+
+  .product-table { font-size: 0.8125rem; }
+
+  .section-find {
+    grid-template-columns: 1fr;
+    padding: var(--s48) var(--s16);
+    gap: var(--s48);
+  }
+
+  .site-footer { padding: var(--s24) var(--s16); }
+}
+</style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Skip to content</a>
+
+<!-- ── Nav ──────────────────────────────────────────────────────────── -->
+<nav class="site-nav" aria-label="Main navigation">
+  <a href="#" class="nav-wordmark">INFER<span>N</span>O</a>
+  <ul class="nav-links" role="list">
+    <li><a href="#flavors">Flavors</a></li>
+    <li><a href="#find">Find Us</a></li>
+  </ul>
+  <a href="#flavors" class="nav-cta" aria-label="Shop hot sauce">
+    <i data-lucide="shopping-bag" aria-hidden="true"></i>
+    Shop
+  </a>
+</nav>
+
+<!-- ── Hero: The Heat Ladder ─────────────────────────────────────────── -->
+<main id="main">
+<section class="hero" aria-label="The Heat Ladder — our three flavors ranked by Scoville heat">
+  <div class="hero-kicker" aria-hidden="true">
+    <span>Inferno Hot Sauce</span>
+    <span class="kicker-sep">—</span>
+    <span>Small-Batch · Locally Grown · Farmers Market + Online</span>
+    <span class="kicker-sep">—</span>
+    <span>Three Flavors</span>
+    <span class="kicker-sep">—</span>
+    <span>2026 Season</span>
+  </div>
+
+  <!-- The Heat Ladder: data-driven standout -->
+  <div class="heat-ladder" role="group" aria-label="The Heat Ladder — click a flavor to explore">
+
+    <!-- Flavor 1: Harvest Habanero -->
+    <article class="flavor-band reveal" data-flavor="1" tabindex="0"
+      aria-label="Harvest Habanero — 150,000 Scoville units"
+      data-shu="150000" data-max-shu="2200000" data-label="HARVEST HABANERO">
+      <div class="flavor-left">
+        <h2 class="flavor-name">HARVEST<br><span class="flavor-heat-word">HABANERO</span></h2>
+        <div class="flavor-shu">
+          <span class="shu-number" aria-hidden="true" aria-label="150,000 Scoville heat units">150,000</span>
+          <span class="shu-label">SHU</span>
+        </div>
+      </div>
+      <div class="flavor-badge" aria-hidden="true">
+        <span class="badge-rank">01</span>
+        <span class="badge-tag">Hot</span>
+      </div>
+      <div class="flavor-bar-row" aria-hidden="true">
+        <p class="heat-bar-label">Heat position on Scoville scale</p>
+        <svg class="heat-bar-svg" role="img" aria-label="Heat bar: 150,000 SHU out of 2.2M max"
+             viewBox="0 0 1000 32" preserveAspectRatio="none">
+          <!-- Track -->
+          <rect x="0" y="14" width="1000" height="3" fill="#1A0A00" opacity="0.14" rx="1.5"/>
+          <!-- Fill: computed in JS from log(SHU)/log(maxSHU); static fallback ~35.7% -->
+          <rect class="heat-fill" x="0" y="13" width="357" height="5"
+                fill="#B84D00" rx="2.5"/>
+          <circle class="heat-dot" cx="357" cy="15" r="7"
+                  fill="#B84D00" stroke="#FFFAF2" stroke-width="2.5"/>
+        </svg>
+      </div>
+    </article>
+
+    <!-- Flavor 2: Ghost Fire -->
+    <article class="flavor-band reveal" data-flavor="2" tabindex="0"
+      aria-label="Ghost Fire — 900,000 Scoville units"
+      data-shu="900000" data-max-shu="2200000" data-label="GHOST FIRE">
+      <div class="flavor-left">
+        <h2 class="flavor-name">GHOST<br><span class="flavor-heat-word">FIRE</span></h2>
+        <div class="flavor-shu">
+          <span class="shu-number" aria-hidden="true" aria-label="900,000 Scoville heat units">900,000</span>
+          <span class="shu-label">SHU</span>
+        </div>
+      </div>
+      <div class="flavor-badge" aria-hidden="true">
+        <span class="badge-rank">02</span>
+        <span class="badge-tag">Scorching</span>
+      </div>
+      <div class="flavor-bar-row" aria-hidden="true">
+        <p class="heat-bar-label">Heat position on Scoville scale</p>
+        <svg class="heat-bar-svg" role="img" aria-label="Heat bar: 900,000 SHU out of 2.2M max"
+             viewBox="0 0 1000 32" preserveAspectRatio="none">
+          <rect x="0" y="14" width="1000" height="3" fill="#1A0A00" opacity="0.14" rx="1.5"/>
+          <!-- Fill: computed in JS; static fallback ~69% -->
+          <rect class="heat-fill" x="0" y="13" width="691" height="5"
+                fill="#D42B00" rx="2.5"/>
+          <circle class="heat-dot" cx="691" cy="15" r="7"
+                  fill="#D42B00" stroke="#FFFAF2" stroke-width="2.5"/>
+        </svg>
+      </div>
+    </article>
+
+    <!-- Flavor 3: Carolina Reaper Reserve -->
+    <article class="flavor-band reveal" data-flavor="3" tabindex="0"
+      aria-label="Carolina Reaper Reserve — 2,200,000 Scoville units"
+      data-shu="2200000" data-max-shu="2200000" data-label="CAROLINA REAPER RESERVE">
+      <div class="flavor-left">
+        <h2 class="flavor-name">CAROLINA<br><span class="flavor-heat-word">REAPER</span></h2>
+        <div class="flavor-shu">
+          <span class="shu-number" aria-hidden="true" aria-label="2,200,000 Scoville heat units">2,200,000</span>
+          <span class="shu-label">SHU</span>
+        </div>
+      </div>
+      <div class="flavor-badge" aria-hidden="true">
+        <span class="badge-rank">03</span>
+        <span class="badge-tag">Extreme</span>
+      </div>
+      <div class="flavor-bar-row" aria-hidden="true">
+        <p class="heat-bar-label">Heat position on Scoville scale</p>
+        <svg class="heat-bar-svg" role="img" aria-label="Heat bar: 2,200,000 SHU — maximum"
+             viewBox="0 0 1000 32" preserveAspectRatio="none">
+          <rect x="0" y="14" width="1000" height="3" fill="#1A0A00" opacity="0.14" rx="1.5"/>
+          <!-- Full width — this is the hottest -->
+          <rect class="heat-fill" x="0" y="13" width="1000" height="5"
+                fill="#8C0500" rx="2.5"/>
+          <circle class="heat-dot" cx="993" cy="15" r="7"
+                  fill="#8C0500" stroke="#FFFAF2" stroke-width="2.5"/>
+        </svg>
+      </div>
+    </article>
+  </div>
+
+  <!-- Scoville context ruler (data-driven, rendered by JS) -->
+  <div class="scoville-ruler" aria-hidden="true">
+    <p class="ruler-label">Scoville scale reference</p>
+    <svg class="ruler-svg" id="ruler-svg" viewBox="0 0 1000 48" preserveAspectRatio="none">
+      <!-- Rendered by JS from real reference data -->
+      <line x1="0" y1="8" x2="1000" y2="8" stroke="#1A0A00" stroke-width="1" opacity="0.2"/>
+    </svg>
+  </div>
+</section>
+
+<!-- ── Products section ──────────────────────────────────────────────── -->
+<section class="section-products reveal" id="flavors" aria-label="Our flavors">
+  <div class="section-header">
+    <h2 class="section-title">THE<br>LINEUP</h2>
+    <p class="section-meta">Three single-origin small-batch sauces. Grown in our plots, fermented in-house, bottled by hand. Every batch is numbered. Every bottle is hot.</p>
+  </div>
+
+  <table class="product-table">
+    <caption>Inferno 2026 flavor lineup</caption>
+    <thead>
+      <tr>
+        <th scope="col">Flavor</th>
+        <th scope="col">Pepper</th>
+        <th scope="col">Origin</th>
+        <th scope="col">Heat (SHU)</th>
+        <th scope="col">Best With</th>
+        <th scope="col" class="stagger"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr data-flavor="1" class="reveal">
+        <td class="td-name">Harvest<br>Habanero</td>
+        <td>Habanero<br><span style="opacity:0.5;font-size:0.75rem;">Capsicum chinense</span></td>
+        <td>Plot 3,<br>River Field</td>
+        <td class="td-heat h1">150,000</td>
+        <td style="max-width: 22ch; line-height: 1.5;">Eggs, tacos,<br>grilled fish</td>
+        <td class="td-action">
+          <a href="#" aria-label="Order Harvest Habanero">
+            <i data-lucide="arrow-right" aria-hidden="true"></i>
+            Order
+          </a>
+        </td>
+      </tr>
+      <tr data-flavor="2" class="reveal">
+        <td class="td-name">Ghost<br>Fire</td>
+        <td>Bhut Jolokia<br><span style="opacity:0.5;font-size:0.75rem;">Capsicum chinense</span></td>
+        <td>Plot 7,<br>South Slope</td>
+        <td class="td-heat h2">900,000</td>
+        <td style="max-width: 22ch; line-height: 1.5;">Barbecue,<br>slow-roast</td>
+        <td class="td-action">
+          <a href="#" aria-label="Order Ghost Fire">
+            <i data-lucide="arrow-right" aria-hidden="true"></i>
+            Order
+          </a>
+        </td>
+      </tr>
+      <tr data-flavor="3" class="reveal">
+        <td class="td-name">Carolina<br>Reaper Reserve</td>
+        <td>Carolina Reaper<br><span style="opacity:0.5;font-size:0.75rem;">Capsicum chinense</span></td>
+        <td>Plot 11,<br>East Ridge</td>
+        <td class="td-heat h3">2,200,000</td>
+        <td style="max-width: 22ch; line-height: 1.5;">For the bold.<br>Start small.</td>
+        <td class="td-action">
+          <a href="#" aria-label="Order Carolina Reaper Reserve">
+            <i data-lucide="arrow-right" aria-hidden="true"></i>
+            Order
+          </a>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ── Find Us ────────────────────────────────────────────────────────── -->
+<section class="section-find reveal" id="find" aria-label="Where to find us">
+  <div>
+    <h2 class="find-heading">FIND<br>INFERNO</h2>
+    <ul class="find-list" role="list">
+      <li>
+        <i data-lucide="map-pin" aria-hidden="true"></i>
+        Riverside Farmers Market — Sat 7am–1pm
+      </li>
+      <li>
+        <i data-lucide="map-pin" aria-hidden="true"></i>
+        East Side Market — Sun 8am–noon
+      </li>
+      <li>
+        <i data-lucide="map-pin" aria-hidden="true"></i>
+        The Provisions Shop, 44 Maple St
+      </li>
+      <li>
+        <i data-lucide="map-pin" aria-hidden="true"></i>
+        Old Town Food Hall, Unit 12
+      </li>
+    </ul>
+  </div>
+  <div class="find-cta">
+    <p>Can't make it to the market? We ship anywhere in the continental US. Orders over $40 ship free.</p>
+    <a href="#" class="btn-primary" aria-label="Shop Inferno hot sauce online">
+      <i data-lucide="package" aria-hidden="true"></i>
+      Order Online
+    </a>
+    <p style="margin-top: var(--s8);">
+      Wholesale + restaurant inquiries: <br>
+      <a href="mailto:hello@infernosauce.com" style="color: var(--red); font-weight:500; text-decoration: none;">hello@infernosauce.com</a>
+    </p>
+  </div>
+</section>
+</main>
+
+<!-- ── Footer ─────────────────────────────────────────────────────────── -->
+<footer class="site-footer">
+  <span class="footer-mark">INFER<span>N</span>O</span>
+  <span class="footer-copy">© 2026 Inferno Small-Batch Hot Sauce · Grown &amp; bottled locally</span>
+</footer>
+
+<!-- Lucide icons -->
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+<script>
+// ─── Init Lucide icons ────────────────────────────────────────────────
+if (typeof lucide !== 'undefined') { lucide.createIcons(); }
+
+// ─── Data: Scoville scale reference points ───────────────────────────
+const MAX_LOG = Math.log10(2_200_000);
+const MIN_LOG = Math.log10(1000); // bell pepper baseline
+
+// Logarithmic position (0–1) on the scale
+function logPos(shu) {
+  return (Math.log10(shu) - MIN_LOG) / (MAX_LOG - MIN_LOG);
+}
+
+// ─── Render the context ruler ────────────────────────────────────────
+const references = [
+  { shu: 1_000,    label: 'Bell' },
+  { shu: 5_000,    label: 'Jalapeño' },
+  { shu: 50_000,   label: 'Cayenne' },
+  { shu: 150_000,  label: 'Habanero' },
+  { shu: 900_000,  label: 'Ghost' },
+  { shu: 2_200_000,label: 'Reaper' },
+];
+
+const colors = ['#1A0A00','#1A0A00','#1A0A00','#B84D00','#D42B00','#8C0500'];
+
+const rulerSvg = document.getElementById('ruler-svg');
+if (rulerSvg) {
+  const W = 1000;
+  references.forEach((ref, i) => {
+    const x = logPos(ref.shu) * W;
+    const col = colors[i] || '#1A0A00';
+
+    // Tick mark
+    const tick = document.createElementNS('http://www.w3.org/2000/svg','line');
+    tick.setAttribute('x1', x); tick.setAttribute('y1', 2);
+    tick.setAttribute('x2', x); tick.setAttribute('y2', 14);
+    tick.setAttribute('stroke', col);
+    tick.setAttribute('stroke-width', i >= 3 ? 2 : 1.5);
+    tick.setAttribute('opacity', i >= 3 ? '0.9' : '0.35');
+    rulerSvg.appendChild(tick);
+
+    // Label
+    const text = document.createElementNS('http://www.w3.org/2000/svg','text');
+    text.setAttribute('x', x);
+    text.setAttribute('y', 36);
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('font-family', "'IBM Plex Mono', monospace");
+    text.setAttribute('font-size', '9');
+    text.setAttribute('fill', col);
+    text.setAttribute('opacity', i >= 3 ? '0.85' : '0.45');
+    text.setAttribute('letter-spacing', '0.06em');
+    text.textContent = ref.label;
+    rulerSvg.appendChild(text);
+  });
+}
+
+// ─── Render heat bars: recompute exact log positions ─────────────────
+const flavors = document.querySelectorAll('.flavor-band');
+flavors.forEach(band => {
+  const shu = parseInt(band.dataset.shu, 10);
+  const pos = logPos(shu) * 1000; // x-coordinate in 0–1000 SVG viewBox
+
+  const fillRect = band.querySelector('.heat-fill');
+  const dot = band.querySelector('.heat-dot');
+
+  if (fillRect) {
+    fillRect.setAttribute('width', pos.toFixed(1));
+  }
+  if (dot) {
+    const dotX = Math.min(pos, 993); // stay within viewbox
+    dot.setAttribute('cx', dotX.toFixed(1));
+  }
+});
+
+// ─── Hover interaction: SHU count-up + heat bar animate ──────────────
+const DURATION = 1200; // ms for count animation
+
+function easeOutQuint(t) { return 1 - Math.pow(1 - t, 5); }
+
+function animateSHU(el, target) {
+  const start = Date.now();
+  function step() {
+    const elapsed = Date.now() - start;
+    const t = Math.min(elapsed / DURATION, 1);
+    const val = Math.round(easeOutQuint(t) * target);
+    el.textContent = val.toLocaleString();
+    if (t < 1) requestAnimationFrame(step);
+    else el.textContent = target.toLocaleString();
+  }
+  requestAnimationFrame(step);
+}
+
+flavors.forEach(band => {
+  const shuEl = band.querySelector('.shu-number');
+  const dot = band.querySelector('.heat-dot');
+  const shu = parseInt(band.dataset.shu, 10);
+  const pos = logPos(shu) * 1000;
+
+  let activated = false;
+
+  function activate() {
+    if (activated) return;
+    activated = true;
+
+    // Animate SHU count-up (counts from 0 to real value)
+    if (shuEl) animateSHU(shuEl, shu);
+
+    // Animate heat bar grow: scaleX from 0, transform-box:fill-box ensures
+    // transform-origin is relative to the element's bounding box
+    const fillRect = band.querySelector('.heat-fill');
+    if (fillRect) {
+      fillRect.style.transformBox = 'fill-box';
+      fillRect.style.transformOrigin = 'left center';
+      fillRect.style.transform = 'scaleX(0)';
+      fillRect.style.transition = 'transform 800ms cubic-bezier(0,0,0.2,1)';
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          fillRect.style.transform = 'scaleX(1)';
+        });
+      });
+    }
+    if (dot) {
+      dot.style.opacity = '0';
+      dot.style.transition = 'opacity 200ms ease-out 750ms';
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          dot.style.opacity = '1';
+        });
+      });
+    }
+  }
+
+  band.addEventListener('mouseenter', activate);
+  band.addEventListener('focusin', activate);
+  // Also works on touch: activate on first touch
+  band.addEventListener('touchstart', activate, { passive: true });
+});
+
+// ─── Reveal on scroll (render-safe: content shown by default) ────────
+// html.js class was added in <head>, so .reveal starts as opacity:0 (only w/ JS)
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('in');
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+// Stagger flavor bands on load (signature entrance gesture)
+const bands = document.querySelectorAll('.flavor-band.reveal');
+bands.forEach((band, i) => {
+  band.style.transitionDelay = (i * 80) + 'ms';
+  observer.observe(band);
+});
+
+// Other reveals
+document.querySelectorAll('.reveal:not(.flavor-band)').forEach(el => {
+  observer.observe(el);
+});
+
+// Stagger table rows
+document.querySelectorAll('.product-table tbody tr.reveal').forEach((row, i) => {
+  row.style.transitionDelay = (i * 70) + 'ms';
+  observer.observe(row);
+});
+</script>
+</body>
+</html>

@@ -75,3 +75,13 @@ You may break a default, but only deliberately, once, and in service of the conc
   hard-to-cancel are deceptive patterns — never ship them, even if they "work."
 - **Clarity beats cleverness in copy.** Voice and wit are encouraged, but never at the
   cost of a user understanding what a control does or what an error means.
+- **The standout is a thing, not a story.** A signature you can only defend with a
+  justification — "dark + glow *because* deep sea," "470nm *because* it's the real
+  wavelength" — is a mood wearing a costume. The test is always the artifact (does it
+  *do* something, grounded in the subject's data/mechanic?), never the explanation.
+  An agent will rationalize slop; the gate is objective. → `hero-artifacts.md`.
+- **Darkness is a trap, not a license.** A subject that suggests dark (deep sea, space,
+  night, AI, cybersecurity) is *exactly* when dark-ground + glowing cyan/violet accent
+  — the single most recognizable AI tell — sneaks in. If dark is genuinely right, the
+  accent may not glow, may not be cyan/violet, and must derive from the subject's real
+  material; better, subvert the obvious (luminous-on-paper). → `slop-colors.md`.

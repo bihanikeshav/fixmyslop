@@ -39,6 +39,12 @@ These are **not** loaded by the skill yet. The plan: harvest the "how to apply" 
 ## Distinctiveness playbook
 - [distinctiveness/](distinctiveness/README.md) — how ~115 genuinely distinctive sites (15 categories: tech, consumer, creative, indie) make themselves unmistakable, reverse-engineered into transferable techniques. The positive mirror of the slop manifest. Each exemplar separates the *transferable technique* from the *literal token you must never copy*.
 
+## Skill hard-gates (objective, un-rationalizable)
+- [hero-artifacts.md](hero-artifacts.md) — the ONE functional, subject-grounded standout every page must ship; the 5-test bar, 12 archetypes, the find-it method, and the **swap test** (swapping the subject should break the artifact).
+- [slop-colors.md](slop-colors.md) — the banned palette with objective hue/lightness/chroma gates (indigo-violet, cyan-on-dark, the AI gradient, dark+neon, fintech-blue, cream+gold), the dark-is-a-trap rule, and how to derive a non-slop accent from the subject's real material.
+- [hero-artifacts.md](hero-artifacts.md) · [composition-and-boldness.md](composition-and-boldness.md) · [motion-animation.md](motion-animation.md) — the standout bar, layout/type/boldness + variety engine, and purposeful render-safe motion.
+- [components-and-ui-patterns.md](components-and-ui-patterns.md) — use premade icons/components (never hand-drawn illustrative SVG); when custom SVG is allowed (data-driven instruments only); accessible component patterns; de-slopping a CSS framework; 11 layout patterns; the WCAG contrast recipe + dark-ground pitfall.
+
 ## Provenance
 Each essay was produced by a focused web-research pass (primary sources preferred:
 Nielsen Norman Group, Refactoring UI, Practical Typography, W3C/WCAG + WebAIM,

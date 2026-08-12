@@ -1,7 +1,7 @@
 // Probe the keyless Google Fonts metadata endpoint to confirm shape.
 const url = "https://fonts.google.com/metadata/fonts";
 try {
-  const res = await fetch(url, { headers: { "user-agent": "ai-slop-font/0.1" } });
+  const res = await fetch(url, { headers: { "user-agent": "fixmyslop/0.1" } });
   console.log("HTTP", res.status);
   let text = await res.text();
   // Google prefixes JSON with an XSSI guard like ")]}'"

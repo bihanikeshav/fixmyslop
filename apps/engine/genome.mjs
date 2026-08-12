@@ -1,0 +1,297 @@
+// apps/engine/genome.mjs — Subsystem 2: the StyleGenome resolver.
+//
+// The connective tissue: given a StyleIntent (+ seed + diversity memory), it resolves
+// ONE coherent direction across type, color, layout, material and motion, each decision
+// carrying provenance, plus a fingerprint that bounds variation on re-rolls.
+//
+// Pure/deterministic: no Math.random, no Date.now. The color/font/material generators
+// come from the injected engine instance (createEngine), so this shares the same data.
+
+import { resolveIntent, clamp01, hashToUint32, deriveBaseHue } from "./intent.mjs";
+import { suggestLayout, LAYOUT_FAMILIES, CHROME_ROLES } from "./layout-families.mjs";
+import { canonicalRole } from "./role-aliases.mjs";
+import { deriveBackground } from "./background.mjs";
+import { deriveMotion } from "./motion.mjs";
+
+const FAMILY_BY_NAME = new Map(LAYOUT_FAMILIES.map((f) => [f.name, f]));
+
+const band = (v) => (v < 0.34 ? "muted" : v < 0.67 ? "balanced" : "bold");
+
+// FNV-1a-ish hash of the section role order — part of the fingerprint.
+function hashSections(sectionGrammar = []) {
+  const s = sectionGrammar.map((x) => x.role).join(">");
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+  return h >>> 0;
+}
+
+// Material/radius/shadow used to be IDENTICAL across all 4 explore directions: materialFromDial(m)
+// read only intent.materiality, which doesn't vary per-direction (same intent, 4 layout/font/color
+// directions), and every caller shared the same fixed radiusBase(11)/shadow(m*8) formula — so every
+// direction rendered the exact same 5.5/11/22/33 radius ramp and the exact same shadow language.
+// Fix: derive an EFFECTIVE materiality per direction from (a) the direction's own layout family
+// pageKind (a dashboard/tool-shaped family reads sharper/flatter by default; a marketing/landing
+// family reads a touch softer/more elevated) and (b) a deterministic seed+family jitter — since
+// explore.mjs already gives every direction its own seed (optionSeed), this jitter naturally
+// diverges direction-to-direction without needing any new threading.
+const TOOL_PAGE_KINDS = new Set(["dashboard", "data-admin", "app"]);
+const EXPRESSIVE_PAGE_KINDS = new Set(["marketing", "landing", "story", "product-with-proof", "brand"]);
+
+// Hero-led page kinds carry a SINGLE-VIEWPORT hero: their first content section is a deliberate
+// first screen that must fit one viewport (declared in the genome so the render honors it and
+// render-qa enforces it — see the fold-contract). Tool/doc/reading kinds (dashboard/app/docs/…)
+// have no single-screen hero, so their first section is NOT flagged.
+const HERO_LED_PAGE_KINDS = new Set(["landing", "marketing", "product-with-proof", "brand", "story", "explain", "portfolio", "pricing"]);
+
+// annotateSingleViewport — a LATE, PURE annotation: mark the hero (first non-chrome section)
+// `singleViewport: true` for hero-led page kinds. It runs AFTER the fingerprint is computed and
+// returns a NEW layout object (never mutates the shared layoutOverride explore.mjs passes in), and
+// the fingerprint only ever hashes section ROLE/surface — so this can never change which direction
+// gets selected. Absence of the flag = not single-viewport (tool/doc heroes, later sections).
+function annotateSingleViewport(layout, family) {
+  if (!layout || !Array.isArray(layout.sectionGrammar)) return layout;
+  const pageKind = family ? family.pageKind : layout.pageKind;
+  if (!HERO_LED_PAGE_KINDS.has(pageKind)) return layout;
+  const heroIdx = layout.sectionGrammar.findIndex((s) => s && !CHROME_ROLES.has(s.role));
+  if (heroIdx < 0) return layout;
+  const sectionGrammar = layout.sectionGrammar.map((s, i) => (i === heroIdx ? { ...s, singleViewport: true } : s));
+  return { ...layout, sectionGrammar };
+}
+
+function materialityJitter(seed, key) {
+  const r = hashToUint32(`${seed}:material:${key || ""}`) / 4294967296;
+  return (r - 0.5) * 0.34; // deterministic ±0.17 spread, keyed on (seed, family)
+}
+
+function effectiveMateriality(intent, family, seed) {
+  let m = intent.materiality;
+  if (family) {
+    if (TOOL_PAGE_KINDS.has(family.pageKind)) m -= 0.14;
+    else if (EXPRESSIVE_PAGE_KINDS.has(family.pageKind)) m += 0.08;
+  }
+  m += materialityJitter(seed, family && family.name);
+  return clamp01(m);
+}
+
+function materialFromDial(m, { pageKind, energy = 0.5 } = {}) {
+  const accentTreatment = TOOL_PAGE_KINDS.has(pageKind)
+    ? "state-color-coded"
+    : energy > 0.6 ? "one-primary-plus-secondary" : "one-primary-plus-signal";
+  return {
+    radiusLanguage: m < 0.33 ? "tight-square" : m < 0.66 ? "controlled-mixed" : "soft-rounded",
+    shadowLanguage: m < 0.33 ? "flat-or-hairline" : m < 0.66 ? "soft-low-elevation" : "layered-elevation",
+    borderLanguage: m < 0.5 ? "selective-structural" : "minimal",
+    surfaceTreatment: m > 0.66 ? "subtle-texture" : "none",
+    accentTreatment,
+  };
+}
+
+function motionFromDial(mi) {
+  const families = mi < 0.25 ? ["fade"] : mi < 0.6 ? ["fade", "slide"] : ["fade", "slide", "scale"];
+  return { intensity: mi, families, reducedMotion: "required" };
+}
+
+/**
+ * styleGenome(engine, intentInput, { seed?, recentFingerprints?, layout? }) → StyleGenome
+ * Deterministic: same (intent, seed) → identical genome. Different recentFingerprints
+ * → divergence in composition (layout family / font pair / accent), not just hue.
+ *
+ * `layout` (spec §4 explore wiring): an already-composed/perturbed LayoutGenome candidate
+ * (as produced by `suggestLayout`/`perturbAndValidate` in explore.mjs). When present, this
+ * skips the internal `suggestLayout` call entirely and uses the given layout verbatim — the
+ * caller (exploreDirections) owns family selection + perturbation for that direction. When
+ * `layout` is absent (the historical call shape), behavior is EXACTLY unchanged: internal
+ * `suggestLayout(intent, { recentFingerprints })` picks the top candidate, as before.
+ */
+export function styleGenome(engine, intentInput = {}, { seed, recentFingerprints = [], layout: layoutOverride = null } = {}) {
+  const resolved = resolveIntent(intentInput);
+  const intent = resolved.intent;
+  const useSeed = Number.isFinite(Number(seed)) ? Number(seed) : resolved.seed;
+
+  // Shared personality axes every layer reads (derived from the dials).
+  const axes = {
+    "quiet-loud": clamp01((intent.energy + intent.experimentalism) / 2),
+    "technical-organic": clamp01(1 - intent.warmth),
+    "classic-futurist": clamp01(intent.experimentalism * 0.6 + (1 - intent.era) * 0.4),
+    "warm-clinical": clamp01(1 - intent.warmth),
+    "dense-breathing": clamp01(1 - intent.contentDensity),
+  };
+
+  // Diversity memory → exclusions. Fingerprints may carry fontPair (families) + layoutFamily.
+  const recentFamilies = recentFingerprints.flatMap((fp) => (fp && fp.fontPair) || []);
+
+  // ---- layout (resolved FIRST so type + background can couple to its geometry) ----
+  const layouts = layoutOverride ? null : suggestLayout(intent, { recentFingerprints });
+  const layout = layoutOverride || (layouts ? layouts[0] || null : null);
+  // layoutAir ∈ [0,1] — how much breathing room this layout has (higher = airier). Drives the
+  // font↔layout presence coupling (an airy layout can carry a high-presence display face; a tight/
+  // dense one wants a neutral, low-presence face) AND the background air-gate below. Undefined when
+  // no layout resolved → retrieveFonts falls back to pre-coupling behavior.
+  const layoutMacro = layout && layout.macro ? layout.macro : null;
+  const layoutAir = layoutMacro
+    ? (Number.isFinite(layoutMacro.whitespace)
+        ? clamp01(layoutMacro.whitespace)
+        : (Number.isFinite(layoutMacro.contentDensity) ? clamp01(1 - layoutMacro.contentDensity) : undefined))
+    : undefined;
+
+  // ---- type (neighbor retrieval + readability gate + surface-fit envelope; presence coupled to layoutAir) ----
+  let display = engine.retrieveFonts({ role: "display", intent, exclude: recentFamilies, n: 4, layoutAir })[0] || null;
+  let body = engine.retrieveFonts({
+    role: "body", intent, n: 4, layoutAir,
+    exclude: [...(display ? [display.family] : []), ...recentFamilies],
+  })[0] || null;
+  // checkTypeFit — belt-and-suspenders re-check (retrieveFonts already filters by the same
+  // envelope, so this only fires via a path that bypassed it, e.g. the neighbor-seeded `like`
+  // pool); on a violation, swap in the nearest legible candidate for the offending role(s).
+  const typeFit = engine.checkTypeFit
+    ? engine.checkTypeFit({ display: display && display.family, body: body && body.family }, intent)
+    : { pass: true };
+  if (typeFit && !typeFit.pass) {
+    if (typeFit.violations.some((v) => v.role === "display")) {
+      display = engine.retrieveFonts({
+        role: "display", intent, n: 4, layoutAir,
+        exclude: [...recentFamilies, ...(display ? [display.family] : [])],
+      })[0] || display;
+    }
+    if (typeFit.violations.some((v) => v.role === "body")) {
+      body = engine.retrieveFonts({
+        role: "body", intent, n: 4, layoutAir,
+        exclude: [...recentFamilies, ...(body ? [body.family] : []), ...(display ? [display.family] : [])],
+      })[0] || body;
+    }
+  }
+
+  // ---- color (existing OKLCH corpus engine), grounded by energy + intent-derived hue (warmth/
+  // era/energy/surface — design-law.md "Palette = intent, not seed") + theme, reproducible by seed.
+  // An explicit intentInput.hue (raw, pre-normalization — hue isn't a StyleIntent dial) still wins.
+  const explicitHue = Number.isFinite(Number(intentInput.hue))
+    ? (((Number(intentInput.hue) % 360) + 360) % 360)
+    : null;
+  const baseHue = explicitHue != null ? explicitHue : deriveBaseHue(intent);
+  // wire the requested theme through to the palette's ground/ink story — without this, intent.theme
+  // reached material/background but the palette stayed light, so a "dark" direction rendered on a
+  // light ground (the dark mood also desaturates the accent, per the dark+neon gate).
+  let palette = engine.generatePalette({ energy: band(intent.energy), seed: useSeed, hue: baseHue, mood: intent.theme === "dark" ? "dark" : "light" });
+  // checkColorFit — belt-and-suspenders re-check against the design-law.md indigo/violet/
+  // fintech-blue + cyan/mint hard bans; generatePalette's own gate already refuses to emit either
+  // band, so this only fires if a caller-anchored accent slipped through some other path.
+  const colorFit = engine.checkColorFit ? engine.checkColorFit(palette.accent, intent) : { pass: true };
+  if (colorFit && !colorFit.pass && colorFit.fallback) {
+    palette = { ...palette, accent: colorFit.fallback.hex, hue: colorFit.fallback.hue };
+  }
+
+  // ---- material (slots attached to the layout's hierarchy nodes, never sprayed) ----
+  const family = layout ? FAMILY_BY_NAME.get(layout.family) : null;
+  const m = effectiveMateriality(intent, family, useSeed);
+  const matLang = materialFromDial(m, { pageKind: family && family.pageKind, energy: intent.energy });
+  // elevated/rounded directions (m > 0.55) get an ambient shadow tinted toward the direction's own
+  // accent hue (elevation reads as "this surface's material", not a generic drop-shadow); flatter/
+  // sharper directions keep a neutral shadow — this is also part of the material spread, not just
+  // radius.
+  const shadowHue = m > 0.55 && Number.isFinite(palette.hue) ? Math.round(palette.hue) : 0;
+  const material = {
+    ...matLang,
+    radii: engine.radiusScale({ base: Math.round(4 + m * 14) }),
+    shadow: engine.shadow(Math.round(1 + m * 7), { hue: shadowHue, alpha: 0.10 + m * 0.14 }),
+    slots: family ? family.materialSlots : [],   // hierarchy nodes that receive material — never every box
+  };
+
+  // ---- background (docs/background-material-taxonomy.md — the field/surface treatment axis,
+  // filling `family.materialSlots` alongside `material` above) ----
+  const background = family
+    ? deriveBackground(family, {
+        materiality: intent.materiality, energy: intent.energy, layoutVariance: intent.layoutVariance,
+        // RESOLVED layout density + whitespace (not just the intent dial) so the background axis
+        // COMPLEMENTS the actual geometry — no busy texture/pattern behind a tight/dense layout.
+        contentDensity: layoutMacro && Number.isFinite(layoutMacro.contentDensity) ? layoutMacro.contentDensity : intent.contentDensity,
+        layoutWhitespace: layoutMacro && Number.isFinite(layoutMacro.whitespace) ? layoutMacro.whitespace : undefined,
+        contrastPreference: intent.contrastPreference, craft: intent.craft,
+        formality: intent.formality, theme: intent.theme, hue: palette.hue,
+      }, hashToUint32(`${useSeed}:background:${family.name}`))
+    : null;
+
+  // ---- motion (docs/motion-interaction-taxonomy.md — the scroll/reveal/micro-interaction axis;
+  // `design` carries the full taxonomy-derived MotionGenome next to the legacy families/intensity
+  // dial fingerprint.mjs's motionFamily already reads, so existing consumers of `motion.families`
+  // are unaffected) ----
+  const motionDesign = family
+    ? deriveMotion(family, {
+        materiality: intent.materiality, energy: intent.energy, layoutVariance: intent.layoutVariance,
+        contentDensity: intent.contentDensity, contrastPreference: intent.contrastPreference, craft: intent.craft,
+        theme: intent.theme, hue: palette.hue,
+      }, hashToUint32(`${useSeed}:motion:${family.name}`))
+    : null;
+  const motion = { ...motionFromDial(intent.motionIntensity), tokens: engine.motionTokens(), design: motionDesign };
+
+  // §3 extension (ADDITIVE — penaltyFor/sectionOrderHash above stay on RAW roles; canonicalOrder
+  // here is used ONLY by the §3 distance math in fingerprint.mjs, per spec trap 7).
+  const canonicalOrder = layout ? layout.sectionGrammar.map((s) => canonicalRole(s.role)) : [];
+  const darkBands = layout
+    ? layout.sectionGrammar.map((s) => (s.surface === "inverted" ? "1" : "0")).join("")
+    : "";
+
+  const fingerprint = {
+    fontPair: [display && display.family, body && body.family].filter(Boolean),
+    paletteHue: Math.round(palette.hue || 0),
+    layoutFamily: layout ? layout.family : null,
+    sectionOrderHash: layout ? hashSections(layout.sectionGrammar) : null,
+    splitRatioBucket: layout && layout.macro ? Math.round((layout.macro.splitRatio || 0) * 10) : null,
+    radiusLanguage: matLang.radiusLanguage,
+    shadowLanguage: matLang.shadowLanguage,
+    accentStrategy: matLang.accentTreatment,
+    motionFamily: motion.families[motion.families.length - 1],
+    // ── additive §3 fields ──
+    canonicalOrder,
+    splitRatio: layout && layout.macro ? layout.macro.splitRatio : null,
+    whitespace: layout && layout.macro ? layout.macro.whitespace : null,
+    contentWidthShare: layout && layout.macro ? layout.macro.contentWidthShare : null,
+    columnCount: layout && layout.macro ? layout.macro.columnCount : null,
+    headingScaleRatio: layout && layout.hierarchy ? layout.hierarchy.headingScaleRatio : null,
+    darkBands,
+  };
+
+  return {
+    sourceIntent: intent,
+    sourceBrief: intent.sourceBrief,
+    seed: useSeed,
+    variation: intent.variation,
+    warnings: resolved.warnings,
+    personality: { axes },
+    type: {
+      display, body,
+      // per-role leading + tracking recommendations (typography.md): the engine emitted NONE, so
+      // implementers fell back to the browser's 1.2 line-height (too tight for body) and 0 tracking
+      // everywhere. Body leading is measure-aware — a tight measure (multi-column / narrow content)
+      // needs less leading than a wide one; sans takes a touch more than serif.
+      setting: (() => {
+        const share = (layout && layout.macro && Number.isFinite(layout.macro.contentWidthShare)) ? layout.macro.contentWidthShare : 0.9;
+        const cols = (layout && layout.macro && Number.isFinite(layout.macro.columnCount)) ? layout.macro.columnCount : 1;
+        const tight = cols >= 2 || share <= 0.72;
+        const bodyLeading = (tight ? 1.45 : 1.55) + (body && body.category === "sans-serif" ? 0.03 : 0);
+        return {
+          display: { leading: 1.1, tracking: "-0.025em" },   // large headings: tighter tracking + leading
+          body: { leading: +bodyLeading.toFixed(2), tracking: "0" },
+          label: { leading: 1.2, tracking: "0.02em", uppercaseTracking: "0.08em" },
+          measure: tight ? "45-60ch" : "60-75ch",
+        };
+      })(),
+      note: "display carries identity; body carries running text — never swap them.",
+    },
+    color: { ...palette, source: "corpus-plus-oklch" },
+    layout: annotateSingleViewport(layout, family),
+    layoutAlternatives: layouts ? layouts.slice(1, 3) : [],
+    material,
+    background,
+    motion,
+    responsive: { collapseRules: layout && layout.responsive ? [layout.responsive.mobileTransform] : [] },
+    fingerprint,
+    provenance: {
+      type: display && display.provenance ? display.provenance : "catalogue-fallback",
+      color: "OKLCH corpus engine (checkColor-gated)",
+      layout: layout && layout.quality ? layout.quality.provenance : ["hand-authored"],
+      material: "materiality dial → radius/shadow scales",
+      background: background ? background.provenance : [],
+      motion: motionDesign ? motionDesign.provenance : [],
+    },
+  };
+}

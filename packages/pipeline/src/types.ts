@@ -1,4 +1,4 @@
-import type { FontRecord } from "@ai-slop-font/core";
+import type { FontRecord } from "@fixmyslop/core";
 
 /** A font as stored in the on-disk index: a core FontRecord plus provenance. */
 export interface IndexedFont extends FontRecord {

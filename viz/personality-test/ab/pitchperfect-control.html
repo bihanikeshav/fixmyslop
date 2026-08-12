@@ -1,0 +1,1630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PitchPerfect — Sing in Tune. Train Like a Maestro.</title>
+
+  <!-- Fraunces (editorial display) + Plus Jakarta Sans (body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,300;1,9..144,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── Tokens ──────────────────────────────────────────────── */
+    :root {
+      /* Palette: warm parchment base, deep mahogany ink, saffron accent */
+      --parchment:    oklch(96% 0.012 72);
+      --parchment-2:  oklch(92% 0.018 72);
+      --parchment-3:  oklch(87% 0.022 72);
+      --rule:         oklch(84% 0.020 72);
+      --ink:          oklch(18% 0.015 50);
+      --ink-mid:      oklch(42% 0.018 50);
+      --ink-faint:    oklch(62% 0.014 50);
+      --saffron:      oklch(72% 0.18 62);      /* golden saffron */
+      --saffron-deep: oklch(58% 0.20 48);      /* deeper burnt */
+      --saffron-pale: oklch(90% 0.08 68);
+      --teal:         oklch(58% 0.14 198);     /* secondary accent for pitch line */
+      --teal-pale:    oklch(88% 0.06 198);
+      --green-ok:     oklch(62% 0.14 145);
+
+      --font-display: 'Fraunces', Georgia, serif;
+      --font-body:    'Plus Jakarta Sans', system-ui, sans-serif;
+
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 14px;
+
+      --shadow-card: 0 2px 12px oklch(18% 0.015 50 / 0.10),
+                     0 1px 3px oklch(18% 0.015 50 / 0.06);
+    }
+
+    /* ── Reset ───────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { font-size: 16px; scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--parchment);
+      color: var(--ink);
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ── Nav ─────────────────────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 clamp(1.5rem, 5vw, 4rem);
+      height: 64px;
+      background: oklch(96% 0.012 72 / 0.88);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .nav-logo {
+      font-family: var(--font-display);
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: var(--ink);
+      letter-spacing: -0.02em;
+      text-decoration: none;
+    }
+
+    .nav-logo span {
+      color: var(--saffron-deep);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--ink-mid);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--ink); }
+
+    .btn-nav {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.5rem 1.25rem;
+      background: var(--saffron-deep);
+      color: var(--parchment);
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+      font-weight: 600;
+      border: none;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.15s;
+    }
+
+    .btn-nav:hover {
+      background: var(--saffron);
+      color: var(--ink);
+      transform: translateY(-1px);
+    }
+
+    /* ── Hero ────────────────────────────────────────────────── */
+    .hero {
+      padding: 7rem clamp(1.5rem, 5vw, 4rem) 5rem;
+      max-width: 1320px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: clamp(2rem, 6vw, 6rem);
+      align-items: center;
+      min-height: 90vh;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--saffron-deep);
+      margin-bottom: 1.25rem;
+    }
+
+    .hero-eyebrow::before {
+      content: '';
+      display: block;
+      width: 24px;
+      height: 2px;
+      background: var(--saffron);
+    }
+
+    h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2.8rem, 5.5vw, 5.2rem);
+      font-weight: 700;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+      margin-bottom: 1.5rem;
+    }
+
+    h1 em {
+      font-style: italic;
+      color: var(--saffron-deep);
+      font-weight: 400;
+    }
+
+    .hero-sub {
+      font-size: clamp(1rem, 1.5vw, 1.2rem);
+      color: var(--ink-mid);
+      max-width: 48ch;
+      line-height: 1.7;
+      margin-bottom: 2.5rem;
+    }
+
+    .hero-cta {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.9rem 2rem;
+      background: var(--saffron-deep);
+      color: var(--parchment);
+      font-family: var(--font-body);
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 4px 14px oklch(58% 0.20 48 / 0.35);
+    }
+
+    .btn-primary:hover {
+      background: var(--saffron);
+      color: var(--ink);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px oklch(72% 0.18 62 / 0.4);
+    }
+
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.9rem 1.5rem;
+      background: transparent;
+      color: var(--ink-mid);
+      font-family: var(--font-body);
+      font-size: 1rem;
+      font-weight: 500;
+      border: 1.5px solid var(--rule);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      text-decoration: none;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--ink-mid);
+      color: var(--ink);
+    }
+
+    .hero-proof {
+      margin-top: 3rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      font-size: 0.85rem;
+      color: var(--ink-faint);
+    }
+
+    .proof-avatars {
+      display: flex;
+    }
+
+    .proof-avatars span {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 2px solid var(--parchment);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 700;
+      margin-left: -8px;
+    }
+
+    .proof-avatars span:first-child { margin-left: 0; }
+
+    .av1 { background: oklch(65% 0.15 20); color: var(--parchment); }
+    .av2 { background: oklch(55% 0.14 198); color: var(--parchment); }
+    .av3 { background: oklch(60% 0.16 145); color: var(--parchment); }
+    .av4 { background: oklch(58% 0.18 280); color: var(--parchment); }
+
+    .hero-visual {
+      position: relative;
+    }
+
+    /* ── Piano Roll Demo ─────────────────────────────────────── */
+    .demo-shell {
+      background: var(--ink);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: 0 24px 64px oklch(18% 0.015 50 / 0.28),
+                  0 4px 16px oklch(18% 0.015 50 / 0.15);
+    }
+
+    .demo-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1.25rem;
+      background: oklch(24% 0.012 50);
+      border-bottom: 1px solid oklch(30% 0.010 50);
+    }
+
+    .demo-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .demo-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+    }
+
+    .dot-red    { background: #FF5F57; }
+    .dot-yellow { background: #FFBD2E; }
+    .dot-green  { background: #28CA40; }
+
+    .demo-title-bar {
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: oklch(70% 0.008 50);
+      letter-spacing: 0.02em;
+    }
+
+    .demo-status {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--green-ok);
+    }
+
+    .demo-status-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--green-ok);
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.85); }
+    }
+
+    /* Score panel */
+    .demo-score-panel {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1px;
+      background: oklch(28% 0.010 50);
+      border-bottom: 1px solid oklch(28% 0.010 50);
+    }
+
+    .score-cell {
+      background: oklch(22% 0.010 50);
+      padding: 0.6rem 1.1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
+    }
+
+    .score-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: oklch(50% 0.010 50);
+    }
+
+    .score-value {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .score-value.primary   { color: var(--saffron); }
+    .score-value.secondary { color: oklch(75% 0.010 50); }
+    .score-value.accent    { color: var(--teal); }
+
+    /* Piano roll canvas area */
+    .piano-roll-wrap {
+      position: relative;
+      height: 240px;
+      overflow: hidden;
+    }
+
+    .piano-keys {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 42px;
+      background: oklch(20% 0.008 50);
+      border-right: 1px solid oklch(32% 0.008 50);
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+    }
+
+    .pkey {
+      height: calc(100% / 13);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 5px;
+      font-size: 0.58rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      border-bottom: 1px solid oklch(25% 0.008 50);
+      user-select: none;
+    }
+
+    .pkey.white { color: oklch(65% 0.008 50); background: oklch(20% 0.008 50); }
+    .pkey.black { color: oklch(45% 0.008 50); background: oklch(16% 0.008 50); }
+    .pkey.active { color: var(--saffron); background: oklch(24% 0.025 62); }
+
+    canvas#pianoRoll {
+      position: absolute;
+      left: 42px; top: 0;
+      width: calc(100% - 42px);
+      height: 100%;
+    }
+
+    /* Ornament tag */
+    .ornament-tag {
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      background: oklch(58% 0.20 48 / 0.85);
+      color: var(--parchment);
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      padding: 0.2rem 0.6rem;
+      border-radius: 20px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .ornament-tag.visible { opacity: 1; }
+
+    /* Song selector */
+    .demo-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.7rem 1.25rem;
+      background: oklch(22% 0.010 50);
+      border-top: 1px solid oklch(28% 0.010 50);
+    }
+
+    .song-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .song-icon {
+      width: 32px; height: 32px;
+      border-radius: 6px;
+      background: oklch(56% 0.20 48);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+    }
+
+    .song-meta {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .song-name {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: oklch(88% 0.010 50);
+    }
+
+    .song-raga {
+      font-size: 0.7rem;
+      color: oklch(52% 0.010 50);
+    }
+
+    .raga-badge {
+      display: inline-block;
+      margin-left: 0.3rem;
+      padding: 0 0.4rem;
+      background: oklch(52% 0.14 198 / 0.25);
+      color: var(--teal);
+      border-radius: 3px;
+      font-size: 0.65rem;
+      font-weight: 600;
+    }
+
+    .demo-controls {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .ctrl-btn {
+      width: 32px; height: 32px;
+      border-radius: var(--radius-sm);
+      border: 1px solid oklch(35% 0.010 50);
+      background: oklch(28% 0.010 50);
+      color: oklch(70% 0.010 50);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .ctrl-btn:hover {
+      background: oklch(34% 0.010 50);
+      color: oklch(90% 0.010 50);
+    }
+
+    .ctrl-btn.active {
+      background: oklch(56% 0.20 48);
+      border-color: oklch(60% 0.22 48);
+      color: var(--parchment);
+    }
+
+    /* ── Section layout ──────────────────────────────────────── */
+    section {
+      padding: clamp(4rem, 8vw, 8rem) clamp(1.5rem, 5vw, 4rem);
+      max-width: 1320px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--saffron-deep);
+      margin-bottom: 1rem;
+    }
+
+    h2 {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+      margin-bottom: 1.25rem;
+    }
+
+    h2 em {
+      font-style: italic;
+      font-weight: 400;
+      color: var(--saffron-deep);
+    }
+
+    .section-intro {
+      font-size: 1.1rem;
+      color: var(--ink-mid);
+      max-width: 52ch;
+      line-height: 1.7;
+      margin-bottom: 3.5rem;
+    }
+
+    /* ── Divider ─────────────────────────────────────────────── */
+    .divider {
+      height: 1px;
+      background: var(--rule);
+      margin: 0 clamp(1.5rem, 5vw, 4rem);
+    }
+
+    /* ── Feature grid ────────────────────────────────────────── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+      border: 1px solid var(--rule);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .feature-cell {
+      padding: 2.25rem 2rem;
+      border-right: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+      background: var(--parchment);
+      transition: background 0.25s;
+    }
+
+    .feature-cell:nth-child(3n) { border-right: none; }
+    .feature-cell:nth-last-child(-n+3) { border-bottom: none; }
+
+    .feature-cell:hover {
+      background: var(--parchment-2);
+    }
+
+    .feature-icon-wrap {
+      width: 44px; height: 44px;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .feature-icon-wrap svg {
+      width: 40px; height: 40px;
+    }
+
+    h3 {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      margin-bottom: 0.6rem;
+    }
+
+    .feature-desc {
+      font-size: 0.9rem;
+      color: var(--ink-mid);
+      line-height: 1.65;
+    }
+
+    /* ── How it works ────────────────────────────────────────── */
+    .how-it-works {
+      background: var(--parchment-2);
+      border-top: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .how-inner {
+      padding: clamp(4rem, 8vw, 8rem) clamp(1.5rem, 5vw, 4rem);
+      max-width: 1320px;
+      margin: 0 auto;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3rem;
+      margin-top: 3.5rem;
+    }
+
+    .step {
+      position: relative;
+    }
+
+    .step::after {
+      content: '→';
+      position: absolute;
+      right: -1.75rem;
+      top: 0.3rem;
+      font-size: 1.1rem;
+      color: var(--rule);
+      font-weight: 600;
+    }
+
+    .step:last-child::after { display: none; }
+
+    .step-num {
+      font-family: var(--font-display);
+      font-size: 3.5rem;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--saffron-pale);
+      margin-bottom: 0.75rem;
+      letter-spacing: -0.04em;
+    }
+
+    .step h3 {
+      font-size: 1.15rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .step p {
+      font-size: 0.9rem;
+      color: var(--ink-mid);
+      line-height: 1.65;
+    }
+
+    /* ── Gamification section ────────────────────────────────── */
+    .gamification {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: clamp(3rem, 6vw, 6rem);
+      align-items: center;
+    }
+
+    .xp-card {
+      background: var(--ink);
+      border-radius: var(--radius-lg);
+      padding: 2.5rem;
+      box-shadow: var(--shadow-card);
+    }
+
+    .xp-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+    }
+
+    .xp-title {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 600;
+      color: oklch(88% 0.010 50);
+      letter-spacing: -0.01em;
+    }
+
+    .level-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: oklch(56% 0.20 48);
+      color: var(--parchment);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+    }
+
+    .xp-progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: oklch(52% 0.010 50);
+      margin-bottom: 0.5rem;
+    }
+
+    .xp-bar-track {
+      height: 8px;
+      background: oklch(28% 0.010 50);
+      border-radius: 4px;
+      margin-bottom: 2rem;
+      overflow: hidden;
+    }
+
+    .xp-bar-fill {
+      height: 100%;
+      width: 68%;
+      background: linear-gradient(90deg, var(--saffron-deep), var(--saffron));
+      border-radius: 4px;
+      animation: xpGrow 1.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    @keyframes xpGrow {
+      from { width: 0; }
+      to   { width: 68%; }
+    }
+
+    .xp-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .xp-stat {
+      background: oklch(24% 0.010 50);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.1rem;
+    }
+
+    .xp-stat-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: oklch(48% 0.010 50);
+      margin-bottom: 0.3rem;
+    }
+
+    .xp-stat-val {
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .xp-stat-val.fire { color: var(--saffron); }
+    .xp-stat-val.cool { color: var(--teal); }
+    .xp-stat-val.ok   { color: var(--green-ok); }
+    .xp-stat-val.warm { color: oklch(72% 0.12 32); }
+
+    .streak-row {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .streak-day {
+      flex: 1;
+      height: 6px;
+      border-radius: 3px;
+      background: oklch(30% 0.010 50);
+      transition: background 0.3s;
+    }
+
+    .streak-day.done { background: var(--saffron-deep); }
+    .streak-day.today { background: var(--saffron); }
+
+    .streak-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 0.4rem;
+    }
+
+    .streak-labels span {
+      flex: 1;
+      font-size: 0.62rem;
+      color: oklch(42% 0.010 50);
+      text-align: center;
+      letter-spacing: 0.02em;
+    }
+
+    .gamification-text .section-label { margin-bottom: 0.75rem; }
+
+    .gamification-text h2 { margin-bottom: 1rem; }
+
+    .feat-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .feat-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.9rem;
+      font-size: 0.95rem;
+      color: var(--ink-mid);
+      line-height: 1.55;
+    }
+
+    .feat-list-icon {
+      flex-shrink: 0;
+      width: 22px; height: 22px;
+      margin-top: 1px;
+      border-radius: 50%;
+      background: var(--saffron-pale);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+    }
+
+    /* ── CTA banner ──────────────────────────────────────────── */
+    .cta-banner {
+      background: var(--ink);
+      border-radius: var(--radius-lg);
+      padding: clamp(3rem, 6vw, 5rem) clamp(2rem, 6vw, 5rem);
+      margin: 0 clamp(1.5rem, 5vw, 4rem) clamp(4rem, 6vw, 6rem);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .cta-text h2 {
+      color: oklch(94% 0.015 72);
+      margin-bottom: 0.5rem;
+    }
+
+    .cta-text p {
+      color: oklch(58% 0.010 50);
+      font-size: 1rem;
+    }
+
+    .cta-text p strong { color: oklch(72% 0.18 62); }
+
+    .btn-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 1rem 2.25rem;
+      background: var(--saffron-deep);
+      color: var(--parchment);
+      font-family: var(--font-body);
+      font-size: 1.05rem;
+      font-weight: 700;
+      border: none;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: background 0.2s, transform 0.15s;
+      box-shadow: 0 4px 20px oklch(58% 0.20 48 / 0.5);
+    }
+
+    .btn-cta:hover {
+      background: var(--saffron);
+      color: var(--ink);
+      transform: translateY(-2px);
+    }
+
+    /* ── Footer ──────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--rule);
+      padding: 2rem clamp(1.5rem, 5vw, 4rem);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .footer-logo {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--ink-mid);
+      letter-spacing: -0.02em;
+    }
+
+    .footer-logo span { color: var(--saffron-deep); }
+
+    footer small {
+      font-size: 0.8rem;
+      color: var(--ink-faint);
+    }
+
+    /* ── Responsive ──────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .hero {
+        grid-template-columns: 1fr;
+        min-height: auto;
+        padding-top: 5.5rem;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .feature-cell { border-right: none; }
+      .feature-cell:nth-last-child(-n+3) { border-bottom: 1px solid var(--rule); }
+      .feature-cell:last-child { border-bottom: none; }
+
+      .steps { grid-template-columns: 1fr; gap: 2rem; }
+      .step::after { display: none; }
+
+      .gamification {
+        grid-template-columns: 1fr;
+      }
+
+      nav .nav-links { display: none; }
+
+      .cta-banner { flex-direction: column; align-items: flex-start; }
+    }
+
+    /* ── Entrance animations ─────────────────────────────────── */
+    .fade-up {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+                  transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .fade-up.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .fade-up.d1 { transition-delay: 0.1s; }
+    .fade-up.d2 { transition-delay: 0.2s; }
+    .fade-up.d3 { transition-delay: 0.3s; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .fade-up { opacity: 1; transform: none; transition: none; }
+      .xp-bar-fill { animation: none; width: 68%; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Navigation ─────────────────────────────────────────────── -->
+<nav>
+  <a class="nav-logo" href="#"><span>Pitch</span>Perfect</a>
+  <ul class="nav-links">
+    <li><a href="#demo">Demo</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#how">How it works</a></li>
+    <li><a href="#progress">Progress</a></li>
+  </ul>
+  <a class="btn-nav" href="#">Start Free</a>
+</nav>
+
+<!-- ── Hero ───────────────────────────────────────────────────── -->
+<section class="hero" id="top">
+  <div class="hero-left">
+    <div class="hero-eyebrow">Real-time vocal coaching</div>
+    <h1>Sing in tune.<br><em>Train like</em><br>a Maestro.</h1>
+    <p class="hero-sub">
+      PitchPerfect listens as you sing and shows your pitch live on a scrolling piano roll — so you can hear and see every note, ornament, and drift in real time.
+    </p>
+    <div class="hero-cta">
+      <a class="btn-primary" href="#">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Try the demo
+      </a>
+      <a class="btn-ghost" href="#">See how it works</a>
+    </div>
+    <div class="hero-proof">
+      <div class="proof-avatars">
+        <span class="av1">RS</span>
+        <span class="av2">MP</span>
+        <span class="av3">AK</span>
+        <span class="av4">SG</span>
+      </div>
+      <span>Loved by <strong>12,000+</strong> singers across 40 ragas</span>
+    </div>
+  </div>
+
+  <!-- Piano Roll Demo embedded in hero -->
+  <div class="hero-visual" id="demo">
+    <div class="demo-shell">
+      <div class="demo-topbar">
+        <div class="demo-dots">
+          <div class="demo-dot dot-red"></div>
+          <div class="demo-dot dot-yellow"></div>
+          <div class="demo-dot dot-green"></div>
+        </div>
+        <span class="demo-title-bar">PitchPerfect — Live Session</span>
+        <div class="demo-status">
+          <div class="demo-status-dot"></div>
+          Listening
+        </div>
+      </div>
+
+      <div class="demo-score-panel">
+        <div class="score-cell">
+          <span class="score-label">Score</span>
+          <span class="score-value primary" id="scoreVal">84</span>
+        </div>
+        <div class="score-cell">
+          <span class="score-label">XP Earned</span>
+          <span class="score-value accent" id="xpVal">+340</span>
+        </div>
+        <div class="score-cell">
+          <span class="score-label">Accuracy</span>
+          <span class="score-value secondary" id="accVal">91%</span>
+        </div>
+      </div>
+
+      <div class="piano-roll-wrap">
+        <div class="piano-keys" id="pianoKeys"></div>
+        <canvas id="pianoRoll"></canvas>
+        <div class="ornament-tag" id="ornamentTag">✦ Gamak detected</div>
+      </div>
+
+      <div class="demo-footer">
+        <div class="song-info">
+          <div class="song-icon">🎵</div>
+          <div class="song-meta">
+            <span class="song-name">Pahadi Dhun — Slow alaap</span>
+            <span class="song-raga">Raga Bhairavi <span class="raga-badge">Komal Re Ga Dha Ni</span></span>
+          </div>
+        </div>
+        <div class="demo-controls">
+          <button class="ctrl-btn" title="Previous" aria-label="Previous">◀</button>
+          <button class="ctrl-btn active" id="playBtn" title="Play/Pause" aria-label="Play">▶</button>
+          <button class="ctrl-btn" title="Next" aria-label="Next">▶▶</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── Features ───────────────────────────────────────────────── -->
+<section id="features">
+  <div class="section-label">What you get</div>
+  <h2>Hear yourself <em>honestly.</em></h2>
+  <p class="section-intro">
+    Most singers never know how they actually sound. PitchPerfect removes the guesswork with instant, visual feedback that makes improvement undeniable.
+  </p>
+
+  <div class="features-grid fade-up">
+    <div class="feature-cell">
+      <div class="feature-icon-wrap">
+        <svg viewBox="0 0 40 40" fill="none">
+          <rect x="4" y="10" width="32" height="20" rx="3" stroke="oklch(72% 0.18 62)" stroke-width="1.5"/>
+          <!-- piano roll lines -->
+          <line x1="4" y1="16" x2="36" y2="16" stroke="oklch(72% 0.18 62)" stroke-width="0.5" opacity="0.4"/>
+          <line x1="4" y1="22" x2="36" y2="22" stroke="oklch(72% 0.18 62)" stroke-width="0.5" opacity="0.4"/>
+          <line x1="4" y1="28" x2="36" y2="28" stroke="oklch(72% 0.18 62)" stroke-width="0.5" opacity="0.4"/>
+          <!-- target note bars -->
+          <rect x="8" y="12" width="6" height="3" rx="1.5" fill="oklch(72% 0.18 62)" opacity="0.5"/>
+          <rect x="16" y="19" width="8" height="3" rx="1.5" fill="oklch(72% 0.18 62)" opacity="0.5"/>
+          <rect x="26" y="14" width="5" height="3" rx="1.5" fill="oklch(72% 0.18 62)" opacity="0.5"/>
+          <!-- your pitch line -->
+          <path d="M8 14 Q14 13.5 16 20 Q22 21 26 15" stroke="oklch(58% 0.14 198)" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h3>Live Piano Roll</h3>
+      <p class="feature-desc">See your pitch as a continuous curve overlaid on the target melody. Drift, bend, and ornaments rendered frame by frame.</p>
+    </div>
+
+    <div class="feature-cell">
+      <div class="feature-icon-wrap">
+        <svg viewBox="0 0 40 40" fill="none">
+          <!-- Mic -->
+          <rect x="15" y="6" width="10" height="16" rx="5" stroke="oklch(72% 0.18 62)" stroke-width="1.5"/>
+          <path d="M10 22 Q10 32 20 32 Q30 32 30 22" stroke="oklch(72% 0.18 62)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <line x1="20" y1="32" x2="20" y2="36" stroke="oklch(72% 0.18 62)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="14" y1="36" x2="26" y2="36" stroke="oklch(72% 0.18 62)" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h3>Instant Pitch Detection</h3>
+      <p class="feature-desc">Sub-20ms latency using YIN algorithm directly in the browser. No uploads, no server round-trips — just your voice and the app.</p>
+    </div>
+
+    <div class="feature-cell">
+      <div class="feature-icon-wrap">
+        <svg viewBox="0 0 40 40" fill="none">
+          <!-- wavy gamak indicator -->
+          <path d="M6 20 Q10 12 14 20 Q18 28 22 20 Q26 12 30 20 Q32 24 34 20" stroke="oklch(58% 0.14 198)" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <circle cx="6" cy="20" r="2.5" fill="oklch(72% 0.18 62)"/>
+          <circle cx="34" cy="20" r="2.5" fill="oklch(72% 0.18 62)"/>
+        </svg>
+      </div>
+      <h3>Raga & Ornament Detection</h3>
+      <p class="feature-desc">PitchPerfect knows Hindustani and Carnatic ragas. It flags gamak, meend, and andolan so you can practise ornaments deliberately.</p>
+    </div>
+
+    <div class="feature-cell">
+      <div class="feature-icon-wrap">
+        <svg viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="13" stroke="oklch(72% 0.18 62)" stroke-width="1.5"/>
+          <!-- score arc -->
+          <path d="M20 7 A13 13 0 0 1 33 20" stroke="oklch(58% 0.20 48)" stroke-width="3" stroke-linecap="round"/>
+          <path d="M20 7 A13 13 0 1 0 7.5 27" stroke="oklch(72% 0.18 62)" stroke-width="1.5" opacity="0.3"/>
+          <text x="20" y="23" text-anchor="middle" font-size="9" font-weight="700" fill="oklch(72% 0.18 62)" font-family="serif">94</text>
+        </svg>
+      </div>
+      <h3>Session Score & Analytics</h3>
+      <p class="feature-desc">Every session ends with a breakdown: pitch accuracy per phrase, worst notes flagged, consistency trend over 30 days.</p>
+    </div>
+
+    <div class="feature-cell">
+      <div class="feature-icon-wrap">
+        <svg viewBox="0 0 40 40" fill="none">
+          <!-- flame -->
+          <path d="M20 6 Q24 10 24 16 Q28 12 26 8 Q34 14 30 24 Q28 30 20 34 Q12 30 10 24 Q6 14 14 8 Q12 12 16 16 Q16 10 20 6Z" stroke="oklch(72% 0.18 62)" stroke-width="1.5" fill="oklch(72% 0.18 62 / 0.12)"/>
+        </svg>
+      </div>
+      <h3>Streak System</h3>
+      <p class="feature-desc">Daily practice streaks, weekly challenges, and raga-specific milestones keep the habit alive without nagging notifications.</p>
+    </div>
+
+    <div class="feature-cell">
+      <div class="feature-icon-wrap">
+        <svg viewBox="0 0 40 40" fill="none">
+          <!-- XP star/shield -->
+          <path d="M20 6 L24 16 L35 16 L26 23 L29 34 L20 28 L11 34 L14 23 L5 16 L16 16Z" stroke="oklch(72% 0.18 62)" stroke-width="1.5" fill="oklch(72% 0.18 62 / 0.10)"/>
+        </svg>
+      </div>
+      <h3>XP & Levels</h3>
+      <p class="feature-desc">Earn XP for every session, every raga mastered, every streak. Climb from Shishya to Ustadji with 24 levels that mean something.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── How It Works ────────────────────────────────────────────── -->
+<div class="how-it-works" id="how">
+  <div class="how-inner">
+    <div class="section-label">The process</div>
+    <h2>Three steps to <em>real</em> improvement.</h2>
+
+    <div class="steps">
+      <div class="step fade-up">
+        <div class="step-num">01</div>
+        <h3>Pick a raga or song</h3>
+        <p>Choose from 40 pre-loaded ragas, browse the song library by mood and difficulty, or import any audio file as your target melody.</p>
+      </div>
+      <div class="step fade-up d1">
+        <div class="step-num">02</div>
+        <h3>Sing — watch the roll</h3>
+        <p>Grant mic access, start singing. Your pitch traces a live line over the target. Green means on — amber means close — red means adjust now.</p>
+      </div>
+      <div class="step fade-up d2">
+        <div class="step-num">03</div>
+        <h3>Review, earn, repeat</h3>
+        <p>After each session see your score, the ornaments you landed, XP earned, and the exact notes to work on. Your level updates immediately.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Gamification ────────────────────────────────────────────── -->
+<section id="progress">
+  <div class="gamification">
+    <div class="xp-card fade-up">
+      <div class="xp-header">
+        <span class="xp-title">Priya Sharma — Level 11</span>
+        <span class="level-badge">⭐ Gandharva</span>
+      </div>
+
+      <div class="xp-progress-label">
+        <span>XP to next level</span>
+        <span>3,400 / 5,000</span>
+      </div>
+      <div class="xp-bar-track">
+        <div class="xp-bar-fill"></div>
+      </div>
+
+      <div class="xp-stats">
+        <div class="xp-stat">
+          <div class="xp-stat-label">Current Streak</div>
+          <div class="xp-stat-val fire">23 🔥</div>
+        </div>
+        <div class="xp-stat">
+          <div class="xp-stat-label">Sessions</div>
+          <div class="xp-stat-val cool">147</div>
+        </div>
+        <div class="xp-stat">
+          <div class="xp-stat-label">Avg Accuracy</div>
+          <div class="xp-stat-val ok">88%</div>
+        </div>
+        <div class="xp-stat">
+          <div class="xp-stat-label">Ragas Mastered</div>
+          <div class="xp-stat-val warm">12</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 0.4rem;">
+        <div class="xp-progress-label">
+          <span style="color: oklch(50% 0.010 50); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em;">This week</span>
+        </div>
+        <div class="streak-row">
+          <div class="streak-day done"></div>
+          <div class="streak-day done"></div>
+          <div class="streak-day done"></div>
+          <div class="streak-day done"></div>
+          <div class="streak-day done"></div>
+          <div class="streak-day today"></div>
+          <div class="streak-day"></div>
+        </div>
+        <div class="streak-labels">
+          <span>Mon</span><span>Tue</span><span>Wed</span>
+          <span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="gamification-text fade-up d1">
+      <div class="section-label">Progress & Rewards</div>
+      <h2>Progress that feels <em>earned.</em></h2>
+      <p class="section-intro" style="margin-bottom: 0;">
+        Singing every day is hard to sustain without a reason to return. PitchPerfect makes the habit loop tangible — every note you sing moves a number forward.
+      </p>
+      <ul class="feat-list">
+        <li>
+          <span class="feat-list-icon">✦</span>
+          <span><strong>24 named levels</strong> rooted in Indian classical tradition — from Shishya (student) to Ustadji (grandmaster). Each level has a raga-proficiency requirement, not just an XP gate.</span>
+        </li>
+        <li>
+          <span class="feat-list-icon">✦</span>
+          <span><strong>Weekly raga challenges</strong> rotate every Monday. Compete on a leaderboard by accuracy, not just time spent — so deliberate practice is rewarded over grinding.</span>
+        </li>
+        <li>
+          <span class="feat-list-icon">✦</span>
+          <span><strong>Ornament badges</strong> unlock when you consistently land a gamak or meend. Each badge requires 10 correct detections in a row — not just any session.</span>
+        </li>
+        <li>
+          <span class="feat-list-icon">✦</span>
+          <span><strong>Streak repair</strong> — miss a day once per month and your streak is protected. Because life happens, and shame is not a pedagogy.</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ─────────────────────────────────────────────────────── -->
+<div class="cta-banner fade-up">
+  <div class="cta-text">
+    <h2>Start singing better today.</h2>
+    <p>Free forever for one raga. <strong>Upgrade for all 40.</strong></p>
+  </div>
+  <a class="btn-cta" href="#">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    Begin for free
+  </a>
+</div>
+
+<!-- ── Footer ─────────────────────────────────────────────────── -->
+<footer>
+  <span class="footer-logo"><span>Pitch</span>Perfect</span>
+  <small>© 2026 PitchPerfect. Made with love for every voice.</small>
+</footer>
+
+<!-- ── Piano Roll JS ───────────────────────────────────────────── -->
+<script>
+(function() {
+  "use strict";
+
+  /* ── Config ─────────────────────────────────────────────── */
+  // 13 notes shown, C4–C5
+  const NOTES = [
+    { name: 'C5',  midi: 72, black: false },
+    { name: 'B4',  midi: 71, black: false },
+    { name: 'A#4', midi: 70, black: true  },
+    { name: 'A4',  midi: 69, black: false },
+    { name: 'G#4', midi: 68, black: true  },
+    { name: 'G4',  midi: 67, black: false },
+    { name: 'F#4', midi: 66, black: true  },
+    { name: 'F4',  midi: 65, black: false },
+    { name: 'E4',  midi: 64, black: false },
+    { name: 'D#4', midi: 63, black: true  },
+    { name: 'D4',  midi: 62, black: false },
+    { name: 'C#4', midi: 61, black: true  },
+    { name: 'C4',  midi: 60, black: false },
+  ];
+
+  const RAGA_NOTES = [72, 71, 69, 67, 65, 64, 62, 60]; // Bhairavi-ish
+
+  // Build piano keys sidebar
+  const keysEl = document.getElementById('pianoKeys');
+  NOTES.forEach((n, i) => {
+    const div = document.createElement('div');
+    div.className = 'pkey ' + (n.black ? 'black' : 'white');
+    div.id = 'key-' + n.midi;
+    div.textContent = n.name;
+    keysEl.appendChild(div);
+  });
+
+  /* ── Canvas setup ────────────────────────────────────────── */
+  const canvas = document.getElementById('pianoRoll');
+  const ctx    = canvas.getContext('2d');
+
+  function resize() {
+    const wrap = canvas.parentElement;
+    canvas.width  = wrap.clientWidth - 42;
+    canvas.height = wrap.clientHeight;
+  }
+  resize();
+  window.addEventListener('resize', () => { resize(); });
+
+  /* ── State ───────────────────────────────────────────────── */
+  let t         = 0;           // animation time (seconds)
+  let playing   = true;
+  let scoreNum  = 84;
+  let xpNum     = 340;
+  let accNum    = 91;
+  let ornTag    = document.getElementById('ornamentTag');
+  let ornTimer  = 0;
+
+  // Target melody: a sequence of note events {midi, startT, dur}
+  // Built procedurally from RAGA_NOTES in a slow alaap pattern
+  const melody = buildMelody(60); // 60 seconds of melody
+
+  function buildMelody(totalDur) {
+    const seq = [];
+    let cursor = 0;
+    const pattern = [
+      // index into RAGA_NOTES, relative duration
+      [3, 1.2], [2, 0.8], [3, 1.0], [4, 1.4], [3, 0.6], [2, 1.0],
+      [1, 0.8], [0, 1.5], [1, 0.6], [2, 1.2], [3, 1.0], [4, 0.8],
+      [5, 1.4], [4, 0.8], [3, 0.6], [4, 1.2], [5, 0.8], [6, 1.0],
+      [7, 1.6], [6, 0.8], [5, 1.0], [4, 0.8], [3, 1.2], [2, 0.6],
+    ];
+    let pi = 0;
+    while (cursor < totalDur) {
+      const [ni, dur] = pattern[pi % pattern.length];
+      seq.push({ midi: RAGA_NOTES[ni], startT: cursor, dur: dur * 0.92 });
+      cursor += dur;
+      pi++;
+    }
+    return seq;
+  }
+
+  // Map midi to y coordinate within canvas
+  function midiToY(midi) {
+    const h = canvas.height;
+    const minMidi = NOTES[NOTES.length - 1].midi;
+    const maxMidi = NOTES[0].midi;
+    return h - ((midi - minMidi) / (maxMidi - minMidi)) * h;
+  }
+
+  // Generate smooth "your pitch" trace
+  // It follows the target with noise + occasional gamak (fast oscillation)
+  let gamakT = -999;
+  let gamakDur = 0;
+
+  function yourPitch(time) {
+    // Find target midi at this time
+    let targetMidi = 64; // fallback
+    for (const note of melody) {
+      if (time >= note.startT && time < note.startT + note.dur) {
+        targetMidi = note.midi;
+        break;
+      }
+    }
+
+    const noiseAmp = 0.35;
+    const noise = noiseAmp * (
+      Math.sin(time * 5.7 + 1.3) * 0.5 +
+      Math.sin(time * 11.2 + 0.8) * 0.3 +
+      Math.sin(time * 3.1)        * 0.2
+    );
+
+    let gamak = 0;
+    if (time - gamakT < gamakDur) {
+      gamak = Math.sin((time - gamakT) * 18) * 0.8;
+    }
+
+    // Occasionally enter a gamak
+    if (time - gamakT > gamakDur + 3.5 + Math.sin(time * 0.3) * 1.5) {
+      gamakT   = time;
+      gamakDur = 0.6 + Math.abs(Math.sin(time)) * 0.5;
+    }
+
+    return targetMidi + noise + gamak;
+  }
+
+  /* ── Colors ─────────────────────────────────────────────── */
+  const C = {
+    bg:          '#181410',
+    gridLine:    'rgba(255,255,255,0.06)',
+    noteFill:    'oklch(72% 0.18 62 / 0.25)',
+    noteStroke:  'oklch(72% 0.18 62)',
+    pitchLine:   'oklch(58% 0.14 198)',
+    pitchGlow:   'rgba(80,180,200,0.3)',
+    playhead:    'rgba(255,255,255,0.15)',
+  };
+
+  /* ── Render ──────────────────────────────────────────────── */
+  const LOOK_AHEAD = 4.5;  // seconds visible ahead of playhead
+  const LOOK_BACK  = 1.5;
+
+  function render() {
+    const W = canvas.width;
+    const H = canvas.height;
+    const rowH = H / NOTES.length;
+
+    // Clear
+    ctx.fillStyle = '#181410';
+    ctx.fillRect(0, 0, W, H);
+
+    // Grid: horizontal lines per note row
+    ctx.strokeStyle = C.gridLine;
+    ctx.lineWidth = 1;
+    NOTES.forEach((n, i) => {
+      const y = Math.round(i * rowH);
+      // Darker bg for black keys
+      if (n.black) {
+        ctx.fillStyle = 'rgba(0,0,0,0.25)';
+        ctx.fillRect(0, y, W, rowH);
+      }
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(W, y);
+      ctx.stroke();
+    });
+
+    // Vertical time grid lines (every 1 second)
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    const totalWindow = LOOK_AHEAD + LOOK_BACK;
+    const startT = t - LOOK_BACK;
+    for (let g = Math.ceil(startT); g < startT + totalWindow; g++) {
+      const x = (g - startT) / totalWindow * W;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, H);
+      ctx.stroke();
+    }
+
+    // Playhead line
+    const playheadX = LOOK_BACK / totalWindow * W;
+    const grad = ctx.createLinearGradient(playheadX - 40, 0, playheadX + 40, 0);
+    grad.addColorStop(0, 'transparent');
+    grad.addColorStop(0.5, 'rgba(255,255,255,0.10)');
+    grad.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad;
+    ctx.fillRect(playheadX - 40, 0, 80, H);
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(playheadX, 0);
+    ctx.lineTo(playheadX, H);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Target melody note bars
+    for (const note of melody) {
+      if (note.startT + note.dur < startT) continue;
+      if (note.startT > startT + totalWindow) continue;
+
+      const xStart = (note.startT - startT) / totalWindow * W;
+      const xEnd   = (note.startT + note.dur - startT) / totalWindow * W;
+      const y      = midiToY(note.midi);
+      const barH   = rowH * 0.55;
+
+      // Glow
+      ctx.shadowBlur  = 8;
+      ctx.shadowColor = C.noteStroke;
+      ctx.fillStyle   = 'oklch(72% 0.18 62 / 0.22)';
+      ctx.strokeStyle = 'oklch(72% 0.18 62 / 0.75)';
+      ctx.lineWidth   = 1.5;
+      const rx = Math.max(0, xEnd - xStart - 2);
+
+      ctx.beginPath();
+      ctx.roundRect(xStart + 1, y - barH / 2, rx, barH, 3);
+      ctx.fill();
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+
+    // Your pitch line — draw a smooth path over the visible window
+    const steps = Math.max(60, W / 4);
+    ctx.beginPath();
+    for (let i = 0; i <= steps; i++) {
+      const fraction = i / steps;
+      const sampleT  = startT + fraction * totalWindow;
+      const pitchMidi = yourPitch(sampleT);
+      const y = midiToY(pitchMidi);
+      const x = fraction * W;
+      if (i === 0) ctx.moveTo(x, y);
+      else         ctx.lineTo(x, y);
+    }
+
+    // Glow effect
+    ctx.shadowBlur  = 12;
+    ctx.shadowColor = C.pitchGlow;
+    ctx.strokeStyle = C.pitchLine;
+    ctx.lineWidth   = 2.5;
+    ctx.lineJoin    = 'round';
+    ctx.stroke();
+
+    // Second pass for bright core
+    ctx.shadowBlur  = 0;
+    ctx.strokeStyle = 'oklch(68% 0.15 198)';
+    ctx.lineWidth   = 1.5;
+    ctx.stroke();
+
+    // Dot at playhead
+    const nowPitch = yourPitch(t);
+    const dotY = midiToY(nowPitch);
+    ctx.shadowBlur  = 16;
+    ctx.shadowColor = 'rgba(80,200,220,0.6)';
+    ctx.fillStyle   = '#7de0f0';
+    ctx.beginPath();
+    ctx.arc(playheadX, dotY, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Highlight the active key
+    const activeMidi = Math.round(nowPitch);
+    document.querySelectorAll('.pkey').forEach(k => k.classList.remove('active'));
+    const activeKey = document.getElementById('key-' + activeMidi);
+    if (activeKey) activeKey.classList.add('active');
+  }
+
+  /* ── Score animation ─────────────────────────────────────── */
+  let lastScoreUpdate = 0;
+  function updateScore() {
+    // Slowly drift score
+    const drift = Math.sin(t * 0.4) * 0.5 + Math.sin(t * 1.1) * 0.25;
+    const rawScore = 84 + drift * 8;
+    scoreNum = Math.round(Math.max(60, Math.min(99, rawScore)));
+    accNum   = Math.round(Math.max(75, Math.min(99, 91 + drift * 5)));
+
+    // XP ticks up slowly
+    xpNum = 340 + Math.floor(t * 2.5);
+
+    document.getElementById('scoreVal').textContent = scoreNum;
+    document.getElementById('xpVal').textContent = '+' + xpNum;
+    document.getElementById('accVal').textContent = accNum + '%';
+  }
+
+  /* ── Ornament detection indicator ───────────────────────── */
+  function checkOrnament() {
+    const isGamak = (t - gamakT) < gamakDur && gamakDur > 0.4;
+    if (isGamak) {
+      ornTag.classList.add('visible');
+      ornTimer = 60;
+    }
+    if (ornTimer > 0) {
+      ornTimer--;
+    } else {
+      ornTag.classList.remove('visible');
+    }
+  }
+
+  /* ── Animation loop ──────────────────────────────────────── */
+  let lastTime = null;
+  function loop(ts) {
+    if (!playing) { requestAnimationFrame(loop); return; }
+    if (lastTime === null) lastTime = ts;
+    const dt = (ts - lastTime) / 1000;
+    lastTime = ts;
+
+    t += dt * 0.65; // 65% speed for leisurely alaap feel
+
+    render();
+    updateScore();
+    checkOrnament();
+
+    requestAnimationFrame(loop);
+  }
+
+  requestAnimationFrame(loop);
+
+  /* ── Play/pause button ───────────────────────────────────── */
+  const playBtn = document.getElementById('playBtn');
+  playBtn.addEventListener('click', () => {
+    playing = !playing;
+    playBtn.textContent = playing ? '▶' : '⏸';
+    playBtn.classList.toggle('active', playing);
+    lastTime = null;
+  });
+
+  /* ── Fade-up on scroll ───────────────────────────────────── */
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+
+  document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+})();
+</script>
+
+</body>
+</html>

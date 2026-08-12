@@ -1,0 +1,608 @@
+{
+  "anthropic.com": {
+    "label": "AI SaaS / marketing",
+    "modes": {
+      "genome-only": [
+        {
+          "host": "letsenhance.io",
+          "score": 0.8998,
+          "visualSim": 0.7278,
+          "genomeSim": 0.8998
+        },
+        {
+          "host": "sybill.ai",
+          "score": 0.896,
+          "visualSim": 0.899,
+          "genomeSim": 0.896
+        },
+        {
+          "host": "adaptordie.io",
+          "score": 0.8926,
+          "visualSim": 0.9423,
+          "genomeSim": 0.8926
+        },
+        {
+          "host": "beatmv.ai",
+          "score": 0.8873,
+          "visualSim": 0.5948,
+          "genomeSim": 0.8873
+        },
+        {
+          "host": "try-ugo.com",
+          "score": 0.8871,
+          "visualSim": 0.8596,
+          "genomeSim": 0.8871
+        }
+      ],
+      "visual-only": [
+        {
+          "host": "snaptaxapp.com",
+          "score": 0.9701,
+          "visualSim": 0.9701,
+          "genomeSim": 0.6622
+        },
+        {
+          "host": "vocova.app",
+          "score": 0.9678,
+          "visualSim": 0.9678,
+          "genomeSim": 0.647
+        },
+        {
+          "host": "myaifoodbuddy.com",
+          "score": 0.967,
+          "visualSim": 0.967,
+          "genomeSim": 0.7103
+        },
+        {
+          "host": "airparser.com",
+          "score": 0.9659,
+          "visualSim": 0.9659,
+          "genomeSim": 0.7673
+        },
+        {
+          "host": "contenda.co",
+          "score": 0.9658,
+          "visualSim": 0.9658,
+          "genomeSim": 0.6355
+        }
+      ],
+      "hybrid": [
+        {
+          "host": "adaptordie.io",
+          "score": 0.9249,
+          "visualSim": 0.9423,
+          "genomeSim": 0.8926
+        },
+        {
+          "host": "bigmodel.cn",
+          "score": 0.9153,
+          "visualSim": 0.9371,
+          "genomeSim": 0.8746
+        },
+        {
+          "host": "vast.ai",
+          "score": 0.9136,
+          "visualSim": 0.94,
+          "genomeSim": 0.8644
+        },
+        {
+          "host": "predictionguard.com",
+          "score": 0.9109,
+          "visualSim": 0.9482,
+          "genomeSim": 0.8415
+        },
+        {
+          "host": "junior.so",
+          "score": 0.9103,
+          "visualSim": 0.9574,
+          "genomeSim": 0.8227
+        }
+      ]
+    }
+  },
+  "productivity.directory": {
+    "label": "directory listing",
+    "modes": {
+      "genome-only": [
+        {
+          "host": "getnudgeai.com",
+          "score": 0.9176,
+          "visualSim": 0.9335,
+          "genomeSim": 0.9176
+        },
+        {
+          "host": "free-ai-tools.jp",
+          "score": 0.869,
+          "visualSim": 0.908,
+          "genomeSim": 0.869
+        },
+        {
+          "host": "smmry.com",
+          "score": 0.8553,
+          "visualSim": 0.935,
+          "genomeSim": 0.8553
+        },
+        {
+          "host": "gpt3demo.com",
+          "score": 0.8494,
+          "visualSim": 0.9444,
+          "genomeSim": 0.8494
+        },
+        {
+          "host": "free-tegami-tools.jp",
+          "score": 0.8475,
+          "visualSim": 0.904,
+          "genomeSim": 0.8475
+        }
+      ],
+      "visual-only": [
+        {
+          "host": "docs.omniverse.nvidia.com",
+          "score": 0.9594,
+          "visualSim": 0.9594,
+          "genomeSim": 0.6587
+        },
+        {
+          "host": "remusic.ai",
+          "score": 0.9574,
+          "visualSim": 0.9574,
+          "genomeSim": 0.7877
+        },
+        {
+          "host": "venturusai.com",
+          "score": 0.9573,
+          "visualSim": 0.9573,
+          "genomeSim": 0.608
+        },
+        {
+          "host": "otio.ai",
+          "score": 0.9543,
+          "visualSim": 0.9543,
+          "genomeSim": 0.6769
+        },
+        {
+          "host": "audiotranscriber.io",
+          "score": 0.9534,
+          "visualSim": 0.9534,
+          "genomeSim": 0.8034
+        }
+      ],
+      "hybrid": [
+        {
+          "host": "getnudgeai.com",
+          "score": 0.9279,
+          "visualSim": 0.9335,
+          "genomeSim": 0.9176
+        },
+        {
+          "host": "gpt3demo.com",
+          "score": 0.9112,
+          "visualSim": 0.9444,
+          "genomeSim": 0.8494
+        },
+        {
+          "host": "whisper-api.com",
+          "score": 0.9102,
+          "visualSim": 0.9515,
+          "genomeSim": 0.8334
+        },
+        {
+          "host": "lobe.ai",
+          "score": 0.908,
+          "visualSim": 0.9423,
+          "genomeSim": 0.8442
+        },
+        {
+          "host": "handocr.com",
+          "score": 0.9075,
+          "visualSim": 0.9521,
+          "genomeSim": 0.8248
+        }
+      ]
+    }
+  },
+  "cursor.com": {
+    "label": "dev-tool SaaS",
+    "modes": {
+      "genome-only": [
+        {
+          "host": "cursor.so",
+          "score": 0.9999,
+          "visualSim": 1,
+          "genomeSim": 0.9999
+        },
+        {
+          "host": "springer.com",
+          "score": 0.9476,
+          "visualSim": 0.7491,
+          "genomeSim": 0.9476
+        },
+        {
+          "host": "remove.bg",
+          "score": 0.9157,
+          "visualSim": 0.8159,
+          "genomeSim": 0.9157
+        },
+        {
+          "host": "rivergtm.com",
+          "score": 0.9081,
+          "visualSim": 0.8934,
+          "genomeSim": 0.9081
+        },
+        {
+          "host": "cs.princeton.edu",
+          "score": 0.9064,
+          "visualSim": 0.6186,
+          "genomeSim": 0.9064
+        }
+      ],
+      "visual-only": [
+        {
+          "host": "cursor.so",
+          "score": 1,
+          "visualSim": 1,
+          "genomeSim": 0.9999
+        },
+        {
+          "host": "linkeddit.com",
+          "score": 0.9245,
+          "visualSim": 0.9245,
+          "genomeSim": 0.564
+        },
+        {
+          "host": "mindsmith.ai",
+          "score": 0.9203,
+          "visualSim": 0.9203,
+          "genomeSim": 0.6411
+        },
+        {
+          "host": "prompteden.com",
+          "score": 0.8959,
+          "visualSim": 0.8959,
+          "genomeSim": 0.8355
+        },
+        {
+          "host": "rivergtm.com",
+          "score": 0.8934,
+          "visualSim": 0.8934,
+          "genomeSim": 0.9081
+        }
+      ],
+      "hybrid": [
+        {
+          "host": "cursor.so",
+          "score": 0.9999,
+          "visualSim": 1,
+          "genomeSim": 0.9999
+        },
+        {
+          "host": "rivergtm.com",
+          "score": 0.8986,
+          "visualSim": 0.8934,
+          "genomeSim": 0.9081
+        },
+        {
+          "host": "whyiq.ai",
+          "score": 0.8824,
+          "visualSim": 0.8889,
+          "genomeSim": 0.8705
+        },
+        {
+          "host": "prompteden.com",
+          "score": 0.8747,
+          "visualSim": 0.8959,
+          "genomeSim": 0.8355
+        },
+        {
+          "host": "agentskills.io",
+          "score": 0.874,
+          "visualSim": 0.8647,
+          "genomeSim": 0.8914
+        }
+      ]
+    }
+  },
+  "a16z.com": {
+    "label": "bespoke / VC portfolio",
+    "modes": {
+      "genome-only": [
+        {
+          "host": "app.klingai.com",
+          "score": 0.9015,
+          "visualSim": 0.5507,
+          "genomeSim": 0.9015
+        },
+        {
+          "host": "daivenci.app",
+          "score": 0.8749,
+          "visualSim": 0.5001,
+          "genomeSim": 0.8749
+        },
+        {
+          "host": "kaiber.ai",
+          "score": 0.8275,
+          "visualSim": 0.5186,
+          "genomeSim": 0.8275
+        },
+        {
+          "host": "read.ai",
+          "score": 0.8039,
+          "visualSim": 0.5717,
+          "genomeSim": 0.8039
+        },
+        {
+          "host": "2short.ai",
+          "score": 0.7971,
+          "visualSim": 0.5141,
+          "genomeSim": 0.7971
+        }
+      ],
+      "visual-only": [
+        {
+          "host": "polarr.com",
+          "score": 0.6424,
+          "visualSim": 0.6424,
+          "genomeSim": 0.6485
+        },
+        {
+          "host": "landr.com",
+          "score": 0.6375,
+          "visualSim": 0.6375,
+          "genomeSim": 0.5911
+        },
+        {
+          "host": "openart.ai",
+          "score": 0.636,
+          "visualSim": 0.636,
+          "genomeSim": 0.5772
+        },
+        {
+          "host": "midlibrary.io",
+          "score": 0.6359,
+          "visualSim": 0.6359,
+          "genomeSim": 0.4716
+        },
+        {
+          "host": "podcastor.ai",
+          "score": 0.6355,
+          "visualSim": 0.6355,
+          "genomeSim": 0.5301
+        }
+      ],
+      "hybrid": [
+        {
+          "host": "app.klingai.com",
+          "score": 0.6735,
+          "visualSim": 0.5507,
+          "genomeSim": 0.9015
+        },
+        {
+          "host": "stratup.ai",
+          "score": 0.6606,
+          "visualSim": 0.6258,
+          "genomeSim": 0.7252
+        },
+        {
+          "host": "ai.google",
+          "score": 0.6586,
+          "visualSim": 0.6302,
+          "genomeSim": 0.7112
+        },
+        {
+          "host": "read.ai",
+          "score": 0.653,
+          "visualSim": 0.5717,
+          "genomeSim": 0.8039
+        },
+        {
+          "host": "cogram.com",
+          "score": 0.6489,
+          "visualSim": 0.6112,
+          "genomeSim": 0.7188
+        }
+      ]
+    }
+  },
+  "affogato.ai": {
+    "label": "dark SaaS",
+    "modes": {
+      "genome-only": [
+        {
+          "host": "igly.ai",
+          "score": 0.943,
+          "visualSim": 0.6362,
+          "genomeSim": 0.943
+        },
+        {
+          "host": "blogworkflow.ai",
+          "score": 0.936,
+          "visualSim": 0.6222,
+          "genomeSim": 0.936
+        },
+        {
+          "host": "getemil.io",
+          "score": 0.9319,
+          "visualSim": 0.6264,
+          "genomeSim": 0.9319
+        },
+        {
+          "host": "rapidnative.com",
+          "score": 0.9228,
+          "visualSim": 0.6112,
+          "genomeSim": 0.9228
+        },
+        {
+          "host": "groq.com",
+          "score": 0.908,
+          "visualSim": 0.5969,
+          "genomeSim": 0.908
+        }
+      ],
+      "visual-only": [
+        {
+          "host": "reverseprompt.art",
+          "score": 0.7525,
+          "visualSim": 0.7525,
+          "genomeSim": 0.7895
+        },
+        {
+          "host": "faceapp.com",
+          "score": 0.7338,
+          "visualSim": 0.7338,
+          "genomeSim": 0.7208
+        },
+        {
+          "host": "deep-image.ai",
+          "score": 0.7316,
+          "visualSim": 0.7316,
+          "genomeSim": 0.6817
+        },
+        {
+          "host": "flixly.ai",
+          "score": 0.731,
+          "visualSim": 0.731,
+          "genomeSim": 0.5835
+        },
+        {
+          "host": "glambase.app",
+          "score": 0.7307,
+          "visualSim": 0.7307,
+          "genomeSim": 0.5413
+        }
+      ],
+      "hybrid": [
+        {
+          "host": "blackheadshots.com",
+          "score": 0.7891,
+          "visualSim": 0.7301,
+          "genomeSim": 0.8986
+        },
+        {
+          "host": "clotheschange.ai",
+          "score": 0.7655,
+          "visualSim": 0.7145,
+          "genomeSim": 0.8604
+        },
+        {
+          "host": "reverseprompt.art",
+          "score": 0.7654,
+          "visualSim": 0.7525,
+          "genomeSim": 0.7895
+        },
+        {
+          "host": "naturalreaders.com",
+          "score": 0.7625,
+          "visualSim": 0.705,
+          "genomeSim": 0.8692
+        },
+        {
+          "host": "photoguruai.com",
+          "score": 0.7625,
+          "visualSim": 0.7082,
+          "genomeSim": 0.8634
+        }
+      ]
+    }
+  },
+  "adv-r.hadley.nz": {
+    "label": "minimal type / docs",
+    "modes": {
+      "genome-only": [
+        {
+          "host": "videobolt.net",
+          "score": 0.9627,
+          "visualSim": 0.852,
+          "genomeSim": 0.9627
+        },
+        {
+          "host": "magic.dev",
+          "score": 0.9614,
+          "visualSim": 0.9333,
+          "genomeSim": 0.9614
+        },
+        {
+          "host": "aifordevelopers.org",
+          "score": 0.9512,
+          "visualSim": 0.9434,
+          "genomeSim": 0.9512
+        },
+        {
+          "host": "platform.minimax.io",
+          "score": 0.9393,
+          "visualSim": 0.9474,
+          "genomeSim": 0.9393
+        },
+        {
+          "host": "towardsdatascience.com",
+          "score": 0.9266,
+          "visualSim": 0.7196,
+          "genomeSim": 0.9266
+        }
+      ],
+      "visual-only": [
+        {
+          "host": "modelcontextprotocol.io",
+          "score": 0.9777,
+          "visualSim": 0.9777,
+          "genomeSim": 0.9205
+        },
+        {
+          "host": "api-docs.deepseek.com",
+          "score": 0.9768,
+          "visualSim": 0.9768,
+          "genomeSim": 0.7009
+        },
+        {
+          "host": "socviz.co",
+          "score": 0.9766,
+          "visualSim": 0.9766,
+          "genomeSim": 0.8116
+        },
+        {
+          "host": "agentskills.io",
+          "score": 0.9733,
+          "visualSim": 0.9733,
+          "genomeSim": 0.9201
+        },
+        {
+          "host": "alphaxiv.org",
+          "score": 0.97,
+          "visualSim": 0.97,
+          "genomeSim": 0.754
+        }
+      ],
+      "hybrid": [
+        {
+          "host": "modelcontextprotocol.io",
+          "score": 0.9577,
+          "visualSim": 0.9777,
+          "genomeSim": 0.9205
+        },
+        {
+          "host": "agentskills.io",
+          "score": 0.9547,
+          "visualSim": 0.9733,
+          "genomeSim": 0.9201
+        },
+        {
+          "host": "aifordevelopers.org",
+          "score": 0.9461,
+          "visualSim": 0.9434,
+          "genomeSim": 0.9512
+        },
+        {
+          "host": "platform.minimax.io",
+          "score": 0.9446,
+          "visualSim": 0.9474,
+          "genomeSim": 0.9393
+        },
+        {
+          "host": "magic.dev",
+          "score": 0.9431,
+          "visualSim": 0.9333,
+          "genomeSim": 0.9614
+        }
+      ]
+    }
+  }
+}

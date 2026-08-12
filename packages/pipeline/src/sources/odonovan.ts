@@ -12,7 +12,7 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import AdmZip from "adm-zip";
-import { PERSONALITY_ATTRIBUTES, type PersonalityAttribute, type PersonalityVector } from "@ai-slop-font/core";
+import { PERSONALITY_ATTRIBUTES, type PersonalityAttribute, type PersonalityVector } from "@fixmyslop/core";
 
 const ZIP_URL = "https://www.dgp.toronto.edu/~donovan/font/attribute.zip";
 const CSV_ENTRY = "attributeData/estimatedAttributes.csv";

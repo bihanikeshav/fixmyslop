@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meeple House — Board Game Café</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Boogaloo&family=Alegreya:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=clash-grotesk@400,500,600&display=swap" rel="stylesheet">
+
+<style>
+/* ── Tokens ──────────────────────────────────────────────── */
+:root {
+  --felt:        #1C3A2A;   /* deep game-table felt green */
+  --felt-mid:    #264D39;   /* lighter panel */
+  --felt-edge:   #0F2218;   /* shadow edge */
+  --cream:       #F5EFE0;   /* cardboard cream */
+  --cream-2:     #EDE4CC;   /* slightly darker cream */
+  --cream-3:     #DDD3B5;   /* rule/border cream */
+  --meeple:      #E85D0C;   /* meeple orange — main accent */
+  --meeple-lite: #FF8B45;   /* lighter orange for hovers */
+  --gold:        #ebc15b;   /* token gold */
+  --ink:         #1A150E;   /* near-black warm */
+  --ink-mid:     #4A3F30;   /* body text */
+  --ink-faint:   #8A7A62;   /* metadata */
+  --white:       #FEFCF7;
+
+  --font-display: 'Boogaloo', cursive;
+  --font-body:    'Alegreya', Georgia, serif;
+  --font-ui:      'Clash Grotesk', system-ui, sans-serif;
+
+  --r-sm: 6px;
+  --r-md: 12px;
+  --r-lg: 20px;
+  --r-xl: 32px;
+
+  --shadow-card:
+    0 2px 0 var(--cream-3),
+    0 4px 16px oklch(15% 0.06 50 / 0.18),
+    0 1px 3px oklch(15% 0.06 50 / 0.12);
+  --shadow-lift:
+    0 4px 0 var(--cream-3),
+    0 8px 32px oklch(15% 0.06 50 / 0.28),
+    0 2px 8px oklch(15% 0.06 50 / 0.18);
+}
+
+/* ── Reset ───────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 16px; }
+body {
+  font-family: var(--font-body);
+  background: var(--cream);
+  color: var(--ink);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ── Noise texture overlay ───────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+}
+
+/* ── Nav ─────────────────────────────────────────────────── */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 clamp(1.5rem, 4vw, 3.5rem);
+  height: 64px;
+  background: var(--felt);
+  border-bottom: 3px solid var(--felt-edge);
+}
+
+.nav-logo {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  color: var(--cream);
+  letter-spacing: 0.01em;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav-logo-meeple {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-links {
+  display: flex;
+  gap: clamp(1rem, 2.5vw, 2rem);
+  list-style: none;
+}
+
+.nav-links a {
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--cream-2);
+  text-decoration: none;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: color 0.15s;
+}
+.nav-links a:hover { color: var(--gold); }
+
+.nav-cta {
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: var(--meeple);
+  color: var(--white);
+  border: none;
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--r-xl);
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  transition: background 0.15s, transform 0.12s;
+  white-space: nowrap;
+}
+.nav-cta:hover { background: var(--meeple-lite); transform: translateY(-1px); }
+
+/* ── Hero ─────────────────────────────────────────────────── */
+.hero {
+  min-height: 100svh;
+  background: var(--felt);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr;
+  padding-top: 64px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Felt dot-grid texture — SVG data URI avoids radial-gradient slop */
+.hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Ccircle cx='1' cy='1' r='1' fill='rgba(255,255,255,0.045)'/%3E%3C/svg%3E");
+  background-size: 28px 28px;
+  pointer-events: none;
+}
+
+.hero-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(2rem, 6vw, 6rem) clamp(1.5rem, 4vw, 4rem) clamp(2rem, 6vw, 6rem) clamp(2rem, 6vw, 7rem);
+  position: relative;
+  z-index: 2;
+}
+
+.hero-tag {
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.hero-tag::before {
+  content: '';
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: var(--gold);
+  border-radius: 1px;
+}
+
+.hero-headline {
+  font-family: var(--font-display);
+  font-size: clamp(3.5rem, 6.5vw, 7rem);
+  line-height: 1;
+  color: var(--cream);
+  margin-bottom: 0.15em;
+}
+
+.hero-headline em {
+  color: var(--meeple);
+  font-style: normal;
+  position: relative;
+}
+
+.hero-headline em::after {
+  content: '';
+  position: absolute;
+  bottom: 0.05em;
+  left: -0.02em;
+  right: -0.02em;
+  height: 0.12em;
+  background: var(--meeple);
+  opacity: 0.3;
+  border-radius: 2px;
+}
+
+.hero-sub {
+  font-family: var(--font-body);
+  font-size: clamp(1rem, 1.4vw, 1.2rem);
+  color: oklch(90% 0.02 140 / 0.75);
+  margin-bottom: 2.5rem;
+  max-width: 38ch;
+  line-height: 1.7;
+  font-style: italic;
+}
+
+.hero-ctas {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 3rem;
+}
+
+.btn-primary {
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  font-weight: 600;
+  background: var(--meeple);
+  color: var(--white);
+  border: none;
+  padding: 0.85rem 2rem;
+  border-radius: var(--r-xl);
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: background 0.15s, transform 0.12s, box-shadow 0.15s;
+  box-shadow: 0 4px 0 oklch(40% 0.18 30);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.btn-primary:hover {
+  background: var(--meeple-lite);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 oklch(40% 0.18 30);
+}
+.btn-primary:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 0 oklch(40% 0.18 30);
+}
+
+.btn-secondary {
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  font-weight: 600;
+  background: transparent;
+  color: var(--cream);
+  border: 2px solid oklch(90% 0.02 140 / 0.35);
+  padding: 0.85rem 2rem;
+  border-radius: var(--r-xl);
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: border-color 0.15s, color 0.15s;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.btn-secondary:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* Hero stats strip */
+.hero-stats {
+  display: flex;
+  gap: 2.5rem;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.stat-num {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--cream);
+}
+.stat-label {
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: oklch(75% 0.04 140 / 0.65);
+}
+
+/* Hero right: illustrated scene */
+.hero-right {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  padding: 2rem;
+}
+
+/* ── Hero shelf: data-driven box spines ──────────────────── */
+.hero-shelf-wrap {
+  position: relative;
+  width: min(420px, 92%);
+  height: min(420px, 80vw);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding-bottom: 2rem;
+}
+
+.shelf-rail {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  padding: 0 8px 0;
+  height: 80%;
+  overflow: hidden;
+}
+
+/* Each book-spine-style box rendered by JS */
+.shelf-spine {
+  flex: 1 0 0;
+  min-width: 26px;
+  max-width: 48px;
+  border-radius: 3px 3px 0 0;
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.18s ease-out;
+  transform-origin: bottom center;
+}
+.shelf-spine:hover { transform: translateY(-10px); }
+.shelf-spine-label {
+  position: absolute;
+  bottom: 6px;
+  left: 0; right: 0;
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  line-height: 1.1;
+  text-align: center;
+  padding: 0 2px;
+  color: rgba(255,255,255,0.85);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.shelf-spine-accent {
+  position: absolute;
+  top: 0;
+  left: 0; right: 0;
+  height: 6px;
+  background: rgba(255,255,255,0.18);
+}
+
+.shelf-board {
+  height: 14px;
+  background: linear-gradient(to bottom, #3a2a18, #2a1c0e);
+  border-radius: 2px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+}
+
+.hero-die {
+  position: absolute;
+  top: 8%;
+  right: 4%;
+}
+
+/* Legacy selector — no longer used for SVG scene */
+.game-stack {
+  display: none;
+}
+
+/* Animated floating elements — only when motion is welcome */
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(-2deg); }
+  50%       { transform: translateY(-18px) rotate(2deg); }
+}
+
+@keyframes float2 {
+  0%, 100% { transform: translateY(0px) rotate(5deg); }
+  50%       { transform: translateY(-12px) rotate(-3deg); }
+}
+
+.die-float {
+  position: absolute;
+  top: 5%;
+  right: 8%;
+}
+
+.die-float-2 {
+  position: absolute;
+  inset-block-start: 76%;
+  inset-inline-start: 3%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .die-float  { animation: float  4.5s ease-in-out infinite; }
+  .die-float-2 { animation: float2 5.5s ease-in-out infinite; animation-delay: -2.2s; }
+}
+
+/* ── Hero stagger-in ─────────────────────────────────────── */
+/* Keyframes only animate transform — opacity is handled via JS-gated class */
+@keyframes slide-up {
+  from { transform: translateY(28px); }
+  to   { transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { transform: scale(0.88); }
+  to   { transform: scale(1); }
+}
+
+/* When JS is present: start hidden, then reveal via animation */
+html.js .hero-tag,
+html.js .hero-headline,
+html.js .hero-sub,
+html.js .hero-ctas,
+html.js .hero-stats,
+html.js .hero-shelf-wrap {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html.js .hero-tag        { animation: slide-up 0.6s ease-out both; animation-delay: 0.1s; }
+  html.js .hero-headline   { animation: slide-up 0.6s ease-out both; animation-delay: 0.22s; }
+  html.js .hero-sub        { animation: slide-up 0.6s ease-out both; animation-delay: 0.34s; }
+  html.js .hero-ctas       { animation: slide-up 0.6s ease-out both; animation-delay: 0.46s; }
+  html.js .hero-stats      { animation: slide-up 0.6s ease-out both; animation-delay: 0.58s; }
+  html.js .hero-shelf-wrap { animation: scale-in 0.7s ease-out both; animation-delay: 0.3s; }
+  html.js .game-card       { animation: slide-up 0.4s ease-out both; }
+}
+
+/* After animation, make elements visible (fill-mode:both handles keyframe end,
+   but for elements with no animation yet, we force them visible) */
+@media (prefers-reduced-motion: no-preference) {
+  html.js .hero-tag.anim-done,
+  html.js .hero-headline.anim-done,
+  html.js .hero-sub.anim-done,
+  html.js .hero-ctas.anim-done,
+  html.js .hero-stats.anim-done,
+  html.js .hero-shelf-wrap.anim-done { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html.js .hero-tag,
+  html.js .hero-headline,
+  html.js .hero-sub,
+  html.js .hero-ctas,
+  html.js .hero-stats,
+  html.js .hero-shelf-wrap { opacity: 1; }
+}
+
+/* ── Shelf / Game Finder ─────────────────────────────────── */
+.shelf-section {
+  background: var(--cream);
+  padding: clamp(4rem, 8vw, 8rem) clamp(1.5rem, 5vw, 5rem);
+}
+
+.section-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-bottom: 3rem;
+  flex-wrap: wrap;
+}
+
+.section-eyebrow {
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--meeple);
+  margin-bottom: 0.6rem;
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 4vw, 3.5rem);
+  line-height: 1.05;
+  color: var(--ink);
+}
+
+.section-title span {
+  color: var(--felt);
+}
+
+.section-sub {
+  font-size: 1rem;
+  color: var(--ink-mid);
+  max-width: 40ch;
+  font-style: italic;
+  line-height: 1.6;
+  margin-top: 0.5rem;
+}
+
+/* Filter chips */
+.filter-bar {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 2.5rem;
+  align-items: center;
+}
+
+.filter-label {
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-faint);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-right: 0.4rem;
+}
+
+.chip {
+  font-family: var(--font-ui);
+  font-size: 0.825rem;
+  font-weight: 500;
+  padding: 0.4rem 1rem;
+  border-radius: var(--r-xl);
+  border: 1.5px solid var(--cream-3);
+  background: transparent;
+  color: var(--ink-mid);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+.chip:hover {
+  border-color: var(--meeple);
+  color: var(--meeple);
+  background: oklch(65% 0.18 40 / 0.06);
+}
+
+.chip.active {
+  background: var(--felt);
+  border-color: var(--felt);
+  color: var(--cream);
+}
+
+/* Player count picker */
+.player-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.player-label {
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-faint);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.player-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 17px;
+  border: 1.5px solid var(--cream-3);
+  background: transparent;
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink-mid);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.player-btn:hover, .player-btn.active {
+  background: var(--meeple);
+  border-color: var(--meeple);
+  color: var(--white);
+}
+
+/* Game shelf grid */
+.shelf-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(150px, 18vw, 210px), 1fr));
+  gap: clamp(1rem, 2vw, 1.5rem);
+}
+
+/* Game card — styled like a board game box on a shelf */
+.game-card {
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.22s cubic-bezier(0.22,1,0.36,1);
+  transform-origin: bottom center;
+}
+
+.game-card:hover {
+  transform: translateY(-8px) rotate(-1.5deg);
+  z-index: 10;
+}
+
+.game-card:nth-child(even):hover {
+  transform: translateY(-8px) rotate(1.5deg);
+}
+
+.game-box {
+  aspect-ratio: 3/4;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  position: relative;
+  transition: box-shadow 0.22s;
+}
+
+.game-card:hover .game-box {
+  box-shadow: var(--shadow-lift);
+}
+
+/* Coloured box art — each card gets a unique felt-like pattern */
+.game-box-art {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 0.75rem 0.85rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Box spine shadow */
+.game-box::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 8px;
+  background: linear-gradient(to right, rgba(0,0,0,0.25), transparent);
+  border-radius: var(--r-md) 0 0 var(--r-md);
+  pointer-events: none;
+}
+
+.game-icon {
+  width: clamp(2rem, 4vw, 3rem);
+  height: clamp(2rem, 4vw, 3rem);
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.game-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.game-title-box {
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 1.6vw, 1.3rem);
+  line-height: 1.1;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.game-meta-box {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+.meta-pill {
+  font-family: var(--font-ui);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--r-xl);
+  text-transform: uppercase;
+}
+
+/* Under-card info */
+.game-info {
+  padding: 0.6rem 0.25rem 0;
+}
+
+.game-name {
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.3;
+  margin-bottom: 0.2rem;
+}
+
+.game-details {
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  color: var(--ink-faint);
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.dot-sep { color: var(--cream-3); }
+
+/* Availability badge */
+.avail-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.avail-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.avail-dot.available { background: #2ECC71; }
+.avail-dot.busy      { background: var(--gold); }
+
+/* ── "See all" strip ─────────────────────────────────────── */
+.shelf-footer {
+  margin-top: 3rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.see-all {
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--felt);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.5rem;
+  border: 2px solid var(--felt);
+  border-radius: var(--r-xl);
+  transition: background 0.15s, color 0.15s;
+  letter-spacing: 0.03em;
+}
+.see-all:hover {
+  background: var(--felt);
+  color: var(--cream);
+}
+
+.shelf-count {
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  color: var(--ink-faint);
+}
+
+/* ── Events Banner (below shelf) ────────────────────────── */
+.events-banner {
+  background: var(--felt);
+  padding: clamp(2rem, 4vw, 3.5rem) clamp(1.5rem, 5vw, 5rem);
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+  position: relative;
+  overflow: hidden;
+}
+
+.events-banner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ccircle cx='1' cy='1' r='1' fill='rgba(255,255,255,0.035)'/%3E%3C/svg%3E");
+  background-size: 24px 24px;
+  pointer-events: none;
+}
+
+.events-text { position: relative; z-index: 1; flex: 1; min-width: 250px; }
+
+.events-eyebrow {
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 0.5rem;
+}
+
+.events-headline {
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 3vw, 2.8rem);
+  color: var(--cream);
+  line-height: 1.1;
+  margin-bottom: 0.6rem;
+}
+
+.events-sub {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: oklch(90% 0.02 140 / 0.65);
+  font-style: italic;
+}
+
+.events-chips {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
+}
+
+.event-chip {
+  background: var(--felt-mid);
+  border: 1px solid oklch(90% 0.02 140 / 0.15);
+  border-radius: var(--r-md);
+  padding: 0.75rem 1.25rem;
+  min-width: 140px;
+}
+
+.event-day {
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 0.25rem;
+}
+
+.event-name {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: var(--cream);
+  line-height: 1.2;
+}
+
+.event-detail {
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  color: oklch(85% 0.02 140 / 0.55);
+  margin-top: 0.2rem;
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .hero {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+  }
+  .hero-right {
+    padding: 1rem 2rem 3rem;
+    min-height: 350px;
+  }
+  .hero-left {
+    padding: clamp(1.5rem, 5vw, 3rem) clamp(1.5rem, 5vw, 2.5rem) 0;
+  }
+  nav { padding: 0 1.25rem; }
+  .nav-links { display: none; }
+  .hero-stats { gap: 1.5rem; }
+  .player-row { margin-left: 0; }
+  .section-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+  .filter-bar { gap: 0.5rem; }
+}
+
+/* ── Scroll reveal — gated behind html.js so content shows without JS ── */
+html.js .reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.5s ease, transform 0.5s ease-out;
+}
+html.js .reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  html.js .reveal,
+  html.js .reveal.visible { transition: none; opacity: 1; transform: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── NAV ──────────────────────────────────────────────── -->
+<nav>
+  <div class="nav-logo">
+    <span class="nav-logo-meeple">
+      <svg width="22" height="26" viewBox="0 0 22 26" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <!-- meeple silhouette -->
+        <circle cx="11" cy="5" r="4.2" fill="#E85D0C"/>
+        <path d="M3 25 C3 18 1 15 5 13 C7 12 9 11 11 11 C13 11 15 12 17 13 C21 15 19 18 19 25 Z" fill="#E85D0C"/>
+      </svg>
+    </span>
+    Meeple House
+  </div>
+  <ul class="nav-links">
+    <li><a href="#shelf">Games</a></li>
+    <li><a href="#">Events</a></li>
+    <li><a href="#">Food &amp; Drinks</a></li>
+    <li><a href="#">About</a></li>
+  </ul>
+  <button class="nav-cta">Reserve a Table</button>
+</nav>
+
+<!-- ── HERO ─────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-left">
+    <p class="hero-tag">Vancouver's favourite game café</p>
+    <h1 class="hero-headline">
+      Your next<br>
+      <em>move</em> starts<br>
+      here.
+    </h1>
+    <p class="hero-sub">800 games. Great coffee. Zero homework required. Pull up a chair — the table is always open.</p>
+    <div class="hero-ctas">
+      <a href="#shelf" class="btn-primary">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M2 3h12v2H2V3zm0 4h12v2H2V7zm0 4h7v2H2v-2z"/></svg>
+        Browse the Shelf
+      </a>
+      <a href="#" class="btn-secondary">
+        See This Week's Events →
+      </a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat">
+        <span class="stat-num">800+</span>
+        <span class="stat-label">Games</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num">All ages</span>
+        <span class="stat-label">Welcome</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num">Open daily</span>
+        <span class="stat-label">11am – 11pm</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-right">
+    <!-- Data-driven game shelf: JS renders box spines from GAMES data -->
+    <div class="hero-shelf-wrap" aria-hidden="true">
+      <div class="shelf-rail" id="hero-shelf-rail"></div>
+      <div class="shelf-board"></div>
+      <!-- Floating die — geometric, not illustrative -->
+      <div class="die-float hero-die" aria-hidden="true">
+        <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="52" height="52" rx="10" fill="#ebc15b"/>
+          <rect width="52" height="52" rx="10" fill="none" stroke="rgba(0,0,0,0.12)" stroke-width="1.5"/>
+          <circle cx="13" cy="13" r="5" fill="#1C3A2A"/>
+          <circle cx="39" cy="13" r="5" fill="#1C3A2A"/>
+          <circle cx="26" cy="26" r="5" fill="#1C3A2A"/>
+          <circle cx="13" cy="39" r="5" fill="#1C3A2A"/>
+          <circle cx="39" cy="39" r="5" fill="#1C3A2A"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SHELF / GAME FINDER ───────────────────────────────── -->
+<section class="shelf-section" id="shelf">
+  <div class="section-header reveal">
+    <div>
+      <p class="section-eyebrow">The Shelf</p>
+      <h2 class="section-title">Find your <span>perfect game.</span></h2>
+      <p class="section-sub">Not sure where to start? Filter by vibe, players, or how long you've got — our game guides will do the rest.</p>
+    </div>
+  </div>
+
+  <div class="filter-bar reveal">
+    <span class="filter-label">Mood:</span>
+    <button class="chip active" onclick="filterGames('all')">All Games</button>
+    <button class="chip" onclick="filterGames('strategy')">Strategy</button>
+    <button class="chip" onclick="filterGames('party')">Party</button>
+    <button class="chip" onclick="filterGames('quick')">Quick Play</button>
+    <button class="chip" onclick="filterGames('family')">Family</button>
+    <button class="chip" onclick="filterGames('coop')">Co-op</button>
+
+    <div class="player-row">
+      <span class="player-label">Players:</span>
+      <button class="player-btn active" onclick="setPlayers(this,'any')">Any</button>
+      <button class="player-btn" onclick="setPlayers(this,'2')">2</button>
+      <button class="player-btn" onclick="setPlayers(this,'3-4')">3-4</button>
+      <button class="player-btn" onclick="setPlayers(this,'5+')">5+</button>
+    </div>
+  </div>
+
+  <div class="shelf-grid" id="shelf-grid">
+    <!-- Cards injected by JS -->
+  </div>
+
+  <div class="shelf-footer reveal">
+    <a href="#" class="see-all">Browse all 800+ games →</a>
+    <span class="shelf-count">Showing 12 of 800+ games in the library</span>
+  </div>
+</section>
+
+<!-- ── EVENTS BANNER ─────────────────────────────────────── -->
+<div class="events-banner reveal">
+  <div class="events-text">
+    <p class="events-eyebrow">This week at Meeple House</p>
+    <h2 class="events-headline">Play more.<br>Meet people.</h2>
+    <p class="events-sub">Free to join with table booking. New events every week.</p>
+  </div>
+  <div class="events-chips">
+    <div class="event-chip">
+      <p class="event-day">Tuesday</p>
+      <p class="event-name">Trivia Night</p>
+      <p class="event-detail">7pm · Free entry</p>
+    </div>
+    <div class="event-chip">
+      <p class="event-day">Thursday</p>
+      <p class="event-name">Learn to Play<br>Wingspan</p>
+      <p class="event-detail">6:30pm · All levels</p>
+    </div>
+    <div class="event-chip">
+      <p class="event-day">Saturday</p>
+      <p class="event-name">Open Tournament</p>
+      <p class="event-detail">2pm · Sign-ups open</p>
+    </div>
+    <div class="event-chip">
+      <p class="event-day">Sunday</p>
+      <p class="event-name">Family Game Day</p>
+      <p class="event-detail">11am – 4pm · Kids welcome</p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── JS gate for reveal (must come before IntersectionObserver) ── */
+document.documentElement.classList.add('js');
+
+/* ── Game data — no emojis; shape drives geometric SVG icon ── */
+// shape: "circle" | "hex" | "grid" | "diamond" | "lines" | "ring"
+const GAMES = [
+  {
+    id: 1, name: "Wingspan",
+    shape: "lines",       /* wing silhouette via parallel strokes */
+    bg: ["#2D5A27", "#1B3A18"], titleColor: "#F5EFE0",
+    tags: ["strategy", "family"],
+    players: "1–5", time: "40–70 min", weight: "Medium",
+    available: true,
+    pillBg: "rgba(245,239,224,0.18)", pillColor: "#F5EFE0"
+  },
+  {
+    id: 2, name: "Codenames",
+    shape: "grid",
+    bg: ["#1B3A6B", "#0F2445"], titleColor: "#F5EFE0",
+    tags: ["party", "quick"],
+    players: "2–8", time: "15 min", weight: "Easy",
+    available: true,
+    pillBg: "rgba(245,239,224,0.18)", pillColor: "#F5EFE0"
+  },
+  {
+    id: 3, name: "Pandemic",
+    shape: "ring",        /* globe rings */
+    bg: ["#C42B1C", "#8E1F12"], titleColor: "#F5EFE0",
+    tags: ["coop", "strategy"],
+    players: "2–4", time: "45 min", weight: "Medium",
+    available: false,
+    pillBg: "rgba(245,239,224,0.18)", pillColor: "#F5EFE0"
+  },
+  {
+    id: 4, name: "Catan",
+    shape: "hex",
+    bg: ["#7B2D00", "#5C2000"], titleColor: "#F5EFE0",
+    tags: ["strategy", "family"],
+    players: "3–4", time: "60–120 min", weight: "Medium",
+    available: true,
+    pillBg: "rgba(245,239,224,0.18)", pillColor: "#F5EFE0"
+  },
+  {
+    id: 5, name: "Dixit",
+    shape: "diamond",
+    bg: ["#5C3478", "#3D2050"], titleColor: "#F5EFE0",
+    tags: ["party", "family"],
+    players: "3–6", time: "30 min", weight: "Easy",
+    available: true,
+    pillBg: "rgba(245,239,224,0.18)", pillColor: "#F5EFE0"
+  },
+  {
+    id: 6, name: "7 Wonders",
+    shape: "ring",
+    bg: ["#B87A00", "#8A5A00"], titleColor: "#1A150E",
+    tags: ["strategy", "quick"],
+    players: "2–7", time: "30 min", weight: "Medium",
+    available: true,
+    pillBg: "rgba(26,21,14,0.15)", pillColor: "#1A150E"
+  },
+  {
+    id: 7, name: "Azul",
+    shape: "diamond",
+    bg: ["#005E8B", "#003D5C"], titleColor: "#F5EFE0",
+    tags: ["strategy", "quick", "family"],
+    players: "2–4", time: "30–45 min", weight: "Easy",
+    available: true,
+    pillBg: "rgba(245,239,224,0.18)", pillColor: "#F5EFE0"
+  },
+  {
+    id: 8, name: "Ticket to Ride",
+    shape: "lines",
+    bg: ["#1C3A2A", "#0F2218"], titleColor: "#F5EFE0",
+    tags: ["family", "strategy"],
+    players: "2–5", time: "45–90 min", weight: "Easy",
+    available: false,
+    pillBg: "rgba(245,239,224,0.18)", pillColor: "#F5EFE0"
+  },
+  {
+    id: 9, name: "Sushi Go!",
+    shape: "circle",
+    bg: ["#E85D0C", "#B84500"], titleColor: "#F5EFE0",
+    tags: ["party", "quick", "family"],
+    players: "2–5", time: "15 min", weight: "Easy",
+    available: true,
+    pillBg: "rgba(245,239,224,0.18)", pillColor: "#F5EFE0"
+  },
+  {
+    id: 10, name: "Arkham Horror",
+    shape: "ring",
+    bg: ["#1A1A2E", "#0D0D1A"], titleColor: "#C8B888",
+    tags: ["coop", "strategy"],
+    players: "1–6", time: "2–3 hrs", weight: "Heavy",
+    available: true,
+    pillBg: "rgba(200,184,136,0.18)", pillColor: "#C8B888"
+  },
+  {
+    id: 11, name: "Dobble",
+    shape: "circle",
+    bg: ["#C42B80", "#8E1F5C"], titleColor: "#F5EFE0",
+    tags: ["party", "quick", "family"],
+    players: "2–8", time: "10 min", weight: "Easy",
+    available: true,
+    pillBg: "rgba(245,239,224,0.18)", pillColor: "#F5EFE0"
+  },
+  {
+    id: 12, name: "Everdell",
+    shape: "lines",       /* tree silhouette via angled strokes */
+    bg: ["#4A2C0A", "#2E1A06"], titleColor: "#ebc15b",
+    tags: ["strategy", "family"],
+    players: "1–4", time: "40–80 min", weight: "Medium",
+    available: false,
+    pillBg: "rgba(235,193,91,0.18)", pillColor: "#ebc15b"
+  },
+];
+
+/* ── Geometric SVG icon per shape ──────────────────────── */
+function shapeIcon(shape, color) {
+  const c = color;
+  const op = 'opacity="0.7"';
+  switch (shape) {
+    case "hex":
+      return `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="20,4 35,12 35,28 20,36 5,28 5,12" stroke="${c}" stroke-width="1.8" ${op}/>
+        <polygon points="20,11 29,16 29,24 20,29 11,24 11,16" fill="${c}" ${op}/>
+      </svg>`;
+    case "grid":
+      return `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="5" y="5" width="12" height="12" rx="2" fill="${c}" ${op}/>
+        <rect x="23" y="5" width="12" height="12" rx="2" fill="${c}" ${op}/>
+        <rect x="5" y="23" width="12" height="12" rx="2" fill="${c}" ${op}/>
+        <rect x="23" y="23" width="12" height="12" rx="2" fill="${c}" ${op}/>
+      </svg>`;
+    case "diamond":
+      return `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="20,4 36,20 20,36 4,20" stroke="${c}" stroke-width="1.8" ${op}/>
+        <polygon points="20,10 30,20 20,30 10,20" fill="${c}" ${op}/>
+      </svg>`;
+    case "ring":
+      return `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="20" cy="20" r="14" stroke="${c}" stroke-width="2" ${op}/>
+        <circle cx="20" cy="20" r="8" stroke="${c}" stroke-width="1.5" ${op}/>
+        <circle cx="20" cy="20" r="2.5" fill="${c}" ${op}/>
+      </svg>`;
+    case "lines":
+      return `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <line x1="8" y1="8" x2="32" y2="32" stroke="${c}" stroke-width="2.5" stroke-linecap="round" ${op}/>
+        <line x1="20" y1="5" x2="20" y2="35" stroke="${c}" stroke-width="2.5" stroke-linecap="round" ${op}/>
+        <line x1="32" y1="8" x2="8" y2="32" stroke="${c}" stroke-width="2.5" stroke-linecap="round" ${op}/>
+      </svg>`;
+    default: /* circle */
+      return `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="20" cy="20" r="14" stroke="${c}" stroke-width="2" ${op}/>
+        <circle cx="20" cy="20" r="7" fill="${c}" ${op}/>
+      </svg>`;
+  }
+}
+
+/* ── Hero shelf: render book-spine boxes from GAMES data ── */
+function renderHeroShelf() {
+  const rail = document.getElementById('hero-shelf-rail');
+  if (!rail) return;
+  // show all 12, varying heights to simulate real shelf variety
+  const heights = [72, 80, 68, 85, 76, 90, 70, 78, 66, 83, 75, 88];
+  rail.innerHTML = GAMES.map((g, i) => {
+    const h = heights[i % heights.length];
+    return `<div class="shelf-spine" title="${g.name}"
+        style="background:${g.bg[0]}; height:${h}%;"
+        aria-label="${g.name}">
+      <div class="shelf-spine-accent"></div>
+    </div>`;
+  }).join('');
+}
+
+let activeFilter = 'all';
+let activePlayers = 'any';
+
+function filterGames(tag) {
+  activeFilter = tag;
+  document.querySelectorAll('.filter-bar .chip').forEach(c => c.classList.remove('active'));
+  event.target.classList.add('active');
+  renderGrid();
+}
+
+function setPlayers(btn, val) {
+  activePlayers = val;
+  document.querySelectorAll('.player-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderGrid();
+}
+
+function matchesPlayers(game) {
+  if (activePlayers === 'any') return true;
+  const raw = game.players;
+  const nums = raw.match(/\d+/g).map(Number);
+  const [min, max] = nums.length >= 2 ? [nums[0], nums[1]] : [nums[0], nums[0]];
+  if (activePlayers === '2') return min <= 2 && max >= 2;
+  if (activePlayers === '3-4') return min <= 4 && max >= 3;
+  if (activePlayers === '5+') return max >= 5;
+  return true;
+}
+
+function renderGrid() {
+  const filtered = GAMES.filter(g => {
+    const tagOk = activeFilter === 'all' || g.tags.includes(activeFilter);
+    return tagOk && matchesPlayers(g);
+  });
+
+  const grid = document.getElementById('shelf-grid');
+  grid.innerHTML = filtered.map((g, i) => `
+    <div class="game-card" style="animation-delay: ${i * 0.045}s">
+      <div class="game-box">
+        <div class="game-box-art" style="background: ${g.bg[0]}">
+          <div class="game-icon">${shapeIcon(g.shape, g.titleColor)}</div>
+          <div class="game-title-box" style="color: ${g.titleColor}">${g.name}</div>
+          <div class="game-meta-box">
+            <span class="meta-pill" style="background: ${g.pillBg}; color: ${g.pillColor}">${g.weight}</span>
+            <span class="meta-pill" style="background: ${g.pillBg}; color: ${g.pillColor}">${g.players}p</span>
+          </div>
+        </div>
+      </div>
+      <div class="game-info">
+        <p class="game-name">${g.name}</p>
+        <div class="game-details">
+          <span>${g.time}</span>
+          <span class="dot-sep">&middot;</span>
+          <span class="avail-badge">
+            <span class="avail-dot ${g.available ? 'available' : 'busy'}"></span>
+            ${g.available ? 'Available' : 'In play'}
+          </span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ── Scroll reveal ─────────────────────────────────────── */
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.12 });
+
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+/* ── Init ──────────────────────────────────────────────── */
+renderHeroShelf();
+renderGrid();
+</script>
+</body>
+</html>

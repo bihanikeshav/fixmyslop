@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The AI Structural Monoculture, Measured</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0f0f0f;
+    --surface: #161616;
+    --border: #262626;
+    --text: #ececec;
+    --muted: #8a8a8a;
+    --track: #1d1d1d;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 0 0 80px;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 56px 32px 0; }
+  h1 { font-size: 27px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; }
+  .subtitle { color: var(--muted); font-size: 15px; max-width: 640px; }
+  .legend { display: flex; gap: 20px; flex-wrap: wrap; margin: 26px 0 8px; font-size: 13px; color: var(--muted); }
+  .legend-item { display: inline-flex; align-items: center; gap: 7px; }
+  .dot { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+
+  .chart { margin-top: 18px; border-top: 1px solid var(--border); }
+  .row {
+    display: grid;
+    grid-template-columns: 230px 1fr;
+    align-items: center;
+    gap: 16px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .bar-label { font-size: 13px; text-align: right; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-track { position: relative; height: 26px; background: var(--track); border-radius: 5px; overflow: hidden; }
+  .bar { height: 100%; border-radius: 5px; min-width: 2px; transition: width .6s cubic-bezier(.2,.7,.3,1); }
+  .bar-value {
+    position: absolute; top: 0; left: 12px; height: 26px;
+    display: flex; align-items: center;
+    font-variant-numeric: tabular-nums; font-weight: 600; font-size: 12.5px;
+    color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.55); pointer-events: none;
+  }
+  .count { color: rgba(255,255,255,.6); font-weight: 400; margin-left: 2px; }
+  .caption { margin-top: 28px; color: var(--muted); font-size: 13px; font-style: italic; }
+  @media (max-width: 620px) {
+    .row { grid-template-columns: 140px 1fr; gap: 10px; }
+    .bar-label { font-size: 12px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .bar { transition: none; } }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>The AI structural monoculture, measured</h1>
+    <p class="subtitle">
+      Every AI-built site reaches for the same structural moves: the glass nav, the pill,
+      the bento grid, the blue&#8594;purple gradient. Each bar is the share of crawled sites
+      using that one tell &mdash; the bigger the bar, the more it screams &ldquo;made by an AI.&rdquo;
+    </p>
+
+    <div class="legend">
+<span class="legend-item"><span class="dot" style="background:#e0823d"></span>style</span>
+<span class="legend-item"><span class="dot" style="background:#a855f7"></span>gradient</span>
+<span class="legend-item"><span class="dot" style="background:#3aa6b9"></span>motion</span>
+<span class="legend-item"><span class="dot" style="background:#7c8a99"></span>stack</span>
+    </div>
+
+    <div class="chart">
+<div class="row">
+  <div class="bar-label" title="box-shadow-everywhere">box-shadow everywhere</div>
+  <div class="bar-track">
+    <div class="bar" style="width:100.00%;background:#e0823d"></div>
+    <span class="bar-value">76.9% <span class="count">(973)</span></span>
+  </div>
+</div>
+<div class="row">
+  <div class="bar-label" title="pill">pill / rounded-full</div>
+  <div class="bar-track">
+    <div class="bar" style="width:71.39%;background:#e0823d"></div>
+    <span class="bar-value">54.9% <span class="count">(695)</span></span>
+  </div>
+</div>
+<div class="row">
+  <div class="bar-label" title="stack-tailwind">Tailwind utility stack</div>
+  <div class="bar-track">
+    <div class="bar" style="width:71.39%;background:#7c8a99"></div>
+    <span class="bar-value">54.9% <span class="count">(695)</span></span>
+  </div>
+</div>
+<div class="row">
+  <div class="bar-label" title="bento">bento grid layout</div>
+  <div class="bar-track">
+    <div class="bar" style="width:66.45%;background:#e0823d"></div>
+    <span class="bar-value">51.1% <span class="count">(647)</span></span>
+  </div>
+</div>
+<div class="row">
+  <div class="bar-label" title="glass-nav">glass / backdrop-blur</div>
+  <div class="bar-track">
+    <div class="bar" style="width:63.33%;background:#e0823d"></div>
+    <span class="bar-value">48.7% <span class="count">(616)</span></span>
+  </div>
+</div>
+<div class="row">
+  <div class="bar-label" title="gradient-blue-purple-band">blue→purple band gradient (any)</div>
+  <div class="bar-track">
+    <div class="bar" style="width:57.87%;background:#a855f7"></div>
+    <span class="bar-value">44.5% <span class="count">(563)</span></span>
+  </div>
+</div>
+<div class="row">
+  <div class="bar-label" title="colored-glow-shadow">colored glow shadow</div>
+  <div class="bar-track">
+    <div class="bar" style="width:33.03%;background:#e0823d"></div>
+    <span class="bar-value">25.4% <span class="count">(322)</span></span>
+  </div>
+</div>
+<div class="row">
+  <div class="bar-label" title="stack-shadcn">shadcn/ui components</div>
+  <div class="bar-track">
+    <div class="bar" style="width:23.15%;background:#7c8a99"></div>
+    <span class="bar-value">17.8% <span class="count">(225)</span></span>
+  </div>
+</div>
+<div class="row">
+  <div class="bar-label" title="gradient-text">gradient text (bg-clip:text)</div>
+  <div class="bar-track">
+    <div class="bar" style="width:21.33%;background:#e0823d"></div>
+    <span class="bar-value">16.4% <span class="count">(208)</span></span>
+  </div>
+</div>
+<div class="row">
+  <div class="bar-label" title="layout-prop-animation">animates layout props (reflow)</div>
+  <div class="bar-track">
+    <div class="bar" style="width:20.16%;background:#3aa6b9"></div>
+    <span class="bar-value">15.5% <span class="count">(196)</span></span>
+  </div>
+</div>
+<div class="row">
+  <div class="bar-label" title="tailwind-animate-canned">Tailwind animate-* (pulse/ping/spin/bounce/marquee)</div>
+  <div class="bar-track">
+    <div class="bar" style="width:16.51%;background:#3aa6b9"></div>
+    <span class="bar-value">12.7% <span class="count">(161)</span></span>
+  </div>
+</div>
+<div class="row">
+  <div class="bar-label" title="sparkle-badge">✨ / emoji “AI” badge</div>
+  <div class="bar-track">
+    <div class="bar" style="width:14.17%;background:#e0823d"></div>
+    <span class="bar-value">10.9% <span class="count">(138)</span></span>
+  </div>
+</div>
+<div class="row">
+  <div class="bar-label" title="stack-bootstrap">Bootstrap</div>
+  <div class="bar-track">
+    <div class="bar" style="width:12.35%;background:#7c8a99"></div>
+    <span class="bar-value">9.5% <span class="count">(120)</span></span>
+  </div>
+</div>
+<div class="row">
+  <div class="bar-label" title="gradient-indigo-indigo">gradient indigo → indigo</div>
+  <div class="bar-track">
+    <div class="bar" style="width:12.22%;background:#a855f7"></div>
+    <span class="bar-value">9.4% <span class="count">(119)</span></span>
+  </div>
+</div>
+<div class="row">
+  <div class="bar-label" title="gradient-blue-blue">gradient blue → blue</div>
+  <div class="bar-track">
+    <div class="bar" style="width:11.05%;background:#a855f7"></div>
+    <span class="bar-value">8.5% <span class="count">(108)</span></span>
+  </div>
+</div>
+<div class="row">
+  <div class="bar-label" title="anim-lib">animation lib (swiper/gsap/framer/aos)</div>
+  <div class="bar-track">
+    <div class="bar" style="width:9.49%;background:#3aa6b9"></div>
+    <span class="bar-value">7.3% <span class="count">(92)</span></span>
+  </div>
+</div>
+<div class="row">
+  <div class="bar-label" title="gradient-blue-indigo">gradient blue → indigo</div>
+  <div class="bar-track">
+    <div class="bar" style="width:9.10%;background:#a855f7"></div>
+    <span class="bar-value">7% <span class="count">(88)</span></span>
+  </div>
+</div>
+<div class="row">
+  <div class="bar-label" title="gradient-indigo-violet">gradient indigo → violet</div>
+  <div class="bar-track">
+    <div class="bar" style="width:5.46%;background:#a855f7"></div>
+    <span class="bar-value">4.2% <span class="count">(53)</span></span>
+  </div>
+</div>
+<div class="row">
+  <div class="bar-label" title="bounce-elastic-easing">bounce / elastic easing</div>
+  <div class="bar-track">
+    <div class="bar" style="width:0.26%;background:#3aa6b9"></div>
+    <span class="bar-value">0.2% <span class="count">(3)</span></span>
+  </div>
+</div>
+    </div>
+
+    <p class="caption">the AI structural monoculture, measured across 1266 sites</p>
+  </div>
+</body>
+</html>

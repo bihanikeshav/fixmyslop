@@ -1,5 +1,5 @@
 {
-  "name": "@ai-slop-font/crawl",
+  "name": "@fixmyslop/crawl",
   "version": "0.1.0",
   "description": "Deterministic, LLM-free role-aware font crawler (headless Chromium).",
   "type": "module",
@@ -10,7 +10,7 @@
     "crawl": "tsx src/crawl.ts"
   },
   "dependencies": {
-    "@ai-slop-font/core": "*",
+    "@fixmyslop/core": "*",
     "playwright": "^1.48.0"
   },
   "devDependencies": {

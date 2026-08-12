@@ -11,7 +11,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import type { Observation } from "@ai-slop-font/core";
+import type { Observation } from "@fixmyslop/core";
 import { withBrowser, crawlUrl, type SiteProfile } from "./extract.js";
 import { discoverOutboundLinks, AI_DIRECTORIES } from "./sources.js";
 

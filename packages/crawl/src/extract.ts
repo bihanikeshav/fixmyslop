@@ -9,7 +9,7 @@ import { chromium, type Browser, type Page } from "playwright";
 import { analyzePage, type CrawlElement, type PageFontProfile } from "./analyze.js";
 
 export const UA =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36 ai-slop-font/0.1";
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36 fixmyslop/0.1";
 
 export interface SiteProfile extends PageFontProfile {
   url: string;

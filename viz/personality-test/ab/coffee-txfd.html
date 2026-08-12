@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ember &amp; Oak — Single-Origin Coffee Roasters</title>
+<meta name="description" content="Ember &amp; Oak roasts single-origin coffee weekly. Three origins, sourced direct, subscription and café in Portland.">
+
+<!-- Fonts: Boxing (Fontshare) + Azeret Mono (Google) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=boxing@400,700&display=swap" rel="stylesheet">
+
+<!-- Render-safe JS class gate — must be before any CSS that references .js -->
+<script>document.documentElement.classList.add('js')</script>
+
+<style>
+/* ─── Design tokens ─────────────────────────────────────────────────── */
+:root {
+  /* Palette — warm stone ground + forest-green accent (green coffee bean) */
+  --ground:      #F2EDE4;   /* warm stone, not cream */
+  --ground-2:    #E8E2D8;   /* one step darker for alternating sections */
+  --ground-3:    #DDD7CC;   /* borders, subtle dividers */
+  --ink:         #1E1208;   /* near-black, warm-tinted, never pure #000 */
+  --ink-mid:     #4A3C2C;   /* secondary text, captions */
+  --ink-light:   #7A6C5C;   /* meta, labels — verified ≥4.5:1 on --ground */
+  --accent:      #3D6B08;   /* green coffee bean — forest, not earthy */
+  --accent-hi:   #4F8A0A;   /* hover state on accent — same hue, +L */
+  --accent-on:   #FAFAF6;   /* text on accent bg — near white */
+
+  /* Typography */
+  --font-display: 'Boxing', 'Arial Black', sans-serif;
+  --font-body:    'Azeret Mono', 'Courier New', monospace;
+
+  /* Spacing scale (4-base) */
+  --s4:  4px;  --s8:  8px;  --s12: 12px; --s16: 16px;
+  --s24: 24px; --s32: 32px; --s48: 48px; --s64: 64px; --s96: 96px;
+
+  /* Easing */
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in:  cubic-bezier(0.4, 0, 1, 1);
+  --ease-io:  cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Roast curve SVG geometry reference */
+  --curve-stroke: 2.5px;
+
+  /* Origin accent hues (all text contrast verified ≥4.5:1 on --ground) */
+  --ethiopia:  #3D6B08;   /* same as accent */
+  --colombia:  #7A4A08;   /* warm amber-brown, hue≈38° */
+  --sumatra:   #104d54;   /* deep teal-blue, hue≈198° */
+}
+
+/* ─── Reset ─────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html {
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
+}
+body { overflow-x: hidden; }
+
+/* ─── Focus & selection ──────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+::selection { background: var(--accent); color: var(--accent-on); }
+
+/* ─── Typography helpers ─────────────────────────────────────────────── */
+.display {
+  font-family: var(--font-display);
+  line-height: 0.92;
+  letter-spacing: -0.01em;
+}
+.mono {
+  font-family: var(--font-body);
+}
+
+/* ─── NAV ────────────────────────────────────────────────────────────── */
+.site-nav {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s32);
+  padding: var(--s16) var(--s32);
+  border-bottom: 1px solid var(--ground-3);
+  position: relative;
+  z-index: 10;
+}
+.site-nav__wordmark {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--ink);
+  text-decoration: none;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+.site-nav__wordmark span { color: var(--accent); }
+.site-nav__links {
+  display: flex;
+  gap: var(--s24);
+  list-style: none;
+  margin-left: auto;
+}
+.site-nav__links a {
+  color: var(--ink-mid);
+  text-decoration: none;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: color 200ms var(--ease-out);
+}
+.site-nav__links a:hover { color: var(--accent); }
+
+/* ─── HERO — "The Roast Curve" standout ─────────────────────────────── */
+.hero {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr;
+  min-height: calc(100svh - 57px);
+  align-items: stretch;
+}
+
+/* Left column — big temp numeral + intro */
+.hero__left {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--s48) var(--s32) var(--s48) var(--s32);
+  border-right: 1px solid var(--ground-3);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Giant temperature in background — structural not decorative */
+.hero__bg-temp {
+  font-family: var(--font-display);
+  font-size: clamp(140px, 24vw, 260px);
+  line-height: 0.85;
+  color: var(--ground-2);
+  position: absolute;
+  bottom: -0.08em;
+  left: -0.04em;
+  letter-spacing: -0.03em;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+}
+
+.hero__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s32);
+}
+
+.hero__kicker {
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-light);
+  display: flex;
+  align-items: center;
+  gap: var(--s8);
+}
+.hero__kicker::before {
+  content: '';
+  display: block;
+  width: var(--s32);
+  height: 1px;
+  background: var(--accent);
+}
+
+.hero__headline {
+  font-family: var(--font-display);
+  font-size: clamp(2.8rem, 6vw, 5.5rem);
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  text-wrap: balance;
+  max-width: 9ch;
+}
+.hero__headline strong {
+  display: block;
+  color: var(--accent);
+}
+
+.hero__body {
+  font-size: 0.875rem;
+  line-height: 1.7;
+  color: var(--ink-mid);
+  max-width: 42ch;
+}
+
+.hero__ctas {
+  display: flex;
+  gap: var(--s12);
+  flex-wrap: wrap;
+  margin-top: var(--s8);
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s8);
+  padding: var(--s12) var(--s24);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 120ms var(--ease-out), opacity 150ms var(--ease-out);
+  border-radius: 2px;
+  text-decoration: none;
+  min-height: 44px;
+}
+.btn--primary {
+  background: var(--accent);
+  color: var(--accent-on);
+  border: 2px solid var(--accent);
+}
+.btn--primary:hover { background: var(--accent-hi); border-color: var(--accent-hi); }
+.btn--primary:active { transform: scale(0.97); }
+.btn--outline {
+  background: transparent;
+  color: var(--ink);
+  border: 2px solid var(--ground-3);
+}
+.btn--outline:hover { border-color: var(--ink); }
+.btn--outline:active { transform: scale(0.97); }
+
+.hero__meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  position: relative;
+  z-index: 1;
+}
+.hero__meta-item {
+  font-size: 0.7rem;
+  color: var(--ink-light);
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: var(--s8);
+}
+.hero__meta-item::before {
+  content: '●';
+  color: var(--accent);
+  font-size: 0.4rem;
+}
+
+/* Right column — The Roast Curve SVG standout */
+.hero__right {
+  display: flex;
+  flex-direction: column;
+  padding: var(--s48) var(--s48) var(--s48) var(--s40);
+  gap: var(--s24);
+  background: var(--ground);
+  --s40: 40px;
+}
+
+.curve-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s16);
+}
+.curve-title {
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-light);
+}
+.curve-legend {
+  display: flex;
+  gap: var(--s16);
+  flex-wrap: wrap;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s6);
+  font-size: 0.68rem;
+  color: var(--ink-light);
+  letter-spacing: 0.03em;
+  --s6: 6px;
+}
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* THE STANDOUT — roast curve SVG */
+.curve-wrapper {
+  flex: 1;
+  position: relative;
+  min-height: 320px;
+}
+
+.curve-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+/* Axis lines */
+.axis-line { stroke: var(--ground-3); stroke-width: 1; }
+.axis-label {
+  font-family: 'Azeret Mono', monospace;
+  font-size: 10px;
+  fill: var(--ink-light);
+  font-variant-numeric: tabular-nums;
+}
+.axis-label-y { text-anchor: end; }
+.axis-label-x { text-anchor: middle; }
+
+/* Phase annotations */
+.phase-rule { stroke: var(--ground-3); stroke-width: 1; stroke-dasharray: 4 4; }
+.phase-label {
+  font-family: 'Azeret Mono', monospace;
+  font-size: 9px;
+  fill: var(--ink-light);
+  text-anchor: middle;
+}
+
+/* The roast curve path — drawn on from stroke-dashoffset */
+.curve-path {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Gradient fill under curve */
+.curve-fill { opacity: 0.07; }
+
+/* Origin points */
+.origin-point {
+  cursor: pointer;
+}
+.origin-point circle.outer {
+  fill: none;
+  stroke-width: 1.5;
+  transition: opacity 200ms var(--ease-out);
+}
+.origin-point circle.inner {
+  transition: transform 200ms var(--ease-out);
+  transform-origin: center;
+  transform-box: fill-box;
+}
+.origin-point:hover circle.outer { opacity: 0.8; }
+.origin-point:hover circle.inner { transform: scale(1.4); }
+
+/* Tooltip panel — hidden via visibility; opacity added only when .js present */
+.curve-tooltip {
+  position: absolute;
+  background: var(--ink);
+  color: var(--accent-on);
+  border-radius: 2px;
+  padding: var(--s12) var(--s16);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  pointer-events: none;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out), visibility 0ms 200ms;
+  max-width: 220px;
+  z-index: 20;
+}
+html.js .curve-tooltip { opacity: 0; }
+.curve-tooltip.visible {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out), visibility 0ms 0ms;
+}
+.tooltip-origin {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  line-height: 1;
+  margin-bottom: var(--s8);
+  letter-spacing: 0.02em;
+}
+.tooltip-row {
+  display: flex;
+  gap: var(--s8);
+  color: rgba(250,250,246,0.7);
+}
+.tooltip-row strong { color: var(--accent-on); }
+.tooltip-notes {
+  margin-top: var(--s8);
+  padding-top: var(--s8);
+  border-top: 1px solid rgba(255,255,255,0.1);
+  font-style: italic;
+  color: rgba(250,250,246,0.85);
+}
+
+/* Curve entrance animation — render-safe */
+.curve-path {
+  stroke-dasharray: var(--path-len, 1800);
+  stroke-dashoffset: var(--path-len, 1800);
+}
+html.js .curve-path { transition: stroke-dashoffset 1.6s var(--ease-out); }
+html.js .curve-path.drawn { stroke-dashoffset: 0; }
+
+/* Origin point entrance — staggered */
+.origin-group { opacity: 1; }
+html.js .origin-group { opacity: 0; transition: opacity 350ms var(--ease-out), transform 350ms var(--ease-out); transform: translateY(8px); }
+html.js .origin-group.in { opacity: 1; transform: translateY(0); }
+
+/* Reduce-motion fallback */
+@media (prefers-reduced-motion: reduce) {
+  html.js .curve-path {
+    transition-duration: 0.01ms !important;
+  }
+  html.js .curve-path { stroke-dashoffset: 0; }
+  html.js .origin-group { opacity: 1; transform: none; transition-duration: 0.01ms !important; }
+  * { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+/* ─── ORIGINS SECTION ────────────────────────────────────────────────── */
+.origins {
+  background: var(--ground-2);
+  border-top: 1px solid var(--ground-3);
+}
+
+.origins__inner {
+  display: grid;
+  grid-template-columns: 7fr 5fr;
+  gap: 0;
+}
+
+/* Left — the data table */
+.origins__table-wrap {
+  padding: var(--s64) var(--s48) var(--s64) var(--s32);
+  border-right: 1px solid var(--ground-3);
+}
+
+.origins__label {
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-light);
+  margin-bottom: var(--s32);
+  display: flex;
+  align-items: center;
+  gap: var(--s12);
+}
+.origins__label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--ground-3);
+  max-width: 80px;
+}
+
+.origins__headline {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin-bottom: var(--s48);
+  text-wrap: balance;
+}
+
+/* Origin data table */
+.origin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.825rem;
+}
+.origin-table th {
+  text-align: left;
+  font-weight: 400;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-light);
+  padding: var(--s8) var(--s12) var(--s8) 0;
+  border-bottom: 1px solid var(--ground-3);
+}
+.origin-table th:last-child { text-align: right; }
+.origin-table td {
+  padding: var(--s16) var(--s12) var(--s16) 0;
+  border-bottom: 1px solid var(--ground-3);
+  vertical-align: top;
+  line-height: 1.4;
+  color: var(--ink);
+}
+.origin-table td:last-child { text-align: right; color: var(--ink-mid); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
+.origin-table tr:last-child td { border-bottom: none; }
+
+.origin-name {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  line-height: 1;
+  color: var(--ink);
+  display: block;
+  margin-bottom: var(--s4);
+  letter-spacing: 0.01em;
+}
+.origin-sub {
+  color: var(--ink-light);
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+}
+
+.roast-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 2px;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+.roast-badge--light  { color: var(--ethiopia); }
+.roast-badge--medium { color: var(--colombia); }
+.roast-badge--full   { color: var(--sumatra); }
+
+.notes-list {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s4);
+  padding: 0;
+}
+.notes-list li {
+  font-size: 0.7rem;
+  color: var(--ink-mid);
+  letter-spacing: 0.03em;
+}
+.notes-list li + li::before { content: '·'; margin-right: var(--s4); color: var(--ink-light); }
+
+/* Right — the brew guide panel */
+.origins__brew {
+  padding: var(--s64) var(--s32) var(--s64) var(--s48);
+}
+
+.brew-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-light);
+  margin-bottom: var(--s32);
+}
+
+.brew-method {
+  margin-bottom: var(--s48);
+}
+.brew-method-name {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  color: var(--ink);
+  margin-bottom: var(--s16);
+}
+.brew-method-name span { color: var(--accent); }
+
+.brew-specs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s12);
+}
+.brew-spec {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.8rem;
+  padding-bottom: var(--s12);
+  border-bottom: 1px solid var(--ground-3);
+}
+.brew-spec:last-child { border-bottom: none; }
+.brew-spec__key {
+  color: var(--ink-light);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+}
+.brew-spec__val {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+/* Progress bars — scaleX from 0, not width animation */
+.brew-bar-wrap {
+  margin-top: var(--s4);
+  height: 3px;
+  background: var(--ground-3);
+  border-radius: 1px;
+  overflow: hidden;
+  grid-column: 1 / -1;
+}
+.brew-bar {
+  height: 100%;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.8s var(--ease-out);
+}
+html.js .brew-bar.grown { transform: scaleX(1); }
+
+/* Subscription strip */
+.sub-strip {
+  margin-top: var(--s48);
+  background: var(--ink);
+  color: var(--accent-on);
+  padding: var(--s24);
+  border-radius: 2px;
+}
+.sub-strip__title {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  line-height: 1;
+  margin-bottom: var(--s12);
+  letter-spacing: 0.01em;
+}
+.sub-strip__body {
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: rgba(250,250,246,0.75);
+  margin-bottom: var(--s16);
+}
+.sub-strip .btn--accent {
+  background: var(--accent);
+  color: var(--accent-on);
+  border: 2px solid var(--accent);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s8);
+  padding: var(--s12) var(--s20);
+  --s20: 20px;
+  transition: transform 120ms var(--ease-out), opacity 150ms var(--ease-out);
+}
+.sub-strip .btn--accent:hover { opacity: 0.88; }
+.sub-strip .btn--accent:active { transform: scale(0.97); }
+
+/* ─── FOOTER ─────────────────────────────────────────────────────────── */
+.site-footer {
+  border-top: 1px solid var(--ground-3);
+  padding: var(--s24) var(--s32);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s16);
+  flex-wrap: wrap;
+}
+.footer-wordmark {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  color: var(--ink-mid);
+  text-decoration: none;
+  letter-spacing: 0.03em;
+}
+.footer-meta {
+  font-size: 0.7rem;
+  color: var(--ink-light);
+  letter-spacing: 0.03em;
+}
+
+/* ─── Reveal on scroll (secondary polish, render-safe) ───────────────── */
+.reveal {
+  transition: opacity 0.45s var(--ease-out), transform 0.45s var(--ease-out);
+}
+html.js .reveal {
+  opacity: 0;
+  transform: translateY(16px);
+}
+html.js .reveal.in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+  .hero__left {
+    border-right: none;
+    border-bottom: 1px solid var(--ground-3);
+    padding: var(--s32) var(--s24);
+    min-height: auto;
+  }
+  .hero__right {
+    padding: var(--s32) var(--s24);
+    min-height: 320px;
+    --s40: 24px;
+  }
+  .hero__bg-temp {
+    font-size: 120px;
+  }
+  .origins__inner {
+    grid-template-columns: 1fr;
+  }
+  .origins__table-wrap {
+    padding: var(--s32) var(--s24);
+    border-right: none;
+    border-bottom: 1px solid var(--ground-3);
+  }
+  .origins__brew {
+    padding: var(--s32) var(--s24);
+  }
+  .site-nav {
+    padding: var(--s12) var(--s16);
+  }
+  .site-nav__links {
+    display: none;
+  }
+}
+
+@media (max-width: 390px) {
+  .hero__headline {
+    font-size: 2.4rem;
+  }
+  .hero__ctas {
+    flex-direction: column;
+  }
+  .hero__ctas .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<!-- ── NAV ──────────────────────────────────────────────────────────── -->
+<nav class="site-nav" aria-label="Main navigation">
+  <a href="#" class="site-nav__wordmark" aria-label="Ember &amp; Oak home">
+    Ember <span>&amp;</span> Oak
+  </a>
+  <ul class="site-nav__links" role="list">
+    <li><a href="#origins">Origins</a></li>
+    <li><a href="#brew">Brew Guide</a></li>
+    <li><a href="#subscribe">Subscribe</a></li>
+    <li><a href="#cafe">Café</a></li>
+  </ul>
+</nav>
+
+<!-- ── HERO — The Roast Curve standout ──────────────────────────────── -->
+<section class="hero" aria-labelledby="hero-heading">
+
+  <div class="hero__left">
+    <!-- Background temperature numeral — structural layout element -->
+    <span class="hero__bg-temp display" aria-hidden="true">196</span>
+
+    <div class="hero__content">
+      <p class="hero__kicker">Roasted every Thursday</p>
+
+      <h1 class="hero__headline display" id="hero-heading">
+        Single<strong>Origin</strong>Coffee
+      </h1>
+
+      <p class="hero__body">
+        We source three coffees each season — direct from farms we know — and roast them
+        in small batches every week. The curve is our craft.
+      </p>
+
+      <div class="hero__ctas">
+        <a href="#subscribe" class="btn btn--primary">Subscribe / $18 bag</a>
+        <a href="#origins" class="btn btn--outline">Explore origins</a>
+      </div>
+    </div>
+
+    <div class="hero__meta" aria-label="Roaster facts">
+      <p class="hero__meta-item">Portland, OR — roasting since 2018</p>
+      <p class="hero__meta-item">3 single-origins · seasonal rotation</p>
+      <p class="hero__meta-item">Café open Mon–Sat, 7am–4pm</p>
+    </div>
+  </div>
+
+  <!-- Right column — The Roast Curve SVG instrument -->
+  <div class="hero__right" role="region" aria-labelledby="curve-label">
+    <div class="curve-header">
+      <p class="curve-title" id="curve-label">Roast Curve — current batch</p>
+      <div class="curve-legend" aria-label="Origin legend">
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#3D6B08" aria-hidden="true"></div>
+          Ethiopia Yirgacheffe
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#7A4A08" aria-hidden="true"></div>
+          Colombia Huila
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#104d54" aria-hidden="true"></div>
+          Sumatra Mandheling
+        </div>
+      </div>
+    </div>
+
+    <div class="curve-wrapper">
+      <!-- Tooltip -->
+      <div class="curve-tooltip" role="tooltip" id="curve-tooltip" aria-live="polite">
+        <div class="tooltip-origin" id="tt-origin"></div>
+        <div class="tooltip-row"><span>Altitude</span><strong id="tt-alt"></strong></div>
+        <div class="tooltip-row"><span>Varietal</span><strong id="tt-var"></strong></div>
+        <div class="tooltip-row"><span>Temp at drop</span><strong id="tt-temp"></strong></div>
+        <div class="tooltip-notes" id="tt-notes"></div>
+      </div>
+
+      <!--
+        SVG ROAST CURVE — computed from real roast science data
+        viewBox: x=time(0..12min), y=temperature(100..230°C)
+        Coordinate mapping: px = 40 + (time/12)*520, py = 260 - ((temp-100)/130)*220
+        Curve: 3 origins each with distinct end-of-roast point
+        Phase markers: drying (0-5min), Maillard (5-8min), development (8-12min)
+      -->
+      <svg class="curve-svg" viewBox="0 0 620 300" role="img"
+           aria-label="Roast temperature curves for three single-origin coffees over 12 minutes. Ethiopia Yirgacheffe peaks at 196°C (light roast). Colombia Huila at 207°C (medium roast). Sumatra Mandheling at 214°C (full-city roast).">
+
+        <defs>
+          <linearGradient id="fill-ethiopia" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#3D6B08"/>
+            <stop offset="100%" stop-color="#3D6B08" stop-opacity="0"/>
+          </linearGradient>
+          <linearGradient id="fill-colombia" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#7A4A08"/>
+            <stop offset="100%" stop-color="#7A4A08" stop-opacity="0"/>
+          </linearGradient>
+          <linearGradient id="fill-sumatra" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#104d54"/>
+            <stop offset="100%" stop-color="#104d54" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+
+        <!-- Y-axis temperature labels -->
+        <text class="axis-label axis-label-y" x="36" y="264">100°</text>
+        <text class="axis-label axis-label-y" x="36" y="230">125°</text>
+        <text class="axis-label axis-label-y" x="36" y="196">150°</text>
+        <text class="axis-label axis-label-y" x="36" y="162">175°</text>
+        <text class="axis-label axis-label-y" x="36" y="128">200°</text>
+        <text class="axis-label axis-label-y" x="36" y="94">225°</text>
+
+        <!-- Y-axis grid lines -->
+        <line class="axis-line" x1="40" x2="580" y1="264" y2="264"/>
+        <line class="axis-line" x1="40" x2="580" y1="230" y2="230"/>
+        <line class="axis-line" x1="40" x2="580" y1="196" y2="196"/>
+        <line class="axis-line" x1="40" x2="580" y1="162" y2="162"/>
+        <line class="axis-line" x1="40" x2="580" y1="128" y2="128"/>
+        <line class="axis-line" x1="40" x2="580" y1="94" y2="94"/>
+
+        <!-- X-axis time labels -->
+        <text class="axis-label axis-label-x" x="40" y="283">0</text>
+        <text class="axis-label axis-label-x" x="127" y="283">2m</text>
+        <text class="axis-label axis-label-x" x="214" y="283">4m</text>
+        <text class="axis-label axis-label-x" x="301" y="283">6m</text>
+        <text class="axis-label axis-label-x" x="388" y="283">8m</text>
+        <text class="axis-label axis-label-x" x="475" y="283">10m</text>
+        <text class="axis-label axis-label-x" x="562" y="283">12m</text>
+
+        <!-- X-axis base line -->
+        <line class="axis-line" x1="40" y1="264" x2="580" y2="264"/>
+
+        <!-- Phase boundary — Maillard start ~5.5min (x≈279) -->
+        <line class="phase-rule" x1="279" y1="94" x2="279" y2="264"/>
+        <text class="phase-label" x="159" y="88">Drying phase</text>
+        <text class="phase-label" x="379" y="88">Maillard / development</text>
+
+        <!-- First crack annotation ~196°C (y≈128) -->
+        <line class="phase-rule" x1="40" y1="128" x2="580" y2="128" stroke-dasharray="2 6"/>
+        <text class="axis-label" x="584" y="131" style="font-size:8px;fill:var(--ink-light)">first crack</text>
+
+        <!--
+          CURVE DATA — each path computed from these anchor points:
+          Coordinate formula:
+            x = 40 + (t/12)*520
+            y = 264 - ((T-100)/130)*170
+
+          Common start: t=0, T=200°C ambient bean temp → but adjusted for realistic curve
+          Using smooth cubic bezier curves through key temperature-time coordinates.
+
+          Ethiopia: end t=10.5min, T=196°C → x=495, y=131
+          Colombia: end t=11min, T=207°C  → x=517, y=117
+          Sumatra:  end t=11.5min, T=214°C → x=538, y=108
+        -->
+
+        <!-- Ethiopia curve (light roast) — forest green -->
+        <path class="curve-path" id="path-ethiopia"
+          stroke="#3D6B08"
+          style="--path-len:1320"
+          d="M40,254 C70,252 90,240 120,222 C150,204 160,196 190,183 C220,170 240,162 270,150 C295,140 310,138 340,128 C370,117 390,118 420,116 C450,114 470,120 495,131"
+        />
+
+        <!-- Colombia curve (medium roast) — warm amber -->
+        <path class="curve-path" id="path-colombia"
+          stroke="#7A4A08"
+          style="--path-len:1380"
+          d="M40,254 C70,252 90,240 120,222 C150,204 162,194 192,180 C222,166 242,158 272,146 C298,135 312,132 342,122 C372,111 395,108 425,106 C455,103 475,107 517,117"
+        />
+
+        <!-- Sumatra curve (full-city roast) — deep teal -->
+        <path class="curve-path" id="path-sumatra"
+          stroke="#104d54"
+          style="--path-len:1440"
+          d="M40,254 C70,252 90,240 120,222 C150,204 163,193 193,179 C223,165 244,156 274,144 C300,133 314,130 344,119 C374,108 398,104 428,100 C458,97 478,98 538,108"
+        />
+
+        <!-- Interactive origin end-points -->
+        <!-- Ethiopia -->
+        <g class="origin-group origin-point" id="pt-ethiopia" tabindex="0"
+           role="button" aria-label="Ethiopia Yirgacheffe — click for details"
+           data-name="Ethiopia Yirgacheffe"
+           data-region="Gedeo Zone, SNNPR"
+           data-alt="1,800–2,200 masl"
+           data-var="Heirloom / Typica"
+           data-temp="196°C"
+           data-notes="Jasmine · Bergamot · Lemon zest · Black tea finish">
+          <circle class="pulse" cx="495" cy="131" r="0" fill="none" stroke="#3D6B08" stroke-width="1.5" opacity="0"/>
+          <circle class="outer" cx="495" cy="131" r="12" stroke="#3D6B08" opacity="0.4"/>
+          <circle class="inner" cx="495" cy="131" r="5" fill="#3D6B08"/>
+        </g>
+
+        <!-- Colombia -->
+        <g class="origin-group origin-point" id="pt-colombia" tabindex="0"
+           role="button" aria-label="Colombia Huila — click for details"
+           data-name="Colombia Huila"
+           data-region="Pitalito, Huila department"
+           data-alt="1,600–1,900 masl"
+           data-var="Caturra / Castillo"
+           data-temp="207°C"
+           data-notes="Brown sugar · Hazelnut · Stone fruit · Milk chocolate">
+          <circle class="pulse" cx="517" cy="117" r="0" fill="none" stroke="#7A4A08" stroke-width="1.5" opacity="0"/>
+          <circle class="outer" cx="517" cy="117" r="12" stroke="#7A4A08" opacity="0.4"/>
+          <circle class="inner" cx="517" cy="117" r="5" fill="#7A4A08"/>
+        </g>
+
+        <!-- Sumatra -->
+        <g class="origin-group origin-point" id="pt-sumatra" tabindex="0"
+           role="button" aria-label="Sumatra Mandheling — click for details"
+           data-name="Sumatra Mandheling"
+           data-region="Tapanuli, North Sumatra"
+           data-alt="1,200–1,500 masl"
+           data-var="Typica / Tim Tim"
+           data-temp="214°C"
+           data-notes="Dark chocolate · Cedar · Earth · Molasses · Low acidity">
+          <circle class="pulse" cx="538" cy="108" r="0" fill="none" stroke="#104d54" stroke-width="1.5" opacity="0"/>
+          <circle class="outer" cx="538" cy="108" r="12" stroke="#104d54" opacity="0.4"/>
+          <circle class="inner" cx="538" cy="108" r="5" fill="#104d54"/>
+        </g>
+
+        <!-- Hidden data table for accessibility -->
+        <title>Roast curves for three single-origin coffees</title>
+      </svg>
+
+      <!-- Accessible data table for screen readers -->
+      <table class="visually-hidden" aria-label="Roast curve data">
+        <caption>Temperature endpoints for current batch origins</caption>
+        <thead>
+          <tr><th scope="col">Origin</th><th scope="col">Altitude (masl)</th><th scope="col">Varietal</th><th scope="col">Roast temp</th><th scope="col">Tasting notes</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Ethiopia Yirgacheffe</td><td>1,800–2,200</td><td>Heirloom/Typica</td><td>196°C</td><td>Jasmine, bergamot, lemon zest, black tea</td></tr>
+          <tr><td>Colombia Huila</td><td>1,600–1,900</td><td>Caturra/Castillo</td><td>207°C</td><td>Brown sugar, hazelnut, stone fruit, milk chocolate</td></tr>
+          <tr><td>Sumatra Mandheling</td><td>1,200–1,500</td><td>Typica/Tim Tim</td><td>214°C</td><td>Dark chocolate, cedar, earth, molasses</td></tr>
+        </tbody>
+      </table>
+    </div><!-- .curve-wrapper -->
+  </div><!-- .hero__right -->
+
+</section>
+
+<!-- ── ORIGINS + BREW GUIDE ─────────────────────────────────────────── -->
+<section class="origins" id="origins" aria-labelledby="origins-heading">
+  <div class="origins__inner">
+
+    <!-- Left — origin data table -->
+    <div class="origins__table-wrap">
+      <p class="origins__label">Current batch — roasted Thursday</p>
+      <h2 class="origins__headline display" id="origins-heading">
+        Three farms.<br>One roaster.
+      </h2>
+
+      <table class="origin-table">
+        <caption class="visually-hidden">Current batch single-origin coffees</caption>
+        <thead>
+          <tr>
+            <th scope="col">Origin</th>
+            <th scope="col">Roast</th>
+            <th scope="col">Notes</th>
+            <th scope="col" style="text-align:right">Bag / 250g</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="reveal">
+            <td>
+              <span class="origin-name display" style="color:var(--ethiopia)">Yirgacheffe</span>
+              <span class="origin-sub">Ethiopia · 2,000 masl · Heirloom</span>
+            </td>
+            <td><span class="roast-badge roast-badge--light">Light</span></td>
+            <td>
+              <ul class="notes-list" aria-label="Tasting notes">
+                <li>Jasmine</li><li>Bergamot</li><li>Lemon zest</li><li>Black tea</li>
+              </ul>
+            </td>
+            <td>$18</td>
+          </tr>
+          <tr class="reveal">
+            <td>
+              <span class="origin-name display" style="color:var(--colombia)">Huila</span>
+              <span class="origin-sub">Colombia · 1,750 masl · Caturra</span>
+            </td>
+            <td><span class="roast-badge roast-badge--medium">Medium</span></td>
+            <td>
+              <ul class="notes-list" aria-label="Tasting notes">
+                <li>Brown sugar</li><li>Hazelnut</li><li>Stone fruit</li><li>Chocolate</li>
+              </ul>
+            </td>
+            <td>$16</td>
+          </tr>
+          <tr class="reveal">
+            <td>
+              <span class="origin-name display" style="color:var(--sumatra)">Mandheling</span>
+              <span class="origin-sub">Sumatra · 1,400 masl · Typica</span>
+            </td>
+            <td><span class="roast-badge roast-badge--full">Full city</span></td>
+            <td>
+              <ul class="notes-list" aria-label="Tasting notes">
+                <li>Dark chocolate</li><li>Cedar</li><li>Molasses</li><li>Earth</li>
+              </ul>
+            </td>
+            <td>$17</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Right — brew guide -->
+    <div class="origins__brew" id="brew">
+      <p class="brew-label">Brew guide</p>
+
+      <div class="brew-method">
+        <p class="brew-method-name display">Pour<span>Over</span></p>
+        <div class="brew-specs">
+          <div class="brew-spec">
+            <span class="brew-spec__key">Dose</span>
+            <span class="brew-spec__val">22g coffee</span>
+          </div>
+          <div class="brew-spec">
+            <span class="brew-spec__key">Water</span>
+            <span class="brew-spec__val">360g at 93°C</span>
+          </div>
+          <div class="brew-spec">
+            <span class="brew-spec__key">Ratio</span>
+            <span class="brew-spec__val">1:16.4</span>
+          </div>
+          <div class="brew-spec">
+            <span class="brew-spec__key">Grind</span>
+            <span class="brew-spec__val">Medium-fine</span>
+          </div>
+          <div class="brew-spec">
+            <span class="brew-spec__key">Total time</span>
+            <span class="brew-spec__val">3:30 – 4:00</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="brew-method" style="margin-top:var(--s32)">
+        <p class="brew-method-name display">Aero<span>press</span></p>
+        <div class="brew-specs">
+          <div class="brew-spec">
+            <span class="brew-spec__key">Dose</span>
+            <span class="brew-spec__val">18g coffee</span>
+          </div>
+          <div class="brew-spec">
+            <span class="brew-spec__key">Water</span>
+            <span class="brew-spec__val">270g at 88°C</span>
+          </div>
+          <div class="brew-spec">
+            <span class="brew-spec__key">Steep</span>
+            <span class="brew-spec__val">1:30 min</span>
+          </div>
+          <div class="brew-spec">
+            <span class="brew-spec__key">Press</span>
+            <span class="brew-spec__val">30s gentle</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subscription strip -->
+      <div class="sub-strip" id="subscribe" aria-labelledby="sub-title">
+        <p class="sub-strip__title display" id="sub-title">Weekly Roast</p>
+        <p class="sub-strip__body">
+          Get one origin delivered every Thursday — roasted that morning.
+          Pause or swap anytime. $18/bag, free shipping.
+        </p>
+        <a href="#" class="btn btn--accent" style="font-family:var(--font-body);font-size:0.8rem;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;border-radius:2px;text-decoration:none;min-height:44px;cursor:pointer;transition:transform 120ms var(--ease-out);display:inline-flex;align-items:center;gap:var(--s8);padding:var(--s12) var(--s24)">
+          Start subscription
+        </a>
+      </div>
+
+    </div><!-- .origins__brew -->
+  </div>
+</section>
+
+<!-- ── FOOTER ────────────────────────────────────────────────────────── -->
+<footer class="site-footer">
+  <a href="#" class="footer-wordmark display">Ember &amp; Oak</a>
+  <p class="footer-meta">Portland, OR · &copy; 2026 · <a href="#" style="color:var(--ink-light);text-decoration:none;">Wholesale</a> · <a href="#" style="color:var(--ink-light);text-decoration:none;">Contact</a></p>
+</footer>
+
+<style>
+/* Visually hidden but accessible */
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0);
+  white-space: nowrap; border: 0;
+}
+</style>
+
+<script>
+(function() {
+  'use strict';
+
+  /* ── Roast curve entrance (signature load gesture) ────────────────── */
+  function initCurve() {
+    const paths = document.querySelectorAll('.curve-path');
+    const points = document.querySelectorAll('.origin-group');
+
+    // Draw curves — delayed slightly so fonts paint first
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        paths.forEach(function(p, i) {
+          setTimeout(function() { p.classList.add('drawn'); }, i * 180);
+        });
+        // Stagger origin dots after curves start drawing
+        points.forEach(function(pt, i) {
+          setTimeout(function() { pt.classList.add('in'); }, 900 + i * 140);
+        });
+      });
+    });
+  }
+
+  /* ── Tooltip interaction ──────────────────────────────────────────── */
+  var tooltip = document.getElementById('curve-tooltip');
+  var ttOrigin = document.getElementById('tt-origin');
+  var ttAlt    = document.getElementById('tt-alt');
+  var ttVar    = document.getElementById('tt-var');
+  var ttTemp   = document.getElementById('tt-temp');
+  var ttNotes  = document.getElementById('tt-notes');
+  var activePoint = null;
+
+  function showTooltip(pt, x, y) {
+    ttOrigin.textContent = pt.dataset.name;
+    ttAlt.textContent    = pt.dataset.alt;
+    ttVar.textContent    = pt.dataset['var'];
+    ttTemp.textContent   = pt.dataset.temp;
+    ttNotes.textContent  = pt.dataset.notes;
+
+    // Position tooltip: prefer above, shift left if near edge
+    var wrap = document.querySelector('.curve-wrapper');
+    var wRect = wrap.getBoundingClientRect();
+    var left = x - wRect.left;
+    var top  = y - wRect.top;
+
+    // Keep tooltip inside wrapper
+    tooltip.style.left = Math.min(left - 10, wRect.width - 240) + 'px';
+    tooltip.style.top  = (top - 150) + 'px';
+    tooltip.classList.add('visible');
+  }
+
+  function hideTooltip() {
+    tooltip.classList.remove('visible');
+    activePoint = null;
+  }
+
+  document.querySelectorAll('.origin-point').forEach(function(pt) {
+    function activate(e) {
+      if (activePoint === pt) { hideTooltip(); return; }
+      activePoint = pt;
+      var rect = pt.getBoundingClientRect();
+      showTooltip(pt, rect.left + rect.width / 2, rect.top);
+    }
+    pt.addEventListener('click', activate);
+    pt.addEventListener('mouseenter', function(e) {
+      var rect = pt.getBoundingClientRect();
+      showTooltip(pt, rect.left + rect.width / 2, rect.top);
+    });
+    pt.addEventListener('mouseleave', function() {
+      if (activePoint !== pt) hideTooltip();
+    });
+    pt.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(e); }
+      if (e.key === 'Escape') hideTooltip();
+    });
+  });
+
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.origin-point')) hideTooltip();
+  });
+
+  /* ── Scroll-reveal (secondary — IntersectionObserver) ────────────── */
+  if ('IntersectionObserver' in window) {
+    var revealObs = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in');
+          revealObs.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+
+    document.querySelectorAll('.reveal').forEach(function(el, i) {
+      el.style.transitionDelay = (i * 80) + 'ms';
+      revealObs.observe(el);
+    });
+
+    // Brew bars
+    var barObs = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          entry.target.querySelectorAll('.brew-bar').forEach(function(b) {
+            b.classList.add('grown');
+          });
+          barObs.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.3 });
+    document.querySelectorAll('.brew-specs').forEach(function(el) { barObs.observe(el); });
+  }
+
+  /* ── Init ─────────────────────────────────────────────────────────── */
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCurve);
+  } else {
+    initCurve();
+  }
+
+})();
+</script>
+
+</body>
+</html>

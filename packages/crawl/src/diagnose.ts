@@ -20,7 +20,7 @@ import {
   palettesForVibe,
   type SwapCandidate,
   type PersonalityVector,
-} from "@ai-slop-font/core";
+} from "@fixmyslop/core";
 import { withBrowser, withPage, extractElements } from "./extract.js";
 import { analyzePage } from "./analyze.js";
 import { extractStyle } from "./style.js";

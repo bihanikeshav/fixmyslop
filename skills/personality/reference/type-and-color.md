@@ -72,3 +72,35 @@ lists instead, or lean on the style move to carry the distinction.
 - **gaming-esports** (dark bg): green (2/3) — e.g. #00ff9c #00f5a0 #00d9ff
 - **education** (light bg): blue (3/3) — e.g. #3b6ef5 #4F8EF7 #3b82f6
 - **retro-vintage** (light bg): red (2/3) — e.g. #c0492b #c0392b #c17a4f
+
+## Color & surface rules (from tasteskill.dev)
+Fold these into any palette + surface pass. Concrete, gate-like — a condition and what
+to do. Attributed to tasteskill.dev (Leonxlnx/taste-skill, "the anti-slop frontend
+framework"); a few are corroborated by our own slop-manifest and impeccable's frontend-design.
+
+- **Never pure #000 / #fff.** Use off-black (near-black warm/cool gray, e.g. zinc-950) and
+  off-white; tint neutrals with a little chroma (~0.005–0.02) toward the brand hue. Pure
+  black, white, and pure gray don't occur in nature.
+- **Neutral base + ONE accent, saturation < 80%.** Ground on a neutral family (zinc / slate /
+  stone); commit to a single high-contrast accent rather than several soft ones. A dominant
+  neutral with one rare accent beats a timid, evenly-saturated palette — the accent works
+  *because* it's rare.
+- **Tint shadows to the background; no pure-black drop shadows on light.** In dark mode, get
+  depth from a lighter surface, not a shadow (a dark card is never darker than the page).
+- **One radius scale, locked.** Pick all-sharp / all-soft (~12–16px) / all-pill and stick to
+  it across cards, inputs and buttons; no 24px+ soft-blob on small cards; mix only with a
+  documented rule.
+- **Glass is a layering tool, not decoration.** Use `backdrop-filter` only over real overlap;
+  when you do, add a 1px inner border (`border-white/10`), an inset highlight
+  (`inset 0 1px 0 rgba(255,255,255,.1)`), and a solid-fill fallback under
+  `prefers-reduced-transparency`. Alpha everywhere is a smell — an incomplete palette; define
+  explicit surface/overlay colors per elevation instead.
+- **Grain/noise on a fixed `pointer-events-none` overlay only** (`fixed inset-0
+  pointer-events-none`) — never on a scrolling container.
+- **Rotate the palette family across builds.** Refuse the category default: tasteskill bans the
+  cream+brass "premium consumer" palette outright. If the last build was beige+brass, this one
+  must not be — ground the choice in THIS subject's world, not the next fashionable alternative.
+- **Cards aren't required.** Use one only when elevation communicates real hierarchy; otherwise
+  group with `border-t`, `divide-y`, or negative space. Never nest cards.
+- **Keep one page theme.** Sections may re-rhythm (band dark/light) but must not feel like a
+  different website mid-scroll.

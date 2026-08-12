@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Saffron — Persian Supper Club</title>
+  <meta name="description" content="Monthly long-table dinners. A rotating tasting menu. Stories behind every dish. BYO wine.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+
+  <!--
+    STANDOUT: "The Dish Procession" — this month's 7-course tasting menu as a
+    horizontal scrollable sequence. Each tile shows the Persian dish name in Abril
+    Fatface; hover/focus reveals a 2-sentence story grounded in that dish's history.
+    Layout: Single hero object (overhead long-table SVG), massive & centered (archetype 8).
+    Type: Ultra-bold Abril Fatface all-caps stacked lockup; DM Mono body (move 4).
+    Palette: Deep warm umber ground #2B1408 (genuinely hued, not near-black) +
+             saffron amber-orange accent #D06A10 (HSL 28°, outside 55–85° gold band) +
+             warm ivory text #F2E8D9.
+    Motion: reveal gated behind html.js; bars use scaleX; hover uses translateY/X;
+            prefers-reduced-motion shipped.
+  -->
+
+  <!-- Render-safe entrance: JS class added before body paint -->
+  <script>document.documentElement.classList.add('js')</script>
+
+  <style>
+    /* ── Spacing scale: 4 / 8 / 12 / 16 / 24 / 32 / 48 / 64 / 96 / 128 ── */
+    :root {
+      --sp-1:   4px;
+      --sp-2:   8px;
+      --sp-3:  12px;
+      --sp-4:  16px;
+      --sp-5:  24px;
+      --sp-6:  32px;
+      --sp-7:  48px;
+      --sp-8:  64px;
+      --sp-9:  96px;
+      --sp-10: 128px;
+
+      /* Palette — derived from saffron's real material */
+      --bg:        #2B1408;   /* deep warm umber; HSL ≈20° S56% L10% — genuinely hued */
+      --bg-2:      #3A1D0C;   /* lifted surface for hover states */
+      --accent:    #D06A10;   /* saffron amber-orange; HSL 28° — not in banned 55–85° gold band */
+      --accent-lo: #9A4E0B;   /* dimmed accent for rule lines */
+      --text:      #F2E8D9;   /* warm ivory; never pure #fff */
+      --text-2:    #B89070;   /* secondary body */
+      --text-3:    #6A4828;   /* tertiary / ornamental */
+      --rule:      #3E2010;   /* hairline rule */
+
+      /* Type */
+      --ff-display: 'Abril Fatface', serif;
+      --ff-body:    'DM Mono', monospace;
+
+      /* Motion vocabulary — 2 curves, 3 durations */
+      --ease-out: cubic-bezier(0, 0, 0.2, 1);
+      --ease-io:  cubic-bezier(0.4, 0, 0.2, 1);
+      --t-fast:   150ms;
+      --t-mid:    300ms;
+      --t-slow:   450ms;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--ff-body);
+      font-size: 16px;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    ::selection { background: var(--accent); color: var(--bg); }
+
+    /* ──────────────────────────────────────────────────
+       RENDER-SAFE REVEAL SYSTEM
+       Base CSS: content visible.
+       html.js: opacity:0 + offset applied ONLY after JS ran.
+       .in class: final visible state.
+    ────────────────────────────────────────────────── */
+    .reveal {
+      transition:
+        opacity  var(--t-slow) var(--ease-out),
+        transform var(--t-slow) var(--ease-out);
+    }
+
+    /* Hidden ONLY when JS is present */
+    html.js .reveal     { opacity: 0; transform: translateY(20px); }
+    html.js .reveal.in  { opacity: 1; transform: none; }
+
+    /* Stagger via CSS custom prop set inline */
+    .reveal { transition-delay: calc(var(--i, 0) * 60ms); }
+
+    /* ── REDUCED MOTION (required) ── */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration:        0.01ms !important;
+        animation-iteration-count: 1      !important;
+        transition-duration:       0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+      /* End state equals fully visible regardless */
+      html.js .reveal { opacity: 1; transform: none; }
+    }
+
+    /* ──────────────────────────────────────────────────
+       HEADER
+    ────────────────────────────────────────────────── */
+    .site-header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--sp-3) var(--sp-7);
+    }
+
+    .site-header__mark {
+      font-family: var(--ff-display);
+      font-size: clamp(1rem, 2vw, 1.3rem);
+      color: var(--accent);
+      letter-spacing: 0.08em;
+      text-decoration: none;
+    }
+    .site-header__mark:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 4px;
+      border-radius: 2px;
+    }
+
+    .site-header__nav { display: flex; gap: var(--sp-6); list-style: none; }
+
+    .site-header__nav a {
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      text-decoration: none;
+      transition: color var(--t-fast) var(--ease-out);
+    }
+    .site-header__nav a:hover  { color: var(--text); }
+    .site-header__nav a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 4px;
+      border-radius: 2px;
+    }
+
+    /* ──────────────────────────────────────────────────
+       HERO — single massive object, centered
+    ────────────────────────────────────────────────── */
+    .hero {
+      min-height: 100svh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--sp-10) var(--sp-7) var(--sp-8);
+      position: relative;
+      overflow: hidden;
+      gap: var(--sp-6);
+    }
+
+    /* Warm radial — monochromatic, not indigo/cyan */
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 90% 55% at 50% 15%, #3C1C0A 0%, transparent 65%);
+      pointer-events: none;
+    }
+
+    /* ── ALL-CAPS TITLE LOCKUP ── */
+    .hero__title {
+      font-family: var(--ff-display);
+      font-size: clamp(4.5rem, 17vw, 12rem);
+      line-height: 0.88;
+      letter-spacing: -0.01em;
+      text-align: center;
+      color: var(--text);
+      position: relative;
+      z-index: 1;
+      text-wrap: balance;
+    }
+
+    .hero__title span { display: block; }
+    .hero__title .word--accent { color: var(--accent); }
+
+    /* ── THE LONG TABLE SVG (hero object) ── */
+    .table-object {
+      width: 100%;
+      max-width: 700px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .table-object svg { width: 100%; height: auto; overflow: visible; }
+
+    /* ── SUBTITLE ── */
+    .hero__sub {
+      font-size: clamp(0.72rem, 1.4vw, 0.875rem);
+      font-weight: 300;
+      font-style: italic;
+      letter-spacing: 0.08em;
+      color: var(--text-2);
+      text-align: center;
+      max-width: 44ch;
+      line-height: 1.7;
+      text-wrap: pretty;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── META ROW ── */
+    .hero__meta {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-5);
+      flex-wrap: wrap;
+      justify-content: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero__meta-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .hero__meta-label {
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      font-weight: 500;
+    }
+
+    .hero__meta-value {
+      font-size: 0.82rem;
+      font-weight: 300;
+      color: var(--text-2);
+    }
+
+    .hero__meta-sep {
+      width: 1px;
+      height: 28px;
+      background: var(--rule);
+    }
+
+    /* Scroll prompt */
+    .hero__prompt {
+      position: absolute;
+      bottom: var(--sp-5);
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--sp-1);
+    }
+
+    .hero__prompt span {
+      font-size: 0.58rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--text-3);
+    }
+
+    .hero__arrow {
+      width: 1px;
+      height: 28px;
+      background: var(--text-3);
+      position: relative;
+    }
+
+    .hero__arrow::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      border-left: 3px solid transparent;
+      border-right: 3px solid transparent;
+      border-top: 4px solid var(--text-3);
+    }
+
+    /* ──────────────────────────────────────────────────
+       THE DISH PROCESSION — the standout
+    ────────────────────────────────────────────────── */
+    .procession {
+      padding-top: var(--sp-9);
+      padding-bottom: var(--sp-10);
+    }
+
+    .procession__hd {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: var(--sp-4);
+      padding: 0 var(--sp-7) var(--sp-6);
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .procession__eyebrow {
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      font-weight: 500;
+      display: block;
+      margin-bottom: var(--sp-2);
+    }
+
+    .procession__title {
+      font-family: var(--ff-display);
+      font-size: clamp(1.5rem, 3.5vw, 2.4rem);
+      line-height: 1.0;
+      color: var(--text);
+    }
+
+    .procession__hint {
+      font-size: 0.72rem;
+      font-weight: 300;
+      font-style: italic;
+      color: var(--text-3);
+      letter-spacing: 0.04em;
+      align-self: flex-end;
+    }
+
+    /* ── HORIZONTAL SCROLL RAIL ── */
+    .procession__rail {
+      display: flex;
+      gap: 0;
+      overflow-x: auto;
+      padding: var(--sp-7) var(--sp-7) var(--sp-5);
+      scrollbar-width: thin;
+      scrollbar-color: var(--rule) transparent;
+      list-style: none;
+    }
+
+    .procession__rail::-webkit-scrollbar { height: 2px; }
+    .procession__rail::-webkit-scrollbar-track { background: transparent; }
+    .procession__rail::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 1px; }
+
+    /* ── COURSE TILE ── */
+    .course {
+      flex: 0 0 auto;
+      width: clamp(195px, 28vw, 268px);
+      padding: var(--sp-5) var(--sp-5) var(--sp-6);
+      border-right: 1px solid var(--rule);
+      position: relative;
+      cursor: default;
+      outline: none;
+      /* hover: transform not margin */
+      transition:
+        background-color var(--t-mid) var(--ease-out),
+        transform       var(--t-mid) var(--ease-out);
+    }
+
+    .course:first-child { border-left: 1px solid var(--rule); }
+
+    .course:hover,
+    .course:focus-visible {
+      background-color: var(--bg-2);
+      transform: translateY(-5px);
+    }
+
+    .course:active { transform: scale(0.975) translateY(-2px); transition-duration: var(--t-fast); }
+
+    .course:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: -2px;
+    }
+
+    /* Accent underline — scaleX (never width) */
+    .course::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--accent);
+      transform: scaleX(0);
+      transform-origin: left center;
+      transition: transform var(--t-mid) var(--ease-out);
+    }
+
+    .course:hover::after,
+    .course:focus-visible::after { transform: scaleX(1); }
+
+    /* Course number */
+    .course__num {
+      display: block;
+      font-size: 0.62rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 500;
+      margin-bottom: var(--sp-3);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Dish name — the primary type statement */
+    .course__name {
+      font-family: var(--ff-display);
+      font-size: clamp(1.35rem, 2.6vw, 1.85rem);
+      line-height: 1.0;
+      color: var(--text);
+      margin-bottom: var(--sp-2);
+      text-wrap: balance;
+    }
+
+    .course__sub {
+      font-size: 0.7rem;
+      font-style: italic;
+      font-weight: 300;
+      color: var(--text-2);
+      letter-spacing: 0.03em;
+      margin-bottom: var(--sp-5);
+      display: block;
+    }
+
+    /* Story — gated behind html.js hover (render-safe: visible without JS) */
+    .course__story {
+      font-size: 0.78rem;
+      font-weight: 300;
+      line-height: 1.7;
+      color: var(--text-2);
+      max-width: 34ch;
+      text-wrap: pretty;
+      transition:
+        opacity   var(--t-mid) var(--ease-out),
+        transform var(--t-mid) var(--ease-out);
+    }
+
+    /* With JS: story starts hidden, revealed on hover/focus */
+    html.js .course__story               { opacity: 0; transform: translateY(6px); }
+    html.js .course:hover  .course__story,
+    html.js .course:focus-within .course__story { opacity: 1; transform: none; }
+
+    /* ── PROCESSION FOOTER ── */
+    .procession__ft {
+      padding: var(--sp-5) var(--sp-7) 0;
+      border-top: 1px solid var(--rule);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: var(--sp-5);
+    }
+
+    .procession__note {
+      font-size: 0.75rem;
+      font-weight: 300;
+      font-style: italic;
+      color: var(--text-2);
+      max-width: 50ch;
+      text-wrap: pretty;
+      line-height: 1.65;
+    }
+
+    /* ── RESERVE BUTTON ── */
+    .btn-reserve {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--sp-2);
+      padding: var(--sp-3) var(--sp-5);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      background: transparent;
+      font-family: var(--ff-body);
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      text-decoration: none;
+      cursor: pointer;
+      min-height: 44px;
+      white-space: nowrap;
+      transition:
+        background-color var(--t-fast) var(--ease-out),
+        color            var(--t-fast) var(--ease-out),
+        transform        var(--t-fast) var(--ease-out);
+    }
+
+    /* hover: translateX not padding/margin */
+    .btn-reserve:hover {
+      background: var(--accent);
+      color: var(--bg);
+      transform: translateX(4px);
+    }
+
+    .btn-reserve:active { transform: scale(0.97); }
+
+    .btn-reserve:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 4px;
+    }
+
+    /* ──────────────────────────────────────────────────
+       FOOTER
+    ────────────────────────────────────────────────── */
+    .site-footer {
+      border-top: 1px solid var(--rule);
+      padding: var(--sp-5) var(--sp-7);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: var(--sp-4);
+    }
+
+    .site-footer__copy {
+      font-size: 0.68rem;
+      color: var(--text-3);
+      font-weight: 300;
+      letter-spacing: 0.06em;
+    }
+
+    .site-footer__link {
+      font-size: 0.68rem;
+      color: var(--text-2);
+      text-decoration: none;
+      letter-spacing: 0.06em;
+      transition: color var(--t-fast) var(--ease-out);
+    }
+    .site-footer__link:hover { color: var(--accent); }
+    .site-footer__link:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 4px;
+      border-radius: 2px;
+    }
+
+    /* ──────────────────────────────────────────────────
+       RESPONSIVE
+    ────────────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      .site-header           { padding: var(--sp-3) var(--sp-4); }
+      .site-header__nav      { display: none; }
+
+      .hero {
+        padding: var(--sp-9) var(--sp-4) var(--sp-7);
+        gap: var(--sp-5);
+      }
+
+      .hero__meta-sep:last-of-type { display: none; }
+      .hero__meta-item:last-of-type { display: none; }
+
+      .procession__hd  { padding: 0 var(--sp-4) var(--sp-5); }
+      .procession__rail{ padding: var(--sp-5) var(--sp-4) var(--sp-4); }
+      .procession__ft  { padding: var(--sp-5) var(--sp-4) 0; flex-direction: column; align-items: flex-start; }
+
+      .site-footer { padding: var(--sp-4); flex-direction: column; align-items: flex-start; }
+
+      .course { width: 210px; }
+    }
+
+    @media (min-width: 1200px) {
+      .course { width: 285px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── HEADER ── -->
+  <header class="site-header">
+    <a href="#" class="site-header__mark" aria-label="Saffron — home">SAFFRON</a>
+    <nav aria-label="Site navigation">
+      <ul class="site-header__nav">
+        <li><a href="#menu">This month</a></li>
+        <li><a href="#menu">Reserve</a></li>
+        <li><a href="mailto:table@saffron.house">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- ── HERO ── -->
+  <section class="hero" aria-labelledby="hero-h1">
+
+    <!-- All-caps stacked Abril Fatface lockup -->
+    <h1 class="hero__title reveal" id="hero-h1" style="--i:0">
+      <span>A TABLE</span>
+      <span class="word--accent">SET</span>
+      <span>ONCE</span>
+    </h1>
+
+    <!-- THE LONG TABLE — overhead SVG, the hero object -->
+    <figure class="table-object reveal" style="--i:1" aria-label="Overhead illustration of the long communal dining table set for fourteen guests" role="img">
+      <svg viewBox="0 0 680 210" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <!-- Table surface -->
+        <rect x="30" y="80" width="620" height="50" rx="6" fill="#3A1D0C" stroke="#4E2A12" stroke-width="1.5"/>
+
+        <!-- Table runner (center band) -->
+        <rect x="30" y="93" width="620" height="24" fill="none" stroke="#4E2A12" stroke-width="0.75"/>
+
+        <!-- Candle bodies -->
+        <g fill="#D06A10" opacity="0.65">
+          <rect x="117" y="95" width="3" height="20" rx="1"/>
+          <rect x="197" y="95" width="3" height="20" rx="1"/>
+          <rect x="277" y="95" width="3" height="20" rx="1"/>
+          <rect x="357" y="95" width="3" height="20" rx="1"/>
+          <rect x="437" y="95" width="3" height="20" rx="1"/>
+          <rect x="517" y="95" width="3" height="20" rx="1"/>
+        </g>
+        <!-- Candle flames -->
+        <g fill="#F2E8D9" opacity="0.55">
+          <ellipse cx="118.5" cy="93" rx="2.5" ry="3.5"/>
+          <ellipse cx="198.5" cy="93" rx="2.5" ry="3.5"/>
+          <ellipse cx="278.5" cy="93" rx="2.5" ry="3.5"/>
+          <ellipse cx="358.5" cy="93" rx="2.5" ry="3.5"/>
+          <ellipse cx="438.5" cy="93" rx="2.5" ry="3.5"/>
+          <ellipse cx="518.5" cy="93" rx="2.5" ry="3.5"/>
+        </g>
+
+        <!-- Plates — top guests -->
+        <g stroke="#55301A" stroke-width="1" fill="none">
+          <circle cx="100" cy="62" r="15"/>
+          <circle cx="180" cy="62" r="15"/>
+          <circle cx="260" cy="62" r="15"/>
+          <circle cx="340" cy="62" r="15"/>
+          <circle cx="420" cy="62" r="15"/>
+          <circle cx="500" cy="62" r="15"/>
+          <circle cx="580" cy="62" r="15"/>
+        </g>
+        <!-- Glasses — top -->
+        <g stroke="#55301A" stroke-width="0.75" fill="none">
+          <ellipse cx="100" cy="36" rx="5" ry="8"/>
+          <ellipse cx="180" cy="36" rx="5" ry="8"/>
+          <ellipse cx="260" cy="36" rx="5" ry="8"/>
+          <ellipse cx="340" cy="36" rx="5" ry="8"/>
+          <ellipse cx="420" cy="36" rx="5" ry="8"/>
+          <ellipse cx="500" cy="36" rx="5" ry="8"/>
+          <ellipse cx="580" cy="36" rx="5" ry="8"/>
+        </g>
+
+        <!-- Plates — bottom guests -->
+        <g stroke="#55301A" stroke-width="1" fill="none">
+          <circle cx="100" cy="148" r="15"/>
+          <circle cx="180" cy="148" r="15"/>
+          <circle cx="260" cy="148" r="15"/>
+          <circle cx="340" cy="148" r="15"/>
+          <circle cx="420" cy="148" r="15"/>
+          <circle cx="500" cy="148" r="15"/>
+          <circle cx="580" cy="148" r="15"/>
+        </g>
+        <!-- Glasses — bottom -->
+        <g stroke="#55301A" stroke-width="0.75" fill="none">
+          <ellipse cx="100" cy="174" rx="5" ry="8"/>
+          <ellipse cx="180" cy="174" rx="5" ry="8"/>
+          <ellipse cx="260" cy="174" rx="5" ry="8"/>
+          <ellipse cx="340" cy="174" rx="5" ry="8"/>
+          <ellipse cx="420" cy="174" rx="5" ry="8"/>
+          <ellipse cx="500" cy="174" rx="5" ry="8"/>
+          <ellipse cx="580" cy="174" rx="5" ry="8"/>
+        </g>
+
+        <!-- Chair backs — top row -->
+        <g fill="#211008" stroke="#3A1D0C" stroke-width="0.75">
+          <rect x="84"  y="14" width="32" height="5" rx="2"/>
+          <rect x="164" y="14" width="32" height="5" rx="2"/>
+          <rect x="244" y="14" width="32" height="5" rx="2"/>
+          <rect x="324" y="14" width="32" height="5" rx="2"/>
+          <rect x="404" y="14" width="32" height="5" rx="2"/>
+          <rect x="484" y="14" width="32" height="5" rx="2"/>
+          <rect x="564" y="14" width="32" height="5" rx="2"/>
+        </g>
+        <!-- Chair backs — bottom row -->
+        <g fill="#211008" stroke="#3A1D0C" stroke-width="0.75">
+          <rect x="84"  y="191" width="32" height="5" rx="2"/>
+          <rect x="164" y="191" width="32" height="5" rx="2"/>
+          <rect x="244" y="191" width="32" height="5" rx="2"/>
+          <rect x="324" y="191" width="32" height="5" rx="2"/>
+          <rect x="404" y="191" width="32" height="5" rx="2"/>
+          <rect x="484" y="191" width="32" height="5" rx="2"/>
+          <rect x="564" y="191" width="32" height="5" rx="2"/>
+        </g>
+
+        <!-- Table end accent lines -->
+        <line x1="30"  y1="80" x2="30"  y2="130" stroke="#D06A10" stroke-width="1.5" opacity="0.45"/>
+        <line x1="650" y1="80" x2="650" y2="130" stroke="#D06A10" stroke-width="1.5" opacity="0.45"/>
+
+        <!-- Centre serving piece -->
+        <ellipse cx="630" cy="105" rx="18" ry="12" fill="#3A1D0C" stroke="#D06A10" stroke-width="1.2"/>
+      </svg>
+    </figure>
+
+    <p class="hero__sub reveal" style="--i:2">
+      Monthly long-table dinners in a private house. A rotating tasting menu built from the Persian pantry — stories told, wine brought, strangers seated together.
+    </p>
+
+    <!-- Meta row -->
+    <div class="hero__meta reveal" style="--i:3" aria-label="At a glance">
+      <div class="hero__meta-item">
+        <span class="hero__meta-label">Format</span>
+        <span class="hero__meta-value">Long table · BYO wine</span>
+      </div>
+      <div class="hero__meta-sep" aria-hidden="true"></div>
+      <div class="hero__meta-item">
+        <span class="hero__meta-label">Frequency</span>
+        <span class="hero__meta-value">One Friday per month</span>
+      </div>
+      <div class="hero__meta-sep" aria-hidden="true"></div>
+      <div class="hero__meta-item">
+        <span class="hero__meta-label">Covers</span>
+        <span class="hero__meta-value">14 seats · ticketed</span>
+      </div>
+    </div>
+
+    <!-- Scroll prompt -->
+    <div class="hero__prompt" aria-hidden="true">
+      <span>This month's menu</span>
+      <div class="hero__arrow"></div>
+    </div>
+  </section>
+
+  <!-- ── THE DISH PROCESSION (standout) ── -->
+  <section class="procession" id="menu" aria-labelledby="procession-h2">
+
+    <div class="procession__hd">
+      <div>
+        <span class="procession__eyebrow reveal" style="--i:0">July 2026 — Tasting Menu</span>
+        <h2 class="procession__title reveal" style="--i:1" id="procession-h2">Seven Courses</h2>
+      </div>
+      <p class="procession__hint reveal" style="--i:2">Hover each course to read its story</p>
+    </div>
+
+    <!-- Horizontal scroll of course tiles -->
+    <ol
+      class="procession__rail"
+      role="list"
+      aria-label="Seven tasting courses for July 2026. Hover or focus each to read the story behind the dish."
+    >
+      <li class="course reveal" style="--i:0" tabindex="0">
+        <span class="course__num" aria-hidden="true">01</span>
+        <h3 class="course__name">Kashk-e<br>Bademjan</h3>
+        <span class="course__sub">Smoked aubergine with whey</span>
+        <p class="course__story">The aubergine is charred directly on a flame until the skin is black and the flesh collapses into smoke. Folded into kashk and crowned with dried mint — a village dish that arrives before the table has finished its first sentence.</p>
+      </li>
+
+      <li class="course reveal" style="--i:1" tabindex="0">
+        <span class="course__num" aria-hidden="true">02</span>
+        <h3 class="course__name">Ash-e<br>Reshteh</h3>
+        <span class="course__sub">Herb and noodle soup of Nowruz</span>
+        <p class="course__story">Eaten at Persian New Year as an omen — the reshteh noodles represent the threads of fate, and you must break them yourself. Thick with spinach, chickpeas and dried herbs. We serve it in small cups so it opens the table without filling it.</p>
+      </li>
+
+      <li class="course reveal" style="--i:2" tabindex="0">
+        <span class="course__num" aria-hidden="true">03</span>
+        <h3 class="course__name">Mirza<br>Ghasemi</h3>
+        <span class="course__sub">Gilaki smoked aubergine and egg</span>
+        <p class="course__story">Named for a 19th-century governor of Gilan who reportedly dictated the recipe to his cook. Aubergine, garlic, tomato and egg, still in the cast iron it was made in. The story — true or not — arrives with every plate.</p>
+      </li>
+
+      <li class="course reveal" style="--i:3" tabindex="0">
+        <span class="course__num" aria-hidden="true">04</span>
+        <h3 class="course__name">Fesenjan</h3>
+        <span class="course__sub">Duck with pomegranate and walnut</span>
+        <p class="course__story">One of the oldest Persian preparations, its origins predate written recipe books. Duck slow-braised in a dark sauce of ground walnut and pomegranate molasses, sweet and sour and almost black. The story of Persia in a single bowl.</p>
+      </li>
+
+      <li class="course reveal" style="--i:4" tabindex="0">
+        <span class="course__num" aria-hidden="true">05</span>
+        <h3 class="course__name">Tahdig<br>Polo</h3>
+        <span class="course__sub">Saffron-crusted rice, inverted</span>
+        <p class="course__story">The crust is the prize. A golden disc of saffron-stained rice formed at the base of the pot and brought to the table whole — crackling at the edges, fragrant with bloom. Every Persian family has an argument about who gets the tahdig. It begins here.</p>
+      </li>
+
+      <li class="course reveal" style="--i:5" tabindex="0">
+        <span class="course__num" aria-hidden="true">06</span>
+        <h3 class="course__name">Bastani<br>Sonnati</h3>
+        <span class="course__sub">Saffron ice cream with rosewater</span>
+        <p class="course__story">Iran's original ice cream, thickened with salep orchid flour and stretched with mastic until it holds its shape without a cone. Saffron, rosewater, pistachios. Cold, perfumed, unhurried — a signal that the pace is slowing intentionally.</p>
+      </li>
+
+      <li class="course reveal" style="--i:6" tabindex="0">
+        <span class="course__num" aria-hidden="true">07</span>
+        <h3 class="course__name">Chai-e<br>Akhtar</h3>
+        <span class="course__sub">Safflower tea and Isfahan gaz</span>
+        <p class="course__story">The meal ends as it should — slowly. Akhtar tea, the Persian saffron-safflower blend, poured beside gaz: the pistachio and rosewater nougat made in Isfahan since the Safavid era. The table is allowed to stay as long as it wants. That is the whole point.</p>
+      </li>
+    </ol>
+
+    <!-- Footer: invite bar -->
+    <div class="procession__ft">
+      <p class="procession__note reveal" style="--i:0">
+        The menu rotates entirely each month. Tickets are released the first of the preceding month. BYO wine — we provide the glasses, the stories, and the table.
+      </p>
+      <a href="mailto:table@saffron.house" class="btn-reserve reveal" style="--i:1">
+        Reserve a seat
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+          <path d="M1.5 6.5h10M7.5 2.5l4 4-4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- ── FOOTER ── -->
+  <footer class="site-footer">
+    <span class="site-footer__copy">Saffron — a Persian supper club. Private address, ticketed.</span>
+    <a href="mailto:table@saffron.house" class="site-footer__link">table@saffron.house</a>
+  </footer>
+
+  <script>
+    // ── SIGNATURE ENTRANCE: staggered hero + procession reveal ──
+    // Content is visible in markup (render-safe).
+    // JS adds .in class to trigger entrance animation only when present.
+    // Reduced-motion branch: skip all animation, show final state immediately.
+
+    (function () {
+      var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      if (prefersReduced) {
+        // Show all reveal elements in their final visible state
+        document.querySelectorAll('.reveal').forEach(function (el) {
+          el.classList.add('in');
+        });
+        return;
+      }
+
+      // ── 1. Hero elements: staggered on DOMContentLoaded ──
+      var heroEls = document.querySelectorAll('.hero .reveal, .procession__hd .reveal');
+      heroEls.forEach(function (el) {
+        var i = parseFloat(getComputedStyle(el).getPropertyValue('--i') || el.style.getPropertyValue('--i') || '0');
+        setTimeout(function () { el.classList.add('in'); }, 80 + i * 70);
+      });
+
+      // ── 2. Procession course tiles: IntersectionObserver ──
+      // Reveals as the rail scrolls into view, not gated on scroll for hero
+      var courseEls = document.querySelectorAll('.procession__rail .reveal, .procession__ft .reveal');
+      var seen = new WeakSet();
+
+      var obs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting || seen.has(entry.target)) return;
+          seen.add(entry.target);
+          // Read --i from inline style
+          var i = parseFloat(entry.target.style.getPropertyValue('--i') || '0');
+          setTimeout(function () { entry.target.classList.add('in'); }, i * 55);
+          obs.unobserve(entry.target);
+        });
+      }, { threshold: 0.12 });
+
+      courseEls.forEach(function (el) { obs.observe(el); });
+
+    })();
+  </script>
+
+</body>
+</html>

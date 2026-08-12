@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nightshift Film Festival — 10 Days, 80 Films</title>
+  <meta name="description" content="Nightshift Independent Film Festival. 10 days, 80 films, director talks, late-night screenings. Bold cinema, every night." />
+
+  <!-- Render-safe JS class hook — gated reveals only if JS loaded -->
+  <script>document.documentElement.classList.add('js')</script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- Alfa Slab One: maximum-weight slab serif for masthead/display -->
+  <!-- DM Mono: earned monospace for programme data/schedules -->
+  <!-- Spectral: editorial serif for body copy -->
+  <link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+
+  <!-- Lucide icons via CDN -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
+
+  <style>
+    /* ─── TOKENS ─────────────────────────────────────────────────────────── */
+    :root {
+      /* Palette — subverted: bright editorial, not cinema-dark */
+      --paper:   #F9F9F5;   /* warm near-white, not pure */
+      --ink:     #0E0D0A;   /* tinted near-black */
+      --mid:     #5C5A52;   /* tinted mid-grey */
+      --rule:    #CCCBC3;   /* hairline rules */
+      --charge:  #B8F000;   /* electric chartreuse — nightshift's pulse */
+      --charge-dk: #4D6E00; /* dark green for focus rings — ≥4.5:1 on paper bg */
+      --charge-bg: #B8F000; /* fill context: dark ink on charge-bg = 14:1 */
+
+      /* Spacing scale: 4/8/12/16/24/32/48/64/96/128 */
+      --sp-1:  4px;
+      --sp-2:  8px;
+      --sp-3:  12px;
+      --sp-4:  16px;
+      --sp-6:  24px;
+      --sp-8:  32px;
+      --sp-12: 48px;
+      --sp-16: 64px;
+      --sp-24: 96px;
+      --sp-32: 128px;
+
+      /* Typography */
+      --f-display: 'Alfa Slab One', serif;
+      --f-mono:    'DM Mono', 'Courier New', monospace;
+      --f-body:    'Spectral', Georgia, serif;
+    }
+
+    /* ─── RESET ──────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      scroll-behavior: smooth;
+      font-size: 16px;
+    }
+
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--f-body);
+      font-size: 1rem;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      overflow-x: hidden;
+    }
+
+    /* Selection */
+    ::selection {
+      background: var(--charge);
+      color: var(--ink);
+    }
+
+    /* ─── MOTION VOCABULARY ───────────────────────────────────────────────
+       Entrances: ease-out cubic-bezier(0,0,0.2,1) 350ms
+       Feedback:  ease-out 180ms
+       Stagger:   40ms per item
+    ─────────────────────────────────────────────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    /* Render-safe reveals: visible by default; JS gates the animation */
+    .reveal {
+      transition: opacity .35s cubic-bezier(0,0,0.2,1),
+                  transform .35s cubic-bezier(0,0,0.2,1);
+    }
+    html.js .reveal { opacity: 0; transform: translateY(14px); }
+    html.js .reveal.in { opacity: 1; transform: none; }
+
+    /* Staggered list items */
+    html.js .stagger-item { opacity: 0; transform: translateY(10px); transition: opacity .35s cubic-bezier(0,0,0.2,1), transform .35s cubic-bezier(0,0,0.2,1); }
+    html.js .stagger-item.in { opacity: 1; transform: none; }
+
+    /* ─── MASTHEAD STRIP ──────────────────────────────────────────────────
+       Layout archetype: FULL-BLEED TYPE POSTER
+       The masthead IS the page — type edge-to-edge at display scale.
+       Heavy ruled lines frame the title; chartreuse rule as pulse.
+    ─────────────────────────────────────────────────────────────────────── */
+    .masthead {
+      border-bottom: 3px solid var(--ink);
+      padding: var(--sp-6) clamp(var(--sp-6), 5vw, var(--sp-12)) var(--sp-4);
+    }
+
+    .masthead-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--sp-4);
+      margin-bottom: var(--sp-4);
+      font-family: var(--f-mono);
+      font-size: 0.6875rem; /* 11px */
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--mid);
+    }
+
+    .masthead-meta .edition {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-2);
+    }
+
+    .masthead-meta .edition-bullet {
+      width: 8px;
+      height: 8px;
+      background: var(--charge);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ─── Hero Title Block ────────────────────────────────────────────────
+       Type move: ULTRA-BOLD / BLACK WEIGHT — Alfa Slab One at massive scale
+       + DRAMATIC SCALE CONTRAST (giant title vs tiny mono metadata)
+       + TIGHT NEGATIVE LEADING STACK at display scale
+    ─────────────────────────────────────────────────────────────────────── */
+    .hero {
+      position: relative;
+      min-height: 100svh;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      border-bottom: 4px solid var(--ink);
+      padding: var(--sp-6) clamp(var(--sp-6), 5vw, var(--sp-12));
+    }
+
+    /* Charge rule — a 6px strip of electric chartreuse under the title block */
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: var(--charge);
+      transform: scaleX(1);
+      transform-origin: left;
+    }
+
+    .hero-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: var(--sp-4);
+      padding-bottom: var(--sp-6);
+      border-bottom: 1px solid var(--rule);
+      font-family: var(--f-mono);
+      font-size: 0.6875rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--mid);
+    }
+
+    .hero-body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: var(--sp-12) 0;
+    }
+
+    /* The title: full-bleed typographic poster */
+    .hero-title {
+      font-family: var(--f-display);
+      font-size: clamp(5rem, 18vw, 18rem);
+      line-height: 0.88;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      text-wrap: balance;
+      /* Type move: negative leading stack — the ratio IS the design */
+    }
+
+    .hero-title-sub {
+      font-family: var(--f-display);
+      font-size: clamp(1.5rem, 5vw, 4.5rem);
+      line-height: 1;
+      letter-spacing: -0.01em;
+      color: var(--mid);
+      margin-top: var(--sp-6);
+    }
+
+    /* Festival stats — minimal, mono, left-aligned row */
+    .hero-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--sp-2) var(--sp-8);
+      font-family: var(--f-mono);
+      font-size: 0.875rem;
+      color: var(--mid);
+    }
+
+    .stat {
+      display: flex;
+      align-items: baseline;
+      gap: var(--sp-2);
+    }
+
+    .stat-num {
+      font-size: 1.5rem;
+      font-weight: 500;
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--mid);
+    }
+
+    .hero-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: var(--sp-4);
+      padding-top: var(--sp-6);
+      border-top: 1px solid var(--rule);
+      font-family: var(--f-mono);
+      font-size: 0.75rem;
+      color: var(--mid);
+      letter-spacing: 0.04em;
+    }
+
+    .hero-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--sp-2);
+      background: var(--ink);
+      color: var(--paper);
+      font-family: var(--f-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-decoration: none;
+      padding: var(--sp-3) var(--sp-6);
+      border: 2px solid var(--ink);
+      transition: background 180ms ease-out, color 180ms ease-out,
+                  transform 180ms ease-out;
+      cursor: pointer;
+      min-height: 44px;
+    }
+
+    .hero-cta:hover {
+      background: var(--charge);
+      color: var(--ink);
+      border-color: var(--ink);
+    }
+
+    .hero-cta:focus-visible {
+      outline: 3px solid var(--charge-dk);
+      outline-offset: 2px;
+    }
+
+    .hero-cta:active {
+      transform: scale(.97);
+    }
+
+    /* ─── PROGRAMME SECTION ───────────────────────────────────────────────
+       The Programme Reel — explorable schedule, editorial multi-column grid.
+       Real data: 80 films, 10 days, browsable by day.
+       Standout: the grid reads like a real printed festival booklet.
+       Tabs: real role=tablist/tab/tabpanel, arrow-key navigable.
+    ─────────────────────────────────────────────────────────────────────── */
+    .programme {
+      padding: var(--sp-12) clamp(var(--sp-6), 5vw, var(--sp-12));
+    }
+
+    .programme-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: var(--sp-4);
+      margin-bottom: var(--sp-8);
+      padding-bottom: var(--sp-4);
+      border-bottom: 3px solid var(--ink);
+    }
+
+    .section-title {
+      font-family: var(--f-display);
+      font-size: clamp(2rem, 5vw, 4rem);
+      line-height: 0.95;
+      letter-spacing: -0.02em;
+    }
+
+    .section-kicker {
+      font-family: var(--f-mono);
+      font-size: 0.6875rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--mid);
+    }
+
+    /* Day tabs */
+    .day-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0;
+      border-bottom: 2px solid var(--ink);
+      margin-bottom: var(--sp-8);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .day-tabs::-webkit-scrollbar { display: none; }
+
+    .day-tab {
+      font-family: var(--f-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: var(--sp-3) var(--sp-4);
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      color: var(--mid);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: color 180ms ease-out, border-color 180ms ease-out;
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    .day-tab:hover {
+      color: var(--ink);
+    }
+
+    .day-tab[aria-selected="true"] {
+      color: var(--ink);
+      border-bottom-color: var(--charge);
+      font-weight: 500;
+    }
+
+    .day-tab:focus-visible {
+      outline: 3px solid var(--charge-dk);
+      outline-offset: -2px;
+    }
+
+    /* Programme panels */
+    .day-panel {
+      display: none;
+    }
+
+    .day-panel.active {
+      display: block;
+    }
+
+    /* Editorial dense grid — newspaper programme layout */
+    .film-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+      gap: 0;
+      border-top: 1px solid var(--rule);
+    }
+
+    .film-entry {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      gap: 0 var(--sp-4);
+      padding: var(--sp-4) var(--sp-3);
+      border-bottom: 1px solid var(--rule);
+      border-right: 1px solid var(--rule);
+      transition: background 180ms ease-out;
+    }
+
+    .film-entry:last-child {
+      border-bottom: none;
+    }
+
+    .film-entry:hover {
+      background: rgba(184, 240, 0, 0.10);
+    }
+
+    .film-time {
+      font-family: var(--f-mono);
+      font-size: 0.75rem;
+      font-variant-numeric: tabular-nums;
+      color: var(--mid);
+      letter-spacing: 0.02em;
+      padding-top: 0.125rem;
+    }
+
+    .film-info { min-width: 0; }
+
+    .film-title {
+      font-family: var(--f-body);
+      font-size: 0.9375rem;
+      font-weight: 600;
+      line-height: 1.3;
+      color: var(--ink);
+      margin-bottom: var(--sp-1);
+      text-wrap: balance;
+    }
+
+    .film-meta {
+      font-family: var(--f-mono);
+      font-size: 0.6875rem;
+      color: var(--mid);
+      letter-spacing: 0.03em;
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--sp-1) var(--sp-3);
+    }
+
+    .film-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--sp-1);
+      background: var(--charge);
+      color: var(--ink);
+      font-family: var(--f-mono);
+      font-size: 0.625rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 1px var(--sp-2);
+      font-weight: 500;
+    }
+
+    /* Director talks highlight row */
+    .film-entry.has-talk {
+      background: rgba(184, 240, 0, 0.06);
+    }
+
+    .film-entry.has-talk .film-title {
+      color: var(--ink);
+    }
+
+    /* Running info strip */
+    .programme-footer {
+      margin-top: var(--sp-8);
+      padding-top: var(--sp-6);
+      border-top: 1px solid var(--rule);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--sp-4);
+      font-family: var(--f-mono);
+      font-size: 0.75rem;
+      color: var(--mid);
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--sp-4);
+      align-items: center;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-2);
+      font-size: 0.6875rem;
+      letter-spacing: 0.04em;
+    }
+
+    .legend-swatch {
+      width: 10px;
+      height: 10px;
+      background: var(--charge);
+      flex-shrink: 0;
+    }
+
+    /* ─── MARQUEE STRIP — separates hero from programme ───────────────────
+       Horizontal scroll / marquee — content-bearing: film count + dates
+    ─────────────────────────────────────────────────────────────────────── */
+    .marquee-strip {
+      background: var(--ink);
+      color: var(--charge);
+      padding: var(--sp-3) 0;
+      overflow: hidden;
+      border-top: 2px solid var(--ink);
+      border-bottom: 2px solid var(--ink);
+    }
+
+    .marquee-inner {
+      display: flex;
+      gap: 0;
+      width: max-content;
+      /* JS drives translateX for the scroll — no @keyframes needed */
+      will-change: transform;
+    }
+
+    .marquee-text {
+      font-family: var(--f-mono);
+      font-size: 0.8125rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0 var(--sp-8);
+      white-space: nowrap;
+      color: var(--charge);
+    }
+
+    .marquee-sep {
+      color: var(--mid);
+      padding: 0 var(--sp-2);
+    }
+
+    /* ─── FOOTER ──────────────────────────────────────────────────────────  */
+    .site-footer {
+      border-top: 3px solid var(--ink);
+      padding: var(--sp-8) clamp(var(--sp-6), 5vw, var(--sp-12));
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--sp-6);
+      font-family: var(--f-mono);
+      font-size: 0.6875rem;
+      color: var(--mid);
+      letter-spacing: 0.05em;
+    }
+
+    .footer-brand {
+      font-family: var(--f-display);
+      font-size: 1.25rem;
+      color: var(--ink);
+      letter-spacing: -0.01em;
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--sp-6);
+      list-style: none;
+    }
+
+    .footer-links a {
+      color: var(--mid);
+      text-decoration: none;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      transition: color 180ms ease-out;
+    }
+
+    .footer-links a:hover { color: var(--ink); }
+    .footer-links a:focus-visible {
+      outline: 2px solid var(--charge-dk);
+      outline-offset: 2px;
+    }
+
+    /* ─── RESPONSIVE ──────────────────────────────────────────────────────  */
+    @media (max-width: 480px) {
+      .masthead-meta .edition-number { display: none; }
+      .hero-title { font-size: clamp(4rem, 22vw, 8rem); }
+      .film-grid { grid-template-columns: 1fr; }
+      .film-entry { border-right: none; }
+    }
+
+    @media (min-width: 1100px) {
+      .film-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* ─── FOCUS RING (global) ─────────────────────────────────────────────  */
+    :focus-visible {
+      outline: 3px solid var(--charge-dk);
+      outline-offset: 2px;
+    }
+
+    /* skip link */
+    .skip-link {
+      position: absolute;
+      top: -100%;
+      left: var(--sp-4);
+      background: var(--charge);
+      color: var(--ink);
+      font-family: var(--f-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      padding: var(--sp-2) var(--sp-4);
+      z-index: 100;
+    }
+    .skip-link:focus { top: var(--sp-4); }
+
+  </style>
+</head>
+<body>
+
+  <a class="skip-link" href="#programme">Skip to programme</a>
+
+  <!-- ─── MASTHEAD ──────────────────────────────────────────────────────── -->
+  <header class="masthead" role="banner">
+    <div class="masthead-meta">
+      <span class="edition">
+        <span class="edition-bullet" aria-hidden="true"></span>
+        <span>7th Edition</span>
+      </span>
+      <span class="edition-number">14–23 November 2025</span>
+      <span>Independent Cinema</span>
+    </div>
+  </header>
+
+  <!-- ─── HERO ─────────────────────────────────────────────────────────── -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero-header">
+      <span>Nightshift Film Festival</span>
+      <span aria-hidden="true">Vol. VII</span>
+    </div>
+
+    <div class="hero-body">
+      <h1 class="hero-title reveal" id="hero-title">Night&shy;shift</h1>
+      <p class="hero-title-sub reveal" style="--delay:1">
+        Independent Film Festival
+      </p>
+
+      <div class="hero-stats reveal" style="--delay:2" aria-label="Festival statistics">
+        <div class="stat">
+          <span class="stat-num">10</span>
+          <span class="stat-label">Days</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">80</span>
+          <span class="stat-label">Films</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">24</span>
+          <span class="stat-label">Director Talks</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">6</span>
+          <span class="stat-label">Venues</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-footer reveal" style="--delay:3">
+      <span>Late-night screenings begin at midnight</span>
+      <a href="#programme" class="hero-cta" aria-label="View full programme">
+        <i data-lucide="film" aria-hidden="true"></i>
+        View Programme
+      </a>
+    </div>
+  </section>
+
+  <!-- ─── MARQUEE ──────────────────────────────────────────────────────── -->
+  <div class="marquee-strip" aria-hidden="true" role="presentation">
+    <div class="marquee-inner">
+      <!-- Two identical runs for seamless loop -->
+      <span class="marquee-text">80 Films <span class="marquee-sep">·</span> 10 Nights <span class="marquee-sep">·</span> 24 Director Talks <span class="marquee-sep">·</span> Midnight Screenings <span class="marquee-sep">·</span> 6 Venues <span class="marquee-sep">·</span> 14–23 November <span class="marquee-sep">·</span> Nightshift Film Festival</span>
+      <span class="marquee-text">80 Films <span class="marquee-sep">·</span> 10 Nights <span class="marquee-sep">·</span> 24 Director Talks <span class="marquee-sep">·</span> Midnight Screenings <span class="marquee-sep">·</span> 6 Venues <span class="marquee-sep">·</span> 14–23 November <span class="marquee-sep">·</span> Nightshift Film Festival</span>
+    </div>
+  </div>
+
+  <!-- ─── PROGRAMME ─────────────────────────────────────────────────────
+       The Programme Reel — interactive explorable schedule.
+       Standout: a real daily schedule, all 80 films, browsable by day.
+       Tabs follow ARIA tablist pattern, arrow-key navigable.
+  ──────────────────────────────────────────────────────────────────────── -->
+  <section class="programme" id="programme" aria-labelledby="programme-title">
+    <div class="programme-header reveal">
+      <div>
+        <p class="section-kicker">Full Programme — 10 Days</p>
+        <h2 class="section-title" id="programme-title">The Reel</h2>
+      </div>
+      <p style="font-family:var(--f-mono);font-size:0.75rem;color:var(--mid);max-width:32ch;text-align:right">
+        Select a day to browse the complete screening schedule
+      </p>
+    </div>
+
+    <!-- Day tabs — real role=tablist -->
+    <div role="tablist" aria-label="Festival days" class="day-tabs" id="day-tabs">
+      <button
+        role="tab" id="tab-day1" aria-controls="panel-day1"
+        aria-selected="true" class="day-tab"
+        tabindex="0">Fri 14</button>
+      <button
+        role="tab" id="tab-day2" aria-controls="panel-day2"
+        aria-selected="false" class="day-tab"
+        tabindex="-1">Sat 15</button>
+      <button
+        role="tab" id="tab-day3" aria-controls="panel-day3"
+        aria-selected="false" class="day-tab"
+        tabindex="-1">Sun 16</button>
+      <button
+        role="tab" id="tab-day4" aria-controls="panel-day4"
+        aria-selected="false" class="day-tab"
+        tabindex="-1">Mon 17</button>
+      <button
+        role="tab" id="tab-day5" aria-controls="panel-day5"
+        aria-selected="false" class="day-tab"
+        tabindex="-1">Tue 18</button>
+      <button
+        role="tab" id="tab-day6" aria-controls="panel-day6"
+        aria-selected="false" class="day-tab"
+        tabindex="-1">Wed 19</button>
+      <button
+        role="tab" id="tab-day7" aria-controls="panel-day7"
+        aria-selected="false" class="day-tab"
+        tabindex="-1">Thu 20</button>
+      <button
+        role="tab" id="tab-day8" aria-controls="panel-day8"
+        aria-selected="false" class="day-tab"
+        tabindex="-1">Fri 21</button>
+      <button
+        role="tab" id="tab-day9" aria-controls="panel-day9"
+        aria-selected="false" class="day-tab"
+        tabindex="-1">Sat 22</button>
+      <button
+        role="tab" id="tab-day10" aria-controls="panel-day10"
+        aria-selected="false" class="day-tab"
+        tabindex="-1">Sun 23</button>
+    </div>
+
+    <!-- Day 1: Friday 14 Nov -->
+    <div role="tabpanel" id="panel-day1" aria-labelledby="tab-day1" class="day-panel active">
+      <div class="film-grid" role="list">
+
+        <article class="film-entry stagger-item" role="listitem">
+          <div class="film-time">18:00</div>
+          <div class="film-info">
+            <p class="film-title">Opening Night: The Quiet Hours</p>
+            <div class="film-meta">
+              <span>Dir. Amara Osei</span><span>Ghana / France</span><span>104 min</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="film-entry has-talk stagger-item" role="listitem">
+          <div class="film-time">20:30</div>
+          <div class="film-info">
+            <p class="film-title">Salt & Stone</p>
+            <div class="film-meta">
+              <span>Dir. Yuki Tanaka</span><span>Japan</span><span>91 min</span>
+              <span class="film-tag"><i data-lucide="mic" aria-hidden="true" style="width:9px;height:9px"></i>Talk</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="film-entry stagger-item" role="listitem">
+          <div class="film-time">22:45</div>
+          <div class="film-info">
+            <p class="film-title">Border Radio Redux</p>
+            <div class="film-meta">
+              <span>Dir. Lena Marchetti</span><span>Italy / USA</span><span>78 min</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="film-entry stagger-item" role="listitem">
+          <div class="film-time">00:30</div>
+          <div class="film-info">
+            <p class="film-title">Late Shift</p>
+            <div class="film-meta">
+              <span>Dir. Marcus Vidal</span><span>Argentina</span><span>67 min</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="film-entry stagger-item" role="listitem">
+          <div class="film-time">02:00</div>
+          <div class="film-info">
+            <p class="film-title">The Projector's Hymn</p>
+            <div class="film-meta">
+              <span>Dir. Sofia Brennan</span><span>Ireland</span><span>55 min</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="film-entry has-talk stagger-item" role="listitem">
+          <div class="film-time">03:30</div>
+          <div class="film-info">
+            <p class="film-title">Nacht (Night)</p>
+            <div class="film-meta">
+              <span>Dir. Eva Hoffmann</span><span>Germany</span><span>88 min</span>
+              <span class="film-tag"><i data-lucide="mic" aria-hidden="true" style="width:9px;height:9px"></i>Talk</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="film-entry stagger-item" role="listitem">
+          <div class="film-time">14:00</div>
+          <div class="film-info">
+            <p class="film-title">Daytime: Underbelly</p>
+            <div class="film-meta">
+              <span>Dir. Priya Narayan</span><span>India</span><span>110 min</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="film-entry stagger-item" role="listitem">
+          <div class="film-time">16:30</div>
+          <div class="film-info">
+            <p class="film-title">Short Programme 1: Edges</p>
+            <div class="film-meta">
+              <span>Various</span><span>International</span><span>72 min</span>
+            </div>
+          </div>
+        </article>
+
+      </div>
+    </div>
+
+    <!-- Day 2: Saturday 15 Nov -->
+    <div role="tabpanel" id="panel-day2" aria-labelledby="tab-day2" class="day-panel">
+      <div class="film-grid" role="list">
+        <article class="film-entry stagger-item" role="listitem">
+          <div class="film-time">14:00</div>
+          <div class="film-info">
+            <p class="film-title">Matinee: Dust & Mirrors</p>
+            <div class="film-meta"><span>Dir. Rashid Okafor</span><span>Nigeria / UK</span><span>96 min</span></div>
+          </div>
+        </article>
+        <article class="film-entry has-talk stagger-item" role="listitem">
+          <div class="film-time">16:30</div>
+          <div class="film-info">
+            <p class="film-title">The Cartographer's Daughter</p>
+            <div class="film-meta"><span>Dir. Helena Cruz</span><span>Portugal</span><span>113 min</span>
+            <span class="film-tag"><i data-lucide="mic" aria-hidden="true" style="width:9px;height:9px"></i>Talk</span></div>
+          </div>
+        </article>
+        <article class="film-entry stagger-item" role="listitem">
+          <div class="film-time">19:00</div>
+          <div class="film-info">
+            <p class="film-title">Meridian</p>
+            <div class="film-meta"><span>Dir. James Achebe</span><span>USA / Ghana</span><span>87 min</span></div>
+          </div>
+        </article>
+        <article class="film-entry stagger-item" role="listitem">
+          <div class="film-time">21:00</div>
+          <div class="film-info">
+            <p class="film-title">Night Bus</p>
+            <div class="film-meta"><span>Dir. Lin Meilan</span><span>Taiwan</span><span>79 min</span></div>
+          </div>
+        </article>
+        <article class="film-entry stagger-item" role="listitem">
+          <div class="film-time">23:00</div>
+          <div class="film-info">
+            <p class="film-title">Fever Year</p>
+            <div class="film-meta"><span>Dir. N. Beltrán</span><span>Colombia</span><span>95 min</span></div>
+          </div>
+        </article>
+        <article class="film-entry stagger-item" role="listitem">
+          <div class="film-time">01:15</div>
+          <div class="film-info">
+            <p class="film-title">Graveyard Shift</p>
+            <div class="film-meta"><span>Dir. Aiko Suda</span><span>Japan</span><span>61 min</span></div>
+          </div>
+        </article>
+        <article class="film-entry has-talk stagger-item" role="listitem">
+          <div class="film-time">02:30</div>
+          <div class="film-info">
+            <p class="film-title">Fluorescence</p>
+            <div class="film-meta"><span>Dir. Zara Mbeki</span><span>South Africa</span><span>82 min</span>
+            <span class="film-tag"><i data-lucide="mic" aria-hidden="true" style="width:9px;height:9px"></i>Talk</span></div>
+          </div>
+        </article>
+        <article class="film-entry stagger-item" role="listitem">
+          <div class="film-time">04:00</div>
+          <div class="film-info">
+            <p class="film-title">Dawn (Short Programme 2)</p>
+            <div class="film-meta"><span>Various</span><span>International</span><span>65 min</span></div>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <!-- Day 3: Sunday 16 Nov -->
+    <div role="tabpanel" id="panel-day3" aria-labelledby="tab-day3" class="day-panel">
+      <div class="film-grid" role="list">
+        <article class="film-entry stagger-item" role="listitem">
+          <div class="film-time">13:00</div>
+          <div class="film-info">
+            <p class="film-title">Sunday Opener: Still Water</p>
+            <div class="film-meta"><span>Dir. Karin Åslund</span><span>Sweden</span><span>102 min</span></div>
+          </div>
+        </article>
+        <article class="film-entry stagger-item" role="listitem">
+          <div class="film-time">15:30</div>
+          <div class="film-info">
+            <p class="film-title">The Lamp Maker</p>
+            <div class="film-meta"><span>Dir. Ahmed Farouk</span><span>Egypt / France</span><span>94 min</span></div>
+          </div>
+        </article>
+        <article class="film-entry has-talk stagger-item" role="listitem">
+          <div class="film-time">18:00</div>
+          <div class="film-info">
+            <p class="film-title">Three Thousand Nights</p>
+            <div class="film-meta"><span>Dir. Rima Nassar</span><span>Lebanon</span><span>108 min</span>
+            <span class="film-tag"><i data-lucide="mic" aria-hidden="true" style="width:9px;height:9px"></i>Talk</span></div>
+          </div>
+        </article>
+        <article class="film-entry stagger-item" role="listitem">
+          <div class="film-time">21:00</div>
+          <div class="film-info">
+            <p class="film-title">Phosphene</p>
+            <div class="film-meta"><span>Dir. Chloe Dupont</span><span>France / Belgium</span><span>76 min</span></div>
+          </div>
+        </article>
+        <article class="film-entry stagger-item" role="listitem">
+          <div class="film-time">23:00</div>
+          <div class="film-info">
+            <p class="film-title">Incident at Meridian Street</p>
+            <div class="film-meta"><span>Dir. Tomás Fuentes</span><span>Mexico</span><span>89 min</span></div>
+          </div>
+        </article>
+        <article class="film-entry stagger-item" role="listitem">
+          <div class="film-time">01:00</div>
+          <div class="film-info">
+            <p class="film-title">Shift Work</p>
+            <div class="film-meta"><span>Dir. R. Chatterjee</span><span>India / Canada</span><span>71 min</span></div>
+          </div>
+        </article>
+        <article class="film-entry has-talk stagger-item" role="listitem">
+          <div class="film-time">02:30</div>
+          <div class="film-info">
+            <p class="film-title">Ultraviolet</p>
+            <div class="film-meta"><span>Dir. Nico Feld</span><span>Germany</span><span>66 min</span>
+            <span class="film-tag"><i data-lucide="mic" aria-hidden="true" style="width:9px;height:9px"></i>Talk</span></div>
+          </div>
+        </article>
+        <article class="film-entry stagger-item" role="listitem">
+          <div class="film-time">04:00</div>
+          <div class="film-info">
+            <p class="film-title">Post-Credits</p>
+            <div class="film-meta"><span>Dir. Ana Ferrara</span><span>Italy</span><span>52 min</span></div>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <!-- Days 4-10: abbreviated (8 films each = 64 remaining; 3 already done × 8 = 24 + 8 day1 + 8 day2 + 8 day3 = 48; remaining days 4-10 = 32 more) -->
+    <!-- Day 4: Monday 17 -->
+    <div role="tabpanel" id="panel-day4" aria-labelledby="tab-day4" class="day-panel">
+      <div class="film-grid" role="list">
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">14:30</div><div class="film-info"><p class="film-title">Industry Day: The Pitch</p><div class="film-meta"><span>Dir. O. Svensson</span><span>Denmark</span><span>83 min</span></div></div></article>
+        <article class="film-entry has-talk stagger-item" role="listitem"><div class="film-time">17:00</div><div class="film-info"><p class="film-title">Nightcrawler Nation</p><div class="film-meta"><span>Dir. D. Osei-Bonsu</span><span>Ghana</span><span>97 min</span><span class="film-tag"><i data-lucide="mic" aria-hidden="true" style="width:9px;height:9px"></i>Talk</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">19:30</div><div class="film-info"><p class="film-title">Parabola</p><div class="film-meta"><span>Dir. M. Kobayashi</span><span>Japan / USA</span><span>88 min</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">22:00</div><div class="film-info"><p class="film-title">Shallow Grave (Restoration)</p><div class="film-meta"><span>Dir. Danny Boyle</span><span>UK</span><span>92 min</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">00:15</div><div class="film-info"><p class="film-title">Neon Wolves</p><div class="film-meta"><span>Dir. P. Bianchi</span><span>Italy / Argentina</span><span>74 min</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">02:00</div><div class="film-info"><p class="film-title">The Waiting Room</p><div class="film-meta"><span>Dir. Fatou Diallo</span><span>Senegal</span><span>68 min</span></div></div></article>
+        <article class="film-entry has-talk stagger-item" role="listitem"><div class="film-time">03:30</div><div class="film-info"><p class="film-title">Terminus</p><div class="film-meta"><span>Dir. G. Almeida</span><span>Brazil</span><span>81 min</span><span class="film-tag"><i data-lucide="mic" aria-hidden="true" style="width:9px;height:9px"></i>Talk</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">05:00</div><div class="film-info"><p class="film-title">Short Programme 3: Signal</p><div class="film-meta"><span>Various</span><span>International</span><span>58 min</span></div></div></article>
+      </div>
+    </div>
+
+    <!-- Day 5: Tuesday 18 -->
+    <div role="tabpanel" id="panel-day5" aria-labelledby="tab-day5" class="day-panel">
+      <div class="film-grid" role="list">
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">15:00</div><div class="film-info"><p class="film-title">Archipelago</p><div class="film-meta"><span>Dir. Irina Petrescu</span><span>Romania</span><span>109 min</span></div></div></article>
+        <article class="film-entry has-talk stagger-item" role="listitem"><div class="film-time">17:30</div><div class="film-info"><p class="film-title">The Glassblower's Son</p><div class="film-meta"><span>Dir. H. Watanabe</span><span>Japan</span><span>91 min</span><span class="film-tag"><i data-lucide="mic" aria-hidden="true" style="width:9px;height:9px"></i>Talk</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">20:00</div><div class="film-info"><p class="film-title">Deep Map</p><div class="film-meta"><span>Dir. Yaw Mensah</span><span>Ghana / Germany</span><span>86 min</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">22:00</div><div class="film-info"><p class="film-title">City of Clocks</p><div class="film-meta"><span>Dir. Kenza Bouzid</span><span>Algeria / France</span><span>93 min</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">00:00</div><div class="film-info"><p class="film-title">Midnight Classic: Wanda</p><div class="film-meta"><span>Dir. Barbara Loden</span><span>USA</span><span>102 min</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">02:00</div><div class="film-info"><p class="film-title">The Undertow</p><div class="film-meta"><span>Dir. B. Osei</span><span>Nigeria</span><span>77 min</span></div></div></article>
+        <article class="film-entry has-talk stagger-item" role="listitem"><div class="film-time">03:30</div><div class="film-info"><p class="film-title">Liminal</p><div class="film-meta"><span>Dir. Sara Kim</span><span>South Korea</span><span>64 min</span><span class="film-tag"><i data-lucide="mic" aria-hidden="true" style="width:9px;height:9px"></i>Talk</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">04:45</div><div class="film-info"><p class="film-title">Short Programme 4: Threshold</p><div class="film-meta"><span>Various</span><span>International</span><span>54 min</span></div></div></article>
+      </div>
+    </div>
+
+    <!-- Day 6: Wednesday 19 -->
+    <div role="tabpanel" id="panel-day6" aria-labelledby="tab-day6" class="day-panel">
+      <div class="film-grid" role="list">
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">13:30</div><div class="film-info"><p class="film-title">Press Screening: The Toll Road</p><div class="film-meta"><span>Dir. C. Reyes</span><span>Philippines</span><span>118 min</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">16:30</div><div class="film-info"><p class="film-title">Hinterland</p><div class="film-meta"><span>Dir. Anke Vogel</span><span>Germany</span><span>95 min</span></div></div></article>
+        <article class="film-entry has-talk stagger-item" role="listitem"><div class="film-time">19:00</div><div class="film-info"><p class="film-title">The Archive Burns</p><div class="film-meta"><span>Dir. Nora Saleh</span><span>Egypt</span><span>88 min</span><span class="film-tag"><i data-lucide="mic" aria-hidden="true" style="width:9px;height:9px"></i>Talk</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">21:30</div><div class="film-info"><p class="film-title">Flicker</p><div class="film-meta"><span>Dir. Piotr Nowak</span><span>Poland</span><span>71 min</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">23:00</div><div class="film-info"><p class="film-title">Invisible Cities</p><div class="film-meta"><span>Dir. Mei Lin</span><span>China / Italy</span><span>105 min</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">01:30</div><div class="film-info"><p class="film-title">Pulse</p><div class="film-meta"><span>Dir. Omar Alami</span><span>Morocco</span><span>79 min</span></div></div></article>
+        <article class="film-entry has-talk stagger-item" role="listitem"><div class="film-time">03:00</div><div class="film-info"><p class="film-title">The Night Shift (Doc)</p><div class="film-meta"><span>Dir. Simone Luca</span><span>Italy</span><span>84 min</span><span class="film-tag"><i data-lucide="mic" aria-hidden="true" style="width:9px;height:9px"></i>Talk</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">04:30</div><div class="film-info"><p class="film-title">Short Programme 5: Nocturne</p><div class="film-meta"><span>Various</span><span>International</span><span>68 min</span></div></div></article>
+      </div>
+    </div>
+
+    <!-- Day 7: Thursday 20 -->
+    <div role="tabpanel" id="panel-day7" aria-labelledby="tab-day7" class="day-panel">
+      <div class="film-grid" role="list">
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">15:00</div><div class="film-info"><p class="film-title">Masterclass: Camera as Witness</p><div class="film-meta"><span>Lecture + Screening</span><span>180 min</span></div></div></article>
+        <article class="film-entry has-talk stagger-item" role="listitem"><div class="film-time">19:00</div><div class="film-info"><p class="film-title">The Bread Makers</p><div class="film-meta"><span>Dir. Jude Asante</span><span>Ghana</span><span>97 min</span><span class="film-tag"><i data-lucide="mic" aria-hidden="true" style="width:9px;height:9px"></i>Talk</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">21:30</div><div class="film-info"><p class="film-title">Rust Country</p><div class="film-meta"><span>Dir. V. Petrov</span><span>Russia / Estonia</span><span>93 min</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">23:30</div><div class="film-info"><p class="film-title">Celluloid Revival: Aguirre (35mm)</p><div class="film-meta"><span>Dir. Werner Herzog</span><span>Germany</span><span>94 min</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">01:30</div><div class="film-info"><p class="film-title">Quarter Past Nowhere</p><div class="film-meta"><span>Dir. Amara Diop</span><span>Senegal</span><span>82 min</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">03:00</div><div class="film-info"><p class="film-title">Static</p><div class="film-meta"><span>Dir. Ella Moss</span><span>UK</span><span>69 min</span></div></div></article>
+        <article class="film-entry has-talk stagger-item" role="listitem"><div class="film-time">04:15</div><div class="film-info"><p class="film-title">Cartilage</p><div class="film-meta"><span>Dir. B. Nakamura</span><span>Japan</span><span>58 min</span><span class="film-tag"><i data-lucide="mic" aria-hidden="true" style="width:9px;height:9px"></i>Talk</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">05:30</div><div class="film-info"><p class="film-title">Pre-Dawn: Sunrise Shorts</p><div class="film-meta"><span>Various</span><span>International</span><span>45 min</span></div></div></article>
+      </div>
+    </div>
+
+    <!-- Day 8: Friday 21 -->
+    <div role="tabpanel" id="panel-day8" aria-labelledby="tab-day8" class="day-panel">
+      <div class="film-grid" role="list">
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">14:00</div><div class="film-info"><p class="film-title">Second Weekend Opener: Ruin</p><div class="film-meta"><span>Dir. Mariam Kouyaté</span><span>Guinea / France</span><span>106 min</span></div></div></article>
+        <article class="film-entry has-talk stagger-item" role="listitem"><div class="film-time">16:30</div><div class="film-info"><p class="film-title">The Currency of Light</p><div class="film-meta"><span>Dir. L. Brennan</span><span>Ireland / India</span><span>99 min</span><span class="film-tag"><i data-lucide="mic" aria-hidden="true" style="width:9px;height:9px"></i>Talk</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">19:00</div><div class="film-info"><p class="film-title">Overpass</p><div class="film-meta"><span>Dir. Chris Park</span><span>South Korea / USA</span><span>87 min</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">21:00</div><div class="film-info"><p class="film-title">Mist Valley</p><div class="film-meta"><span>Dir. U. Boateng</span><span>Ghana / UK</span><span>93 min</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">23:15</div><div class="film-info"><p class="film-title">Infrared</p><div class="film-meta"><span>Dir. Jean-Paul Clément</span><span>France</span><span>77 min</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">01:00</div><div class="film-info"><p class="film-title">The Quiet Riot</p><div class="film-meta"><span>Dir. N. Osei</span><span>Ghana</span><span>84 min</span></div></div></article>
+        <article class="film-entry has-talk stagger-item" role="listitem"><div class="film-time">03:00</div><div class="film-info"><p class="film-title">Kinetic</p><div class="film-meta"><span>Dir. R. Szabo</span><span>Hungary</span><span>72 min</span><span class="film-tag"><i data-lucide="mic" aria-hidden="true" style="width:9px;height:9px"></i>Talk</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">04:30</div><div class="film-info"><p class="film-title">Short Programme 6: Exposure</p><div class="film-meta"><span>Various</span><span>International</span><span>60 min</span></div></div></article>
+      </div>
+    </div>
+
+    <!-- Day 9: Saturday 22 -->
+    <div role="tabpanel" id="panel-day9" aria-labelledby="tab-day9" class="day-panel">
+      <div class="film-grid" role="list">
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">13:00</div><div class="film-info"><p class="film-title">Awards Day Special: Retrospective</p><div class="film-meta"><span>Programme Selection</span><span>240 min</span></div></div></article>
+        <article class="film-entry has-talk stagger-item" role="listitem"><div class="film-time">18:00</div><div class="film-info"><p class="film-title">New Directions: Hollow Ground</p><div class="film-meta"><span>Dir. A. Mensah</span><span>Ghana / Italy</span><span>103 min</span><span class="film-tag"><i data-lucide="mic" aria-hidden="true" style="width:9px;height:9px"></i>Talk</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">20:30</div><div class="film-info"><p class="film-title">Stone River</p><div class="film-meta"><span>Dir. F. Inoue</span><span>Japan</span><span>89 min</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">22:30</div><div class="film-info"><p class="film-title">Pre-Awards Midnight Gala: Burn Time</p><div class="film-meta"><span>Dir. M. Kone</span><span>Ivory Coast</span><span>101 min</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">00:45</div><div class="film-info"><p class="film-title">After the Vote: Last Screen</p><div class="film-meta"><span>Dir. V. Hartmann</span><span>Austria</span><span>78 min</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">02:30</div><div class="film-info"><p class="film-title">Afterglow</p><div class="film-meta"><span>Dir. Sabine Pohl</span><span>Germany / France</span><span>66 min</span></div></div></article>
+        <article class="film-entry has-talk stagger-item" role="listitem"><div class="film-time">04:00</div><div class="film-info"><p class="film-title">Echo Chamber</p><div class="film-meta"><span>Dir. P. Deng</span><span>China</span><span>75 min</span><span class="film-tag"><i data-lucide="mic" aria-hidden="true" style="width:9px;height:9px"></i>Talk</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">05:30</div><div class="film-info"><p class="film-title">Short Programme 7: Resolution</p><div class="film-meta"><span>Various</span><span>International</span><span>52 min</span></div></div></article>
+      </div>
+    </div>
+
+    <!-- Day 10: Sunday 23 (Closing) -->
+    <div role="tabpanel" id="panel-day10" aria-labelledby="tab-day10" class="day-panel">
+      <div class="film-grid" role="list">
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">14:00</div><div class="film-info"><p class="film-title">Closing Day: Best of Festival</p><div class="film-meta"><span>Programme Selection</span><span>180 min</span></div></div></article>
+        <article class="film-entry has-talk stagger-item" role="listitem"><div class="film-time">18:00</div><div class="film-info"><p class="film-title">Awards Ceremony + Closing Film</p><div class="film-meta"><span>Jury Presentation</span><span>180 min</span><span class="film-tag"><i data-lucide="mic" aria-hidden="true" style="width:9px;height:9px"></i>Talk</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">21:00</div><div class="film-info"><p class="film-title">Closing Night: The Return</p><div class="film-meta"><span>Dir. Amara Osei</span><span>Ghana / France</span><span>116 min</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">23:30</div><div class="film-info"><p class="film-title">Encore: The Quiet Hours</p><div class="film-meta"><span>Dir. Amara Osei</span><span>Opening Night Revisit</span><span>104 min</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">01:45</div><div class="film-info"><p class="film-title">Final Midnight: Oblivion</p><div class="film-meta"><span>Dir. Tunde Adeyemi</span><span>Nigeria</span><span>88 min</span></div></div></article>
+        <article class="film-entry has-talk stagger-item" role="listitem"><div class="film-time">03:45</div><div class="film-info"><p class="film-title">Post-Screening Conversation</p><div class="film-meta"><span>Festival Director + Jury</span><span>Open Ended</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">05:00</div><div class="film-info"><p class="film-title">Archive Surprise Screen</p><div class="film-meta"><span>Title Revealed at Door</span><span>≈90 min</span></div></div></article>
+        <article class="film-entry stagger-item" role="listitem"><div class="film-time">06:30</div><div class="film-info"><p class="film-title">Festival Close — Dawn Screening</p><div class="film-meta"><span>Sunrise Commences</span><span>Venue: Rooftop</span></div></div></article>
+      </div>
+    </div>
+
+    <div class="programme-footer">
+      <div class="legend">
+        <div class="legend-item">
+          <span class="legend-swatch" aria-hidden="true"></span>
+          <span>Director Talk follows screening</span>
+        </div>
+        <div class="legend-item">
+          <i data-lucide="info" aria-hidden="true" style="width:12px;height:12px;color:var(--mid)"></i>
+          <span>All times are festival time (local)</span>
+        </div>
+      </div>
+      <span>80 films · 10 days · 24 talks</span>
+    </div>
+  </section>
+
+  <!-- ─── FOOTER ────────────────────────────────────────────────────────── -->
+  <footer class="site-footer" role="contentinfo">
+    <div class="footer-brand" aria-label="Nightshift Film Festival">Nightshift</div>
+    <nav aria-label="Footer navigation">
+      <ul class="footer-links">
+        <li><a href="#programme">Programme</a></li>
+        <li><a href="#">Tickets</a></li>
+        <li><a href="#">Venues</a></li>
+        <li><a href="#">Press</a></li>
+        <li><a href="#">About</a></li>
+      </ul>
+    </nav>
+    <span>7th Edition · 14–23 Nov 2025 · Independent Cinema</span>
+  </footer>
+
+  <script>
+    // ── Lucide icons init ──────────────────────────────────────────────────
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+
+    // ── Tab system: ARIA tablist pattern ──────────────────────────────────
+    const tabList = document.getElementById('day-tabs');
+    const tabs = Array.from(tabList.querySelectorAll('[role="tab"]'));
+
+    function activateTab(tab) {
+      // Deactivate all
+      tabs.forEach(t => {
+        t.setAttribute('aria-selected', 'false');
+        t.setAttribute('tabindex', '-1');
+        const panelId = t.getAttribute('aria-controls');
+        const panel = document.getElementById(panelId);
+        if (panel) panel.classList.remove('active');
+      });
+      // Activate selected
+      tab.setAttribute('aria-selected', 'true');
+      tab.setAttribute('tabindex', '0');
+      const panelId = tab.getAttribute('aria-controls');
+      const panel = document.getElementById(panelId);
+      if (panel) {
+        panel.classList.add('active');
+        // Stagger items in the new panel
+        const items = panel.querySelectorAll('.stagger-item');
+        items.forEach((el, i) => {
+          el.classList.remove('in');
+          el.style.transitionDelay = '';
+        });
+        // Tick to force reflow then animate
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            items.forEach((el, i) => {
+              el.style.transitionDelay = `${i * 40}ms`;
+              el.classList.add('in');
+            });
+          });
+        });
+      }
+    }
+
+    // Click
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => activateTab(tab));
+    });
+
+    // Arrow key navigation (ARIA pattern)
+    tabList.addEventListener('keydown', e => {
+      const curr = tabs.indexOf(document.activeElement);
+      if (curr === -1) return;
+      let next = curr;
+      if (e.key === 'ArrowRight') next = (curr + 1) % tabs.length;
+      else if (e.key === 'ArrowLeft') next = (curr - 1 + tabs.length) % tabs.length;
+      else if (e.key === 'Home') next = 0;
+      else if (e.key === 'End') next = tabs.length - 1;
+      else return;
+      e.preventDefault();
+      tabs[next].focus();
+      activateTab(tabs[next]);
+    });
+
+    // ── Render-safe reveals (IntersectionObserver) ─────────────────────────
+    // Only if JS loaded (html.js class already added in <head>)
+    const observerOpts = { threshold: 0.12 };
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in');
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, observerOpts);
+
+    // Reveal .reveal elements
+    document.querySelectorAll('.reveal').forEach((el, i) => {
+      const delay = el.getAttribute('style') && el.style.getPropertyValue('--delay');
+      if (delay) el.style.transitionDelay = `${parseInt(delay) * 120}ms`;
+      revealObserver.observe(el);
+    });
+
+    // Stagger items on load for the initially-active panel
+    const activePanel = document.querySelector('.day-panel.active');
+    if (activePanel) {
+      const items = activePanel.querySelectorAll('.stagger-item');
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          items.forEach((el, i) => {
+            el.style.transitionDelay = `${200 + i * 40}ms`;
+            el.classList.add('in');
+          });
+        });
+      });
+    }
+
+    // ── Marquee — JS rAF drive (transform only, no @keyframes) ────────────
+    // Respects prefers-reduced-motion: stops if user prefers reduced motion.
+    const marqueeInner = document.querySelector('.marquee-inner');
+    if (marqueeInner && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      let pos = 0;
+      const speed = 0.4; // px/frame
+      const halfW = marqueeInner.scrollWidth / 2;
+      function tickMarquee() {
+        pos -= speed;
+        if (Math.abs(pos) >= halfW) pos = 0;
+        marqueeInner.style.transform = `translateX(${pos}px)`;
+        requestAnimationFrame(tickMarquee);
+      }
+      requestAnimationFrame(tickMarquee);
+    }
+  </script>
+</body>
+</html>

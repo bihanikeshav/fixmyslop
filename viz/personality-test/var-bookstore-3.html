@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page &amp; Co. — Independent Bookstore</title>
+
+  <!-- Boska (display) via Fontshare -->
+  <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=boska@400,700,900&display=swap">
+  <!-- Chivo (body) via Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chivo:wght@300;400;700&family=Chivo+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ─── Reset & tokens ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ground:    #F8F7F4;     /* cool near-white — NOT cream editorial */
+      --ink:       #1C1A18;     /* warm near-black — tinted, not pure #000 */
+      --ink-mid:   #4A4744;
+      --ink-faint: #9A9490;
+      --stamp:     #6B1515;     /* oxblood / rubber-stamp red — subject-grounded */
+      --stamp-pale:#F2E8E8;     /* very low-chroma stamp wash */
+      --rule:      #D4D1CB;     /* hairline rule */
+
+      --font-display: 'Boska', Georgia, serif;
+      --font-body:    'Chivo', system-ui, sans-serif;
+      --font-mono:    'Chivo Mono', 'Courier New', monospace;
+    }
+
+    html { font-size: 16px; scroll-behavior: smooth; }
+
+    body {
+      background: var(--ground);
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-weight: 400;
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ─── HERO — full-bleed type poster ─────────────────────────── */
+    /*
+      Layout archetype: Full-bleed type poster.
+      The store name IS the page — each word at display scale,
+      stacked and filling the viewport like an enormous book spine.
+      Bold type move: ultra-bold condensed stacked lockup, line-height 0.88.
+    */
+
+    .hero {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      padding: clamp(2rem, 5vw, 4rem);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Faint ruled-line texture — actual bookshelf lines, not decoration */
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: repeating-linear-gradient(
+        180deg,
+        transparent 0px,
+        transparent 47px,
+        var(--rule) 47px,
+        var(--rule) 48px
+      );
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    .hero-name-block {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .hero-name {
+      font-family: var(--font-display);
+      font-weight: 900;
+      font-size: clamp(16vw, 22vw, 26vw);
+      line-height: 0.88;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      /* Each word stacks full-width — spine typography */
+    }
+
+    /* "& CO." — smaller so the ampersand reads as ligature/ornament */
+    .hero-name .sub-line {
+      font-size: clamp(8vw, 11vw, 13vw);
+      color: var(--stamp);
+      display: block;
+      letter-spacing: 0.01em;
+    }
+
+    .hero-footer {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1.5px solid var(--ink);
+      flex-wrap: wrap;
+    }
+
+    .hero-address {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 400;
+      color: var(--ink-mid);
+      line-height: 1.7;
+      letter-spacing: 0.01em;
+    }
+
+    .hero-hours {
+      text-align: right;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--ink-mid);
+      line-height: 1.7;
+    }
+
+    /* Live open/closed status — rendered in markup, upgraded by JS */
+    .status-badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.2em 0.6em;
+      border: 1.5px solid currentColor;
+      margin-top: 0.5rem;
+    }
+
+    .status-badge.open  { color: var(--stamp); border-color: var(--stamp); }
+    .status-badge.closed { color: var(--ink-mid); border-color: var(--ink-mid); }
+
+    /* ─── STAFF PICK SECTION ─────────────────────────────────────── */
+    /*
+      The standout: "Today's Pick"
+      A daily rotating staff recommendation seeded by Date.getDay().
+      Renders on load with Monday's pick as the noscript fallback.
+      Shows: book title, author, genre, a 2-line staff note, and the
+      spine — a narrow color bar derived from the book's subject matter.
+    */
+
+    .picks-section {
+      padding: clamp(3rem, 6vw, 5rem) clamp(2rem, 5vw, 4rem);
+      border-top: 1.5px solid var(--ink);
+    }
+
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+      margin-bottom: 2.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--rule);
+    }
+
+    .pick-card {
+      display: grid;
+      grid-template-columns: 8px 1fr auto;
+      gap: 0 2rem;
+      align-items: start;
+      max-width: 72ch;
+    }
+
+    /* The spine — a narrow colored bar, the only decoration here */
+    .pick-spine {
+      width: 8px;
+      /* Height set by JS to match pick-body height; default is 100% */
+      align-self: stretch;
+      border-radius: 1px;
+      background: var(--stamp); /* default; overridden per-pick */
+      transition: background 0.3s ease;
+    }
+
+    .pick-body {
+      min-width: 0;
+    }
+
+    .pick-genre {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+      margin-bottom: 0.5rem;
+    }
+
+    .pick-title {
+      font-family: var(--font-display);
+      font-weight: 900;
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      line-height: 0.95;
+      color: var(--ink);
+      margin-bottom: 0.4rem;
+      letter-spacing: -0.02em;
+    }
+
+    .pick-author {
+      font-family: var(--font-body);
+      font-weight: 300;
+      font-size: 1rem;
+      color: var(--ink-mid);
+      margin-bottom: 1.25rem;
+    }
+
+    .pick-note {
+      font-family: var(--font-body);
+      font-size: 1.05rem;
+      line-height: 1.65;
+      color: var(--ink);
+      max-width: 52ch;
+      border-left: 2px solid var(--stamp);
+      padding-left: 1rem;
+      font-style: italic;
+    }
+
+    .pick-note cite {
+      display: block;
+      font-style: normal;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--stamp);
+      margin-top: 0.6rem;
+    }
+
+    .pick-day-nav {
+      grid-column: 3;
+      grid-row: 1 / span 4;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.35rem;
+      padding-top: 0.2rem;
+    }
+
+    .pick-day-nav .day-btn {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.2em 0;
+      transition: color 0.15s;
+      text-align: right;
+    }
+
+    .pick-day-nav .day-btn:hover { color: var(--ink); }
+    .pick-day-nav .day-btn.active {
+      color: var(--stamp);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    /* ─── Events teaser ──────────────────────────────────────────── */
+    .events-bar {
+      padding: clamp(1.5rem, 3vw, 2.5rem) clamp(2rem, 5vw, 4rem);
+      background: var(--ink);
+      color: var(--ground);
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .events-bar .ev-label {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #E8A0A0;   /* pale stamp-red on dark — passes AA contrast on #1C1A18 */
+      flex-shrink: 0;
+    }
+
+    .events-bar .ev-scroll {
+      display: flex;
+      gap: 2.5rem;
+      flex-wrap: wrap;
+      list-style: none;
+    }
+
+    .events-bar .ev-scroll li {
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      font-weight: 300;
+      line-height: 1.4;
+    }
+
+    .events-bar .ev-scroll li strong {
+      font-weight: 700;
+      display: block;
+    }
+
+    .events-bar .ev-date {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: #B0ADA8;   /* mid-ground on dark ink — ~5.5:1 contrast */
+      letter-spacing: 0.05em;
+    }
+
+    /* ─── Responsive ─────────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      .pick-card {
+        grid-template-columns: 6px 1fr;
+      }
+      .pick-day-nav {
+        grid-column: 1 / -1;
+        grid-row: auto;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 1.5rem;
+      }
+      .hero-footer {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .hero-hours { text-align: left; }
+    }
+
+    /* ─── Reduced motion ─────────────────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; animation: none !important; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ═══ HERO ═══════════════════════════════════════════════════════ -->
+  <section class="hero" aria-label="Page &amp; Co. — Independent bookstore">
+
+    <div class="hero-name-block">
+      <h1 class="hero-name" aria-label="Page and Co.">
+        PAGE
+        <span class="sub-line">&amp;&nbsp;CO.</span>
+      </h1>
+    </div>
+
+    <footer class="hero-footer">
+      <address class="hero-address" aria-label="Location">
+        14 Millbrook Lane<br>
+        The Village Quarter<br>
+        Open Mon–Sat 10–7, Sun 11–5
+      </address>
+
+      <div class="hero-hours" aria-live="polite">
+        <div id="live-clock" style="font-size:1.1rem; font-weight:700; color:var(--ink); font-family:var(--font-mono);">
+          <!-- Populated by JS; static fallback below in noscript -->
+        </div>
+        <!-- Static fallback for no-JS -->
+        <noscript><span style="font-size:1.1rem; font-weight:700; color:var(--ink); font-family:var(--font-mono);">Open today</span></noscript>
+        <div>
+          <span class="status-badge closed" id="open-status">CHECK HOURS</span>
+        </div>
+      </div>
+    </footer>
+
+  </section>
+
+  <!-- ═══ TODAY'S PICK ════════════════════════════════════════════════ -->
+  <section class="picks-section" aria-label="Today's staff pick">
+
+    <p class="section-label" aria-hidden="true">Today&rsquo;s Pick</p>
+
+    <div class="pick-card" id="pick-card">
+
+      <!-- Spine bar — color updated by JS per pick -->
+      <div class="pick-spine" id="pick-spine" aria-hidden="true"></div>
+
+      <div class="pick-body" id="pick-body">
+        <!-- Default: Monday's pick (noscript / first-render state) -->
+        <p class="pick-genre" id="pick-genre">Literary Fiction</p>
+        <h2 class="pick-title" id="pick-title">Stoner</h2>
+        <p class="pick-author" id="pick-author">John Williams</p>
+        <blockquote class="pick-note" id="pick-note">
+          Quiet, devastating, and inexplicably hopeful. We press this into the hands of
+          anyone who says they don't have time to read any more.
+          <cite id="pick-staff">— Mira, owner</cite>
+        </blockquote>
+      </div>
+
+      <!-- Day navigator — labelled for accessibility -->
+      <nav class="pick-day-nav" aria-label="Browse by day">
+        <button class="day-btn" data-day="1">Mon</button>
+        <button class="day-btn" data-day="2">Tue</button>
+        <button class="day-btn" data-day="3">Wed</button>
+        <button class="day-btn" data-day="4">Thu</button>
+        <button class="day-btn" data-day="5">Fri</button>
+        <button class="day-btn" data-day="6">Sat</button>
+        <button class="day-btn" data-day="0">Sun</button>
+      </nav>
+
+    </div>
+
+  </section>
+
+  <!-- ═══ UPCOMING EVENTS BAR ═════════════════════════════════════════ -->
+  <aside class="events-bar" aria-label="Upcoming events">
+    <span class="ev-label">Coming up</span>
+    <ul class="ev-scroll">
+      <li>
+        <strong>Naomi Shah in conversation</strong>
+        <span class="ev-date">JUNE 12 · 7PM · BACK ROOM</span>
+      </li>
+      <li>
+        <strong>Summer Reading Kick-off</strong>
+        <span class="ev-date">JUNE 21 · 11AM · ALL AGES</span>
+      </li>
+      <li>
+        <strong>Short Story Workshop</strong>
+        <span class="ev-date">JULY 5 · 6PM · UPSTAIRS</span>
+      </li>
+    </ul>
+  </aside>
+
+
+  <script>
+    // ─── Staff picks data ───────────────────────────────────────────
+    // Seeded by day-of-week (0=Sun … 6=Sat).
+    // Each pick: a real bookstore recommendation, grounded in actual books.
+    const PICKS = {
+      0: { // Sunday — slow morning read
+        genre: "Essays",
+        title: "The Empathy Exams",
+        author: "Leslie Jamison",
+        note: "Start Sunday with this. Read one essay. Come back for the rest all week. You will.",
+        staff: "Dani, events co-ordinator",
+        spineColor: "#4A3728"   // dark espresso — coffee-and-reading Sunday
+      },
+      1: { // Monday — quiet fiction to reset the week
+        genre: "Literary Fiction",
+        title: "Stoner",
+        author: "John Williams",
+        note: "Quiet, devastating, and inexplicably hopeful. We press this into the hands of anyone who says they don't have time to read any more.",
+        staff: "Mira, owner",
+        spineColor: "#5C4033"   // warm dark brown — old cloth binding
+      },
+      2: { // Tuesday — science
+        genre: "Popular Science",
+        title: "The Alchemy of Air",
+        author: "Thomas Hager",
+        note: "The story of nitrogen, war, and how we fed the world. Gripping in the way only true things can be.",
+        staff: "Tom, floor",
+        spineColor: "#2E4057"   // dark slate-blue — laboratory blue (not AI violet)
+      },
+      3: { // Wednesday — midweek thriller
+        genre: "Crime Fiction",
+        title: "The Secret History",
+        author: "Donna Tartt",
+        note: "Re-read it as many times as you like; it never gives up all its secrets. The perfect midweek escape.",
+        staff: "Priya, buyer",
+        spineColor: "#3D2B1F"   // near-black umber — shadows and secrets
+      },
+      4: { // Thursday — history
+        genre: "History",
+        title: "Half the Sky",
+        author: "Kristof &amp; WuDunn",
+        note: "Every bookshop should press this into hands more often. Thursday feels right — gives you the weekend to start.",
+        staff: "Mira, owner",
+        spineColor: "#8B4513"   // saddle-brown — worn archive
+      },
+      5: { // Friday — debut / discover
+        genre: "Debut Novel",
+        title: "Checkout 19",
+        author: "Claire-Louise Bennett",
+        note: "Reads like consciousness itself. Strange, hypnotic, brilliant. Take it home for the weekend.",
+        staff: "Dani, events co-ordinator",
+        spineColor: "#556B2F"   // dark olive — new-growth Friday
+      },
+      6: { // Saturday — browse day
+        genre: "Short Stories",
+        title: "Interpreter of Maladies",
+        author: "Jhumpa Lahiri",
+        note: "Perfect for a Saturday when you come in for one thing and leave with three. Each story is its own complete world.",
+        staff: "Tom, floor",
+        spineColor: "#6B1515"   // stamp-red — weekend stamp
+      }
+    };
+
+    // ─── Store hours ────────────────────────────────────────────────
+    // Mon–Sat 10–19, Sun 11–17
+    const HOURS = {
+      0: { open: 11, close: 17, label: "Sun 11am–5pm" },
+      1: { open: 10, close: 19, label: "Mon 10am–7pm" },
+      2: { open: 10, close: 19, label: "Tue 10am–7pm" },
+      3: { open: 10, close: 19, label: "Wed 10am–7pm" },
+      4: { open: 10, close: 19, label: "Thu 10am–7pm" },
+      5: { open: 10, close: 19, label: "Fri 10am–7pm" },
+      6: { open: 10, close: 19, label: "Sat 10am–7pm" }
+    };
+
+    // ─── Render pick ────────────────────────────────────────────────
+    function renderPick(dayIndex) {
+      const p = PICKS[dayIndex];
+      if (!p) return;
+
+      document.getElementById('pick-genre').textContent  = p.genre;
+      document.getElementById('pick-title').textContent  = p.title;
+      document.getElementById('pick-author').textContent = p.author;
+      // Note: using innerHTML carefully — all data is internal, not user input
+      document.getElementById('pick-note').innerHTML     =
+        p.note + `<cite>— ${p.staff}</cite>`;
+      document.getElementById('pick-spine').style.background = p.spineColor;
+
+      // Update day nav active state
+      document.querySelectorAll('.day-btn').forEach(btn => {
+        const active = parseInt(btn.dataset.day) === dayIndex;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-current', active ? 'true' : 'false');
+      });
+    }
+
+    // ─── Live clock + open/close ────────────────────────────────────
+    function updateClock() {
+      const now     = new Date();
+      const day     = now.getDay();
+      const hours   = now.getHours();
+      const minutes = now.getMinutes();
+      const h       = HOURS[day];
+
+      // Format time
+      const hh = hours % 12 || 12;
+      const mm  = String(minutes).padStart(2, '0');
+      const ampm = hours < 12 ? 'am' : 'pm';
+      document.getElementById('live-clock').textContent = `${hh}:${mm}${ampm}`;
+
+      // Open/closed badge
+      const badge    = document.getElementById('open-status');
+      const isOpen   = hours >= h.open && hours < h.close;
+      badge.textContent    = isOpen ? 'OPEN NOW' : 'CLOSED';
+      badge.className      = 'status-badge ' + (isOpen ? 'open' : 'closed');
+    }
+
+    // ─── Init ───────────────────────────────────────────────────────
+    (function init() {
+      const today = new Date().getDay();
+
+      // Render today's pick on load
+      renderPick(today);
+
+      // Clock
+      updateClock();
+      setInterval(updateClock, 30000); // update every 30s
+
+      // Day navigator
+      document.querySelectorAll('.day-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          renderPick(parseInt(btn.dataset.day));
+        });
+      });
+    })();
+  </script>
+
+</body>
+</html>

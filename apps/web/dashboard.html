@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>fixmyslop — the anti-slop design engine</title>
+<meta name="description" content="Every AI builds the same website. This is the engine that fights back: fonts and colors scored by quality × low current-saturation, so anything trending mainstream auto-retires.">
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23eceae3"/><rect x="26" y="26" width="48" height="48" fill="%23c8175a"/></svg>'>
+<script>document.documentElement.classList.add('js')</script>
+<link rel="preconnect" href="https://api.fontshare.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=rowan@400,500&f[]=technor@400,500,600,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#eceae3; --panel:#f4f2eb; --panel-2:#e5e2d8;
+    --ink:#17150f; --ink-2:#57534a; --ink-3:#8a857a;
+    --rule:#cdc8bb; --rule-2:#ddd9cd;
+    --accent:#c8175a; --accent-deep:#a4124a;
+    --ok:#2f7d4f; --warn:#b8791a; --bad:#c02d21;
+    --display:"Rowan",Georgia,serif; --body:"Technor",system-ui,sans-serif; --mono:"Spline Sans Mono",ui-monospace,monospace;
+    --sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:24px;--sp-6:36px;--sp-7:56px;--sp-8:84px;--sp-9:120px;
+    --maxw:1180px; --e:cubic-bezier(.16,1,.3,1);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  ::selection{background:var(--accent);color:#fff}
+  a{color:inherit}
+  h1,h2,h3,h4{margin:0;font-weight:400;line-height:1}
+  p{margin:0}
+  .wrap{max-width:var(--maxw);margin-inline:auto;padding-inline:var(--sp-5)}
+  .mono{font-family:var(--mono)}
+  .band{border-top:1.5px solid var(--ink)}
+
+  /* masthead */
+  header.top{border-bottom:1.5px solid var(--ink);position:sticky;top:0;background:var(--paper);z-index:20}
+  header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-5);padding-block:var(--sp-3)}
+  .mark{font-family:var(--mono);font-weight:600;font-size:15px;letter-spacing:.02em;display:flex;align-items:center;gap:9px}
+  .mark .sq{width:12px;height:12px;background:var(--accent);display:inline-block}
+  nav{display:flex;gap:var(--sp-5);align-items:center;font-family:var(--mono);font-size:13px;letter-spacing:.03em}
+  nav a{text-decoration:none;color:var(--ink-2);border-bottom:2px solid transparent;padding-bottom:2px;transition:color .15s,border-color .15s}
+  nav a:hover{color:var(--ink);border-color:var(--accent)}
+  nav a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+  .btn{font-family:var(--mono);font-size:13px;letter-spacing:.04em;text-transform:uppercase;background:var(--accent);color:#fff;
+    border:1.5px solid var(--ink);padding:11px 20px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;
+    box-shadow:3px 3px 0 var(--ink);transition:transform .12s var(--e),background .15s}
+  .btn:hover{transform:translate(-1px,-1px);background:var(--accent-deep)}
+  .btn:active{transform:translate(2px,2px)}
+  .btn:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+  .btn.ghost{background:transparent;color:var(--ink)}
+  .btn.ghost:hover{background:var(--panel)}
+  .btn.sm{padding:7px 12px;box-shadow:2px 2px 0 var(--ink)}
+
+  /* hero */
+  .hero .wrap{padding-block:var(--sp-8) var(--sp-7)}
+  .kicker{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:10px;margin-bottom:var(--sp-5)}
+  .kicker::before{content:"";width:34px;height:2px;background:var(--accent)}
+  h1{font-family:var(--display);font-size:clamp(46px,8.2vw,104px);letter-spacing:-.015em;line-height:.98;max-width:15ch}
+  h1 em{font-style:italic;color:var(--accent)}
+  .lede{margin-top:var(--sp-6);font-size:clamp(18px,2.1vw,23px);color:var(--ink-2);max-width:60ch;line-height:1.45}
+  .lede b{color:var(--ink);font-weight:600}
+  .hero-cta{margin-top:var(--sp-6);display:flex;gap:var(--sp-4);flex-wrap:wrap;align-items:center}
+  .stat-row{margin-top:var(--sp-7);display:flex;gap:var(--sp-7);flex-wrap:wrap;border-top:1px solid var(--rule);padding-top:var(--sp-5)}
+  .stat .n{font-family:var(--display);font-size:34px;line-height:1}
+  .stat .l{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-top:6px}
+
+  /* section head */
+  .sec{padding-block:var(--sp-8)}
+  .sec-head{display:flex;align-items:baseline;gap:var(--sp-4);flex-wrap:wrap;margin-bottom:var(--sp-6)}
+  .sec-no{font-family:var(--mono);font-size:13px;color:var(--accent);letter-spacing:.08em}
+  h2{font-family:var(--display);font-size:clamp(30px,4.6vw,54px);letter-spacing:-.01em}
+  .sec-lede{font-family:var(--mono);font-size:13px;color:var(--ink-3);letter-spacing:.02em;line-height:1.6;margin-left:auto;max-width:40ch}
+
+  /* ---- Palette Lab ---- */
+  .lab{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1.5px solid var(--ink);background:var(--ink)}
+  .lab > div{background:var(--panel)}
+  .lab-controls{padding:var(--sp-6)}
+  .lab-preview{padding:0;border-left:1.5px solid var(--ink);display:flex;flex-direction:column}
+  .role{margin-bottom:var(--sp-5)}
+  .role-top{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);margin-bottom:var(--sp-2)}
+  .role-name{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)}
+  .verdict{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border:1.5px solid var(--ink);font-weight:500}
+  .verdict[data-v="SAFE"],.verdict[data-v="NEUTRAL-ok"]{background:var(--ok);color:#fff;border-color:var(--ok)}
+  .verdict[data-v="OVERUSED"]{background:var(--warn);color:#fff;border-color:var(--warn)}
+  .verdict[data-v="HARD-BANNED"]{background:var(--bad);color:#fff;border-color:var(--bad)}
+  .swatch-row{display:flex;gap:var(--sp-3);align-items:stretch}
+  .swatch{width:52px;flex:0 0 52px;border:1.5px solid var(--ink);cursor:pointer;position:relative;overflow:hidden}
+  .swatch input[type=color]{position:absolute;inset:-4px;width:calc(100% + 8px);height:calc(100% + 8px);border:0;padding:0;cursor:pointer;opacity:0}
+  .hexin{flex:1;font-family:var(--mono);font-size:16px;border:1.5px solid var(--ink);background:var(--paper);padding:0 12px;color:var(--ink);text-transform:lowercase}
+  .hexin:focus{outline:2px solid var(--accent);outline-offset:1px}
+  .reason{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);line-height:1.5;margin-top:8px;min-height:1.5em}
+  .fixes{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .fix{font-family:var(--mono);font-size:11px;border:1px solid var(--ink);background:var(--paper);padding:4px 7px 4px 4px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .12s}
+  .fix:hover{background:var(--accent);color:#fff}
+  .fix .chip{width:13px;height:13px;border:1px solid rgba(0,0,0,.3);display:inline-block}
+
+  .composite{margin-top:var(--sp-5);border-top:1.5px solid var(--ink);padding-top:var(--sp-5);display:flex;align-items:center;gap:var(--sp-4);flex-wrap:wrap}
+  .bigverdict{font-family:var(--display);font-size:40px;line-height:1}
+  .bigverdict.pass{color:var(--ok)} .bigverdict.fail{color:var(--bad)}
+  .meta-mono{font-family:var(--mono);font-size:12px;color:var(--ink-2);line-height:1.6}
+
+  /* live preview pane uses the chosen palette via CSS vars set in JS */
+  .pv{--g:#eceae3;--i:#17150f;--a:#c8175a;background:var(--g);color:var(--i);flex:1;padding:var(--sp-6);display:flex;flex-direction:column;justify-content:center;gap:var(--sp-4);transition:background .2s,color .2s}
+  .pv .pv-kick{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--a)}
+  .pv .pv-h{font-family:var(--display);font-size:clamp(28px,4vw,44px);line-height:1;max-width:12ch}
+  .pv .pv-h em{color:var(--a);font-style:italic}
+  .pv .pv-p{font-size:15px;opacity:.8;max-width:34ch;line-height:1.5}
+  .pv .pv-btn{align-self:flex-start;font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.05em;background:var(--a);color:#fff;padding:9px 16px;border:1.5px solid var(--i)}
+  .pv .pv-tag{display:inline-block;font-family:var(--mono);font-size:11px;border:1.5px solid var(--a);color:var(--a);padding:3px 8px;align-self:flex-start}
+  .pv-label{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);padding:var(--sp-3) var(--sp-6);border-bottom:1px solid var(--rule);background:var(--panel)}
+
+  /* ---- Type foundry ---- */
+  .foundry{display:grid;grid-template-columns:1.2fr .8fr;gap:var(--sp-6)}
+  .specimen{border:1.5px solid var(--ink);background:var(--panel);padding:var(--sp-6);box-shadow:5px 5px 0 rgba(23,21,15,.13)}
+  .spec-meta{display:flex;justify-content:space-between;align-items:baseline;gap:var(--sp-4);border-bottom:1px solid var(--rule);padding-bottom:var(--sp-3);margin-bottom:var(--sp-5);font-family:var(--mono);font-size:12px;color:var(--ink-3)}
+  .spec-display{font-size:clamp(40px,6vw,76px);line-height:.98;letter-spacing:-.01em;margin-bottom:var(--sp-4);word-break:break-word}
+  .spec-body{font-size:18px;line-height:1.55;color:var(--ink-2);max-width:52ch}
+  .spec-tags{margin-top:var(--sp-5);display:flex;gap:var(--sp-3);flex-wrap:wrap;font-family:var(--mono);font-size:11px}
+  .tag{border:1px solid var(--ink);padding:4px 9px;letter-spacing:.04em}
+  .tag.fresh{background:var(--ok);color:#fff;border-color:var(--ok)}
+  .foundry-side{display:flex;flex-direction:column;gap:var(--sp-5)}
+  .panelbox{border:1.5px solid var(--ink);background:var(--panel);padding:var(--sp-5)}
+  .panelbox h4{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);margin-bottom:var(--sp-3)}
+  .checkrow{display:flex;gap:var(--sp-3)}
+  .checkrow input{flex:1;font-family:var(--mono);font-size:15px;border:1.5px solid var(--ink);background:var(--paper);padding:9px 12px}
+  .checkrow input:focus{outline:2px solid var(--accent);outline-offset:1px}
+  .fontverdict{margin-top:var(--sp-3);font-family:var(--mono);font-size:12.5px;line-height:1.5}
+  .fontverdict .v{font-weight:600}
+  .altlist{margin-top:var(--sp-3);font-family:var(--mono);font-size:12px;color:var(--ink-2);line-height:1.7}
+  .altlist b{color:var(--ink)}
+
+  /* structure cards */
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-5)}
+  .card{border:1.5px solid var(--ink);background:var(--panel);padding:var(--sp-5)}
+  .card .cn{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.06em;margin-bottom:var(--sp-3)}
+  .card h3{font-family:var(--display);font-size:26px;margin-bottom:var(--sp-3);line-height:1.05}
+  .card p{font-size:15px;color:var(--ink-2)}
+  .vizcard{text-decoration:none;display:flex;flex-direction:column;transition:transform .14s var(--e),box-shadow .14s var(--e),border-color .14s}
+  .vizcard:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--ink);border-color:var(--accent)}
+  .vizcard:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+  .vizcard .vizgo{margin-top:auto;padding-top:var(--sp-4);font-family:var(--mono);font-size:12px;letter-spacing:.04em;color:var(--accent)}
+  .viz-cards{grid-template-columns:repeat(3,1fr)}
+  @media(max-width:900px){.viz-cards{grid-template-columns:1fr}}
+
+  /* MCP */
+  .mcp{border:1.5px solid var(--ink);background:var(--ink);color:var(--paper);padding:var(--sp-7)}
+  .mcp h2{color:var(--paper)}
+  .mcp .sec-lede{color:#b3ad9f}
+  .mcp-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-6);margin-top:var(--sp-5)}
+  .mcp-tools{font-family:var(--mono);font-size:13px;line-height:2}
+  .mcp-tools .t{color:var(--accent)}
+  pre{margin:0;font-family:var(--mono);font-size:12.5px;line-height:1.65;background:#0f0e0a;border:1px solid #333029;padding:var(--sp-5);overflow-x:auto;color:#d8d4c8}
+  pre .k{color:#e592b0}
+  .copy{margin-top:var(--sp-3)}
+
+  footer{border-top:1.5px solid var(--ink)}
+  footer .wrap{padding-block:var(--sp-7);display:flex;justify-content:space-between;gap:var(--sp-6);flex-wrap:wrap}
+  footer .big{font-family:var(--display);font-size:clamp(24px,3vw,34px);max-width:20ch;line-height:1.1}
+  .fmeta{font-family:var(--mono);font-size:12px;color:var(--ink-3);line-height:1.8}
+
+  @media(max-width:900px){
+    .lab{grid-template-columns:1fr} .lab-preview{border-left:0;border-top:1.5px solid var(--ink)}
+    .foundry{grid-template-columns:1fr} .cards{grid-template-columns:1fr} .mcp-grid{grid-template-columns:1fr}
+    .sec-lede{margin-left:0}
+  }
+  @media(max-width:560px){ nav .nl{display:none} h1{font-size:clamp(38px,12vw,60px)} }
+
+  @media(prefers-reduced-motion:no-preference){
+    html.js .rev{opacity:0;transform:translateY(14px)}
+    html.js .rev.in{opacity:1;transform:none;transition:opacity .5s var(--e),transform .5s var(--e)}
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="mark"><span class="sq"></span>fixmyslop</div>
+    <nav>
+      <a class="nl" href="#lab">Palette Lab</a>
+      <a class="nl" href="#type">Type</a>
+      <a class="nl" href="#structure">Structure</a>
+      <a class="nl" href="#viz">Viz</a>
+      <a class="nl" href="#mcp">MCP</a>
+      <a class="nl" href="./">Demo</a>
+      <a class="btn sm" href="#lab">Open the Lab</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<section class="hero">
+  <div class="wrap">
+    <p class="kicker">The anti-slop design engine</p>
+    <h1>Every AI builds the <em>same</em> website. This is the engine that fights back.</h1>
+    <p class="lede">Fonts and colors scored as <b>quality × low current-saturation</b> — measured against
+      1,279 real AI-product sites. Anything trending toward the mainstream <b>auto-retires</b>. Nothing is
+      ever a fixed "good list"; the feedback loop is the product.</p>
+    <div class="hero-cta">
+      <a class="btn" href="#lab">Open the Palette Lab →</a>
+      <a class="btn ghost" href="./">Watch the Slop-o-meter →</a>
+      <a class="btn ghost" href="#mcp">Connect via MCP</a>
+    </div>
+    <div class="stat-row">
+      <div class="stat"><div class="n" id="stat-fonts">2,075</div><div class="l">fonts indexed</div></div>
+      <div class="stat"><div class="n">1,279</div><div class="l">AI sites crawled</div></div>
+      <div class="stat"><div class="n" id="stat-corpus">1,971</div><div class="l">corpus colors</div></div>
+      <div class="stat"><div class="n">6</div><div class="l">hard-banned bands</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec band" id="lab">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-no">01</span><h2>The Palette Lab</h2>
+      <p class="sec-lede">Type any hex. Every color is scored against the empirical corpus in real time — banned bands, brand-clones, and crowded zones — with an escape route out.</p>
+    </div>
+    <div class="lab">
+      <div class="lab-controls" id="lab-controls">
+        <!-- roles injected -->
+        <div class="composite" id="composite"></div>
+      </div>
+      <div class="lab-preview">
+        <div class="pv-label">Live preview — your palette, applied</div>
+        <div class="pv" id="pv">
+          <span class="pv-kick">Fintech · AI · SaaS</span>
+          <div class="pv-h">Ship something <em>nobody</em> has seen.</div>
+          <p class="pv-p">This card repaints from your three colors. If the palette passes, this is a page that doesn't look generated.</p>
+          <span class="pv-tag">v1.0 · shipping</span>
+          <span class="pv-btn">Get started</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec band" id="type">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-no">02</span><h2>The Type Foundry</h2>
+      <p class="sec-lede">Fresh display + body pairings from indie foundries off the AI monoculture. Roll one, or audit a font you're already using.</p>
+    </div>
+    <div class="foundry">
+      <div class="specimen" id="specimen">
+        <div class="spec-meta"><span id="spec-name">—</span><span id="spec-rank"></span></div>
+        <div class="spec-display" id="spec-display">Typographic voice, restored.</div>
+        <div class="spec-body" id="spec-body">The quick brown fox jumps over the lazy dog. 0123456789. A distinctive body face carries running text without collapsing into the same three grotesques every model reaches for.</div>
+        <div class="spec-tags" id="spec-tags"></div>
+      </div>
+      <div class="foundry-side">
+        <div class="panelbox">
+          <h4>Fresh pairing</h4>
+          <p class="meta-mono" id="pairing-note" style="margin-bottom:12px">—</p>
+          <button class="btn" id="roll" style="width:100%;justify-content:center">Roll a new pairing ↻</button>
+        </div>
+        <div class="panelbox">
+          <h4>Check a font</h4>
+          <div class="checkrow">
+            <input id="fontq" placeholder="e.g. Inter, Satoshi…" spellcheck="false">
+            <button class="btn sm" id="fontgo">Check</button>
+          </div>
+          <div class="fontverdict" id="fontverdict"></div>
+          <div class="altlist" id="fontalts"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec band" id="structure">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-no">03</span><h2>Structure, not templates</h2>
+      <p class="sec-lede">The layout is slop too. Refuse the split-hero + three-cards reflex — start from an archetype grounded in the subject.</p>
+    </div>
+    <div class="cards">
+      <div class="card"><div class="cn">ARCHETYPE / 01</div><h3>The Instrument</h3><p>A working, data-driven component the page is remembered for — a computed gauge, a live waterfall, a specimen — not a hero image.</p></div>
+      <div class="card"><div class="cn">ARCHETYPE / 02</div><h3>The Editorial Grid</h3><p>Asymmetric magazine columns, a dominant display face, and real hierarchy — instead of centered hero + evenly-spaced cards.</p></div>
+      <div class="card"><div class="cn">ARCHETYPE / 03</div><h3>The Ledger</h3><p>Dense, structural, tabular. Rules and columns doing the work. Reads as a designed object, not a landing-page kit.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec band" id="viz">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-no">04</span><h2>The Visual Field</h2>
+      <p class="sec-lede">The engine, made visible. Every crawl and every metric, plotted — the maps the recommender actually reasons over.</p>
+    </div>
+    <div class="cards viz-cards">
+      <a class="card vizcard" href="./viz/font-map.html" target="_blank" rel="noopener">
+        <div class="cn">FONTS / SIMILARITY</div>
+        <h3>The Font Field</h3>
+        <p>2,075 typefaces plotted by visual similarity (DINOv2 embeddings). The monoculture clusters; the fresh picks sit in the open.</p>
+        <span class="vizgo">Open map →</span>
+      </a>
+      <a class="card vizcard" href="./viz/color-lanes.html" target="_blank" rel="noopener">
+        <div class="cn">COLOR / SATURATION</div>
+        <h3>Color Slop Lanes</h3>
+        <p>Every hue ranked by how crowded it is in real AI sites — the banned bands flagged, the open lanes still worth reaching for.</p>
+        <span class="vizgo">Open ranking →</span>
+      </a>
+      <a class="card vizcard" href="./viz/slop-density.html" target="_blank" rel="noopener">
+        <div class="cn">COLOR / DENSITY</div>
+        <h3>The Density Field</h3>
+        <p>The KDE heatmap in OKLab space — the crowded zones everyone keeps reaching for, and the cool regions nobody has claimed.</p>
+        <span class="vizgo">Open heatmap →</span>
+      </a>
+      <a class="card vizcard" href="./viz/color-space.html" target="_blank" rel="noopener">
+        <div class="cn">COLOR / SPACE</div>
+        <h3>The OKLab Space</h3>
+        <p>The full perceptual color space, with the corpus and the framework defaults located inside it. Rotate through where slop lives.</p>
+        <span class="vizgo">Open space →</span>
+      </a>
+      <a class="card vizcard" href="./viz/sites-gates.html" target="_blank" rel="noopener">
+        <div class="cn">STRUCTURE / CORPUS</div>
+        <h3>Sites Across the Gates</h3>
+        <p>The crawled AI-product sites, scored against every gate at once — the layout, color and type tells, site by site.</p>
+        <span class="vizgo">Open corpus →</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="sec band" id="mcp">
+  <div class="wrap">
+    <div class="mcp">
+      <div class="sec-head">
+        <span class="sec-no" style="color:var(--accent)">05</span><h2>Query it from your LLM</h2>
+        <p class="sec-lede">Point any MCP-capable model at the engine. It asks for fresh fonts and non-slop colors mid-build — and gets answers grounded in this week's crawl.</p>
+      </div>
+      <div class="mcp-grid">
+        <div>
+          <div class="mcp-tools">
+            <div><span class="t">explore_directions</span>(brief) → several distinct, non-slop directions</div>
+            <div><span class="t">design_system</span>(brief) → full token system: color · type · space · radius · motion</div>
+            <div><span class="t">style_genome</span>(intent) → one complete design genome</div>
+            <div><span class="t">check_color</span>(hex) · <span class="t">generate_palette</span> → verdicts + non-slop palettes</div>
+            <div><span class="t">suggest_fonts</span>(n) · <span class="t">check_font</span>(family) → fresh pairings + slop check</div>
+            <div><span class="t">suggest_layout</span> · <span class="t">structure_ideas</span>(brief) → layout archetypes</div>
+            <div><span class="t">audit_system</span>(html) → find &amp; fix slop in an existing design</div>
+            <div style="opacity:.55;font-size:.9em">…25 tools in all — plus spacing / radius / shadow / motion scales, font_neighbors &amp; more</div>
+          </div>
+        </div>
+        <div>
+          <pre id="mcpcfg"><span class="k">"fixmyslop"</span>: {
+  <span class="k">"url"</span>: "https://fixmyslop.bihanikeshav.workers.dev/mcp"
+}</pre>
+          <button class="btn sm ghost copy" id="copycfg" style="color:var(--paper);border-color:var(--paper)">Copy config</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="big">Free &amp; open. The anti-inductive engine against design homogeneity.</div>
+    <div class="fmeta">
+      Palette Lab · Type Foundry · MCP<br>
+      Corpus refreshed from 1,279 AI-product sites<br>
+      Fonts: Google · Fontshare · Velvetyne · Uncut<br>
+      © 2026 fixmyslop
+    </div>
+  </div>
+</footer>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>

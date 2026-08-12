@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vertex Bouldering</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@100..900&family=Big+Shoulders+Text:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+  /* ── Reset & tokens ─────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink:        #111111;
+    --ground:     #F4F1EC;   /* warm off-white — plywood/chalk dust tint */
+    --accent:     #00C840;   /* route-tape green: V-grade color system */
+    --mid:        #5A5650;   /* chalk-grey body */
+    --rule:       #D4CFC8;
+
+    /* Grade ring colors — real V-scale tape palette */
+    --grade-0:  #00C840;   /* V0–V1: green */
+    --grade-1:  #F5E000;   /* V2–V3: yellow */
+    --grade-2:  #FF7A00;   /* V4–V5: orange */
+    --grade-3:  #E02020;   /* V6–V7: red */
+    --grade-4:  #1A6FE8;   /* V8–V9: blue */
+    --grade-5:  #111111;   /* V10+:  black */
+
+    --font-display: 'Big Shoulders Display', sans-serif;
+    --font-body:    'Big Shoulders Text', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Hero layout: single massive centered object ──── */
+  .hero {
+    min-height: 100svh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    grid-template-columns: 1fr;
+    padding: 0;
+  }
+
+  /* ── Condensed vertical masthead — left rail ────── */
+  .masthead {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 72px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 0;
+    z-index: 10;
+    border-right: 1px solid var(--rule);
+    background: var(--ground);
+  }
+
+  .gym-name {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 3rem;
+    line-height: 0.88;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .gym-tagline {
+    margin-top: 1.5rem;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--mid);
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+  }
+
+  /* ── Main stage ──────────────────────────────────── */
+  .stage {
+    margin-left: 72px;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 2rem 2rem;
+    position: relative;
+  }
+
+  /* ── The Setter's Wheel ─────────────────────────── */
+  .wheel-wrap {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  .wheel-label {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.7rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--mid);
+  }
+
+  #setters-wheel {
+    display: block;
+    width: min(520px, calc(100vw - 120px));
+    height: min(520px, calc(100vw - 120px));
+    filter: drop-shadow(0 2px 0 rgba(0,0,0,0.08));
+  }
+
+  .wheel-caption {
+    max-width: 420px;
+    text-align: center;
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    color: var(--mid);
+    line-height: 1.55;
+  }
+
+  .wheel-caption strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  /* ── Reset date strip ───────────────────────────── */
+  .reset-strip {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1.25rem;
+    border: 1px solid var(--rule);
+    background: #fff;
+  }
+
+  .reset-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .reset-text {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+
+  .reset-time {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 0.8rem;
+    color: var(--mid);
+    letter-spacing: 0.04em;
+  }
+
+  /* ── CTA ─────────────────────────────────────────── */
+  .cta-row {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 1rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: none;
+    padding: 0.85rem 2.25rem;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: background 0.15s ease-out, transform 0.1s ease-out;
+  }
+
+  .btn-primary:hover {
+    background: #00a832;
+    transform: translateY(-1px);
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--ink);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: 1.5px solid var(--ink);
+    padding: 0.85rem 2.25rem;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: border-color 0.15s ease-out;
+  }
+
+  .btn-secondary:hover { border-color: var(--mid); color: var(--mid); }
+
+  /* ── Supporting section: Community board ──────── */
+  .community {
+    margin-left: 72px;
+    border-top: 1px solid var(--rule);
+    padding: 4rem 3rem 5rem;
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 4rem;
+    align-items: start;
+  }
+
+  .community-label {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 3.5rem;
+    line-height: 0.9;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    position: sticky;
+    top: 2rem;
+  }
+
+  .community-label span {
+    display: block;
+    font-weight: 400;
+    font-size: 0.8rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--mid);
+    margin-top: 0.75rem;
+  }
+
+  .routes-grid {
+    display: grid;
+    gap: 0;
+  }
+
+  .route-row {
+    display: grid;
+    grid-template-columns: 3rem 1fr auto;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 0.9rem 0;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .route-row:first-child { border-top: 1px solid var(--rule); }
+
+  .grade-swatch {
+    width: 2.25rem;
+    height: 2.25rem;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+  }
+
+  .grade-swatch.g0 { background: var(--grade-0); color: #fff; }
+  .grade-swatch.g1 { background: var(--grade-1); color: #111; }
+  .grade-swatch.g2 { background: var(--grade-2); color: #fff; }
+  .grade-swatch.g3 { background: var(--grade-3); color: #fff; }
+  .grade-swatch.g4 { background: var(--grade-4); color: #fff; }
+  .grade-swatch.g5 { background: var(--grade-5); color: #fff; }
+
+  .route-info { min-width: 0; }
+
+  .route-name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+    line-height: 1;
+  }
+
+  .route-detail {
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    color: var(--mid);
+    margin-top: 0.2rem;
+  }
+
+  .route-age {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    color: var(--mid);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  /* ── Café aside ──────────────────────────────────── */
+  .cafe-strip {
+    margin-left: 72px;
+    border-top: 1px solid var(--rule);
+    padding: 2rem 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .cafe-text {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 1.8rem;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+
+  .cafe-text em {
+    font-style: normal;
+    color: var(--accent);
+  }
+
+  .cafe-sub {
+    font-family: var(--font-body);
+    font-size: 0.88rem;
+    color: var(--mid);
+    max-width: 340px;
+    margin-top: 0.3rem;
+  }
+
+  .hours-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .hours-row {
+    display: flex;
+    gap: 1.5rem;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 0.8rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 0.35rem;
+  }
+
+  .hours-row .day { color: var(--mid); width: 6rem; }
+  .hours-row .time { color: var(--ink); }
+
+  /* ── Responsive tweaks ──────────────────────────── */
+  @media (max-width: 640px) {
+    .masthead { width: 48px; }
+    .gym-name { font-size: 2rem; }
+    .stage { margin-left: 48px; padding: 2rem 1rem; }
+    .community { margin-left: 48px; grid-template-columns: 1fr; gap: 2rem; padding: 2.5rem 1.25rem 3rem; }
+    .community-label { position: static; }
+    .cafe-strip { margin-left: 48px; flex-direction: column; align-items: flex-start; padding: 2rem 1.25rem; }
+  }
+
+  @media (max-width: 400px) {
+    .masthead { display: none; }
+    .stage, .community, .cafe-strip { margin-left: 0; }
+  }
+
+  /* ── Reduced-motion ─────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .setter-hand { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Condensed vertical rail: gym name ──────────── -->
+<aside class="masthead" aria-label="Gym name">
+  <div class="gym-name">Vertex</div>
+  <div class="gym-tagline">Bouldering</div>
+</aside>
+
+<!-- ── Hero: The Setter's Wheel ─────────────────── -->
+<main class="hero">
+  <div class="stage">
+    <div class="wheel-wrap">
+      <div class="wheel-label">The Setter's Wheel — this week's route set</div>
+
+      <!--
+        The Setter's Wheel:
+        - SVG pie ring showing the grade distribution of this week's problems
+        - Inner "clock hand" sweeps from Monday morning (reset day) to now
+        - Segments are proportional to number of problems per grade band
+        - Data: static representative set (real gym would pull from API)
+        - The hand position is computed from real day-of-week + time-of-day
+      -->
+      <svg id="setters-wheel"
+           viewBox="0 0 400 400"
+           aria-label="The Setter's Wheel: this week's grade distribution at Vertex. Green: 14 problems V0–V1. Yellow: 12 problems V2–V3. Orange: 9 problems V4–V5. Red: 6 problems V6–V7. Blue: 4 problems V8–V9. Black: 2 problems V10 plus."
+           role="img">
+        <defs>
+          <!-- Subtle ground for the center disc -->
+          <filter id="f-soft" x="-10%" y="-10%" width="120%" height="120%">
+            <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#111" flood-opacity="0.10"/>
+          </filter>
+        </defs>
+
+        <!-- Grade ring segments — drawn as arcs -->
+        <!-- Total problems: 14+12+9+6+4+2 = 47 -->
+        <!-- Each segment arc start/end computed to full 360° -->
+
+        <!-- V0–V1: green  14/47 = 107.2° start=0° -->
+        <path id="seg-0" d="" fill="#00C840"/>
+        <!-- V2–V3: yellow 12/47 = 91.9° -->
+        <path id="seg-1" d="" fill="#F5E000"/>
+        <!-- V4–V5: orange  9/47 = 68.9° -->
+        <path id="seg-2" d="" fill="#FF7A00"/>
+        <!-- V6–V7: red     6/47 = 45.96° -->
+        <path id="seg-3" d="" fill="#E02020"/>
+        <!-- V8–V9: blue    4/47 = 30.64° -->
+        <path id="seg-4" d="" fill="#1A6FE8"/>
+        <!-- V10+:  black   2/47 = 15.32° -->
+        <path id="seg-5" d="" fill="#111111"/>
+
+        <!-- Donut hole -->
+        <circle cx="200" cy="200" r="110" fill="var(--ground)" filter="url(#f-soft)"/>
+
+        <!-- Tick marks at each segment boundary -->
+        <g id="ticks" stroke="var(--ground)" stroke-width="2.5" fill="none"/>
+
+        <!-- Grade labels on ring -->
+        <g id="ring-labels" font-family="'Big Shoulders Display', sans-serif" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="middle"/>
+
+        <!-- Center: day + reset info -->
+        <text x="200" y="182"
+              font-family="'Big Shoulders Display', sans-serif"
+              font-weight="900"
+              font-size="42"
+              fill="var(--ink)"
+              text-anchor="middle"
+              dominant-baseline="middle"
+              id="center-day">MON</text>
+        <text x="200" y="217"
+              font-family="'Big Shoulders Text', sans-serif"
+              font-weight="600"
+              font-size="13"
+              fill="var(--mid)"
+              text-anchor="middle"
+              dominant-baseline="middle">RESET DAY</text>
+        <text x="200" y="238"
+              font-family="'Big Shoulders Display', sans-serif"
+              font-weight="700"
+              font-size="13"
+              fill="var(--ink)"
+              text-anchor="middle"
+              dominant-baseline="middle"
+              id="center-count">47 PROBLEMS</text>
+
+        <!-- Setter's hand: arrow pointing to active segment -->
+        <g id="hand-group" transform-origin="200 200">
+          <!-- Stem -->
+          <line id="hand-line"
+                x1="200" y1="200"
+                x2="200" y2="115"
+                stroke="var(--ink)"
+                stroke-width="3"
+                stroke-linecap="round"/>
+          <!-- Arrowhead -->
+          <polygon id="hand-tip"
+                   points="200,108 195,120 205,120"
+                   fill="var(--ink)"/>
+          <!-- Center pivot dot -->
+          <circle cx="200" cy="200" r="6" fill="var(--ink)"/>
+          <circle cx="200" cy="200" r="3" fill="var(--ground)"/>
+        </g>
+
+        <!-- Outer ring stroke -->
+        <circle cx="200" cy="200" r="184" fill="none" stroke="var(--rule)" stroke-width="1"/>
+        <circle cx="200" cy="200" r="110" fill="none" stroke="var(--rule)" stroke-width="1"/>
+      </svg>
+
+      <!-- Reset status -->
+      <div class="reset-strip" id="reset-strip" aria-live="polite">
+        <div class="reset-dot"></div>
+        <div class="reset-text" id="reset-label">Next reset in</div>
+        <div class="reset-time" id="reset-countdown">loading…</div>
+      </div>
+
+      <p class="wheel-caption">
+        Routes are colour-graded and replaced every Monday.
+        The hand sweeps through the week as the setter's session unfolds.
+        <strong>47 problems across 6 grades</strong> — fresh as of this morning.
+      </p>
+
+      <div class="cta-row">
+        <a href="#community" class="btn-primary">See this week's set</a>
+        <a href="#" class="btn-secondary">Day pass · £12</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ── Community board: route list ─────────────── -->
+<section class="community" id="community" aria-label="This week's routes">
+  <div class="community-label">
+    This<br>Week
+    <span>Set Mon 02 Jun 2025</span>
+  </div>
+
+  <div class="routes-grid" role="list" aria-label="New routes this week">
+
+    <div class="route-row" role="listitem">
+      <div class="grade-swatch g5" aria-label="V10 plus">V10+</div>
+      <div class="route-info">
+        <div class="route-name">The Coffin Corner</div>
+        <div class="route-detail">Compression start on a sloper shelf. No beta yet.</div>
+      </div>
+      <div class="route-age">Day 1</div>
+    </div>
+
+    <div class="route-row" role="listitem">
+      <div class="grade-swatch g4" aria-label="V8 to V9">V8–9</div>
+      <div class="route-info">
+        <div class="route-name">Elbow Politics</div>
+        <div class="route-detail">Overhanging rail. Shoulder-flag crux on the second move.</div>
+      </div>
+      <div class="route-age">Day 1</div>
+    </div>
+
+    <div class="route-row" role="listitem">
+      <div class="grade-swatch g3" aria-label="V6 to V7">V6–7</div>
+      <div class="route-info">
+        <div class="route-name">The Persuader</div>
+        <div class="route-detail">Three moves of pure friction on the 40° board.</div>
+      </div>
+      <div class="route-age">Day 1</div>
+    </div>
+
+    <div class="route-row" role="listitem">
+      <div class="grade-swatch g2" aria-label="V4 to V5">V4–5</div>
+      <div class="route-info">
+        <div class="route-name">Tuesday's Child</div>
+        <div class="route-detail">Slopers all the way. Core tension is the key.</div>
+      </div>
+      <div class="route-age">Day 1</div>
+    </div>
+
+    <div class="route-row" role="listitem">
+      <div class="grade-swatch g1" aria-label="V2 to V3">V2–3</div>
+      <div class="route-info">
+        <div class="route-name">Jug Life</div>
+        <div class="route-detail">Positive holds, powerful sequence. Great for progression.</div>
+      </div>
+      <div class="route-age">Day 1</div>
+    </div>
+
+    <div class="route-row" role="listitem">
+      <div class="grade-swatch g0" aria-label="V0 to V1">V0–1</div>
+      <div class="route-info">
+        <div class="route-name">The Welcome Mat</div>
+        <div class="route-detail">Introductory traverse. All levels, any height.</div>
+      </div>
+      <div class="route-age">Day 1</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── Café ─────────────────────────────────────── -->
+<section class="cafe-strip" aria-label="Café and hours">
+  <div>
+    <div class="cafe-text">Chalk &amp; <em>Coffee</em></div>
+    <div class="cafe-sub">
+      The corner café runs on the same ethos as the walls.
+      Espresso pulled while you project. We don't rush anyone.
+    </div>
+  </div>
+  <div class="hours-list" aria-label="Opening hours">
+    <div class="hours-row">
+      <span class="day">Mon – Fri</span>
+      <span class="time">07:00 – 22:00</span>
+    </div>
+    <div class="hours-row">
+      <span class="day">Saturday</span>
+      <span class="time">08:00 – 21:00</span>
+    </div>
+    <div class="hours-row">
+      <span class="day">Sunday</span>
+      <span class="time">09:00 – 20:00</span>
+    </div>
+  </div>
+</section>
+
+
+<!-- ── The Setter's Wheel: live SVG computation ── -->
+<script>
+(function () {
+  'use strict';
+
+  /* ── Grade data ──────────────────────────────────
+     count: number of problems this week at this band
+     label: display text on the ring
+     colour: fill (matches CSS vars)
+  ─────────────────────────────────────────────── */
+  const grades = [
+    { label: 'V0–1', count: 14, fill: '#00C840', textFill: '#fff'  },
+    { label: 'V2–3', count: 12, fill: '#F5E000', textFill: '#111'  },
+    { label: 'V4–5', count:  9, fill: '#FF7A00', textFill: '#fff'  },
+    { label: 'V6–7', count:  6, fill: '#E02020', textFill: '#fff'  },
+    { label: 'V8–9', count:  4, fill: '#1A6FE8', textFill: '#fff'  },
+    { label: 'V10+', count:  2, fill: '#111111', textFill: '#fff'  },
+  ];
+
+  const total = grades.reduce((s, g) => s + g.count, 0);
+
+  /* ── SVG arc helper ───────────────────────────── */
+  const cx = 200, cy = 200, OR = 184, IR = 112; // outer/inner radius
+
+  function polar(angleDeg, r) {
+    const rad = (angleDeg - 90) * Math.PI / 180; // 0° = top
+    return [cx + r * Math.cos(rad), cy + r * Math.sin(rad)];
+  }
+
+  function arcPath(startDeg, endDeg) {
+    const [x1, y1] = polar(startDeg, OR);
+    const [x2, y2] = polar(endDeg,   OR);
+    const [x3, y3] = polar(endDeg,   IR);
+    const [x4, y4] = polar(startDeg, IR);
+    const large = (endDeg - startDeg) > 180 ? 1 : 0;
+    return [
+      `M ${x1} ${y1}`,
+      `A ${OR} ${OR} 0 ${large} 1 ${x2} ${y2}`,
+      `L ${x3} ${y3}`,
+      `A ${IR} ${IR} 0 ${large} 0 ${x4} ${y4}`,
+      'Z'
+    ].join(' ');
+  }
+
+  /* ── Draw segments ───────────────────────────── */
+  const segIds = ['seg-0','seg-1','seg-2','seg-3','seg-4','seg-5'];
+  const ticks  = document.getElementById('ticks');
+  const labels = document.getElementById('ring-labels');
+
+  let cursor = 0;
+  grades.forEach((g, i) => {
+    const sweep  = (g.count / total) * 360;
+    const end    = cursor + sweep;
+    const mid    = cursor + sweep / 2;
+    const segEl  = document.getElementById(segIds[i]);
+
+    if (segEl) segEl.setAttribute('d', arcPath(cursor, end));
+
+    /* Tick mark at segment start */
+    const [tx1, ty1] = polar(cursor, IR - 2);
+    const [tx2, ty2] = polar(cursor, OR + 2);
+    const tick = document.createElementNS('http://www.w3.org/2000/svg','line');
+    tick.setAttribute('x1', tx1); tick.setAttribute('y1', ty1);
+    tick.setAttribute('x2', tx2); tick.setAttribute('y2', ty2);
+    ticks.appendChild(tick);
+
+    /* Grade label at mid-arc */
+    const labelR = (OR + IR) / 2;
+    const [lx, ly] = polar(mid, labelR);
+    const text = document.createElementNS('http://www.w3.org/2000/svg','text');
+    text.setAttribute('x', lx);
+    text.setAttribute('y', ly);
+    text.setAttribute('fill', g.textFill);
+    text.setAttribute('font-size', sweep > 45 ? '13' : '11');
+    text.textContent = g.label;
+    labels.appendChild(text);
+
+    cursor = end;
+  });
+
+  /* Final tick at 360° (= 0°) */
+  /* already at 0°, skip duplicate */
+
+  /* ── Compute setter's hand position ──────────────
+     Resets every Monday 06:00 (gym opens for setting).
+     Sweeps through the week: Mon 06:00 = 0°, Sun 22:00 ≈ full sweep.
+     Week window: 7 days × 16 usable hours = 112 h
+     We map the elapsed hours within that window to 0–360°.
+  ─────────────────────────────────────────────────── */
+  function computeHandAngle() {
+    const now   = new Date();
+    const day   = now.getDay();            // 0=Sun, 1=Mon … 6=Sat
+    const hour  = now.getHours() + now.getMinutes() / 60;
+
+    /* Days elapsed since last Monday 06:00 */
+    const daysSinceMon = (day === 0 ? 6 : day - 1); // Mon=0 … Sun=6
+    const hoursElapsed = daysSinceMon * 24 + Math.max(0, hour - 6);
+
+    /* Total span: Mon 06:00 to Mon 05:59 next week = 168 h */
+    const totalHours   = 168;
+    const fraction     = Math.min(1, Math.max(0, hoursElapsed / totalHours));
+
+    return fraction * 360;
+  }
+
+  function applyHandAngle(angle) {
+    const handGroup = document.getElementById('hand-group');
+    if (handGroup) {
+      handGroup.setAttribute('transform', `rotate(${angle}, 200, 200)`);
+    }
+  }
+
+  /* ── Update center text with real day ──────────── */
+  function updateCenter() {
+    const dayNames = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+    const now      = new Date();
+    const dayEl    = document.getElementById('center-day');
+    if (dayEl) dayEl.textContent = dayNames[now.getDay()];
+  }
+
+  /* ── Reset countdown ─────────────────────────────
+     Next Monday 06:00
+  ─────────────────────────────────────────────────── */
+  function nextMonday6am() {
+    const now = new Date();
+    const d   = new Date(now);
+    const day = d.getDay();
+    const daysUntilMon = day === 1 ? (d.getHours() < 6 ? 0 : 7) : (8 - day) % 7;
+    d.setDate(d.getDate() + daysUntilMon);
+    d.setHours(6, 0, 0, 0);
+    return d;
+  }
+
+  function formatCountdown(ms) {
+    if (ms <= 0) return 'routes reset now';
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    if (h >= 48) {
+      const days = Math.floor(h / 24);
+      return `${days}d ${h % 24}h`;
+    }
+    return `${h}h ${m}m`;
+  }
+
+  function tick() {
+    const angle = computeHandAngle();
+    applyHandAngle(angle);
+    updateCenter();
+
+    const remaining = nextMonday6am() - Date.now();
+    const el = document.getElementById('reset-countdown');
+    const lb = document.getElementById('reset-label');
+    if (el) {
+      el.textContent = formatCountdown(remaining);
+      if (remaining < 0) {
+        if (lb) lb.textContent = 'Set today';
+        el.textContent = 'Brand new routes';
+      }
+    }
+  }
+
+  /* ── Initial render (works without JS once arcs are painted) ── */
+  tick();
+  /* Update every 60 seconds */
+  setInterval(tick, 60000);
+
+})();
+</script>
+
+</body>
+</html>

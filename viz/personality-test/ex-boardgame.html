@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meeple House — Board Game Café</title>
+<script>document.documentElement.classList.add('js')</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend+Mega:wght@700;800;900&family=Azeret+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+<style>
+/* ── Reset & tokens ──────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* Palette — meeple-world derived */
+  --ground:      #F5F3EF;   /* game-mat off-white, not cream */
+  --ground-2:    #ECEAE4;   /* shelf backing */
+  --ground-3:    #E0DDD5;   /* filter bar */
+  --ink:         #1A1915;   /* near-black, tinted warm */
+  --ink-mid:     #4A4843;   /* body / meta */
+  --ink-light:   #7A7773;   /* captions */
+  --meeple:      #d32749;   /* red meeple — primary accent */
+  --meeple-dark: #A31F1F;   /* hover / pressed */
+  --meeple-faint:#FAEAEA;   /* tinted bg for active states */
+  --rule:        #D0CEC8;   /* hairlines */
+
+  /* Category colors — Eurogame box tradition */
+  --cat-strategy: #1B4F8A;  /* deep board-game blue */
+  --cat-party:    #D97B0C;  /* warm amber/orange — party energy */
+  --cat-coop:     #2A7A3B;  /* green — cooperative */
+  --cat-deduction:#5B2D8A;  /* purple — mystery/deduction */
+  --cat-family:   #C84E1A;  /* brick-orange — family */
+  --cat-abstract: #1A6B7A;  /* teal — abstract */
+
+  /* Type */
+  --font-head: 'Lexend Mega', 'Arial Black', sans-serif;
+  --font-mono: 'Azeret Mono', 'Courier New', monospace;
+
+  /* Spacing scale: 4 8 12 16 24 32 48 64 96 */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+  --sp-24: 96px;
+
+  /* Motion vocabulary */
+  --ease-out:   cubic-bezier(0,0,0.2,1);
+  --ease-in:    cubic-bezier(0.4,0,1,1);
+  --ease-io:    cubic-bezier(0.4,0,0.2,1);
+  --dur-fast:   150ms;
+  --dur-mid:    280ms;
+  --dur-slow:   400ms;
+}
+
+html { font-size: 16px; scroll-behavior: smooth; }
+body {
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ── Selection color ──────────────────────────────────────────────── */
+::selection { background: var(--meeple); color: #fff; }
+
+/* ── Reduced motion ───────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Skip nav ─────────────────────────────────────────────────────── */
+.skip-link {
+  position: absolute; top: var(--sp-2); left: var(--sp-2);
+  padding: var(--sp-2) var(--sp-4);
+  background: var(--meeple); color: #fff;
+  font-family: var(--font-mono); font-size: 0.75rem;
+  text-decoration: none;
+  transform: translateY(-200%);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.skip-link:focus { transform: translateY(0); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   HEADER / NAV
+   ═══════════════════════════════════════════════════════════════════ */
+.site-header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  padding: var(--sp-4) var(--sp-8);
+  border-bottom: 1.5px solid var(--rule);
+  position: sticky; top: 0;
+  background: var(--ground);
+  z-index: 100;
+}
+
+.site-logo {
+  font-family: var(--font-head);
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  color: var(--ink);
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.site-logo-meeple {
+  width: 18px; height: 18px;
+  background: var(--meeple);
+  clip-path: polygon(50% 0%, 65% 25%, 100% 25%, 75% 50%, 85% 100%, 50% 75%, 15% 100%, 25% 50%, 0% 25%, 35% 25%);
+  flex-shrink: 0;
+}
+
+.site-nav {
+  display: flex;
+  gap: var(--sp-6);
+  list-style: none;
+}
+.site-nav a {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-mid);
+  text-decoration: none;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.site-nav a:hover { color: var(--meeple); }
+.site-nav a:focus-visible {
+  outline: 2px solid var(--meeple);
+  outline-offset: 3px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   HERO — "FULL-BLEED TYPE POSTER" LAYOUT
+   The entire hero is the name at display scale, with live event data.
+   ═══════════════════════════════════════════════════════════════════ */
+.hero {
+  padding: var(--sp-12) var(--sp-8) var(--sp-8);
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: var(--sp-8);
+  align-items: end;
+  border-bottom: 1.5px solid var(--rule);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Big stacked lockup — the TYPE MOVE */
+.hero-lockup {
+  grid-column: 1;
+}
+
+.hero-overline {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--meeple);
+  margin-bottom: var(--sp-3);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.hero-title {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: clamp(3.5rem, 10vw, 8.5rem);
+  line-height: 0.88;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.hero-title-word {
+  display: block;
+}
+.hero-title-word.accent {
+  color: var(--meeple);
+}
+
+/* Meeple count badge — data-driven */
+.hero-count-badge {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  margin-top: var(--sp-6);
+}
+.hero-count-num {
+  font-family: var(--font-head);
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 900;
+  color: var(--meeple);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.hero-count-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-mid);
+}
+
+.hero-divider {
+  width: 100%;
+  height: 1.5px;
+  background: var(--rule);
+  margin: var(--sp-6) 0;
+}
+
+.hero-tagline {
+  font-family: var(--font-mono);
+  font-size: clamp(0.8rem, 1.5vw, 0.95rem);
+  color: var(--ink-mid);
+  max-width: 48ch;
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+
+/* Hero right — tonight's events panel */
+.hero-events {
+  grid-column: 2;
+  border-left: 1.5px solid var(--rule);
+  padding-left: var(--sp-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  padding-bottom: var(--sp-2);
+}
+
+.events-label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-light);
+}
+
+.event-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  padding: var(--sp-3) 0;
+  border-bottom: 1px solid var(--rule);
+}
+.event-item:last-child { border-bottom: none; }
+
+.event-day {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--meeple);
+}
+.event-name {
+  font-family: var(--font-head);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.2;
+}
+.event-meta {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--ink-light);
+  display: flex;
+  gap: var(--sp-3);
+  align-items: center;
+}
+.event-meta i { width: 10px; height: 10px; }
+
+.hero-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
+  padding: var(--sp-3) var(--sp-6);
+  background: var(--meeple);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out),
+              transform var(--dur-fast) var(--ease-out);
+}
+.hero-cta:hover { background: var(--meeple-dark); }
+.hero-cta:active { transform: scale(0.97); }
+.hero-cta:focus-visible {
+  outline: 2px solid var(--meeple);
+  outline-offset: 3px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   THE SHELF — the standout: "Game Shelf" interactive browser
+   Filter chips → spine list → click a spine → detail panel
+   ═══════════════════════════════════════════════════════════════════ */
+.shelf-section {
+  padding: var(--sp-12) 0 var(--sp-16);
+}
+
+.shelf-header {
+  padding: 0 var(--sp-8) var(--sp-6);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  border-bottom: 1.5px solid var(--rule);
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+}
+
+.shelf-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+.shelf-section-label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--meeple);
+}
+.shelf-section-title {
+  font-family: var(--font-head);
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+.shelf-count {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--ink-light);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Filter bar */
+.filter-bar {
+  padding: var(--sp-4) var(--sp-8);
+  background: var(--ground-3);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  border-bottom: 1.5px solid var(--rule);
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+.filter-group-label {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-light);
+  padding-right: var(--sp-2);
+  border-right: 1px solid var(--rule);
+  margin-right: var(--sp-1);
+  white-space: nowrap;
+}
+.filter-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--rule);
+  margin: 0 var(--sp-2);
+}
+
+.chip {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 5px 10px;
+  border: 1.5px solid var(--rule);
+  background: var(--ground);
+  color: var(--ink-mid);
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+  white-space: nowrap;
+  user-select: none;
+}
+.chip:hover {
+  border-color: var(--ink-mid);
+  color: var(--ink);
+}
+.chip:active { transform: scale(0.96); }
+.chip:focus-visible {
+  outline: 2px solid var(--meeple);
+  outline-offset: 2px;
+}
+.chip.active {
+  background: var(--meeple);
+  border-color: var(--meeple);
+  color: #fff;
+}
+.chip.cat-strategy.active  { background: var(--cat-strategy); border-color: var(--cat-strategy); }
+.chip.cat-party.active     { background: var(--cat-party);    border-color: var(--cat-party);    }
+.chip.cat-coop.active      { background: var(--cat-coop);     border-color: var(--cat-coop);     }
+.chip.cat-deduction.active { background: var(--cat-deduction);border-color: var(--cat-deduction);}
+.chip.cat-family.active    { background: var(--cat-family);   border-color: var(--cat-family);   }
+.chip.cat-abstract.active  { background: var(--cat-abstract); border-color: var(--cat-abstract); }
+
+.chip-reset {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-light);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px 8px;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.chip-reset:hover { color: var(--meeple); }
+.chip-reset:focus-visible {
+  outline: 2px solid var(--meeple);
+  outline-offset: 2px;
+}
+
+/* ── Shelf body: spines + detail ─────────────────────────────────── */
+.shelf-body {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  min-height: 440px;
+}
+
+/* Spine list — the actual shelf */
+.spine-list {
+  padding: var(--sp-6) var(--sp-8);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow-y: auto;
+  max-height: 560px;
+  border-right: 1.5px solid var(--rule);
+  scroll-behavior: smooth;
+}
+
+/* Individual game spine */
+.game-spine {
+  display: grid;
+  grid-template-columns: 8px 1fr auto auto;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  cursor: pointer;
+  position: relative;
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+  user-select: none;
+  border: 1.5px solid transparent;
+}
+.game-spine::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: transparent;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+.game-spine:hover {
+  background: var(--ground-2);
+  transform: translateX(3px);
+}
+.game-spine.selected {
+  background: var(--meeple-faint);
+  border-color: var(--rule);
+}
+.game-spine.selected::before { background: var(--meeple); }
+.game-spine:focus-visible {
+  outline: 2px solid var(--meeple);
+  outline-offset: -2px;
+}
+.game-spine.hidden { display: none; }
+
+.spine-cat-dot {
+  width: 8px; height: 8px;
+  flex-shrink: 0;
+}
+.spine-name {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.spine-players {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--ink-light);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.spine-time {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 400;
+  color: var(--ink-light);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Empty state */
+.shelf-empty {
+  padding: var(--sp-12) var(--sp-8);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ink-light);
+  display: none;
+  align-items: center;
+  gap: var(--sp-3);
+  grid-column: 1;
+  border-right: 1.5px solid var(--rule);
+}
+.shelf-empty.visible { display: flex; }
+
+/* Detail panel */
+.game-detail {
+  padding: var(--sp-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  position: sticky;
+  top: 64px;
+  height: fit-content;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+}
+
+.detail-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  padding: var(--sp-12) var(--sp-4);
+  color: var(--ink-light);
+  text-align: center;
+}
+.detail-placeholder-icon {
+  width: 48px; height: 48px;
+  opacity: 0.25;
+}
+.detail-placeholder p {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-light);
+  max-width: 20ch;
+  line-height: 1.6;
+}
+.detail-placeholder.hidden { display: none; }
+
+.detail-card { display: none; }
+.detail-card.visible { display: block; }
+
+.detail-cat-bar {
+  height: 4px;
+  border-radius: 0;
+  margin-bottom: var(--sp-4);
+}
+
+.detail-title {
+  font-family: var(--font-head);
+  font-size: 1.3rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.detail-cat-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 3px 8px;
+  color: #fff;
+}
+
+.detail-stats {
+  display: flex;
+  gap: 0;
+  margin: var(--sp-2) 0;
+  border-top: 1.5px solid var(--rule);
+  border-bottom: 1.5px solid var(--rule);
+}
+.detail-stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  padding: var(--sp-3) var(--sp-4);
+  flex: 1;
+  border-right: 1.5px solid var(--rule);
+}
+.detail-stat:last-child { border-right: none; }
+.detail-stat-label {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-light);
+}
+.detail-stat-val {
+  font-family: var(--font-head);
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.detail-desc {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--ink-mid);
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+
+.detail-complexity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.detail-complexity-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-light);
+}
+.complexity-bar-track {
+  height: 6px;
+  background: var(--ground-3);
+  overflow: hidden;
+}
+.complexity-bar-fill {
+  height: 100%;
+  background: var(--meeple);
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform var(--dur-mid) var(--ease-out);
+}
+
+.detail-moods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+.mood-tag {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 3px 8px;
+  border: 1.5px solid var(--rule);
+  color: var(--ink-mid);
+}
+
+.detail-ask-staff {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--ink);
+  color: var(--ground);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+  align-self: flex-start;
+  margin-top: var(--sp-2);
+}
+.detail-ask-staff:hover { background: var(--meeple); }
+.detail-ask-staff:active { transform: scale(0.97); }
+.detail-ask-staff:focus-visible {
+  outline: 2px solid var(--meeple);
+  outline-offset: 3px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FOOTER
+   ═══════════════════════════════════════════════════════════════════ */
+.site-footer {
+  padding: var(--sp-8);
+  border-top: 1.5px solid var(--rule);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--sp-4);
+}
+.footer-address {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--ink-light);
+  line-height: 1.6;
+}
+.footer-hours {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--ink-light);
+  text-align: right;
+  line-height: 1.6;
+}
+
+/* ── Page-load entrance (render-safe — hidden only when JS is present) */
+html.js .reveal {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity var(--dur-slow) var(--ease-out),
+              transform var(--dur-slow) var(--ease-out);
+}
+html.js .reveal.in {
+  opacity: 1;
+  transform: none;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr;
+    padding: var(--sp-8) var(--sp-6) var(--sp-6);
+  }
+  .hero-events {
+    grid-column: 1;
+    border-left: none;
+    border-top: 1.5px solid var(--rule);
+    padding-left: 0;
+    padding-top: var(--sp-6);
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .events-label { width: 100%; }
+  .shelf-body {
+    grid-template-columns: 1fr;
+  }
+  .game-detail {
+    position: relative;
+    top: 0;
+    border-top: 1.5px solid var(--rule);
+  }
+  .spine-list { max-height: 400px; }
+  .shelf-header {
+    padding: 0 var(--sp-6) var(--sp-4);
+  }
+  .filter-bar { padding: var(--sp-3) var(--sp-6); }
+  .spine-list { padding: var(--sp-4) var(--sp-6); }
+  .site-footer { grid-template-columns: 1fr; }
+  .footer-hours { text-align: left; }
+}
+
+@media (max-width: 520px) {
+  .site-header { padding: var(--sp-3) var(--sp-4); }
+  .hero { padding: var(--sp-6) var(--sp-4) var(--sp-4); }
+  .hero-title { font-size: clamp(2.8rem, 14vw, 4rem); }
+  .shelf-section-title { font-size: 1.2rem; }
+  .site-nav { gap: var(--sp-4); }
+  .site-nav li:nth-child(3),
+  .site-nav li:nth-child(4) { display: none; }
+  .spine-list { padding: var(--sp-4); }
+  .game-detail { padding: var(--sp-4); }
+  .filter-bar { padding: var(--sp-3) var(--sp-4); }
+}
+</style>
+</head>
+<body>
+
+<a class="skip-link" href="#shelf">Skip to game shelf</a>
+
+<!-- ── Header ──────────────────────────────────────────────────────── -->
+<header class="site-header" role="banner">
+  <a class="site-logo" href="#" aria-label="Meeple House home">
+    <span class="site-logo-meeple" aria-hidden="true"></span>
+    Meeple House
+  </a>
+  <nav aria-label="Main navigation">
+    <ul class="site-nav">
+      <li><a href="#shelf" aria-current="page">The Shelf</a></li>
+      <li><a href="#events">Events</a></li>
+      <li><a href="#menu">Menu</a></li>
+      <li><a href="#visit">Visit</a></li>
+    </ul>
+  </nav>
+</header>
+
+<!-- ── Hero ────────────────────────────────────────────────────────── -->
+<main id="main">
+<section class="hero" aria-label="Introduction">
+  <div class="hero-lockup reveal" style="--i:0">
+    <p class="hero-overline">
+      <i data-lucide="map-pin" aria-hidden="true"></i>
+      Board Game Café · Est. 2018
+    </p>
+    <h1 class="hero-title">
+      <span class="hero-title-word">Meeple</span>
+      <span class="hero-title-word accent">House</span>
+    </h1>
+    <div class="hero-count-badge" aria-label="800 games to play">
+      <span class="hero-count-num">800</span>
+      <span class="hero-count-label">games<br>to play</span>
+    </div>
+    <div class="hero-divider" role="separator"></div>
+    <p class="hero-tagline">
+      Pull a game from the shelf, order a coffee, and stay as long as you like.
+      All ages, zero experience required — our staff will teach you anything.
+    </p>
+    <a class="hero-cta" href="#shelf">
+      <i data-lucide="layout-grid" aria-hidden="true"></i>
+      Browse the shelf
+    </a>
+  </div>
+
+  <aside class="hero-events reveal" style="--i:1" aria-label="Upcoming events" id="events">
+    <p class="events-label">This week</p>
+
+    <article class="event-item">
+      <p class="event-day">Fri 13</p>
+      <p class="event-name">Twilight Imperium Marathon</p>
+      <p class="event-meta">
+        <i data-lucide="clock" aria-hidden="true"></i> 6 pm–2 am
+        <i data-lucide="users" aria-hidden="true"></i> 3–6 players
+      </p>
+    </article>
+
+    <article class="event-item">
+      <p class="event-day">Sat 14</p>
+      <p class="event-name">Family Games Morning</p>
+      <p class="event-meta">
+        <i data-lucide="clock" aria-hidden="true"></i> 10 am–1 pm
+        <i data-lucide="users" aria-hidden="true"></i> All ages
+      </p>
+    </article>
+
+    <article class="event-item">
+      <p class="event-day">Thu 19</p>
+      <p class="event-name">Deduction Night: Secret Hitler</p>
+      <p class="event-meta">
+        <i data-lucide="clock" aria-hidden="true"></i> 7 pm–11 pm
+        <i data-lucide="users" aria-hidden="true"></i> 5–10 players
+      </p>
+    </article>
+
+    <article class="event-item">
+      <p class="event-day">Sun 15</p>
+      <p class="event-name">Beginner's Corner: Catan 101</p>
+      <p class="event-meta">
+        <i data-lucide="clock" aria-hidden="true"></i> 2 pm–5 pm
+        <i data-lucide="users" aria-hidden="true"></i> 3–4 players
+      </p>
+    </article>
+
+    <a class="hero-cta" href="#events" style="align-self:flex-start;">
+      <i data-lucide="calendar" aria-hidden="true"></i>
+      All events
+    </a>
+  </aside>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     THE SHELF — the standout
+     ═══════════════════════════════════════════════════════════════════ -->
+<section class="shelf-section" id="shelf" aria-labelledby="shelf-heading">
+
+  <div class="shelf-header">
+    <div class="shelf-title-group">
+      <p class="shelf-section-label">Find your game</p>
+      <h2 class="shelf-section-title" id="shelf-heading">The Shelf</h2>
+    </div>
+    <p class="shelf-count" aria-live="polite" id="shelf-count">Showing all 36 games</p>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar" role="group" aria-label="Filter games">
+    <div class="filter-group" role="group" aria-label="Filter by players">
+      <span class="filter-group-label">Players</span>
+      <button class="chip" data-filter="players" data-val="1">Solo</button>
+      <button class="chip" data-filter="players" data-val="2">2</button>
+      <button class="chip" data-filter="players" data-val="3-4">3–4</button>
+      <button class="chip" data-filter="players" data-val="5+">5+</button>
+    </div>
+
+    <div class="filter-sep" role="separator" aria-hidden="true"></div>
+
+    <div class="filter-group" role="group" aria-label="Filter by time">
+      <span class="filter-group-label">Time</span>
+      <button class="chip" data-filter="time" data-val="quick">Quick &lt;30m</button>
+      <button class="chip" data-filter="time" data-val="medium">30–90m</button>
+      <button class="chip" data-filter="time" data-val="long">Long 90m+</button>
+    </div>
+
+    <div class="filter-sep" role="separator" aria-hidden="true"></div>
+
+    <div class="filter-group" role="group" aria-label="Filter by category">
+      <span class="filter-group-label">Type</span>
+      <button class="chip cat-strategy" data-filter="cat" data-val="strategy">Strategy</button>
+      <button class="chip cat-party"    data-filter="cat" data-val="party">Party</button>
+      <button class="chip cat-coop"     data-filter="cat" data-val="coop">Co-op</button>
+      <button class="chip cat-deduction" data-filter="cat" data-val="deduction">Deduction</button>
+      <button class="chip cat-family"   data-filter="cat" data-val="family">Family</button>
+      <button class="chip cat-abstract" data-filter="cat" data-val="abstract">Abstract</button>
+    </div>
+
+    <button class="chip-reset" id="chip-reset" aria-label="Clear all filters">Clear filters</button>
+  </div>
+
+  <!-- Shelf body -->
+  <div class="shelf-body">
+
+    <!-- Spine list -->
+    <div class="spine-list" role="listbox" aria-label="Game shelf" aria-multiselectable="false" id="spine-list">
+      <!-- games rendered by JS; also present in markup for no-JS -->
+    </div>
+
+    <div class="shelf-empty" id="shelf-empty" role="status" aria-live="polite">
+      <i data-lucide="search-x" aria-hidden="true" style="width:24px;height:24px;opacity:0.4"></i>
+      No games match these filters — try widening your search.
+    </div>
+
+    <!-- Detail panel -->
+    <div class="game-detail" aria-live="polite" aria-label="Selected game details" id="game-detail">
+      <div class="detail-placeholder" id="detail-placeholder" role="status">
+        <i data-lucide="layout-list" class="detail-placeholder-icon" aria-hidden="true"></i>
+        <p>Pick a game from the shelf to see details</p>
+      </div>
+      <div class="detail-card" id="detail-card" aria-atomic="true">
+        <!-- populated by JS -->
+      </div>
+    </div>
+  </div>
+
+</section>
+</main>
+
+<!-- ── Footer ──────────────────────────────────────────────────────── -->
+<footer class="site-footer" id="visit">
+  <address class="footer-address" style="font-style:normal;">
+    <strong>Meeple House</strong><br>
+    42 Tabletop Lane, London E1 6RF<br>
+    <a href="mailto:hello@meeplehouse.com" style="color:var(--ink-light);text-decoration:none;">hello@meeplehouse.com</a>
+  </address>
+  <div class="footer-hours">
+    Mon–Fri: 11 am – 11 pm<br>
+    Sat–Sun: 10 am – midnight<br>
+    <span style="color:var(--meeple);">Cover charge: £5/person</span>
+  </div>
+</footer>
+
+<script>
+// ── Game data ────────────────────────────────────────────────────────
+const GAMES = [
+  { id: 1,  name: "Catan",                cat: "strategy",  players: "3-4", minP: 3, maxP: 4, time: "medium", duration: "75m",  complexity: 0.40, moods: ["trading","classic","social"],        desc: "Trade resources, build roads and settlements, longest road wins. The gateway gateway game." },
+  { id: 2,  name: "Ticket to Ride",       cat: "strategy",  players: "2-5", minP: 2, maxP: 5, time: "medium", duration: "60m",  complexity: 0.30, moods: ["classic","light","family-friendly"],  desc: "Claim train routes across the map. Collect cards, complete tickets, block your friends." },
+  { id: 3,  name: "Pandemic",             cat: "coop",      players: "2-4", minP: 2, maxP: 4, time: "medium", duration: "60m",  complexity: 0.45, moods: ["tense","team","classic"],             desc: "The world is ending. Work together to stop four diseases before they spiral out of control." },
+  { id: 4,  name: "Codenames",            cat: "party",     players: "4-8", minP: 4, maxP: 8, time: "quick",  duration: "20m",  complexity: 0.15, moods: ["words","team","light"],               desc: "Two rival spymasters give one-word clues pointing to their agents. The tension is real." },
+  { id: 5,  name: "Dominion",             cat: "strategy",  players: "2-4", minP: 2, maxP: 4, time: "medium", duration: "45m",  complexity: 0.50, moods: ["deck-building","classic","repeat"],    desc: "Build a deck from scratch by buying cards. The original deck-builder. Surprisingly deep." },
+  { id: 6,  name: "Arkham Horror LCG",    cat: "coop",      players: "1-4", minP: 1, maxP: 4, time: "long",   duration: "120m", complexity: 0.75, moods: ["horror","story","immersive"],          desc: "Investigate Lovecraftian mysteries across linked scenarios. Your investigators may go insane." },
+  { id: 7,  name: "Splendor",             cat: "strategy",  players: "2-4", minP: 2, maxP: 4, time: "quick",  duration: "30m",  complexity: 0.25, moods: ["quick","gems","elegant"],              desc: "Collect gem tokens, buy development cards, impress nobles. Satisfying and portable." },
+  { id: 8,  name: "Wavelength",           cat: "party",     players: "2-12",minP: 2, maxP:12, time: "quick",  duration: "25m",  complexity: 0.10, moods: ["social","conversation","hilarious"],   desc: "Give a clue on a hidden spectrum. Your team must guess where the dial lands. Endlessly funny." },
+  { id: 9,  name: "Terraforming Mars",    cat: "strategy",  players: "1-5", minP: 1, maxP: 5, time: "long",   duration: "150m", complexity: 0.70, moods: ["epic","cards","science"],              desc: "Raise the temperature, grow the oceans, plant forests. The definitive engine-building game." },
+  { id: 10, name: "Dixit",               cat: "party",     players: "3-6", minP: 3, maxP: 6, time: "medium", duration: "45m",  complexity: 0.10, moods: ["creative","visual","dreamy"],           desc: "Tell a story about a surreal image — but not too obvious. Dream logic required." },
+  { id: 11, name: "7 Wonders",           cat: "strategy",  players: "2-7", minP: 2, maxP: 7, time: "medium", duration: "40m",  complexity: 0.45, moods: ["civilisation","cards","quick-for-group"], desc: "Draft cards to build an ancient wonder across three ages. Plays seven players in 40 minutes." },
+  { id: 12, name: "Mysterium",           cat: "coop",      players: "2-7", minP: 2, maxP: 7, time: "medium", duration: "75m",  complexity: 0.35, moods: ["ghost","art","creative"],               desc: "A ghost (one player) sends visions to psychics who must solve a murder. Hauntingly beautiful." },
+  { id: 13, name: "Coup",               cat: "deduction",  players: "2-6", minP: 2, maxP: 6, time: "quick",  duration: "15m",  complexity: 0.20, moods: ["bluffing","quick","brutal"],             desc: "Bluff your way to power. Claim any character, lie constantly, eliminate your rivals." },
+  { id: 14, name: "Root",               cat: "strategy",  players: "2-4", minP: 2, maxP: 4, time: "long",   duration: "120m", complexity: 0.65, moods: ["asymmetric","woodland","war"],            desc: "Four factions with totally different rules fight for the forest. No two games are alike." },
+  { id: 15, name: "Quoridor",           cat: "abstract",  players: "2-4", minP: 2, maxP: 4, time: "quick",  duration: "20m",  complexity: 0.30, moods: ["spatial","clever","tense"],              desc: "Race your pawn to the other side while placing walls to block opponents. Deceptively deep." },
+  { id: 16, name: "Decrypto",           cat: "party",     players: "3-8", minP: 3, maxP: 8, time: "medium", duration: "45m",  complexity: 0.20, moods: ["words","team","addictive"],              desc: "Give clues to your team without tipping off opponents who are building a codebook. Fiendish." },
+  { id: 17, name: "Gloomhaven: Jaws",   cat: "coop",      players: "1-4", minP: 1, maxP: 4, time: "long",   duration: "90m",  complexity: 0.55, moods: ["dungeon","strategy","story"],            desc: "Tactical dungeon crawling with hand management. The lighter entry point to the Gloomhaven universe." },
+  { id: 18, name: "Sagrada",            cat: "abstract",  players: "1-4", minP: 1, maxP: 4, time: "medium", duration: "45m",  complexity: 0.30, moods: ["dice","puzzle","beautiful"],             desc: "Draft coloured dice to build a stained-glass window. Looks gorgeous, plays very tight." },
+  { id: 19, name: "Blood on the Clocktower", cat: "deduction", players: "5-20", minP: 5, maxP:20,time:"long",duration:"120m", complexity: 0.55, moods: ["social-deduction","epic","hilarious"],   desc: "The evolution of Mafia/Werewolf. Complex roles, dead players still play, and a Storyteller who cheats for fun." },
+  { id: 20, name: "Just One",           cat: "coop",      players: "3-7", minP: 3, maxP: 7, time: "quick",  duration: "20m",  complexity: 0.05, moods: ["words","easy","laughs"],                 desc: "Everyone writes a clue word, duplicates cancel. The simplest possible co-op. Perfect for all ages." },
+  { id: 21, name: "Hive",              cat: "abstract",  players: "2-2", minP: 2, maxP: 2, time: "medium", duration: "30m",  complexity: 0.40, moods: ["two-player","chess-like","clever"],       desc: "Surround the queen. Bakelite tiles, no board needed, infinite depth. A true two-player duel." },
+  { id: 22, name: "Pandemic Legacy S1",cat: "coop",      players: "2-4", minP: 2, maxP: 4, time: "long",   duration: "90m",  complexity: 0.55, moods: ["legacy","story","unmissable"],            desc: "The board changes permanently each session. Twelve linked games that tell a single gripping story." },
+  { id: 23, name: "Sushi Go Party!",   cat: "party",     players: "2-8", minP: 2, maxP: 8, time: "quick",  duration: "20m",  complexity: 0.10, moods: ["card-draft","cute","quick"],              desc: "Pick a card, pass the deck, race to collect the best sushi combo. Adorable and surprisingly tactical." },
+  { id: 24, name: "Power Grid",        cat: "strategy",  players: "2-6", minP: 2, maxP: 6, time: "long",   duration: "120m", complexity: 0.65, moods: ["economy","auction","meaty"],              desc: "Buy power plants, source fuel, connect cities. One of the great economic simulations in game form." },
+  { id: 25, name: "Castles of Burgundy", cat: "strategy",players: "2-4", minP: 2, maxP: 4, time: "long",   duration: "90m",  complexity: 0.55, moods: ["dice","tile-placement","deep"],           desc: "Draft tiles, roll dice, build your estate. Endlessly replayable. The die-hard's gateway game." },
+  { id: 26, name: "Love Letter",       cat: "deduction", players: "2-6", minP: 2, maxP: 6, time: "quick",  duration: "15m",  complexity: 0.10, moods: ["quick","bluffing","filler"],              desc: "Sixteen cards, eight rounds, deduce who holds the princess. Perfect before dinner." },
+  { id: 27, name: "Wingspan",          cat: "strategy",  players: "1-5", minP: 1, maxP: 5, time: "long",   duration: "80m",  complexity: 0.50, moods: ["birds","engine-building","beautiful"],    desc: "Attract birds to your nature reserve. Each bird's real ability is its game ability. Stunningly crafted." },
+  { id: 28, name: "Dobble",            cat: "family",    players: "2-8", minP: 2, maxP: 8, time: "quick",  duration: "10m",  complexity: 0.05, moods: ["fast","kids","reflexes"],                 desc: "Spot the one matching symbol before everyone else. Works at any age, in any language." },
+  { id: 29, name: "Kingdomino",        cat: "family",    players: "2-4", minP: 2, maxP: 4, time: "quick",  duration: "20m",  complexity: 0.15, moods: ["tile","kids","quick"],                    desc: "Draft domino tiles to build a 5×5 kingdom. Fifteen minutes, beautiful outcomes, perfect for families." },
+  { id: 30, name: "Azul",             cat: "abstract",  players: "2-4", minP: 2, maxP: 4, time: "medium", duration: "45m",  complexity: 0.30, moods: ["tile","pretty","satisfying"],              desc: "Draft colourful tiles to fill your wall. Penalty points sting. Unbelievably pretty components." },
+  { id: 31, name: "Skull",            cat: "party",     players: "3-6", minP: 3, maxP: 6, time: "quick",  duration: "20m",  complexity: 0.10, moods: ["bluffing","quick","pure"],                 desc: "Place flowers or skulls face down. Bid on how many you can safely reveal. Purity of design." },
+  { id: 32, name: "Spirit Island",    cat: "coop",      players: "1-4", minP: 1, maxP: 4, time: "long",   duration: "120m", complexity: 0.70, moods: ["island","hard","asymmetric"],              desc: "You are the spirits of an island. Push back the colonisers before they ravage everything. Genuinely hard." },
+  { id: 33, name: "Hanabi",           cat: "coop",      players: "2-5", minP: 2, maxP: 5, time: "medium", duration: "30m",  complexity: 0.25, moods: ["unique","social","memory"],               desc: "You can see everyone's hand except your own. Cooperate by giving limited information. Tense perfection." },
+  { id: 34, name: "Scythe",           cat: "strategy",  players: "1-5", minP: 1, maxP: 5, time: "long",   duration: "115m", complexity: 0.65, moods: ["engine","dieselpunk","deep"],              desc: "Diesel-punk alt-history Europe. Build your mech empire, but the war is mostly cold — until it isn't." },
+  { id: 35, name: "Cockroach Poker",  cat: "deduction", players: "2-6", minP: 2, maxP: 6, time: "quick",  duration: "20m",  complexity: 0.10, moods: ["bluffing","silly","laugh-out-loud"],       desc: "Pass cards claiming they're cockroaches. Lie, or tell the truth — no one will believe you either way." },
+  { id: 36, name: "King of Tokyo",    cat: "family",    players: "2-6", minP: 2, maxP: 6, time: "medium", duration: "45m",  complexity: 0.20, moods: ["dice","monsters","easy"],                  desc: "Giant kaiju monsters fight for Tokyo. Roll dice to blast, heal, and collect energy. Pure joy." },
+];
+
+const CAT_COLORS = {
+  strategy:  "var(--cat-strategy)",
+  party:     "var(--cat-party)",
+  coop:      "var(--cat-coop)",
+  deduction: "var(--cat-deduction)",
+  family:    "var(--cat-family)",
+  abstract:  "var(--cat-abstract)",
+};
+
+// ── Filter state ─────────────────────────────────────────────────────
+const state = { players: null, time: null, cat: null };
+
+function matchesFilters(game) {
+  if (state.players) {
+    if (state.players === "1" && game.minP > 1) return false;
+    if (state.players === "2" && !(game.minP <= 2 && game.maxP >= 2)) return false;
+    if (state.players === "3-4" && !(game.minP <= 3 && game.maxP >= 3 || game.minP <= 4 && game.maxP >= 4)) return false;
+    if (state.players === "5+" && game.maxP < 5) return false;
+  }
+  if (state.time && game.time !== state.time) return false;
+  if (state.cat && game.cat !== state.cat) return false;
+  return true;
+}
+
+// ── Render spine list ────────────────────────────────────────────────
+function renderSpines(selectedId) {
+  const list = document.getElementById('spine-list');
+  const empty = document.getElementById('shelf-empty');
+  const count = document.getElementById('shelf-count');
+  const visible = GAMES.filter(matchesFilters);
+
+  // Update count
+  const total = visible.length;
+  count.textContent = state.players || state.time || state.cat
+    ? `Showing ${total} of ${GAMES.length} games`
+    : `Showing all ${GAMES.length} games`;
+
+  // Update spines
+  list.querySelectorAll('.game-spine').forEach(el => {
+    const id = parseInt(el.dataset.gameId, 10);
+    const show = visible.some(g => g.id === id);
+    el.classList.toggle('hidden', !show);
+    el.classList.toggle('selected', id === selectedId);
+  });
+
+  if (total === 0) {
+    empty.classList.add('visible');
+    list.style.display = 'none';
+  } else {
+    empty.classList.remove('visible');
+    list.style.display = '';
+  }
+}
+
+// ── Render detail panel ───────────────────────────────────────────────
+function renderDetail(game) {
+  const placeholder = document.getElementById('detail-placeholder');
+  const card = document.getElementById('detail-card');
+
+  placeholder.classList.add('hidden');
+  card.classList.add('visible');
+
+  const catColor = CAT_COLORS[game.cat] || 'var(--meeple)';
+  const moodTags = game.moods.map(m =>
+    `<span class="mood-tag">${m}</span>`
+  ).join('');
+
+  card.innerHTML = `
+    <div class="detail-cat-bar" style="background:${catColor}"></div>
+    <h3 class="detail-title">${game.name}</h3>
+    <div style="margin:8px 0">
+      <span class="detail-cat-tag" style="background:${catColor}">${game.cat}</span>
+    </div>
+    <div class="detail-stats">
+      <div class="detail-stat">
+        <span class="detail-stat-label">Players</span>
+        <span class="detail-stat-val">${game.minP === game.maxP ? game.minP : `${game.minP}–${game.maxP}`}</span>
+      </div>
+      <div class="detail-stat">
+        <span class="detail-stat-label">Duration</span>
+        <span class="detail-stat-val">${game.duration}</span>
+      </div>
+    </div>
+    <div class="detail-complexity">
+      <p class="detail-complexity-label">Complexity</p>
+      <div class="complexity-bar-track" role="img" aria-label="Complexity ${Math.round(game.complexity * 5)}/5">
+        <div class="complexity-bar-fill" id="cbar" style="width:100%;transform:scaleX(${game.complexity})"></div>
+      </div>
+    </div>
+    <p class="detail-desc">${game.desc}</p>
+    <div class="detail-moods" aria-label="Mood tags">${moodTags}</div>
+    <button class="detail-ask-staff" type="button">
+      <i data-lucide="message-circle" aria-hidden="true"></i>
+      Ask a staff member
+    </button>
+  `;
+
+  // Animate complexity bar (scaleX from 0 to final, render-safe)
+  requestAnimationFrame(() => {
+    const bar = document.getElementById('cbar');
+    if (bar) {
+      bar.style.transform = 'scaleX(0)';
+      requestAnimationFrame(() => {
+        bar.style.transform = `scaleX(${game.complexity})`;
+      });
+    }
+  });
+
+  lucide.createIcons({ nodes: [card] });
+}
+
+// ── Build spine DOM once ─────────────────────────────────────────────
+function buildSpines() {
+  const list = document.getElementById('spine-list');
+  list.innerHTML = '';
+
+  GAMES.forEach((game, i) => {
+    const el = document.createElement('div');
+    el.className = 'game-spine reveal';
+    el.setAttribute('role', 'option');
+    el.setAttribute('aria-selected', 'false');
+    el.setAttribute('tabindex', '0');
+    el.setAttribute('data-game-id', game.id);
+    el.style.setProperty('--i', String(i));
+
+    const catColor = CAT_COLORS[game.cat] || '#888';
+
+    el.innerHTML = `
+      <span class="spine-cat-dot" style="background:${catColor}" aria-hidden="true"></span>
+      <span class="spine-name">${game.name}</span>
+      <span class="spine-players" aria-label="${game.minP}–${game.maxP} players">${game.minP}–${game.maxP}p</span>
+      <span class="spine-time" aria-label="${game.duration}">${game.duration}</span>
+    `;
+
+    let selectedId = null;
+
+    el.addEventListener('click', () => {
+      selectedId = game.id;
+      // Update aria-selected on all
+      list.querySelectorAll('.game-spine').forEach(s => {
+        s.setAttribute('aria-selected', s.dataset.gameId === String(game.id) ? 'true' : 'false');
+      });
+      renderSpines(game.id);
+      renderDetail(game);
+    });
+
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        el.click();
+      }
+    });
+
+    list.appendChild(el);
+  });
+}
+
+// ── Filter chips ──────────────────────────────────────────────────────
+document.querySelectorAll('.chip[data-filter]').forEach(chip => {
+  chip.addEventListener('click', () => {
+    const filter = chip.dataset.filter;
+    const val = chip.dataset.val;
+
+    if (state[filter] === val) {
+      // Toggle off
+      state[filter] = null;
+      chip.classList.remove('active');
+      chip.setAttribute('aria-pressed', 'false');
+    } else {
+      // Deactivate other chips in same group
+      document.querySelectorAll(`.chip[data-filter="${filter}"]`).forEach(c => {
+        c.classList.remove('active');
+        c.setAttribute('aria-pressed', 'false');
+      });
+      state[filter] = val;
+      chip.classList.add('active');
+      chip.setAttribute('aria-pressed', 'true');
+    }
+
+    renderSpines(null);
+    // Reset detail
+    document.getElementById('detail-placeholder').classList.remove('hidden');
+    document.getElementById('detail-card').classList.remove('visible');
+  });
+});
+
+document.getElementById('chip-reset').addEventListener('click', () => {
+  state.players = null;
+  state.time = null;
+  state.cat = null;
+  document.querySelectorAll('.chip[data-filter]').forEach(c => {
+    c.classList.remove('active');
+    c.setAttribute('aria-pressed', 'false');
+  });
+  renderSpines(null);
+  document.getElementById('detail-placeholder').classList.remove('hidden');
+  document.getElementById('detail-card').classList.remove('visible');
+});
+
+// ── Page-load entrance ─────────────────────────────────────────────────
+// Render spines first (so they're present for reveal), then trigger entrance
+buildSpines();
+renderSpines(null);
+lucide.createIcons();
+
+// Staggered reveal — signature load gesture
+const revealEls = document.querySelectorAll('.reveal');
+const STAGGER = 40; // ms per item
+
+function triggerReveal() {
+  revealEls.forEach((el, i) => {
+    // Limit stagger to first 30 elements (cap at ~1.2s total)
+    const delay = Math.min(i, 30) * STAGGER;
+    setTimeout(() => el.classList.add('in'), delay);
+  });
+}
+
+// Use IntersectionObserver for spine items (secondary polish), immediate for hero
+const heroReveals = document.querySelectorAll('.hero .reveal');
+const spineReveals = document.querySelectorAll('.game-spine.reveal');
+
+// Hero reveals immediately on load
+heroReveals.forEach((el, i) => {
+  setTimeout(() => el.classList.add('in'), i * 100);
+});
+
+// Spine reveals when visible
+const spineObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const el = entry.target;
+      const i = parseInt(el.style.getPropertyValue('--i') || '0', 10);
+      setTimeout(() => el.classList.add('in'), (i % 20) * STAGGER);
+      spineObserver.unobserve(el);
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+spineReveals.forEach(el => spineObserver.observe(el));
+
+// Other reveals
+document.querySelectorAll('.reveal:not(.hero .reveal):not(.game-spine)').forEach((el, i) => {
+  const obs = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting) {
+      el.classList.add('in');
+      obs.unobserve(el);
+    }
+  }, { threshold: 0.1 });
+  obs.observe(el);
+});
+</script>
+</body>
+</html>

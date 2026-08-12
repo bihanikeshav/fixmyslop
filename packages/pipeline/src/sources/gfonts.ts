@@ -12,7 +12,7 @@ import {
   compositeQuality,
   type FontMetrics,
   type PersonalityVector,
-} from "@ai-slop-font/core";
+} from "@fixmyslop/core";
 import type { IndexedFont } from "../types.js";
 
 const METADATA_URL = "https://fonts.google.com/metadata/fonts";
@@ -33,7 +33,7 @@ interface RawFamily {
 }
 
 export async function fetchGoogleFontsMetadata(): Promise<RawFamily[]> {
-  const res = await fetch(METADATA_URL, { headers: { "user-agent": "ai-slop-font/0.1" } });
+  const res = await fetch(METADATA_URL, { headers: { "user-agent": "fixmyslop/0.1" } });
   if (!res.ok) throw new Error(`Google Fonts metadata HTTP ${res.status}`);
   const text = (await res.text()).replace(/^\)\]\}'\s*/, "");
   const data = JSON.parse(text) as { familyMetadataList: RawFamily[] };

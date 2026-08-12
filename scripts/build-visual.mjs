@@ -8,7 +8,7 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import opentype from "opentype.js";
 
-const LEGACY_UA = "Mozilla/5.0 (compatible; ai-slop-font/0.1)";
+const LEGACY_UA = "Mozilla/5.0 (compatible; fixmyslop/0.1)";
 const EM = 100, GW = 32, GH = 24, SAMPLE_TEXT = "Rag";
 const CACHE = "data/fonts-cache";
 

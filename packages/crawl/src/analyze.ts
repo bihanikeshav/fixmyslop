@@ -6,7 +6,7 @@
  * No browser, no LLM — same elements in, same profile out. Unit-tested.
  */
 
-import { classifyRoles, normalizeFamily, type RenderedElement } from "@ai-slop-font/core";
+import { classifyRoles, normalizeFamily, type RenderedElement } from "@fixmyslop/core";
 
 export interface CrawlElement {
   /** Raw computed font-family stack. */

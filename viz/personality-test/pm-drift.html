@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drift — Focus through sound</title>
+  <meta name="description" content="Drift layers ambient soundscapes — rain, cafe, tide, forest — so deep work feels effortless.">
+
+  <!-- JS class gate: reveals gated behind html.js, never opacity:0 in base CSS -->
+  <script>document.documentElement.classList.add('js')</script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chivo+Mono:ital,wght@0,300;0,400;0,700&display=swap" rel="stylesheet">
+  <!-- Boska via Fontshare -->
+  <link href="https://api.fontshare.com/v2/css?f[]=boska@400,700,900&display=swap" rel="stylesheet">
+
+  <style>
+    /* ── Spacing scale: 4 8 12 16 24 32 48 64 96 128 ── */
+    :root {
+      --sp-1: 4px;
+      --sp-2: 8px;
+      --sp-3: 12px;
+      --sp-4: 16px;
+      --sp-5: 24px;
+      --sp-6: 32px;
+      --sp-7: 48px;
+      --sp-8: 64px;
+      --sp-9: 96px;
+      --sp-10: 128px;
+
+      /* Palette — cool-neutral ground, petroleum slate accent */
+      --ground: #E8EBF0;
+      --surface: #F4F6F9;
+      --surface-active: #FFFFFF;
+      --text-primary: #1A1E24;
+      --text-secondary: #4A5568;
+      --text-muted: #8A95A3;
+      --accent: #2A6375;
+      --accent-light: #3D8EA6;
+      --accent-dim: #1E4A57;
+      --wave-idle: #B8C3CE;
+      --wave-active: #2A6375;
+      --border: #D0D8E0;
+      --border-active: #2A6375;
+
+      /* Type */
+      --font-display: 'Boska', Georgia, serif;
+      --font-mono: 'Chivo Mono', 'Courier New', monospace;
+
+      /* Easing */
+      --ease-out: cubic-bezier(0,0,0.2,1);
+      --ease-in-out: cubic-bezier(0.4,0,0.2,1);
+
+      /* Motion durations */
+      --dur-fast: 150ms;
+      --dur-mid: 280ms;
+      --dur-slow: 450ms;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: var(--ground);
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    /* Selection color */
+    ::selection {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    /* ── MOTION: reveal recipe — content always visible in base CSS ── */
+    .reveal {
+      transition: opacity var(--dur-slow) var(--ease-out),
+                  transform var(--dur-slow) var(--ease-out);
+    }
+    /* Only hidden when JS is present — NEVER opacity:0 in base CSS */
+    html.js .reveal {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    html.js .reveal.in {
+      opacity: 1;
+      transform: none;
+    }
+
+    html.js .reveal[data-delay="1"] { transition-delay: 40ms; }
+    html.js .reveal[data-delay="2"] { transition-delay: 80ms; }
+    html.js .reveal[data-delay="3"] { transition-delay: 130ms; }
+    html.js .reveal[data-delay="4"] { transition-delay: 200ms; }
+    html.js .reveal[data-delay="5"] { transition-delay: 270ms; }
+
+    /* ── PREFERS REDUCED MOTION ── */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    /* ── LAYOUT ── */
+    .wrap {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 var(--sp-6);
+    }
+
+    /* ── HEADER ── */
+    .site-header {
+      padding: var(--sp-7) var(--sp-6) var(--sp-5);
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      max-width: 1120px;
+      margin: 0 auto;
+    }
+
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 900;
+      font-size: 1.25rem;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      text-decoration: none;
+    }
+    .wordmark:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+      border-radius: 2px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: var(--sp-6);
+      list-style: none;
+    }
+    .nav-links a {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 400;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color var(--dur-fast) var(--ease-out);
+    }
+    .nav-links a:hover { color: var(--accent); }
+    .nav-links a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+      border-radius: 2px;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      padding: var(--sp-6) 0 var(--sp-9);
+    }
+    .hero-text {
+      padding: 0 var(--sp-6);
+      max-width: 1120px;
+      margin: 0 auto var(--sp-8);
+    }
+
+    /* ALL-CAPS STACKED LOCKUP — the bold type move */
+    .hero-headline {
+      font-family: var(--font-display);
+      font-weight: 900;
+      font-size: clamp(5.5rem, 20vw, 15rem);
+      line-height: 0.87;
+      letter-spacing: -0.045em;
+      text-transform: uppercase;
+      color: var(--text-primary);
+      text-wrap: balance;
+      display: block;
+    }
+
+    .hero-sub {
+      margin-top: var(--sp-6);
+      font-family: var(--font-mono);
+      font-size: clamp(0.875rem, 1.5vw, 1rem);
+      font-weight: 300;
+      color: var(--text-secondary);
+      max-width: 52ch;
+      line-height: 1.7;
+      text-wrap: pretty;
+    }
+
+    /* ── THE DRIFT MIXER — the standout ── */
+    .mixer {
+      padding: 0 var(--sp-6);
+      max-width: 1120px;
+      margin: 0 auto;
+    }
+    .mixer-label {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: var(--sp-4);
+      display: block;
+    }
+
+    .mixer-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--sp-3);
+    }
+    @media (max-width: 700px) {
+      .mixer-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 390px) {
+      .mixer-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── LAYER PANELS ── */
+    .layer {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 4px;
+      padding: var(--sp-4);
+      cursor: pointer;
+      transition:
+        border-color var(--dur-mid) var(--ease-out),
+        background var(--dur-mid) var(--ease-out),
+        transform var(--dur-fast) var(--ease-out);
+      position: relative;
+      overflow: hidden;
+      min-height: 168px;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+    }
+    /* Hover: translateY — never padding */
+    .layer:hover { transform: translateY(-3px); border-color: var(--accent-light); }
+    /* Press feedback: scale */
+    .layer:active { transform: scale(0.97); }
+    .layer:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .layer.active {
+      background: var(--surface-active);
+      border-color: var(--border-active);
+    }
+
+    .layer-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: var(--sp-4);
+    }
+
+    .layer-name {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      transition: color var(--dur-mid) var(--ease-out);
+    }
+    .layer.active .layer-name { color: var(--accent); }
+
+    .layer-toggle {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 1.5px solid var(--wave-idle);
+      background: transparent;
+      flex-shrink: 0;
+      transition:
+        border-color var(--dur-mid) var(--ease-out),
+        background var(--dur-mid) var(--ease-out);
+    }
+    .layer.active .layer-toggle {
+      border-color: var(--accent);
+      background: var(--accent);
+    }
+
+    .wave-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+    }
+    .wave-svg {
+      width: 100%;
+      height: 60px;
+      display: block;
+    }
+
+    /* Flat idle line */
+    .wave-flat {
+      stroke: var(--wave-idle);
+      stroke-width: 1.5;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: stroke var(--dur-mid) var(--ease-out), opacity var(--dur-mid) var(--ease-out);
+    }
+    /* Animated waveform — transform:translateX only, never width */
+    .wave-anim {
+      stroke: var(--wave-active);
+      stroke-width: 2;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      opacity: 0;
+      transition: opacity var(--dur-mid) var(--ease-out);
+    }
+    .layer.active .wave-flat  { opacity: 0; }
+    .layer.active .wave-anim  { opacity: 1; }
+
+    /* Wave animations — transform:translateX only */
+    @keyframes wave-drift-rain   { to { transform: translateX(-50%); } }
+    @keyframes wave-drift-cafe   { to { transform: translateX(-50%); } }
+    @keyframes wave-drift-tide   { to { transform: translateX(-50%); } }
+    @keyframes wave-drift-forest { to { transform: translateX(-50%); } }
+
+    .layer[data-sound="rain"].active   .wave-anim { animation: wave-drift-rain   3.2s linear infinite; }
+    .layer[data-sound="cafe"].active   .wave-anim { animation: wave-drift-cafe   6.4s linear infinite; }
+    .layer[data-sound="tide"].active   .wave-anim { animation: wave-drift-tide   9.6s linear infinite; }
+    .layer[data-sound="forest"].active .wave-anim { animation: wave-drift-forest 4.8s linear infinite; }
+
+    /* Volume row */
+    .layer-footer {
+      margin-top: var(--sp-3);
+      display: flex;
+      align-items: center;
+      gap: var(--sp-2);
+    }
+    .vol-label {
+      font-size: 0.5625rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .vol-track {
+      flex: 1;
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      position: relative;
+    }
+    /* scaleX — NEVER width */
+    .vol-fill {
+      height: 100%;
+      background: var(--wave-idle);
+      transform-origin: left;
+      transition:
+        transform var(--dur-mid) var(--ease-out),
+        background var(--dur-mid) var(--ease-out);
+      border-radius: 2px;
+    }
+    .layer.active .vol-fill { background: var(--accent); }
+
+    /* Accessible range input positioned over the vol track */
+    .vol-range {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 20px;
+      transform: translateY(-50%);
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      margin: 0;
+    }
+
+    /* ── MIXER HINT ── */
+    .mixer-hint {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 300;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      margin-top: var(--sp-3);
+      text-align: right;
+    }
+
+    /* ── TIMER SECTION ── */
+    .timer-section {
+      padding: var(--sp-8) var(--sp-6);
+      max-width: 1120px;
+      margin: 0 auto;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: var(--sp-7);
+      border-top: 1px solid var(--border);
+    }
+    @media (max-width: 600px) {
+      .timer-section { flex-direction: column; align-items: flex-start; }
+    }
+
+    .timer-left { flex: 1; min-width: 0; }
+
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: var(--sp-3);
+      display: block;
+    }
+
+    /* Gigantic numerals as graphic element */
+    .timer-display {
+      font-family: var(--font-display);
+      font-weight: 900;
+      font-size: clamp(3.5rem, 10vw, 7rem);
+      line-height: 1;
+      letter-spacing: -0.04em;
+      color: var(--text-primary);
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum" 1;
+    }
+    .timer-sep { opacity: 0.3; }
+
+    /* Timer progress — scaleX, never width */
+    .timer-track {
+      margin-top: var(--sp-4);
+      height: 2px;
+      background: var(--border);
+      border-radius: 1px;
+      overflow: hidden;
+      max-width: 420px;
+    }
+    .timer-fill {
+      height: 100%;
+      background: var(--accent);
+      transform-origin: left;
+      transform: scaleX(0);
+      transition: transform 1s linear, background var(--dur-mid) var(--ease-out);
+      border-radius: 1px;
+    }
+
+    .timer-status {
+      margin-top: var(--sp-3);
+      font-size: 0.75rem;
+      font-weight: 300;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+    }
+
+    .timer-right {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-3);
+      align-items: flex-end;
+    }
+    @media (max-width: 600px) {
+      .timer-right { align-items: flex-start; flex-direction: row; flex-wrap: wrap; }
+    }
+
+    .dur-options { display: flex; gap: var(--sp-2); }
+
+    .dur-btn {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 3px;
+      padding: var(--sp-2) var(--sp-3);
+      cursor: pointer;
+      transition:
+        color var(--dur-fast) var(--ease-out),
+        border-color var(--dur-fast) var(--ease-out),
+        background var(--dur-fast) var(--ease-out),
+        transform var(--dur-fast) var(--ease-out);
+      min-width: 44px;
+      min-height: 36px;
+    }
+    .dur-btn:hover { transform: translateY(-2px); border-color: var(--accent); color: var(--accent); }
+    .dur-btn:active { transform: scale(0.97); }
+    .dur-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .dur-btn.selected {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .dur-btn.selected:hover {
+      background: var(--accent-dim);
+      border-color: var(--accent-dim);
+      color: #fff;
+    }
+
+    .start-btn {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #fff;
+      background: var(--accent);
+      border: none;
+      border-radius: 3px;
+      padding: var(--sp-3) var(--sp-6);
+      cursor: pointer;
+      transition:
+        background var(--dur-fast) var(--ease-out),
+        transform var(--dur-fast) var(--ease-out);
+      min-height: 44px;
+      min-width: 120px;
+    }
+    .start-btn:hover { transform: translateY(-2px); background: var(--accent-dim); }
+    .start-btn:active { transform: scale(0.97); }
+    .start-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+    /* ── ABOUT SECTION ── */
+    .about-section {
+      padding: var(--sp-9) var(--sp-6);
+      border-top: 1px solid var(--border);
+      max-width: 1120px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: var(--sp-8);
+    }
+    @media (max-width: 640px) {
+      .about-section { grid-template-columns: 1fr; gap: var(--sp-6); }
+    }
+
+    .about-heading {
+      font-family: var(--font-display);
+      font-weight: 900;
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      line-height: 0.95;
+      letter-spacing: -0.03em;
+      color: var(--text-primary);
+      text-wrap: balance;
+    }
+
+    .about-body {
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-5);
+      justify-content: center;
+    }
+    .about-body p {
+      font-family: var(--font-mono);
+      font-size: 0.9375rem;
+      font-weight: 300;
+      line-height: 1.7;
+      color: var(--text-secondary);
+      max-width: 60ch;
+      text-wrap: pretty;
+    }
+    .about-body strong { font-weight: 700; color: var(--text-primary); }
+
+    .feature-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-3);
+    }
+    .feature-list li {
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      font-weight: 400;
+      color: var(--text-secondary);
+      letter-spacing: 0.01em;
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+    }
+    .feature-list li::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+
+    /* ── FOOTER ── */
+    .site-footer {
+      padding: var(--sp-7) var(--sp-6);
+      border-top: 1px solid var(--border);
+      max-width: 1120px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--sp-4);
+    }
+    .footer-copy {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 300;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+    }
+    .footer-link {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 400;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color var(--dur-fast) var(--ease-out);
+    }
+    .footer-link:hover { color: var(--accent); }
+    .footer-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+
+    /* ── MOBILE ── */
+    @media (max-width: 390px) {
+      .site-header,
+      .hero-text,
+      .mixer,
+      .timer-section,
+      .about-section,
+      .site-footer {
+        padding-left: var(--sp-4);
+        padding-right: var(--sp-4);
+      }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <a class="wordmark" href="#" aria-label="Drift home">Drift</a>
+    <nav aria-label="Site navigation">
+      <ul class="nav-links">
+        <li><a href="#mixer">Mixer</a></li>
+        <li><a href="#about">How it works</a></li>
+        <li><a href="#">Try free</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" aria-label="Hero">
+
+      <div class="hero-text">
+        <!-- ALL-CAPS STACKED LOCKUP — bold type move, tight line-height -->
+        <h1 class="hero-headline reveal" aria-label="Drift">Drift</h1>
+        <p class="hero-sub reveal" data-delay="2">
+          Layer ambient sound until the room disappears.<br>
+          Rain on glass. Cafe hum. Tide. Forest.<br>
+          One mix. One timer. One state of mind.
+        </p>
+      </div>
+
+      <!-- ══ THE DRIFT MIXER — the standout ══ -->
+      <!-- Four animated waveform panels, each grounded in a real sound's physical character -->
+      <section
+        class="mixer reveal"
+        id="mixer"
+        data-delay="3"
+        aria-label="Sound layer mixer — click a panel to activate"
+      >
+        <span class="mixer-label" aria-hidden="true">Sound layers</span>
+
+        <div class="mixer-grid" role="group" aria-label="Ambient sound layers">
+
+          <!-- RAIN -->
+          <div
+            class="layer"
+            data-sound="rain"
+            data-vol="0.65"
+            role="button"
+            tabindex="0"
+            aria-pressed="false"
+            aria-label="Rain layer — inactive"
+          >
+            <div class="layer-header">
+              <span class="layer-name">Rain</span>
+              <div class="layer-toggle" aria-hidden="true"></div>
+            </div>
+            <div class="wave-container" aria-hidden="true">
+              <!-- Two full cycles so translateX(-50%) loops seamlessly -->
+              <svg class="wave-svg" viewBox="0 0 800 60" preserveAspectRatio="none">
+                <line class="wave-flat" x1="0" y1="30" x2="800" y2="30"/>
+                <!-- Rain: stochastic short bursts, irregular amplitude -->
+                <polyline class="wave-anim" points="
+                  0,30 6,20 10,30 14,38 18,30 22,28 24,30
+                  28,17 32,30 36,43 40,30 44,29 46,30
+                  50,19 54,30 58,41 62,30 68,30 72,26 74,30
+                  78,24 80,30 84,40 88,30 92,29 94,30
+                  98,21 102,30 106,39 110,30 114,30 118,28 120,30
+                  126,16 130,30 132,42 136,30 140,30
+                  144,26 148,30 152,22 156,30 160,40 164,30 168,30
+                  172,19 176,30 180,42 184,30 188,30
+                  192,28 194,30 200,20 204,30
+                  208,30 214,20 218,30 222,38 226,30 230,28 232,30
+                  236,17 240,30 244,43 248,30 252,29 254,30
+                  258,19 262,30 266,41 270,30 276,30 280,26 282,30
+                  286,24 288,30 292,40 296,30 300,29 302,30
+                  306,21 310,30 314,39 318,30 322,30 326,28 328,30
+                  334,16 338,30 340,42 344,30 348,30
+                  352,26 356,30 360,22 364,30 368,40 372,30 376,30
+                  380,19 384,30 388,42 392,30 396,30
+                  398,28 400,30
+                  404,30 410,20 414,30 418,38 422,30 426,28 428,30
+                  432,17 436,30 440,43 444,30 448,29 450,30
+                  454,19 458,30 462,41 466,30 472,30 476,26 478,30
+                  482,24 484,30 488,40 492,30 496,29 498,30
+                  502,21 506,30 510,39 514,30 518,30 522,28 524,30
+                  530,16 534,30 536,42 540,30 544,30
+                  548,26 552,30 556,22 560,30 564,40 568,30 572,30
+                  576,19 580,30 584,42 588,30 592,30
+                  596,28 598,30 604,20 608,30
+                  612,30 618,20 622,30 626,38 630,30 634,28 636,30
+                  640,17 644,30 648,43 652,30 656,29 658,30
+                  662,19 666,30 670,41 674,30 680,30 684,26 686,30
+                  690,24 692,30 696,40 700,30 704,29 706,30
+                  710,21 714,30 718,39 722,30 726,30 730,28 732,30
+                  738,16 742,30 744,42 748,30 752,30
+                  756,26 760,30 764,22 768,30 772,40 776,30 780,30
+                  784,19 788,30 792,42 796,30 800,30
+                "/>
+              </svg>
+            </div>
+            <div class="layer-footer">
+              <span class="vol-label" aria-hidden="true">Vol</span>
+              <div class="vol-track" aria-hidden="true">
+                <div class="vol-fill" style="transform:scaleX(0.65)"></div>
+                <input class="vol-range" type="range" min="0" max="100" value="65" aria-label="Rain volume">
+              </div>
+            </div>
+          </div>
+
+          <!-- CAFE -->
+          <div
+            class="layer"
+            data-sound="cafe"
+            data-vol="0.50"
+            role="button"
+            tabindex="0"
+            aria-pressed="false"
+            aria-label="Cafe layer — inactive"
+          >
+            <div class="layer-header">
+              <span class="layer-name">Cafe</span>
+              <div class="layer-toggle" aria-hidden="true"></div>
+            </div>
+            <div class="wave-container" aria-hidden="true">
+              <svg class="wave-svg" viewBox="0 0 800 60" preserveAspectRatio="none">
+                <line class="wave-flat" x1="0" y1="30" x2="800" y2="30"/>
+                <!-- Cafe: slow steady low-amplitude hum, long sine periods -->
+                <polyline class="wave-anim" points="
+                  0,30 20,26 40,30 60,34 80,30 100,27 120,30 140,33 160,30
+                  180,27 200,30 220,33 240,30 260,26 280,30 300,34 320,30
+                  340,27 360,30 380,33 400,30
+                  420,26 440,30 460,34 480,30 500,27 520,30 540,33 560,30
+                  580,27 600,30 620,33 640,30 660,26 680,30 700,34 720,30
+                  740,27 760,30 780,33 800,30
+                "/>
+              </svg>
+            </div>
+            <div class="layer-footer">
+              <span class="vol-label" aria-hidden="true">Vol</span>
+              <div class="vol-track" aria-hidden="true">
+                <div class="vol-fill" style="transform:scaleX(0.50)"></div>
+                <input class="vol-range" type="range" min="0" max="100" value="50" aria-label="Cafe volume">
+              </div>
+            </div>
+          </div>
+
+          <!-- TIDE -->
+          <div
+            class="layer"
+            data-sound="tide"
+            data-vol="0.70"
+            role="button"
+            tabindex="0"
+            aria-pressed="false"
+            aria-label="Tide layer — inactive"
+          >
+            <div class="layer-header">
+              <span class="layer-name">Tide</span>
+              <div class="layer-toggle" aria-hidden="true"></div>
+            </div>
+            <div class="wave-container" aria-hidden="true">
+              <svg class="wave-svg" viewBox="0 0 800 60" preserveAspectRatio="none">
+                <line class="wave-flat" x1="0" y1="30" x2="800" y2="30"/>
+                <!-- Tide: deep long slow swell, high amplitude -->
+                <polyline class="wave-anim" points="
+                  0,30 25,10 50,30 75,50 100,30 125,10 150,30 175,50
+                  200,30 225,10 250,30 275,50 300,30 325,10 350,30 375,50 400,30
+                  425,10 450,30 475,50 500,30 525,10 550,30 575,50
+                  600,30 625,10 650,30 675,50 700,30 725,10 750,30 775,50 800,30
+                "/>
+              </svg>
+            </div>
+            <div class="layer-footer">
+              <span class="vol-label" aria-hidden="true">Vol</span>
+              <div class="vol-track" aria-hidden="true">
+                <div class="vol-fill" style="transform:scaleX(0.70)"></div>
+                <input class="vol-range" type="range" min="0" max="100" value="70" aria-label="Tide volume">
+              </div>
+            </div>
+          </div>
+
+          <!-- FOREST -->
+          <div
+            class="layer"
+            data-sound="forest"
+            data-vol="0.55"
+            role="button"
+            tabindex="0"
+            aria-pressed="false"
+            aria-label="Forest layer — inactive"
+          >
+            <div class="layer-header">
+              <span class="layer-name">Forest</span>
+              <div class="layer-toggle" aria-hidden="true"></div>
+            </div>
+            <div class="wave-container" aria-hidden="true">
+              <svg class="wave-svg" viewBox="0 0 800 60" preserveAspectRatio="none">
+                <line class="wave-flat" x1="0" y1="30" x2="800" y2="30"/>
+                <!-- Forest: medium amplitude organic irregular rustling -->
+                <polyline class="wave-anim" points="
+                  0,30 5,26 10,34 15,28 20,32 25,24 30,30
+                  35,22 40,30 45,38 50,30 55,28 60,34
+                  65,24 70,30 75,36 80,30 85,26 90,36
+                  95,28 100,30 105,22 110,30 115,40 120,30
+                  125,28 130,34 135,26 140,30 145,38 150,30
+                  155,24 160,30 165,38 170,30 175,28 180,34
+                  185,30 190,26 195,34 200,30
+                  205,26 210,34 215,28 220,32 225,24 230,30
+                  235,22 240,30 245,38 250,30 255,28 260,34
+                  265,24 270,30 275,36 280,30 285,26 290,36
+                  295,28 300,30 305,22 310,30 315,40 320,30
+                  325,28 330,34 335,26 340,30 345,38 350,30
+                  355,24 360,30 365,38 370,30 375,28 380,34
+                  385,30 390,26 395,34 400,30
+                  405,26 410,34 415,28 420,32 425,24 430,30
+                  435,22 440,30 445,38 450,30 455,28 460,34
+                  465,24 470,30 475,36 480,30 485,26 490,36
+                  495,28 500,30 505,22 510,30 515,40 520,30
+                  525,28 530,34 535,26 540,30 545,38 550,30
+                  555,24 560,30 565,38 570,30 575,28 580,34
+                  585,30 590,26 595,34 600,30
+                  605,26 610,34 615,28 620,32 625,24 630,30
+                  635,22 640,30 645,38 650,30 655,28 660,34
+                  665,24 670,30 675,36 680,30 685,26 690,36
+                  695,28 700,30 705,22 710,30 715,40 720,30
+                  725,28 730,34 735,26 740,30 745,38 750,30
+                  755,24 760,30 765,38 770,30 775,28 780,34
+                  785,30 790,26 795,34 800,30
+                "/>
+              </svg>
+            </div>
+            <div class="layer-footer">
+              <span class="vol-label" aria-hidden="true">Vol</span>
+              <div class="vol-track" aria-hidden="true">
+                <div class="vol-fill" style="transform:scaleX(0.55)"></div>
+                <input class="vol-range" type="range" min="0" max="100" value="55" aria-label="Forest volume">
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /mixer-grid -->
+        <p class="mixer-hint">Click a layer to activate &mdash; drag the bar to mix</p>
+      </section>
+
+    </section><!-- /hero -->
+
+    <!-- ── TIMER SECTION ── -->
+    <section
+      class="timer-section reveal"
+      id="timer"
+      data-delay="4"
+      aria-label="Focus session timer"
+    >
+      <div class="timer-left">
+        <span class="section-label">Focus timer</span>
+        <!-- Gigantic numerals as primary graphic, tabular-nums -->
+        <div
+          class="timer-display"
+          aria-live="polite"
+          aria-label="25 minutes 00 seconds remaining"
+        >
+          <span id="timer-min">25</span><span class="timer-sep" aria-hidden="true">:</span><span id="timer-sec">00</span>
+        </div>
+        <!-- Progress: scaleX — never width -->
+        <div
+          class="timer-track"
+          role="progressbar"
+          aria-valuenow="0"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-label="Session progress"
+        >
+          <div class="timer-fill" id="timer-fill"></div>
+        </div>
+        <p class="timer-status" id="timer-status" aria-live="polite">Ready when you are</p>
+      </div>
+
+      <div class="timer-right">
+        <div class="dur-options" role="group" aria-label="Choose session length">
+          <button class="dur-btn selected" data-min="25" aria-pressed="true">25 min</button>
+          <button class="dur-btn" data-min="45" aria-pressed="false">45 min</button>
+          <button class="dur-btn" data-min="60" aria-pressed="false">60 min</button>
+        </div>
+        <button class="start-btn" id="start-btn" aria-label="Start focus session">
+          Start focus
+        </button>
+      </div>
+    </section>
+
+    <!-- ── ABOUT SECTION ── -->
+    <section
+      class="about-section reveal"
+      id="about"
+      data-delay="5"
+      aria-labelledby="about-h2"
+    >
+      <h2 class="about-heading" id="about-h2">
+        Sound<br>as<br>scaffold
+      </h2>
+      <div class="about-body">
+        <p>
+          Your brain craves <strong>predictable noise</strong>. Silence is too loud;
+          random is distracting. The sweet spot is textured constant sound —
+          the kind that signals <em>the world is moving, it's safe to focus.</em>
+        </p>
+        <p>
+          Drift builds that texture. Each layer runs independently.
+          Mix rain under a cafe undercurrent. Let the tide pace your breathing.
+          Add forest when the city gets through the glass.
+        </p>
+        <ul class="feature-list" aria-label="Features">
+          <li>Four independent ambient layers, mixed live</li>
+          <li>Tunable session timer — 25, 45, or 60 minutes</li>
+          <li>No music, no lyrics, no algorithm — just the sound you chose</li>
+          <li>Works offline. No account. No ads.</li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <span class="footer-copy">&copy; 2025 Drift</span>
+    <a class="footer-link" href="#">Privacy</a>
+  </footer>
+
+  <script>
+  (function() {
+    'use strict';
+
+    // ── Reveal: IntersectionObserver adds .in — content already visible in base CSS ──
+    var reveals = document.querySelectorAll('.reveal');
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function(entries, obs) {
+        entries.forEach(function(e) {
+          if (e.isIntersecting) {
+            e.target.classList.add('in');
+            obs.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.06 });
+      reveals.forEach(function(el) { io.observe(el); });
+    } else {
+      reveals.forEach(function(el) { el.classList.add('in'); });
+    }
+
+    // ── Layer toggle ──
+    var layers = document.querySelectorAll('.layer');
+    layers.forEach(function(layer) {
+
+      function toggle() {
+        var active = layer.classList.toggle('active');
+        layer.setAttribute('aria-pressed', active ? 'true' : 'false');
+        var name = layer.querySelector('.layer-name').textContent;
+        layer.setAttribute('aria-label', name + ' layer — ' + (active ? 'active' : 'inactive'));
+      }
+
+      layer.addEventListener('click', function(e) {
+        // Don't toggle if clicking the range input
+        if (e.target.classList.contains('vol-range')) return;
+        toggle();
+      });
+
+      layer.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggle();
+        }
+      });
+
+      // Volume range: scaleX fill, stop propagation
+      var range = layer.querySelector('.vol-range');
+      var fill  = layer.querySelector('.vol-fill');
+      if (range && fill) {
+        range.addEventListener('input', function() {
+          var v = parseInt(this.value, 10) / 100;
+          fill.style.transform = 'scaleX(' + v + ')';
+        });
+        range.addEventListener('click', function(e) { e.stopPropagation(); });
+        range.addEventListener('keydown', function(e) { e.stopPropagation(); });
+      }
+    });
+
+    // ── Timer ──
+    var durBtns   = document.querySelectorAll('.dur-btn');
+    var startBtn  = document.getElementById('start-btn');
+    var minEl     = document.getElementById('timer-min');
+    var secEl     = document.getElementById('timer-sec');
+    var fillEl    = document.getElementById('timer-fill');
+    var statusEl  = document.getElementById('timer-status');
+    var timerDisp = document.querySelector('.timer-display');
+
+    var chosenMin = 25;
+    var totalSec  = chosenMin * 60;
+    var remSec    = totalSec;
+    var interval  = null;
+    var running   = false;
+
+    function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+    function updateDisplay(secs) {
+      var m = Math.floor(secs / 60), s = secs % 60;
+      minEl.textContent = pad(m);
+      secEl.textContent = pad(s);
+      timerDisp.setAttribute('aria-label', m + ' minutes ' + s + ' seconds remaining');
+    }
+
+    function updateProgress(elapsed, total) {
+      var r = total > 0 ? elapsed / total : 0;
+      // scaleX — never width
+      fillEl.style.transform = 'scaleX(' + r + ')';
+      fillEl.parentElement.setAttribute('aria-valuenow', Math.round(r * 100));
+    }
+
+    durBtns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        if (running) return;
+        durBtns.forEach(function(b) {
+          b.classList.remove('selected');
+          b.setAttribute('aria-pressed', 'false');
+        });
+        btn.classList.add('selected');
+        btn.setAttribute('aria-pressed', 'true');
+        chosenMin = parseInt(btn.getAttribute('data-min'), 10);
+        totalSec  = chosenMin * 60;
+        remSec    = totalSec;
+        updateDisplay(remSec);
+        updateProgress(0, remSec);
+        statusEl.textContent = 'Ready when you are';
+      });
+      btn.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); btn.click(); }
+      });
+    });
+
+    startBtn.addEventListener('click', function() {
+      if (!running) {
+        if (remSec === 0) {
+          totalSec = chosenMin * 60;
+          remSec   = totalSec;
+        }
+        running = true;
+        startBtn.textContent = 'Pause';
+        startBtn.setAttribute('aria-label', 'Pause focus session');
+        statusEl.textContent = 'In session…';
+
+        interval = setInterval(function() {
+          remSec--;
+          updateDisplay(remSec);
+          updateProgress(totalSec - remSec, totalSec);
+          if (remSec <= 0) {
+            clearInterval(interval);
+            running = false;
+            startBtn.textContent = 'Start focus';
+            startBtn.setAttribute('aria-label', 'Start focus session');
+            statusEl.textContent = 'Session complete. Well done.';
+          }
+        }, 1000);
+
+      } else {
+        clearInterval(interval);
+        running = false;
+        startBtn.textContent = 'Resume';
+        startBtn.setAttribute('aria-label', 'Resume focus session');
+        statusEl.textContent = 'Paused';
+      }
+    });
+
+    // Init
+    updateDisplay(remSec);
+
+  })();
+  </script>
+
+</body>
+</html>

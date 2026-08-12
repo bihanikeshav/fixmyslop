@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CACHE = ROOT / "data" / "fonts-cache"
 OUT = ROOT / "data" / "external" / "fontshare"
 OUT.mkdir(parents=True, exist_ok=True)
-UA = {"User-Agent": "Mozilla/5.0 (ai-slop-font)"}
+UA = {"User-Agent": "Mozilla/5.0 (fixmyslop)"}
 
 def slug(s): return re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-")
 

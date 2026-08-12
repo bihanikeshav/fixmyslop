@@ -16,3 +16,8 @@ data/
 
 # Playwright MCP browser snapshots
 .playwright-mcp/
+*.bak
+
+# app build artifacts (apps/web/vendor is committed — it's the static deploy bundle)
+apps/**/node_modules/
+apps/worker/.wrangler/

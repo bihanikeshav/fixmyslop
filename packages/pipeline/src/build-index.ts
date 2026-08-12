@@ -1,7 +1,7 @@
 /**
  * Build the font index from Google Fonts metadata.
  *
- *   npm run index -w @ai-slop-font/pipeline
+ *   npm run index -w @fixmyslop/pipeline
  *
  * Writes:
  *   data/fonts.index.json     — IndexedFont[] (the Brain's font universe)
@@ -12,7 +12,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import type { SaturationStat } from "@ai-slop-font/core";
+import type { SaturationStat } from "@fixmyslop/core";
 import { fetchGoogleFontsMetadata, normalizeFamily } from "./sources/gfonts.js";
 import type { IndexedFont } from "./types.js";
 
