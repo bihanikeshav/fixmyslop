@@ -116,11 +116,11 @@ export default {
         const refKeys = REFERENCE.map((r) => r.key).join(" ");
         const verbKeys = VERBS.map((v) => v.name).join(" ");
         const script = `#!/bin/sh
-# Install the fix-ai-slop design skill (staggered: a cheap index + on-demand passes).
+# Install the fixmyslop design skill (staggered: a cheap index + on-demand passes).
 # SKILL.md is a cross-agent standard: this writes to ~/.claude/skills (read by Claude
 # Code, and by Cursor & Codex for compatibility) and ~/.agents/skills (neutral location).
 set -e
-NAME=fix-ai-slop
+NAME=fixmyslop
 DIR="$HOME/.claude/skills/$NAME"
 mkdir -p "$DIR"
 curl -fsSL "${base}/skill/SKILL.md" -o "$DIR/SKILL.md"
@@ -134,11 +134,11 @@ for R in ${refKeys}; do
 done
 mkdir -p "$HOME/.agents/skills/$NAME"
 cp -rf "$DIR/." "$HOME/.agents/skills/$NAME/" 2>/dev/null || true
-echo "Installed fix-ai-slop skill (Claude Code / Cursor / Codex) -> $DIR"
-echo "Invoke it: /fix-ai-slop  (full guide, agent picks passes)  or  /fix-ai-slop:polish  (one pass)"
+echo "Installed fixmyslop skill (Claude Code / Cursor / Codex) -> $DIR"
+echo "Invoke it: /fixmyslop  (full guide, agent picks passes)  or  /fixmyslop:polish  (one pass)"
 echo "Connect the tools:"
-echo "  Claude Code:  claude mcp add --transport http fix-ai-slop ${base}/mcp"
-echo "  Cursor:       add {\\"fix-ai-slop\\":{\\"url\\":\\"${base}/mcp\\"}} to ~/.cursor/mcp.json"
+echo "  Claude Code:  claude mcp add --transport http fixmyslop ${base}/mcp"
+echo "  Cursor:       add {\\"fixmyslop\\":{\\"url\\":\\"${base}/mcp\\"}} to ~/.cursor/mcp.json"
 `;
         return new Response(script, { headers: { ...CORS, "content-type": "text/x-shellscript; charset=utf-8" } });
       }

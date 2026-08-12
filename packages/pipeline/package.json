@@ -1,6 +1,6 @@
 {
   "name": "@fixmyslop/pipeline",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Ingestion: builds the font index (Google Fonts metadata + glyph metrics + attributes) and saturation signals.",
   "type": "module",
   "scripts": {

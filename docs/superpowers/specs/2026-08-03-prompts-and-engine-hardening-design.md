@@ -121,7 +121,7 @@ Exports:
 
 - `GET /skill` → a POSIX `sh` script (content-type `text/x-shellscript`): makes
   `~/.claude/skills/atelier/`, writes `SKILL.md` from `<base>/skill/SKILL.md`, and prints
-  the `claude mcp add --transport http ai-slop-font <base>/mcp` line for the user to run.
+  the `claude mcp add --transport http fixmyslop <base>/mcp` line for the user to run.
   (Writes the skill only; never auto-runs the MCP add.)
 - `GET /skill/SKILL.md` → `renderSkill()` as `text/markdown`.
 - **Tests (node fetch of the worker default export):** `GET /skill` returns 200 sh with the

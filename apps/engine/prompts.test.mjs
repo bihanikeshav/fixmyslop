@@ -43,9 +43,9 @@ test("renderPrompt returns a self-contained MCP user message (full gates + verb)
   assert.match(p.messages[0].content.text, /suggest_fonts|design_system/);
 });
 
-test("renderSkill is a cheap staggered index named fix-ai-slop", () => {
+test("renderSkill is a cheap staggered index named fixmyslop", () => {
   const skill = renderSkill();
-  assert.match(skill, /^---[\s\S]*name:\s*fix-ai-slop/);   // renamed
+  assert.match(skill, /^---[\s\S]*name:\s*fixmyslop/);   // renamed
   assert.doesNotMatch(skill, /\.\.\/personality/);
   assert.match(skill, /pairing\.body/);                     // the two rules live in the cheap index
   assert.match(skill, /container/);
@@ -56,7 +56,7 @@ test("renderSkill is a cheap staggered index named fix-ai-slop", () => {
 
 test("renderVerbFile returns one lean pass on demand; null for unknown", () => {
   const f = renderVerbFile("polish");
-  assert.match(f, /# fix-ai-slop — polish/);
+  assert.match(f, /# fixmyslop — polish/);
   assert.match(f, /design-law\.md/);                        // points back to the full law
   assert.equal(renderVerbFile("nope"), null);
 });

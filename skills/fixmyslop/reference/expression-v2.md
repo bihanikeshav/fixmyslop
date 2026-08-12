@@ -1,4 +1,4 @@
-# fix-ai-slop reference — Connected v2 expression
+# fixmyslop reference — Connected v2 expression
 
 _Craft knowledge to draw on, not a template. The gates in design-law.md are the only hard rules — invent for THIS subject and diverge freely._
 

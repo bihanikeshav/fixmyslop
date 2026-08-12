@@ -336,7 +336,7 @@ export function renderPrompt(name, args = {}) {
 }
 
 export function renderSkill() {
-  const front = `---\nname: atelier\ndescription: Engine-backed design process — gather direction, forbid the median, one bold standout, and route every deterministic decision (color, fonts, spacing, radius, shadow, layout, motion) to the ai-slop-font engine. Self-contained.\nlicense: Apache-2.0. Adapted from impeccable.style and the personality skill.\n---\n`;
+  const front = `---\nname: atelier\ndescription: Engine-backed design process — gather direction, forbid the median, one bold standout, and route every deterministic decision (color, fonts, spacing, radius, shadow, layout, motion) to the fixmyslop engine. Self-contained.\nlicense: Apache-2.0. Adapted from impeccable.style and the personality skill.\n---\n`;
   const verbs = VERBS.map((v) => `## ${v.name}\n${v.body}`).join("\n\n");
   return `${front}\n${PREAMBLE}\n\n# Verbs\n\n${verbs}\n`;
 }
@@ -452,13 +452,13 @@ test("GET /skill returns an install script; /skill/SKILL.md returns the self-con
       if (pathname === "/skill") {
         const base = url.origin;
         const script = `#!/bin/sh
-# Install the ai-slop-font 'atelier' design skill for Claude Code.
+# Install the fixmyslop 'atelier' design skill for Claude Code.
 set -e
 DIR="$HOME/.claude/skills/atelier"
 mkdir -p "$DIR"
 curl -fsSL "${base}/skill/SKILL.md" -o "$DIR/SKILL.md"
 echo "Installed atelier skill -> $DIR/SKILL.md"
-echo "Now connect the tools:  claude mcp add --transport http ai-slop-font ${base}/mcp"
+echo "Now connect the tools:  claude mcp add --transport http fixmyslop ${base}/mcp"
 `;
         return new Response(script, { headers: { ...CORS, "content-type": "text/x-shellscript; charset=utf-8" } });
       }

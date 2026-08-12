@@ -1,4 +1,4 @@
-// reference.mjs — the fix-ai-slop reference library. Lean, on-demand craft knowledge
+// reference.mjs — the fixmyslop reference library. Lean, on-demand craft knowledge
 // mined from the UI/UX Design Index. Depth a design agent pulls ONLY when it wants it,
 // behind a cheap index. It COMPLEMENTS the hard gates in design-law.md (PREAMBLE); it
 // does not restate them. Pure: strings only (no fs, no Date.now, no Math.random).
@@ -101,5 +101,5 @@ export const REFERENCE_BY_KEY = Object.fromEntries(REFERENCE.map((r) => [r.key, 
 export function renderReference(key) {
   const r = REFERENCE_BY_KEY[key];
   if (!r) return null;
-  return `# fix-ai-slop reference — ${r.title}\n\n_Craft knowledge to draw on, not a template. The gates in design-law.md are the only hard rules — invent for THIS subject and diverge freely._\n\n${r.body}\n`;
+  return `# fixmyslop reference — ${r.title}\n\n_Craft knowledge to draw on, not a template. The gates in design-law.md are the only hard rules — invent for THIS subject and diverge freely._\n\n${r.body}\n`;
 }

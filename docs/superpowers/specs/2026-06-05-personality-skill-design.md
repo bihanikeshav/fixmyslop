@@ -6,7 +6,7 @@
 
 ## 1. The pivot
 
-Until now `ai-slop-font` *diagnoses* a site and *swaps* slop one item at a time
+Until now `fixmyslop` *diagnoses* a site and *swaps* slop one item at a time
 (the `diagnose` CLI, the saturation/neighbors data). That's a corrective tool. It
 does not make a model *creative*.
 

@@ -417,7 +417,7 @@ describe("personality skill", () => {
 
 - [ ] **Step 3: Run the test and verify it FAILS**
 
-Run: `npm run test -w @ai-slop-font/pipeline`
+Run: `npm run test -w @fixmyslop/pipeline`
 Expected: FAIL — `type-and-color.md`/`type-and-color.json` missing and the data-tells block has no `%` stat yet.
 
 - [ ] **Step 4: Commit**
@@ -562,7 +562,7 @@ Expected: `Wrote type-and-color.md/.json (...) and injected N data tells.`
 
 - [ ] **Step 3: Run the verification test and verify it PASSES**
 
-Run: `npm run test -w @ai-slop-font/pipeline`
+Run: `npm run test -w @fixmyslop/pipeline`
 Expected: PASS (all four `personality skill` tests green, plus the pre-existing pipeline tests).
 
 - [ ] **Step 4: Sanity-check the generated markdown by eye**
@@ -629,7 +629,7 @@ git commit -m "Add before/after demo proving the /personality process changes ou
 
 **Files:**
 - Modify: `README.md` (repo root)
-- Create: `C:\Users\Keshav\.claude\projects\Z--ai-slop-font\memory\personality-skill.md` + update `MEMORY.md`
+- Create: `C:\Users\Keshav\.claude\projects\Z--fixmyslop\memory\personality-skill.md` + update `MEMORY.md`
 
 - [ ] **Step 1: Add a pointer to the project README**
 
@@ -649,7 +649,7 @@ before→after. Regenerate the data-backed parts with
 
 - [ ] **Step 2: Write the memory file**
 
-Create `C:\Users\Keshav\.claude\projects\Z--ai-slop-font\memory\personality-skill.md`:
+Create `C:\Users\Keshav\.claude\projects\Z--fixmyslop\memory\personality-skill.md`:
 
 ```markdown
 ---
@@ -677,7 +677,7 @@ docs/superpowers/specs/2026-06-05-personality-skill-design.md. Related:
 [[visual-font-similarity]], [[font-sources-and-licensing]].
 ```
 
-Then append one line to `C:\Users\Keshav\.claude\projects\Z--ai-slop-font\memory\MEMORY.md`:
+Then append one line to `C:\Users\Keshav\.claude\projects\Z--fixmyslop\memory\MEMORY.md`:
 
 ```markdown
 - [The /personality skill](personality-skill.md) — the creativity skill, its forced ideation process, and how its type/color sets are generated

@@ -145,7 +145,7 @@ D≥0.35 with `warnings:["divergence-floor-relaxed"]`. Pure fn of (intent, seed,
 7. Run §3 divergence + re-roll; return `{directions:[{name,genome,fingerprint,fit,provenance,groundedIn,parents?}×4], warnings}`.
 
 **Worker:** add `explore_directions` tool in `apps/worker/src/tools.mjs` (INTENT_PROPS + recentFingerprints + count). Keep `style_genome` unchanged.
-**Skill:** rewrite `skills/fix-ai-slop/explore.md` → ONE `explore_directions` call; agent jobs = author StyleIntent, name each direction, write centrepiece line, present `groundedIn`. Self-check → "did you present all four + grounding".
+**Skill:** rewrite `skills/fixmyslop/explore.md` → ONE `explore_directions` call; agent jobs = author StyleIntent, name each direction, write centrepiece line, present `groundedIn`. Self-check → "did you present all four + grounding".
 **Families file:** add `optionalSections` + `swappableAdjacent` to all 18 families; export `ROLE_ALIASES`; spread `layout-families-crawl.mjs`; extend `LAYOUT_FAMILY_SCHEMA_KEYS` (new fields optional).
 
 ## 5. Traps

@@ -1,8 +1,8 @@
-# ai-slop-font — Design Spec
+# fixmyslop — Design Spec
 
 **Date:** 2026-06-03
 **Status:** Draft for review (v2)
-**Working name:** `ai-slop-font`
+**Working name:** `fixmyslop`
 
 ## 1. Problem
 

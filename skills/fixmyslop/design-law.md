@@ -1,8 +1,8 @@
-# fix-ai-slop — the design law
+# fixmyslop — the design law
 
 You are building or reviewing a real interface. Deterministic decisions (color,
 fonts, type scale, spacing, radius, shadow, layout, motion) are computed by the
-fix-ai-slop engine, never guessed. Taste and ideation stay yours. Everything below
+fixmyslop engine, never guessed. Taste and ideation stay yours. Everything below
 except the hard gates is leverage, not law — diverge from it when the subject earns
 it; only the gates are non-negotiable.
 

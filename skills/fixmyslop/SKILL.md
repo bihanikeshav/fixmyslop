@@ -1,12 +1,12 @@
 ---
-name: fix-ai-slop
-description: Fix AI-slop design. Staggered skill — this index carries the two rules that break most AI UIs plus a map of passes you load on demand. Use when building or reviewing any UI, page, or component with the fix-ai-slop MCP tools.
+name: fixmyslop
+description: Fix AI-slop design. Staggered skill — this index carries the two rules that break most AI UIs plus a map of passes you load on demand. Use when building or reviewing any UI, page, or component with the fixmyslop MCP tools.
 license: Apache-2.0. Adapted from impeccable.style, the personality skill, tasteskill.dev (Leonxlnx/taste-skill), and the UI/UX Design Index (Kole Jain, Juxtopposed, Mizko, DesignCourse, Jesse Showalter, Charli Marie, Flux Academy).
 ---
 
-# fix-ai-slop — index
+# fixmyslop — index
 
-The `fix-ai-slop` MCP judges and generates non-slop design tokens (color, fonts,
+The `fixmyslop` MCP judges and generates non-slop design tokens (color, fonts,
 spacing, radius, shadow, layout, motion) with deterministic math. For a real
 subject brief, prefer the connected one-shot tools: they carry the subject into
 the same gated genome and make display/body pairing a deliberate compatibility
@@ -55,13 +55,13 @@ pass or chain several in order; decide from what the user actually asked for.
 
 | For | Load | Or prompt |
 |---|---|---|
-| Show the user several genuinely different design directions to pick from, grounded in their intent. | `explore.md` | `/fix-ai-slop:explore` |
-| Full flow: audit the current design and rebuild it distinctive + readable. | `improve_design.md` | `/fix-ai-slop:improve_design` |
-| Audit an existing page for slop and give fixes. | `design_review.md` | `/fix-ai-slop:design_review` |
-| Generate one coherent token system from a brief. | `theme.md` | `/fix-ai-slop:theme` |
-| Palette work: judge and generate gate-passing colors. | `colorize.md` | `/fix-ai-slop:colorize` |
-| Typography, spacing and layout math. | `typeset.md` | `/fix-ai-slop:typeset` |
-| Finishing pass: motion, shadow, radius, controls. | `polish.md` | `/fix-ai-slop:polish` |
+| Show the user several genuinely different design directions to pick from, grounded in their intent. | `explore.md` | `/fixmyslop:explore` |
+| Full flow: audit the current design and rebuild it distinctive + readable. | `improve_design.md` | `/fixmyslop:improve_design` |
+| Audit an existing page for slop and give fixes. | `design_review.md` | `/fixmyslop:design_review` |
+| Generate one coherent token system from a brief. | `theme.md` | `/fixmyslop:theme` |
+| Palette work: judge and generate gate-passing colors. | `colorize.md` | `/fixmyslop:colorize` |
+| Typography, spacing and layout math. | `typeset.md` | `/fixmyslop:typeset` |
+| Finishing pass: motion, shadow, radius, controls. | `polish.md` | `/fixmyslop:polish` |
 
 ## Connected one-shot path
 

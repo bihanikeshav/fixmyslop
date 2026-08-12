@@ -5,7 +5,7 @@ engine math (fonts/color/layout/motion), plus external study of motion-primitive
 impeccable.style, and taste-skill. Baseline `npx vitest run apps/engine` = GREEN.
 
 Canonical source of truth = `apps/engine/prompts.mjs` (skill index + design-law + verb
-bodies) and `apps/engine/reference.mjs` (reference topics). `skills/fix-ai-slop/*.md`
+bodies) and `apps/engine/reference.mjs` (reference topics). `skills/fixmyslop/*.md`
 are BUILD OUTPUTS of `scripts/build-skill.mjs`. NOTE: on branch `skill-hardening-v2`
 the `.md` files were hand-edited AHEAD of the `.mjs` sources across many files, so
 `build-skill.mjs` is currently unsafe (would revert hand-authored content). Write to

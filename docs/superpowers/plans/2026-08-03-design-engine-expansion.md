@@ -1072,7 +1072,7 @@ git commit -m "feat(mcp): generic /api/tool/<name> REST mirror for all tools"
 ```markdown
 ---
 name: atelier
-description: Build a web page whose every deterministic design decision (palette, type scale, spacing, radius, shadow, layout, motion, control sizing) is computed by the ai-slop-font engine instead of guessed — while the ONE bold standout is invented by the /personality ideation process. Use when you want distinctive, non-slop UI with tokens that are mathematically coherent, not vibes.
+description: Build a web page whose every deterministic design decision (palette, type scale, spacing, radius, shadow, layout, motion, control sizing) is computed by the fixmyslop engine instead of guessed — while the ONE bold standout is invented by the /personality ideation process. Use when you want distinctive, non-slop UI with tokens that are mathematically coherent, not vibes.
 license: Apache-2.0. Design flow adapted from impeccable.style and Anthropic's frontend-design skill; ideation from the personality skill. See ../personality/reference/slop-manifest.md for attribution.
 ---
 
@@ -1086,7 +1086,7 @@ grids. The engine is pure math; it is the source of truth the live MCP also serv
   - `node apps/engine/cli.mjs design_system '{"seed":7,"baseFont":18}'`
   - `node apps/engine/cli.mjs shadow 4`
   - `node apps/engine/cli.mjs check_palette '{"ground":"#eee","ink":"#111","accent":"#c33"}'`
-- **Remote (any MCP client / agent):** the ai-slop-font Worker — `POST /mcp` or `/api/tool/<name>`.
+- **Remote (any MCP client / agent):** the fixmyslop Worker — `POST /mcp` or `/api/tool/<name>`.
 
 Both run the identical `apps/engine` module. Verdicts never drift.
 

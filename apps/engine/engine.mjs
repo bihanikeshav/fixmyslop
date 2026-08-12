@@ -1132,7 +1132,7 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
       return (chk.alternatives && chk.alternatives[0] && chk.alternatives[0].hex) || null;
     };
     // neutral ground/surface/ink, hue biased toward the accent so the palette reads cohesive
-    // (skills/fix-ai-slop/reference/color.md: "tint neutrals ~0.005–0.02 chroma toward the brand
+    // (skills/fixmyslop/reference/color.md: "tint neutrals ~0.005–0.02 chroma toward the brand
     // hue"). Lightness/chroma envelope comes from `profile` — this is what makes "dark"/"tinted"/
     // "contrast" moods actually different color stories instead of always-near-white-pastel, while
     // staying genuinely NEUTRAL (low chroma) rather than a paler wash of the accent's own hue.

@@ -11,7 +11,7 @@ import { VERBS, renderPrompt, INSTRUCTIONS, STRICT_HANDOFF } from "../../engine/
 import { VERSION } from "./version.mjs";
 
 const PROTOCOL_VERSION = "2024-11-05";
-const SERVER_INFO = { name: "fix-ai-slop", version: VERSION };
+const SERVER_INFO = { name: "fixmyslop", version: VERSION };
 
 const rpcResult = (id, result) => ({ jsonrpc: "2.0", id, result });
 const rpcError = (id, code, message, data) => ({

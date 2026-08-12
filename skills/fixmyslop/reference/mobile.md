@@ -1,4 +1,4 @@
-# fix-ai-slop reference — Mobile & gestures
+# fixmyslop reference — Mobile & gestures
 
 _Craft knowledge to draw on, not a template. The gates in design-law.md are the only hard rules — invent for THIS subject and diverge freely._
 

@@ -4,7 +4,7 @@
 // `direction.genome`) always produces the identical Markdown string. No fs, no randomness — file
 // writing is the runner script's job (apps/engine/scripts/haiku-val-gen.mjs), not this module's.
 //
-// WHY THIS EXISTS: every existing consumer of a StyleGenome (skills/fix-ai-slop/explore.md, the
+// WHY THIS EXISTS: every existing consumer of a StyleGenome (skills/fixmyslop/explore.md, the
 // MCP tool descriptions in apps/worker/src/tools.mjs) hands the raw genome to a CAPABLE model and
 // trusts it to translate dial values, treatment ids and taxonomy jargon into a real design with
 // taste. There is no genome→literal-instructions serializer anywhere in the repo (checked

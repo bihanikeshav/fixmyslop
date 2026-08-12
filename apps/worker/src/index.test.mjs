@@ -6,7 +6,7 @@ test("GET /health reports release version", async () => {
   const response = await worker.fetch(new Request("http://x/health"));
   const body = await response.json();
   assert.equal(body.ok, true);
-  assert.equal(body.version, "0.1.0");
+  assert.equal(body.version, "0.1.1");
 });
 
 test("GET /api/tool/shadow?elevation=4 returns a layered shadow", async () => {
@@ -28,11 +28,11 @@ test("unknown tool → 404", async () => {
   assert.equal(res.status, 404);
 });
 
-test("GET /skill installs the staggered fix-ai-slop skill (index + passes)", async () => {
+test("GET /skill installs the staggered fixmyslop skill (index + passes)", async () => {
   const s = await worker.fetch(new Request("http://x/skill"));
   assert.equal(s.status, 200);
   const script = await s.text();
-  assert.match(script, /NAME=fix-ai-slop/);
+  assert.match(script, /NAME=fixmyslop/);
   assert.match(script, /SKILL\.md/);
   assert.match(script, /for V in explore .* polish/);   // fetches the pass files (dynamic from VERBS)
   assert.match(script, /technical-product/);            // fetches the specialized landing reference
@@ -42,12 +42,12 @@ test("staggered skill files: SKILL.md index, a pass, the design law, and 404", a
   const idx = await worker.fetch(new Request("http://x/skill/SKILL.md"));
   assert.equal(idx.status, 200);
   const idxBody = await idx.text();
-  assert.match(idxBody, /name:\s*fix-ai-slop/);
+  assert.match(idxBody, /name:\s*fixmyslop/);
   assert.doesNotMatch(idxBody, /\.\.\/personality/);
 
   const pass = await worker.fetch(new Request("http://x/skill/polish.md"));
   assert.equal(pass.status, 200);
-  assert.match(await pass.text(), /# fix-ai-slop — polish/);
+  assert.match(await pass.text(), /# fixmyslop — polish/);
 
   const law = await worker.fetch(new Request("http://x/skill/design-law.md"));
   assert.equal(law.status, 200);
@@ -57,7 +57,7 @@ test("staggered skill files: SKILL.md index, a pass, the design law, and 404", a
   assert.match(idxBody, /reference\/layout\.md/);
   const ref = await worker.fetch(new Request("http://x/skill/reference/layout.md"));
   assert.equal(ref.status, 200);
-  assert.match(await ref.text(), /fix-ai-slop reference/);
+  assert.match(await ref.text(), /fixmyslop reference/);
 
   const technical = await worker.fetch(new Request("http://x/skill/reference/technical-product.md"));
   assert.equal(technical.status, 200);
@@ -73,7 +73,7 @@ test("GET /install.md covers MCP + skill with the live origin", async () => {
   assert.match(res.headers.get("content-type"), /text\/markdown/);
   const md = await res.text();
   assert.match(md, /Connect the MCP/);            // MCP section
-  assert.match(md, /fix-ai-slop skill/);          // skill section
+  assert.match(md, /fixmyslop skill/);          // skill section
   assert.match(md, /example\.test\/mcp/);         // base URL interpolated from origin
   assert.match(md, /example\.test\/skill/);
   assert.match(md, /live tool catalog/);

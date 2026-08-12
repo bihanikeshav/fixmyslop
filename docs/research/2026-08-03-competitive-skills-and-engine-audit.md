@@ -2,7 +2,7 @@
 
 Date: 2026-08-03
 
-Scope: compare the local `fix-ai-slop` skill/MCP with Impeccable and Taste, record what the current implementation actually does, and identify the data and system work needed before prompt authoring.
+Scope: compare the local `fixmyslop` skill/MCP with Impeccable and Taste, record what the current implementation actually does, and identify the data and system work needed before prompt authoring.
 
 Prompt writing is intentionally out of scope for this document.
 
