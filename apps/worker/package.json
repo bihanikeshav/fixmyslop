@@ -1,6 +1,6 @@
 {
   "name": "fixmyslop-worker",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "description": "Cloudflare Worker wrapping the fixmyslop engine as a REST API and a remote MCP server.",
@@ -9,6 +9,6 @@
     "deploy": "wrangler deploy"
   },
   "devDependencies": {
-    "wrangler": "^4.118.0"
+    "wrangler": "^4.121.0"
   }
 }

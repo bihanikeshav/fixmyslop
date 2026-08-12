@@ -239,6 +239,24 @@ test("M15: focus ring always present, with a real width, on every micro slot", (
   }
 });
 
+// ── intensity-coupled enrichments (spring presets, micro durations, choreography, exit easing) ──
+test("spring weight, micro durations, and choreography track MOTION_INTENSITY; exit easing accelerates", () => {
+  const family = FAMILY_BY_NAME.get("hero-thesis-single");
+  const calm = deriveMotion(family, { energy: 0.1, layoutVariance: 0, craft: 0.5 }, null);
+  const loud = deriveMotion(family, { energy: 1.0, layoutVariance: 0, craft: 0.5 }, null);
+  // spring gets stiffer + micro faster as intensity rises, but damping never bounces (>=15)
+  assert.ok(loud.defaults.springConfig.stiffness > calm.defaults.springConfig.stiffness);
+  assert.ok(calm.defaults.springConfig.damping >= 15 && loud.defaults.springConfig.damping >= 15);
+  assert.ok(loud.defaults.springConfig.stiffness <= 180);
+  // choreography escalates cascade → wave/simultaneous with intensity
+  assert.equal(calm.reveal.choreography, "cascade");
+  assert.ok(["wave", "simultaneous"].includes(loud.reveal.choreography));
+  // exit easing is a real accelerate curve, distinct from the ease-out enter, and gate-safe
+  assert.notEqual(loud.defaults.exitEasing, loud.defaults.enterEasing);
+  assert.deepEqual(checkMotionViolations(loud, family), []);
+  assert.deepEqual(checkMotionViolations(calm, family), []);
+});
+
 // ── DIVERSITY — a family across 5 seeds → distinct motion character ─────────────────────────────
 test("diversity: same family across 5 seeds yields distinct motion params", () => {
   const family = FAMILY_BY_NAME.get("hero-thesis-single");

@@ -9,6 +9,10 @@ import { resolveIntent } from "../../engine/intent.mjs";
 import { suggestLayout } from "../../engine/layout-families.mjs";
 import { styleGenome } from "../../engine/genome.mjs";
 import { exploreDirections } from "../../engine/explore.mjs";
+import { connectedStyleGenome, connectedExploreDirections, connectedBuildSpec, CONNECTED_V2_STATUS } from "../../engine/connected.mjs";
+import { validateSvg } from "../../engine/svg-guard.mjs";
+import { auditMicrocopy, generateEmptyState, auditAccessibility, auditForm, checkComponentStates, checkInformationArchitecture } from "../../engine/ux.mjs";
+import { renderPage } from "../../engine/build-page.mjs";
 import corpus from "../../engine/data/corpus.json" with { type: "json" };
 import brands from "../../engine/data/brands.json" with { type: "json" };
 import fonts from "../../engine/data/fonts.json" with { type: "json" };
@@ -54,6 +58,9 @@ const INTENT_PROPS = {
   warmth: { type: "number" }, formality: { type: "number" }, era: { type: "number" },
   craft: { type: "number" }, experimentalism: { type: "number" }, motionIntensity: { type: "number" },
   layoutVariance: { type: "number" }, materiality: { type: "number" }, contrastPreference: { type: "number" },
+  accentMode: { type: "string", enum: ["auto", "always", "none"], description: "Connected v2 accent-face policy. Auto uses the subject/register gate; always requests a short accent face when the surface can support it; none withholds it." },
+  texturePreference: { type: "string", enum: ["auto", "none", "paper-grain", "film-grain", "halftone", "dither", "mesh", "filtered-surface", "image-or-pattern-surface"], description: "Connected v2 surface texture policy. Texture remains density- and accessibility-gated." },
+  expressionPreference: { type: "string", description: "Optional connected v2 treatment id, such as cursor-magnetic-action, asymmetric-split-pinning, grain-surface-overlay, outline-solid-type, or none. Compatibility gates still apply." },
 };
 
 export const TOOLS = [
@@ -69,7 +76,7 @@ export const TOOLS = [
   },
   {
     name: "check_palette",
-    description: "Judge a full palette by role (ground/ink/accent/optional accent2). Flags each role, reports near-duplicate colors, the ink-on-ground contrast ratio, and an overall pass/fail with per-role fixes.",
+    description: "Judge a full palette by role (ground/ink/accent/optional accent2/optional surface). Flags each role, reports near-duplicate colors, the ink-on-ground and accent-on-ground contrast ratios, the banned dark+neon combination (near-black ground + saturated accent — each hex can be individually legal), the surface-elevation step when a surface hex is passed, and an overall pass/fail with per-role fixes.",
     inputSchema: {
       type: "object",
       properties: {
@@ -77,10 +84,11 @@ export const TOOLS = [
         ink: { type: "string", description: "Text/foreground hex." },
         accent: { type: "string", description: "Primary accent hex." },
         accent2: { type: "string", description: "Optional secondary accent hex." },
+        surface: { type: "string", description: "Optional card/panel elevation hex — validated as a distinct step above ground (excluded from the duplicate check)." },
       },
       required: ["ground", "ink", "accent"],
     },
-    run: (a) => engine.checkPalette(a.ground, a.ink, a.accent, a.accent2),
+    run: (a) => engine.checkPalette(a.ground, a.ink, a.accent, a.accent2, a.surface),
   },
   {
     name: "suggest_fonts",
@@ -96,13 +104,28 @@ export const TOOLS = [
   },
   {
     name: "check_font",
-    description: "Judge a font family. Returns FRESH | SLOP | SLOP-allowed-foundational | UNKNOWN, why, whether it is a foundational body workhorse, and fresh alternatives.",
+    description: "Judge a font family for freshness, repository-local asset availability, remote loadability, display/body role suitability, and safe use. Freshness alone never authorizes a font: asset.available means a repository asset exists; asset.remotelyLoadable must also be true before using loadSpec.faces from a remote response.",
     inputSchema: {
       type: "object",
       properties: { family: { type: "string", description: "Font family name, e.g. \"Inter\"." } },
       required: ["family"],
     },
     run: (a) => engine.checkFont(String(a.family)),
+  },
+  {
+    name: "check_svg",
+    description: "Strictly validate LLM-authored SVG markup before it enters a page. Requires a complete root, positive viewBox, finite geometry, unique references, no scripts/foreignObject/external URLs, and accessible semantics. Default kind is icon; raw illustrative SVG requires explicit provenance/allowIllustration.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        svg: { type: "string", description: "Complete SVG markup." },
+        kind: { type: "string", enum: ["icon", "chart", "illustration"], description: "What the SVG represents; default icon." },
+        label: { type: "string", description: "Accessible label for informative SVGs." },
+        allowIllustration: { type: "boolean", description: "Explicitly acknowledge reviewed illustration provenance; false by default." },
+      },
+      required: ["svg"],
+    },
+    run: (a) => validateSvg(a?.svg, { kind: a?.kind || "icon", label: a?.label || null, allowIllustration: a?.allowIllustration === true }),
   },
   {
     name: "structure_ideas",
@@ -112,6 +135,58 @@ export const TOOLS = [
       properties: { brief: { type: "string", description: "Optional design brief (currently advisory; the archetype list is static)." } },
     },
     run: (_a) => ({ archetypes: STRUCTURE_ARCHETYPES }),
+  },
+  {
+    name: "dashboard_system",
+    description: "Generate a deterministic dashboard specification with exact shell/region coordinates, column math, spacing, type roles, control density, relative surfaces, restrained background personality layers, reduced-motion behavior, and a manifest of real Fluid Functionalism registry components. This is the primary dashboard composition tool: use its geometry instead of eyeballing placement, then install the returned @fluid components instead of recreating them.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        viewportWidth: { type: "number", minimum: 320, description: "Viewport width in px (default 1440)." },
+        viewportHeight: { type: "number", minimum: 480, description: "Viewport height in px (default 900)." },
+        density: { type: "string", enum: ["auto", "compact", "default"], description: "Fluid density context. Auto chooses from available width." },
+        navigation: { type: "string", enum: ["sidebar", "rail", "top"], description: "Primary navigation form. Mobile always resolves to a drawer." },
+        inspector: { type: "boolean", description: "Whether supporting detail context is needed; it docks only when the primary canvas remains wide enough." },
+        content: { type: "string", enum: ["table", "analytics", "mixed", "workflow", "ai"], description: "Primary dashboard work model." },
+        theme: { type: "string", enum: ["light", "dark"] },
+        personality: { type: "string", enum: ["quiet", "balanced", "expressive"], description: "Controls background-only fades, faint patterns, and at most one ambient animation; never component anatomy." },
+        primitive: { type: "string", enum: ["radix", "base"], description: "Choose Fluid's Radix or Base UI registry variants where available." },
+        needs: { type: "array", items: { type: "string" }, description: "Additional Fluid registry item names, e.g. color-picker or input-copy." },
+        base: { type: "number", enum: [4, 8], description: "Placement grid in px (default 4)." },
+      },
+    },
+    run: (a) => engine.dashboardSystem(a || {}),
+  },
+  {
+    name: "fluid_components",
+    description: "Return install commands and direct registry URLs for genuine Fluid Functionalism components. The result is source provenance, not a style suggestion: functional dashboard controls must be installed from @fluid and must not be rebuilt as lookalikes. Includes Fluid surfaces, density context, and spring foundations.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        preset: { type: "string", enum: ["core", "table", "analytics", "workflow", "ai"], description: "Dashboard component bundle." },
+        primitive: { type: "string", enum: ["radix", "base"], description: "Use Radix (default) or Base UI siblings where Fluid publishes both." },
+        needs: { type: "array", items: { type: "string" }, description: "Additional Fluid registry item names." },
+      },
+    },
+    run: (a) => engine.fluidComponents(a || {}),
+  },
+  {
+    name: "check_dashboard_layout",
+    description: "Audit proposed dashboard coordinates and implementation provenance. Checks viewport bounds, 4/8px grid alignment, non-overlay region collisions, Fluid registry sourcing, component density, and decorative-layer limits. Returns a deterministic dashboard_system baseline when violations exist.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        viewportWidth: { type: "number", minimum: 320 },
+        viewportHeight: { type: "number", minimum: 480 },
+        base: { type: "number", enum: [4, 8] },
+        density: { type: "string", enum: ["compact", "default"] },
+        regions: { type: "array", items: { type: "object" }, description: "[{id,x,y,width,height,parentId?,overlay?}] in viewport pixels. Only sibling regions with the same parentId are collision-checked." },
+        components: { type: "array", items: { type: "object" }, description: "[{name,source,height?}]. Source must be fluid-functionalism-registry for functional controls." },
+        personalityLayers: { type: "array", items: { type: "object" }, description: "[{id,opacity,pointerEvents}]. At most two, opacity <= .08, pointerEvents none." },
+      },
+      required: ["regions", "components"],
+    },
+    run: (a) => engine.checkDashboardLayout(a || {}),
   },
   {
     name: "resolve_intent",
@@ -134,6 +209,34 @@ export const TOOLS = [
       count: { type: "integer", description: "how many directions (default 4 = 3 corpus-grounded + 1 engine-synthesized).", minimum: 1, maximum: 8 },
     } },
     run: (a) => exploreDirections(engine, a || {}, { seed: a && a.seed, recentFingerprints: (a && a.recentFingerprints) || [], count: (a && a.count) || 4 }),
+  },
+  {
+    name: "connected_style_genome",
+    description: "One-shot subject-connected design direction. Canonicalizes brief aliases, grounds palette/layout/type dials in the actual subject, chooses a deterministic display/body pair plus an optional v2 accent face, and returns color-scene, texture, component-personality, button/shadow, cursor/scroll, mobile, and reduced-motion decisions while preserving all core gates.",
+    inputSchema: { type: "object", properties: { ...INTENT_PROPS, recentFingerprints: { type: "array", items: { type: "object" }, description: "fingerprints of genomes already shown this session, to diversify against." } } },
+    run: (a) => connectedStyleGenome(engine, a || {}, { seed: a && a.seed, recentFingerprints: (a && a.recentFingerprints) || [] }),
+  },
+  {
+    name: "connected_explore_directions",
+    description: "One-shot subject-connected direction set. Produces the engine's bounded 2–4 direction set, then applies subject-register font pairing, optional accent faces, material/component personality, and bounded expression treatments to every direction. Use this for deliberate alternatives; thin corpus pools remain honestly reported in warnings.",
+    inputSchema: { type: "object", properties: {
+      ...INTENT_PROPS,
+      recentFingerprints: { type: "array", items: { type: "object" }, description: "fingerprints of genomes already shown this session, to diversify against." },
+      count: { type: "integer", description: "requested directions (default 4; the engine may return fewer for a thin family pool).", minimum: 1, maximum: 8 },
+    } },
+    run: (a) => connectedExploreDirections(engine, a || {}, { seed: a && a.seed, recentFingerprints: (a && a.recentFingerprints) || [], count: (a && a.count) || 4 }),
+  },
+  {
+    name: "connected_build_spec",
+    description: "Build one complete subject-connected genome and markdown implementation spec in one call. The spec includes display/body/accent font roles, color-scene and texture decisions, button/shadow personality, one bounded expression centrepiece, and mobile/reduced-motion fallbacks.",
+    inputSchema: { type: "object", properties: { ...INTENT_PROPS, recentFingerprints: { type: "array", items: { type: "object" } } } },
+    run: (a) => connectedBuildSpec(engine, a || {}, { seed: a && a.seed, recentFingerprints: (a && a.recentFingerprints) || [] }),
+  },
+  {
+    name: "connected_v2_catalog",
+    description: "Report the connected v2 research catalog currently wired into the MCP: font-space entries, candidate pair records, component dialects, expression treatments, texture dialects, interaction states, and human-validation status. This is an audit/status tool, not a design direction.",
+    inputSchema: { type: "object", properties: {} },
+    run: () => CONNECTED_V2_STATUS,
   },
   {
     name: "suggest_layout",
@@ -253,6 +356,16 @@ export const TOOLS = [
     run: (a) => engine.auditSpacing(a.values || []),
   },
   {
+    name: "fix_spacing",
+    description: "The spacing FIXER (check_spacing only flags — this repairs). Snaps arbitrary padding / margin / gap / size values to a canonical 4px (or 8px) grid, collapses near-duplicates onto ONE shared token (13/15/17 → 16 = s4), and returns a before→after map so you can rewrite a component's box model to the grid. Pass a flat `values` list AND/OR named `components` (e.g. {button:{paddingX:15,paddingY:9,gap:7}, card:{padding:20,gap:13}}). Returns {verdict, base, scale, usedTokens, values:[{from,to,token,changed}], components:{…}, changed}.",
+    inputSchema: { type: "object", properties: {
+      values: { type: "array", items: { type: "number" }, description: "Flat px values to snap." },
+      components: { type: "object", description: "Named box models, e.g. {\"button\":{\"paddingX\":15,\"gap\":7}} — each numeric prop is snapped." },
+      base: { type: "number", enum: [4, 8], description: "Grid base px (default 4)." },
+    } },
+    run: (a) => engine.normalizeSpacing({ values: (a && a.values) || [], components: (a && a.components) || {}, base: (a && a.base) || 4 }),
+  },
+  {
     name: "check_radius",
     description: "Audit corner radii: flags scale sprawl and (given pairs) broken concentric-corner nesting.",
     inputSchema: { type: "object", properties: {
@@ -280,6 +393,104 @@ export const TOOLS = [
     description: "Audit a motion spec: flags feedback durations over 500ms and bounce/elastic easing. Returns {verdict, reason, fix}.",
     inputSchema: { type: "object", properties: { durationMs: { type: "number" }, easing: { type: "string" } } },
     run: (a) => engine.auditMotion(a || {}),
+  },
+  {
+    name: "check_composition",
+    description: "Audit a section-grammar layout ([{role, heightShare, focalPoint?, composition?}], top→bottom) for the STRUCTURAL failures that read as 'unbalanced/ugly' even when tokens are clean. SLOP: trapped whitespace (heightShares under-tile the page → unallocated vertical space) and one block swallowing >80%. Advisory: monotonous rhythm (repeated composition / single focal side). It deliberately does NOT judge focal dominance by heightShare (height ≠ visual weight — an app canvas or equal narrative bands are fine; verify the real focal point with a render-level blur/squint test). Returns {verdict, issues, advisories, centrepiece}.",
+    inputSchema: { type: "object", properties: {
+      sectionGrammar: { type: "array", items: { type: "object" }, description: "[{role, heightShare (0-1), focalPoint?, composition?}], ordered top to bottom." },
+      pageKind: { type: "string", description: "e.g. marketing | dashboard | story | app — currently advisory context." },
+    }, required: ["sectionGrammar"] },
+    run: (a) => engine.checkComposition((a && a.sectionGrammar) || [], { pageKind: (a && a.pageKind) || "marketing" }),
+  },
+  {
+    name: "shade_ramp",
+    description: "Generate an even-lightness OKLCH shade ramp (a 50→950-style scale) for ONE hue — the primitive tier a full design system needs beyond the 5 palette roles (layered surfaces, text levels, semantic scales). Chroma tapers at the light/dark ends so they read as tints, and every step is pulled into gamut. Omit hue for a near-neutral gray ramp. Returns [{step, hex, L, C, H}].",
+    inputSchema: { type: "object", properties: {
+      hue: { type: "number", description: "Hue 0-360 from the subject's material; omit for a neutral gray ramp." },
+      steps: { type: "integer", description: "Number of steps (default 9).", minimum: 2, maximum: 15 },
+      chroma: { type: "number", description: "Peak chroma mid-ramp (default 0.09 with a hue, 0.012 for neutral)." },
+    } },
+    run: (a) => engine.shadeRamp(a && a.hue != null ? Number(a.hue) : null, { steps: a && a.steps != null ? Number(a.steps) : 9, chroma: a && a.chroma != null ? Number(a.chroma) : null }),
+  },
+  {
+    name: "semantic_colors",
+    description: "Generate functional status colors {error, success, warning, info} anchored to fixed perceptual hues (error ~25, success ~145, warning ~75, info ~205 — kept below the banned indigo band), each nudged a few degrees toward the brand accent so they read as part of THIS system, and each gated non-slop. Pass the palette's accent hue and energy.",
+    inputSchema: { type: "object", properties: {
+      accentHue: { type: "number", description: "Brand accent hue 0-360 to nudge toward; omit for the canonical hues." },
+      energy: { type: "string", enum: ["muted", "balanced", "bold"], description: "Chroma level; default balanced." },
+    } },
+    run: (a) => engine.semanticColors(a && a.accentHue != null ? Number(a.accentHue) : null, (a && a.energy) || "balanced"),
+  },
+  {
+    name: "audit_microcopy",
+    description: "Audit UI copy for slop, per item. Pass items:[{kind, text}] where kind ∈ button|error|empty|label|heading|text|celebration. Flags: vague CTAs that name a mechanism not an outcome, error messages that blame the user / expose jargon / give no recovery action, dead-end empty states, ALL-CAPS shouting, forced exclamation marks, filler 'please'. Returns per-item {verdict, issues}.",
+    inputSchema: { type: "object", properties: {
+      items: { type: "array", items: { type: "object", properties: { kind: { type: "string" }, text: { type: "string" } } }, description: "[{kind, text}] UI copy strings to judge." },
+    }, required: ["items"] },
+    run: (a) => auditMicrocopy((a && a.items) || []),
+  },
+  {
+    name: "generate_empty_state",
+    description: "Generate a proper three-layer empty state (headline / one-sentence explanation of value / single primary action) instead of a bare 'No data'. Pass the object name and optionally the reason (first-run | no-results | cleared) and an action label. Returns {headline, explanation, cta, layers}.",
+    inputSchema: { type: "object", properties: {
+      object: { type: "string", description: "The collection that's empty, e.g. \"projects\", \"invoices\"." },
+      reason: { type: "string", enum: ["first-run", "no-results", "cleared"], description: "Why it's empty; default first-run." },
+      actionLabel: { type: "string", description: "Override the primary CTA label (default \"Create <singular>\")." },
+    }, required: ["object"] },
+    run: (a) => generateEmptyState({ object: (a && a.object) || "items", reason: (a && a.reason) || "first-run", actionLabel: (a && a.actionLabel) || null }),
+  },
+  {
+    name: "audit_accessibility",
+    description: "Audit accessibility BEYOND color contrast, from a structured descriptor (not raw HTML). Pass interactive:[{type, size(px), focusVisible, accessibleName, role}], plus reducedMotion(bool), landmarks(bool), imagesMissingAlt(number). Flags: touch targets < 44px, missing focus indicators, icon-only controls with no accessible name, clickable <div>s, no reduced-motion path, missing alt text, missing landmarks. Returns {verdict, issues}.",
+    inputSchema: { type: "object", properties: {
+      interactive: { type: "array", items: { type: "object" }, description: "[{type, size, focusVisible, accessibleName, role}] for each interactive element." },
+      reducedMotion: { type: "boolean", description: "Is a prefers-reduced-motion path implemented?" },
+      landmarks: { type: "boolean", description: "Are semantic landmarks (header/nav/main/footer) present?" },
+      imagesMissingAlt: { type: "number", description: "Count of images without alt text." },
+    } },
+    run: (a) => auditAccessibility(a || {}),
+  },
+  {
+    name: "audit_form",
+    description: "Audit a form's UX. Pass fields:[{name, labelPlacement, label, placeholder, required, markedOptional}], columns(number), validation(onkeystroke|onblur|onsubmit-only). Flags: multi-column linear forms, placeholder-as-label, unmarked optional fields, non-top-aligned labels, keystroke-nagging or submit-only validation. Returns {verdict, issues}.",
+    inputSchema: { type: "object", properties: {
+      fields: { type: "array", items: { type: "object" }, description: "[{name, labelPlacement, label, placeholder, required, markedOptional}]." },
+      columns: { type: "number", description: "Number of columns (default 1)." },
+      validation: { type: "string", description: "Validation timing: onkeystroke | onblur | onsubmit-only." },
+    } },
+    run: (a) => auditForm(a || {}),
+  },
+  {
+    name: "check_component_states",
+    description: "Check a component's interaction-state matrix for completeness. Required: resting, hover, active, focus, disabled. An async control (async:true) also needs loading, error, success. Pass the states you've defined; returns what's missing so incomplete controls don't ship.",
+    inputSchema: { type: "object", properties: {
+      component: { type: "string", description: "Component name, e.g. \"primary-button\"." },
+      states: { type: "array", items: { type: "string" }, description: "States you've defined, e.g. [\"resting\",\"hover\",\"focus\"]." },
+      async: { type: "boolean", description: "Does it trigger async work (needs loading/error/success)?" },
+    }, required: ["states"] },
+    run: (a) => checkComponentStates({ component: (a && a.component) || "control", states: (a && a.states) || [], async: (a && a.async) === true }),
+  },
+  {
+    name: "check_information_architecture",
+    description: "Audit navigation/menu IA against Hick's and Miller's laws. Pass items:[{label, children?}] (or a string array). Flags: more than ~7 top-level items, duplicate labels, vague/jargon labels (Solutions, Platform, Hub, Resources…), and groups with too many children to chunk. Returns {verdict, issues}.",
+    inputSchema: { type: "object", properties: {
+      items: { type: "array", items: {}, description: "Top-level nav items: strings or {label, children:[…]}." },
+    }, required: ["items"] },
+    run: (a) => checkInformationArchitecture({ items: (a && a.items) || [] }),
+  },
+  {
+    name: "build_page",
+    description: "The genome → coded page path. Resolves ONE subject-grounded design direction (like style_genome) and RENDERS it as a single self-contained, gate-passing HTML page — the engine's decisions as real code, not a markdown spec. The output emits <!doctype html> + <meta charset=\"utf-8\">, styles the wrapper with container tokens (no double-counted margin), keeps neutrals dominant and the accent scarce (one primary CTA), makes one hero dominant, ships all core content in markup, and includes a prefers-reduced-motion path. Content is professional SCAFFOLD keyed to the section grammar — swap in real copy; the shell is non-slop by construction. Returns { html, genome:{family, fonts, palette}, fingerprint }.",
+    inputSchema: { type: "object", properties: { ...INTENT_PROPS, viewport: { type: "number", description: "Render viewport width px for the container math (default 1440)." }, recentFingerprints: { type: "array", items: { type: "object" } } } },
+    run: (a) => {
+      const g = styleGenome(engine, a || {}, { seed: a && a.seed, recentFingerprints: (a && a.recentFingerprints) || [] });
+      return {
+        html: renderPage(engine, g, { viewport: Number(a && a.viewport) || 1440 }),
+        genome: { family: g.layout && g.layout.family, fonts: { display: g.type.display.family, body: g.type.body.family }, palette: { ground: g.color.ground, ink: g.color.ink, accent: g.color.accent, mood: g.color.mood } },
+        fingerprint: g.fingerprint,
+      };
+    },
   },
 ];
 

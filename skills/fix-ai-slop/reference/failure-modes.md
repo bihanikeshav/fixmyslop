@@ -16,4 +16,12 @@ The ranked tells, each with a one-line fix — hunt in this order.
 
 **Structural tells:** harsh hard shadows (use soft, tinted, large-blur — `shadow` / `check_shadow`); inconsistent radius/type/button sizes; mismatched icon sets; flat hierarchy with no empty/loading/error states; five confused pricing tiers with hidden discounts; missing real pages (billing detail, analytics, empty).
 
-**Sterile mush vs clutter:** stripping everything leaves a dead SaaS. Add structured personality — margin ornaments, one micro-motion, product-true visuals — while text stays calm.
+**Composition & hierarchy tells** (these read as "ugly / unbalanced" even when color and fonts are clean):
+- **Two co-equal headlines / everything bold** (nothing leads) → one primary per view, three weight levels max; run the squint test (`filter: blur(8px)`).
+- **Eyebrow chip on every block** (a mono kicker above each section) → label by proximity; keep kickers only where structure needs them — the eyebrow-on-every-block cluster is named slop.
+- **Status encoded three ways** (color bar + dot + word on one row) → one channel per meaning; de-emphasize secondary content, don't add markers.
+- **Uniform padding everywhere** (nothing groups) → related tighter, unrelated looser; a 2:1 between-vs-within ratio.
+- **Trapped whitespace / empty multi-column** (columns strand at different heights, a fixed frame won't fill) → resolve shared edges, content-driven height, balance by weight; rebalance widths instead of padding the void.
+- **Boxitis** (every section wrapped in its own card) → whitespace groups; a border is additive signal, not a default.
+
+**Sterile mush vs clutter:** stripping everything leaves a dead SaaS — but the cure is structure and scale, not added ornament. Earn life from ONE crafted centrepiece, real hierarchy, and product-true visuals, then subtract everything that isn't load-bearing (if removing it would break nothing, remove it). Ornament decorating a weak layout is slop regardless of scale.

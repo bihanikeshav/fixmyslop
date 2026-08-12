@@ -1,7 +1,72 @@
 // apps/engine/system.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { typeScale, lineHeightFor, trackingFor, fluidType, auditTypeScale, spacingScale, auditSpacing, radiusScale, nestedRadius, outerRadius, auditRadius, shadow, auditShadow, grid, computeSplit, measure, auditMeasure, layout, auditLayout, motionTokens, durationFor, auditMotion, controlSize, auditControl } from "./system.mjs";
+import { typeScale, lineHeightFor, trackingFor, fluidType, auditTypeScale, spacingScale, auditSpacing, radiusScale, nestedRadius, outerRadius, auditRadius, shadow, auditShadow, grid, computeSplit, measure, auditMeasure, layout, auditLayout, motionTokens, durationFor, auditMotion, controlSize, auditControl, checkComposition, normalizeSpacing } from "./system.mjs";
+
+test("normalizeSpacing: snaps off-grid values to the grid, collapses near-duplicates to one token", () => {
+  const r = normalizeSpacing({ values: [15, 17, 18, 8, 30] });
+  assert.equal(r.verdict, "FIXED");
+  // 15/17/18 all collapse onto 16 (s4)
+  assert.deepEqual(r.values.slice(0, 3).map((v) => v.to), [16, 16, 16]);
+  assert.equal(r.values.find((v) => v.from === 8).changed, false); // already on-grid
+  assert.equal(r.values.find((v) => v.from === 30).to, 32);        // 30 → 32
+  // shared token for the collapsed trio
+  assert.equal(new Set(r.values.slice(0, 3).map((v) => v.token)).size, 1);
+  // an already-clean set is CLEAN
+  assert.equal(normalizeSpacing({ values: [4, 8, 16, 24] }).verdict, "CLEAN");
+});
+
+test("normalizeSpacing: repairs per-component box models", () => {
+  const r = normalizeSpacing({ components: { button: { paddingX: 15, paddingY: 9, gap: 7 }, card: { padding: 20, gap: 13 } } });
+  assert.equal(r.components.button.paddingX.to, 16);
+  assert.equal(r.components.button.paddingY.to, 8);
+  assert.equal(r.components.button.gap.to, 8);
+  assert.equal(r.components.card.padding.to % 4, 0);   // 20 → a grid step (16)
+  assert.equal(r.components.card.gap.to, 12);           // 13 → 12
+  assert.ok(r.changed >= 4);
+  assert.ok(r.usedTokens.length >= 1 && r.usedTokens.length <= r.scale.length);
+});
+
+test("checkComposition: passes a well-tiled grammar, flags trapped whitespace + a swallowing block", () => {
+  const good = checkComposition([
+    { role: "nav", heightShare: 0.06, focalPoint: "left", composition: "wordmark" },
+    { role: "hero", heightShare: 0.4, focalPoint: "left", composition: "thesis" },
+    { role: "evidence", heightShare: 0.24, focalPoint: "center", composition: "argument" },
+    { role: "cta", heightShare: 0.18, focalPoint: "center", composition: "close" },
+    { role: "footer", heightShare: 0.12, focalPoint: "left", composition: "directory" },
+  ], { pageKind: "marketing" });
+  assert.equal(good.verdict, "CLEAN");
+  assert.equal(good.centrepiece, "hero");
+
+  // trapped whitespace: heightShares far under-tile the page
+  const trapped = checkComposition([{ role: "nav", heightShare: 0.06 }, { role: "hero", heightShare: 0.3 }, { role: "body", heightShare: 0.1 }], { pageKind: "marketing" });
+  assert.equal(trapped.verdict, "SLOP");
+  assert.match(trapped.issues.join(" "), /trapped whitespace/);
+
+  // one block swallowing the page
+  const swallow = checkComposition([{ role: "nav", heightShare: 0.06 }, { role: "hero", heightShare: 0.88 }, { role: "footer", heightShare: 0.06 }], { pageKind: "marketing" });
+  assert.equal(swallow.verdict, "SLOP");
+
+  // monotony is an advisory, not a hard failure
+  const mono = checkComposition([
+    { role: "a", heightShare: 0.25, composition: "text-left-figure-right", focalPoint: "left" },
+    { role: "b", heightShare: 0.25, composition: "text-left-figure-right", focalPoint: "left" },
+    { role: "c", heightShare: 0.25, composition: "text-left-figure-right", focalPoint: "left" },
+    { role: "d", heightShare: 0.25, composition: "text-left-figure-right", focalPoint: "left" },
+  ], { pageKind: "marketing" });
+  assert.equal(mono.verdict, "CLEAN");
+  assert.ok(mono.advisories.length >= 1);
+});
+
+test("checkComposition: roles-only grammar (no heightShare data) is not a trapped-whitespace false positive", () => {
+  const rolesOnly = checkComposition([{ role: "hero" }, { role: "features" }, { role: "cta" }], { pageKind: "marketing" });
+  assert.equal(rolesOnly.verdict, "CLEAN");
+  assert.match(rolesOnly.advisories.join(" "), /no heightShare data/);
+  // over-allocation is advisory, not SLOP
+  const over = checkComposition([{ role: "hero", heightShare: 0.8 }, { role: "features", heightShare: 0.6 }], { pageKind: "marketing" });
+  assert.equal(over.verdict, "CLEAN");
+  assert.match(over.advisories.join(" "), />1\.15/);
+});
 
 test("typeScale: geometric, snapped, step 0 = base", () => {
   const s = typeScale({ base: 16, ratio: "major-third", up: 2, down: 1 });

@@ -54,7 +54,7 @@ export const MOTION_TREATMENTS = {
   "D1-page-transition": { group: "transition", doc: "D1", taste: "quick crossfade / shared-element handoff, one consistent transition", slop: "long (>500ms) blocking route transitions", notMinable: true },
   "D2-section-transition": { group: "transition", doc: "D2", taste: "overflow-safe expand/collapse (transform/clip, not raw height)", slop: "animating raw height/padding/margin (M7)" },
   "D3-state-transition": { group: "transition", doc: "D3", taste: "fade+slide instead of instant pop; gentle success scale-pulse", slop: "error shake using bounce/elastic (M5)" },
-  "E1-easing-token-system": { group: "cross-cutting", doc: "E1", policy: true, taste: "ease-out-quart/quint/expo for enters; springs 100/20; exit ~=75% of enter", slop: "linear (M4) / bounce-elastic (M5)" },
+  "E1-easing-token-system": { group: "cross-cutting", doc: "E1", policy: true, taste: "ease-out-quart/quint/expo for enters; emphasized-accelerate for exits; springs ~90-170 stiffness / 17-22 damping by intensity", slop: "linear (M4) / bounce-elastic (M5)" },
   "E2-duration-discipline": { group: "cross-cutting", doc: "E2", policy: true, taste: "100-150 feedback / 200-300 state / 300-500 layout / 500-800 entrance", slop: "over-long durations feel sluggish (M6)" },
   "E3-animation-restraint": { group: "cross-cutting", doc: "E3", policy: true, taste: "one signature moment + a thin feedback layer; vary responses", slop: "animate-everything fatigue; ambient pulse/float/blob decor (M13)" },
   "E4-reduced-motion": { group: "cross-cutting", doc: "E4", policy: true, hard: true, taste: "every treatment collapses to static/instant under prefers-reduced-motion", slop: "any motion with no reduced-motion fallback (M8, HARD)" },
@@ -98,9 +98,27 @@ const EASING_SET = [
   "cubic-bezier(0.25,1,0.5,1)",   // ease-out-quart
 ];
 const DEFAULT_ENTER_EASING = EASING_SET[0];
-const DEFAULT_EXIT_EASING = EASING_SET[2];
+// Exits should ACCELERATE away (ease-in), not decelerate like enters — Material's "emphasized
+// accelerate". Control-point y stays in [0,1] so the M4/M5 overshoot detector passes it. (The
+// enter/reveal rotation pool EASING_SET stays at its 3 locked ease-out members — never widened.)
+const DEFAULT_EXIT_EASING = "cubic-bezier(0.3,0,0.8,0.15)";
 
 const REVEAL_TREATMENTS = ["fade-slide", "fade-only", "mask-reveal"];
+
+// ── spring presets by MOTION_INTENSITY — snappier (higher stiffness, lower damping) as energy
+// rises, but damping floored at 17 so nothing ever bounces (well inside the M5 damping>=15 gate;
+// stiffness stays <=180). Replaces the one hardcoded {100,20} so micro-interactions vary in weight
+// with the intent instead of feeling identically springy everywhere. ────────────────────────────
+const SPRING_PRESETS = [
+  { maxIntensity: 3, stiffness: 90, damping: 22 },   // gentle — calm, weighty
+  { maxIntensity: 6, stiffness: 120, damping: 20 },  // responsive — the old default's neighborhood
+  { maxIntensity: 8, stiffness: 150, damping: 18 },  // snappy
+  { maxIntensity: 10, stiffness: 170, damping: 17 }, // stiff — lively, still non-overshooting
+];
+function springForIntensity(intensity) {
+  const p = SPRING_PRESETS.find((x) => intensity <= x.maxIntensity) || SPRING_PRESETS[SPRING_PRESETS.length - 1];
+  return { stiffness: p.stiffness, damping: p.damping };
+}
 
 // duration bands, docs §2 principle 4 / E2 (ms)
 const DURATION_BOUNDS = {
@@ -168,12 +186,16 @@ function selectHeroFit() {
 
 function selectReveal(intensity) {
   const enabled = intensity >= 2;
+  // choreography of a multi-item reveal (motion-primitives "Animated Group"): calmer intents
+  // cascade one-by-one; high-energy intents fire together for impact. Pure fn of intensity.
+  const choreography = intensity >= 8 ? "simultaneous" : intensity >= 6 ? "wave" : "cascade";
   return {
     treatment: enabled ? "fade-slide" : "none",
     distance: 16,             // <=24px, docs §4
     duration: 650,            // 500-800ms scroll-entry band
     easing: DEFAULT_ENTER_EASING,
     stagger: 80,              // 60-120ms
+    choreography,             // "cascade" | "wave" | "simultaneous"
     once: true,
     viewportAmount: 0.3,
     gatesCoreContent: false,  // M9/M14 — HARD, never perturbed
@@ -192,6 +214,10 @@ function selectScrollbar(iv, hue) {
 }
 
 function selectMicro(family, iv, intensity) {
+  // scale feedback speed with intensity: high-energy designs feel rushed at a fixed 200/120ms,
+  // low-energy ones feel ponderous. Both stay inside the gate bands (hover 100-400, press 80-250).
+  const hoverDuration = Math.round(clampRange(150 + intensity * 15, 100, 400));
+  const pressDuration = Math.round(clampRange(100 + intensity * 8, 80, 250));
   const micro = {};
   for (const name of family.materialSlots || []) {
     const isAsset = ASSET_SLOT_RE.test(name);
@@ -202,9 +228,9 @@ function selectMicro(family, iv, intensity) {
       hover: {
         enabled: hoverEligible,
         transform: hoverEligible ? "translateY(-2px)" : null,
-        duration: 200, easing: DEFAULT_ENTER_EASING, desktopOnly: true,
+        duration: hoverDuration, easing: DEFAULT_ENTER_EASING, desktopOnly: true,
       },
-      press: { enabled: true, transform: "scale(0.98)", duration: 120, easing: DEFAULT_ENTER_EASING },
+      press: { enabled: true, transform: "scale(0.98)", duration: pressDuration, easing: DEFAULT_ENTER_EASING },
       focus: { enabled: true, ring: true, ringColorToken: "accent", width: 2, offset: 2 },
       toggle: (isRowHover || isCta)
         ? { enabled: true, duration: 250, easing: DEFAULT_ENTER_EASING }
@@ -262,6 +288,7 @@ function selectMotion(family, iv, hue) {
   const reveal = selectReveal(intensity);
   reveal.treatment = applyRevealSpread(reveal.treatment, iv);
   const defaults = selectDefaults();
+  defaults.springConfig = springForIntensity(intensity); // weight tracks the intent, not a constant
   const spreadEasing = applyEasingSpread(iv);
   const transitions = selectTransitions();
   if (spreadEasing) {
@@ -342,6 +369,7 @@ function perturbMotion(base, family, iv, rand, amp) {
 
   // 1
   m.intensity = clampRange(Math.round(m.intensity + intensityDraw * 1.5 * amp), 1, 10);
+  m.defaults.springConfig = springForIntensity(m.intensity); // keep spring weight aligned to the perturbed intensity
   // 2
   m.defaults.durations.entrance = Math.round(clampRange(m.defaults.durations.entrance + entranceDraw * 120 * amp, 350, 800));
   // 3

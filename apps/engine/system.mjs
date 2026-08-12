@@ -85,6 +85,58 @@ export function auditSpacing(values) {
   };
 }
 
+// normalizeSpacing — the spacing FIXER (auditSpacing only flags; this repairs). Snaps every
+// arbitrary padding/margin/gap/size to a canonical 4- or 8-px scale, collapses near-duplicates onto
+// ONE shared token (13/15/17 → 16 = s4), and returns a before→after map so a caller can rewrite a
+// component's box model to the grid. Accepts a flat `values` list AND/OR named `components`
+// ({ button:{paddingX, paddingY, gap}, card:{padding, gap} }). Pure; no clamping surprises — values
+// past the top of the scale extend ON the grid rather than snapping down.
+export function normalizeSpacing({ values = [], components = {}, base = 4 } = {}) {
+  const b = Number(base) === 8 ? 8 : 4;
+  const scale = spacingScale({ base: b });                 // [{token:"s1", px, rem}]
+  const steps = scale.map((s) => s.px);
+  const maxStep = steps[steps.length - 1];
+  const tokenForPx = (px) => (px === 0 ? "s0" : (scale.find((s) => s.px === px) || { token: `${px}px` }).token);
+  const snap = (raw) => {
+    const n = toPx(raw);
+    if (!Number.isFinite(n) || n < 0) return null;
+    if (n === 0) return { px: 0, token: "s0" };
+    let best = steps[0];
+    if (n > maxStep) best = Math.round(n / b) * b;          // extend the grid, don't clamp
+    else for (const s of steps) if (Math.abs(n - s) < Math.abs(n - best)) best = s;
+    return { px: best, token: tokenForPx(best) };
+  };
+  const mapOne = (raw) => {
+    const s = snap(raw);
+    const from = toPx(raw);
+    return s ? { from, to: s.px, token: s.token, changed: Number.isFinite(from) && from !== s.px } : { from: raw, to: null, token: null, changed: false };
+  };
+  const valueMap = (Array.isArray(values) ? values : []).map(mapOne);
+  const componentMap = {};
+  for (const [name, box] of Object.entries(components || {})) {
+    componentMap[name] = {};
+    for (const [prop, val] of Object.entries(box || {})) componentMap[name][prop] = mapOne(val);
+  }
+  const usedPx = new Set([
+    ...valueMap.filter((m) => m.to != null).map((m) => m.to),
+    ...Object.values(componentMap).flatMap((c) => Object.values(c)).filter((x) => x.to != null).map((x) => x.to),
+  ]);
+  const changed = valueMap.filter((m) => m.changed).length
+    + Object.values(componentMap).flatMap((c) => Object.values(c)).filter((x) => x.changed).length;
+  return {
+    verdict: changed ? "FIXED" : "CLEAN",
+    base: b,
+    scale,                                                  // the full canonical scale to bind as tokens
+    usedTokens: scale.filter((s) => usedPx.has(s.px)),      // only the steps this UI actually needs
+    values: valueMap,                                       // per-value before→after (+token)
+    components: componentMap,                               // per-component before→after
+    changed,
+    reason: changed
+      ? `snapped ${changed} value(s) to the ${b}px grid and collapsed near-duplicates to shared tokens`
+      : `all values already on the ${b}px grid`,
+  };
+}
+
 export function radiusScale({ base = 8 } = {}) {
   return { none: 0, sm: round(base * 0.5), md: base, lg: base * 2, xl: base * 3, full: 9999 };
 }
@@ -207,6 +259,59 @@ export function auditLayout({ containerWidth, fontPx = 16, gutter, margin, base 
   if (gutter != null && gutter % base !== 0) issues.push(`gutter ${gutter}px off the ${base}px grid`);
   if (margin != null && margin % base !== 0) issues.push(`margin ${margin}px off the ${base}px grid`);
   return { verdict: issues.length ? "SLOP" : "CLEAN", reason: issues.join("; ") || "measure in range; gutters/margins on-grid", fix: null };
+}
+
+// checkComposition(sectionGrammar, { pageKind }) — a STRUCTURAL validator over a section grammar
+// ([{ role, heightShare, focalPoint, composition }]). It only flags signals that are RELIABLY a
+// problem at the spec level and false-positive-free on well-authored layouts: trapped whitespace
+// (unallocated vertical space), gross compositional monotony, and one section swallowing the page.
+// It deliberately does NOT try to enforce "one section dominates by heightShare" — heightShare is a
+// weak proxy for visual dominance (an app-shell canvas legitimately dominates; narrative chapters
+// and alternating feature bands are legitimately equal; real dominance is carried by type scale and
+// contrast). Focal-point enforcement stays where it belongs — the render-level squint test the
+// design law prescribes. Pure + self-contained (inlines its chrome set so system.mjs keeps zero
+// imports). `advisories` are nudges, not failures; `verdict` is SLOP only on a hard structural fault.
+const COMPOSITION_CHROME = new Set([
+  "nav", "footer", "topbar", "appbar", "statusbar", "masthead", "page-header", "header",
+  "filter-bar", "table-head", "pagination", "plan-toggle", "reading-header",
+]);
+export function checkComposition(sectionGrammar = [], { pageKind = "marketing" } = {}) {
+  const issues = [], advisories = [];
+  const sections = Array.isArray(sectionGrammar) ? sectionGrammar.filter((s) => s && typeof s.role === "string") : [];
+  const nonChrome = sections.filter((s) => !COMPOSITION_CHROME.has(s.role));
+  const hs = (s) => (Number.isFinite(Number(s.heightShare)) ? Number(s.heightShare) : 0);
+  const sorted = [...nonChrome].sort((a, b) => hs(b) - hs(a));
+  const centrepiece = sorted[0] ? sorted[0].role : null;
+
+  // 1 (HARD) — allocation: heightShares should tile the page. A real shortfall means unallocated
+  // vertical space, which is exactly what renders as trapped whitespace — the original failure.
+  // Only assessable when the grammar actually carries heightShare data: a roles-only grammar
+  // ([{role:"hero"},{role:"features"}]) sums to 0 and would false-positive as 100% unallocated.
+  const anyShares = sections.some((s) => Number.isFinite(Number(s.heightShare)));
+  const total = sections.reduce((t, s) => t + hs(s), 0);
+  if (sections.length && anyShares && total < 0.9) issues.push(`section heightShares sum to ${round(total, 2)} (<0.9) — ${Math.round((1 - total) * 100)}% of the page is unallocated and will read as trapped whitespace`);
+  if (sections.length && !anyShares) advisories.push("no heightShare data — the trapped-whitespace and swallowing-block gates were skipped; pass heightShare (0-1 of page) per section to enable them");
+  if (sections.length && anyShares && total > 1.15) advisories.push(`section heightShares sum to ${round(total, 2)} (>1.15) — shares are page-relative and should tile to ~1; renormalize so the gates stay meaningful`);
+
+  // 2 (HARD) — a single non-chrome section swallowing >80% leaves everything else as a cramped
+  // afterthought (true even for an app canvas). Below that, dominance is legitimate, not flagged.
+  if (sorted[0] && hs(sorted[0]) > 0.8) issues.push(`section "${sorted[0].role}" takes ${Math.round(hs(sorted[0]) * 100)}% — one block swallows the page; give the rest room`);
+
+  // 3 (ADVISORY) — gross monotony: 3+ consecutive non-chrome sections with an identical composition,
+  // or EVERY non-chrome section sharing one focal side. Repetition aids scanning; sameness reads flat.
+  let runComp = 1;
+  for (let i = 1; i < nonChrome.length; i++) {
+    runComp = nonChrome[i].composition && nonChrome[i].composition === nonChrome[i - 1].composition ? runComp + 1 : 1;
+    if (runComp >= 3) { advisories.push(`${runComp} consecutive sections share composition "${nonChrome[i].composition}" — vary width/media/density so the rhythm isn't monotonous`); runComp = 1; }
+  }
+  const focals = new Set(nonChrome.map((s) => s.focalPoint).filter(Boolean));
+  if (nonChrome.length >= 5 && focals.size === 1) advisories.push(`all ${nonChrome.length} sections share focal side "${[...focals][0]}" — alternate the eye's path at least once`);
+
+  return {
+    verdict: issues.length ? "SLOP" : "CLEAN",
+    issues, advisories, centrepiece,
+    reason: issues.length ? issues.join("; ") : (advisories.length ? `structurally sound; ${advisories.length} rhythm advisory` : `fully allocated, no block dominates, varied rhythm (centrepiece: ${centrepiece || "n/a"})`),
+  };
 }
 
 // Motion + controls bucket: curves, durations, easing, animation audits, control sizing, z-index

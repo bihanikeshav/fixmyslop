@@ -10,7 +10,7 @@ _Craft knowledge to draw on, not a template. The gates in design-law.md are the 
 **Why 60-30-10 breaks in apps**
 - Landing pages can run 60/30/10; apps need layered surfaces.
 - Neutral stack: 3–4 background elevations, 1–2 strokes, ~3 text steps. Layers: frame → chrome/sidebar → card → overlay, plus borders, text tiers, accent+states, semantics, data-viz.
-- Soft near-gray borders, no pure-black hairlines. Importance maps to contrast; primary button strongest. Ramps via `generate_palette` / `design_system`.
+- Soft near-gray borders, no pure-black hairlines. Importance maps to contrast; primary button strongest. Per-hue 50→950 ramps via `shade_ramp`; status colors via `semantic_colors`; whole palettes via `generate_palette` / `design_system`.
 
 **Ramps & dark mode**
 - Brand ramp 50–900. Dark mode is retuned, not mirrored.

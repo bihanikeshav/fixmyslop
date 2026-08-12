@@ -4,7 +4,11 @@ _Craft knowledge to draw on, not a template. The gates in design-law.md are the 
 
 **One family, many roles**
 - One strong sans, several weights; hierarchy over novelty.
-- Three roles: display/heading, body/paragraph, label/meta. `suggest_fonts` returns a pairing — `pairing.body` is the workhorse; verify with `check_font`.
+- Three roles: display/heading, body/paragraph, label/meta. Prefer the connected
+  pairing; `pairing.body` is the workhorse. A family is usable only when its
+  `asset.available` and role gate pass. Emit the exact `@font-face`, await
+  `document.fonts.ready`, and render a headline/body/label specimen before judging
+  the pairing. Candidate research pairings are not human-validated truth.
 - Marketing: up to ~6 size steps. Dashboards: tighter — hero sizes steal density.
 
 **Practical scale (Mizko blueprint)**

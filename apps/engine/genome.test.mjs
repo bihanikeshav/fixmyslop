@@ -16,6 +16,15 @@ test("same intent + same seed → identical genome (determinism)", () => {
   assert.deepEqual(a, b);
 });
 
+test("type genome carries per-role leading/tracking (measure-aware body, tighter display)", () => {
+  const g = styleGenome(engine, landing, { seed: 7 });
+  const s = g.type.setting;
+  assert.ok(s && s.display && s.body && s.label);
+  assert.ok(s.body.leading >= 1.4 && s.body.leading <= 1.65, `body leading ${s.body.leading} should be a reading line-height`);
+  assert.ok(s.display.leading <= 1.2, "display leading is tighter than body");
+  assert.match(s.display.tracking, /-0\.0/);   // large headings get negative tracking
+});
+
 test("hero-led page: the hero section (first non-chrome) is flagged singleViewport, and only it", () => {
   const g = styleGenome(engine, landing, { seed: 7 });
   const sg = g.layout.sectionGrammar;

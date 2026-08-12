@@ -36,6 +36,81 @@ test("designSystem: full coherent theme", () => {
   assert.ok(ds.type.length > 1);
   assert.equal(ds.spacing[0].px, 4);
   assert.equal(ds.elevation.length, 6);
+  // color enrichments: a shade ramp (light→dark) and gate-clean semantic status colors
+  assert.ok(Array.isArray(ds.palette.ramp) && ds.palette.ramp.length >= 5);
+  assert.ok(ds.palette.ramp[0].L > ds.palette.ramp[ds.palette.ramp.length - 1].L, "ramp goes light → dark");
+  for (const k of ["error", "success", "warning", "info"]) {
+    const v = eng.classify(ds.palette.semantic[k]).verdict;
+    assert.ok(v === "SAFE" || v === "NEUTRAL-ok", `${k} ${ds.palette.semantic[k]} is ${v}, must be non-slop`);
+  }
+});
+
+test("shadeRamp: even-lightness, in-gamut, hue-anchored; neutral when hue omitted", () => {
+  const ramp = eng.shadeRamp(150, { steps: 9 });
+  assert.equal(ramp.length, 9);
+  for (const s of ramp) assert.match(s.hex, /^#[0-9a-f]{6}$/i);
+  assert.ok(ramp.every((s, i) => i === 0 || s.L <= ramp[i - 1].L + 1e-9), "monotonic light→dark");
+  const neutral = eng.shadeRamp(null, { steps: 5 });
+  assert.ok(neutral.every((s) => s.C <= 0.02), "hue-less ramp stays near-neutral");
+});
+
+test("checkPalette: dark+neon combination gate + optional surface elevation check", () => {
+  // near-black ground + saturated accent — each hex individually legal, the PAIR is banned
+  const neon = eng.checkPalette("#141210", "#f2efe9", "#ff5f1f");
+  assert.equal(neon.pass, false);
+  assert.match(neon.issues.join(" "), /dark\+neon/);
+  // same ground with a desaturated accent passes
+  const calm = eng.checkPalette("#141210", "#f2efe9", "#b5522f");
+  assert.ok(!calm.issues.some((i) => /dark\+neon/.test(i)));
+  // surface too close to ground is flagged; a real elevation step passes and is reported
+  const muddy = eng.checkPalette("#eceae3", "#17150f", "#b5522f", null, "#ebe9e2");
+  assert.equal(muddy.pass, false);
+  assert.match(muddy.issues.join(" "), /surface≈ground/);
+  const stepped = eng.checkPalette("#eceae3", "#17150f", "#b5522f", null, "#d8d4ca");
+  assert.equal(stepped.pass, true);
+  assert.ok(stepped.surface && stepped.surface.contrastVsGround >= 1.1);
+  assert.ok(Number.isFinite(stepped.contrastAccent));
+});
+
+test("generatePalette: dark mood desaturates the accent below the dark+neon line (−25% chroma)", () => {
+  for (let seed = 0; seed < 20; seed++) {
+    const pal = eng.generatePalette({ hue: 40, energy: "bold", seed, mood: "dark" });
+    const C = eng.classify(pal.accent).oklch.C;
+    assert.ok(C < 0.17, `dark+bold seed ${seed}: accent C ${C.toFixed(3)} would read as neon on a near-black ground`);
+    assert.equal(eng.checkPalette(pal.ground, pal.ink, pal.accent, pal.accent2).pass, true);
+  }
+});
+
+test("generatePalette: accent2 stays a HARMONIC partner even when +150° lands in the banned indigo band", () => {
+  // hue 90 → +150 = 240 (mid-indigo, banned) → the mirror split-complement (~300) must be used,
+  // not a collapse back to the primary's own hue.
+  for (const seed of [1, 5, 9]) {
+    const pal = eng.generatePalette({ hue: 90, energy: "balanced", seed });
+    const h1 = eng.classify(pal.accent).oklch.H;
+    const h2 = eng.classify(pal.accent2).oklch.H;
+    const d = Math.min(Math.abs(h1 - h2), 360 - Math.abs(h1 - h2));
+    assert.ok(d >= 60, `seed ${seed}: accent2 hue ${h2.toFixed(0)} sits only ${d.toFixed(0)}° from accent ${h1.toFixed(0)} — not a harmonic partner`);
+  }
+});
+
+test("semanticColors: warning reads amber (high lightness), all roles gate-clean", () => {
+  const sem = eng.semanticColors(150, "balanced");
+  const w = eng.classify(sem.warning).oklch;
+  assert.ok(w.L >= 0.6, `warning L ${w.L.toFixed(2)} is olive/brown, not amber`);
+  assert.ok(w.H > 40 && w.H < 110, `warning hue ${w.H.toFixed(0)} not in the amber band`);
+  for (const k of ["error", "success", "warning", "info"]) {
+    const v = eng.classify(sem[k]).verdict;
+    assert.ok(v === "SAFE" || v === "NEUTRAL-ok", `${k} ${sem[k]} is ${v}`);
+  }
+});
+
+test("shadeRamp: 11 steps yields the Tailwind-style 50…900,950 labels; neutral ramp anchors warm, not slate", () => {
+  const ramp = eng.shadeRamp(200, { steps: 11 });
+  assert.equal(ramp[0].step, 50);
+  assert.equal(ramp[ramp.length - 2].step, 900);
+  assert.equal(ramp[ramp.length - 1].step, 950);
+  const neutral = eng.shadeRamp(null, { steps: 5 });
+  assert.ok(neutral.every((s) => s.H > 40 && s.H < 110), "hue-less ramp should anchor warm (paper), not the slate blue-gray default");
 });
 
 test("auditSystem: coherence score", () => {

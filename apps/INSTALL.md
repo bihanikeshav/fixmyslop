@@ -49,7 +49,8 @@ curl -s -X POST https://fixmyslop.bihanikeshav.workers.dev/mcp \
   -H 'content-type: application/json' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
-You should see **24 tools**.
+You should see the current tool catalog, including `connected_style_genome`,
+`check_svg`, and `build_page`.
 
 ---
 
@@ -80,15 +81,16 @@ Legacy named routes also exist: `/api/color?hex=`, `/api/palette`, `/api/fonts?n
 
 ---
 
-## 3. The 24 tools
+## 3. Tool catalog
 
 **Color & font**
 - `check_color` — judge a hex for slop (banned defaults, overused corpus zones, brand
   clones) → verdict + slop score + fresh alternatives.
 - `check_palette` — judge ground/ink/accent(/accent2): per-role verdicts, near-dupes,
   contrast, pass/fail.
-- `suggest_fonts` — fresh, non-monoculture font families + a display/body pairing.
-- `check_font` — judge a family: FRESH / SLOP / SLOP-allowed-foundational / UNKNOWN.
+- `suggest_fonts` — fresh, asset-verified font families + a metric-compatible display/body pairing. Asset evidence says whether a file is repository-local or remotely loadable.
+- `check_font` — judge freshness, repository asset availability, remote loadability, and role suitability.
+- `check_svg` — reject malformed, unsafe, inaccessible, or unproven LLM-authored SVG.
 - `structure_ideas` — distinctive page/layout archetypes away from the centered-hero SaaS template.
 
 **Whole-system (flagship)**
@@ -96,6 +98,15 @@ Legacy named routes also exist: `/api/color?hex=`, `/api/palette`, `/api/fonts?n
   spacing + radius + shadow ramp + motion + control sizing.
 - `audit_system` — judge a submitted token set across domains → per-domain verdicts +
   a 0–100 coherence score.
+
+**Dashboard system + Fluid components**
+- `dashboard_system` — exact responsive shell rectangles, 12/6/1-column placement,
+  spacing and type roles, Fluid density/surfaces, restrained personality layers, and
+  the genuine `@fluid/*` component manifest.
+- `fluid_components` — install commands and direct registry URLs for Fluid
+  Functionalism's MIT-licensed source components; no local lookalikes.
+- `check_dashboard_layout` — audit bounds, grid alignment, collisions, component
+  provenance/density, and background-pattern limits.
 
 **Connected engine (intent → genome)**
 - `resolve_intent` — normalize a StyleIntent: clamp dials to [0,1], fill the ones you

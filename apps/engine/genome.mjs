@@ -168,7 +168,10 @@ export function styleGenome(engine, intentInput = {}, { seed, recentFingerprints
     ? (((Number(intentInput.hue) % 360) + 360) % 360)
     : null;
   const baseHue = explicitHue != null ? explicitHue : deriveBaseHue(intent);
-  let palette = engine.generatePalette({ energy: band(intent.energy), seed: useSeed, hue: baseHue });
+  // wire the requested theme through to the palette's ground/ink story — without this, intent.theme
+  // reached material/background but the palette stayed light, so a "dark" direction rendered on a
+  // light ground (the dark mood also desaturates the accent, per the dark+neon gate).
+  let palette = engine.generatePalette({ energy: band(intent.energy), seed: useSeed, hue: baseHue, mood: intent.theme === "dark" ? "dark" : "light" });
   // checkColorFit — belt-and-suspenders re-check against the design-law.md indigo/violet/
   // fintech-blue + cyan/mint hard bans; generatePalette's own gate already refuses to emit either
   // band, so this only fires if a caller-anchored accent slipped through some other path.
@@ -256,6 +259,22 @@ export function styleGenome(engine, intentInput = {}, { seed, recentFingerprints
     personality: { axes },
     type: {
       display, body,
+      // per-role leading + tracking recommendations (typography.md): the engine emitted NONE, so
+      // implementers fell back to the browser's 1.2 line-height (too tight for body) and 0 tracking
+      // everywhere. Body leading is measure-aware — a tight measure (multi-column / narrow content)
+      // needs less leading than a wide one; sans takes a touch more than serif.
+      setting: (() => {
+        const share = (layout && layout.macro && Number.isFinite(layout.macro.contentWidthShare)) ? layout.macro.contentWidthShare : 0.9;
+        const cols = (layout && layout.macro && Number.isFinite(layout.macro.columnCount)) ? layout.macro.columnCount : 1;
+        const tight = cols >= 2 || share <= 0.72;
+        const bodyLeading = (tight ? 1.45 : 1.55) + (body && body.category === "sans-serif" ? 0.03 : 0);
+        return {
+          display: { leading: 1.1, tracking: "-0.025em" },   // large headings: tighter tracking + leading
+          body: { leading: +bodyLeading.toFixed(2), tracking: "0" },
+          label: { leading: 1.2, tracking: "0.02em", uppercaseTracking: "0.08em" },
+          measure: tight ? "45-60ch" : "60-75ch",
+        };
+      })(),
       note: "display carries identity; body carries running text — never swap them.",
     },
     color: { ...palette, source: "corpus-plus-oklch" },

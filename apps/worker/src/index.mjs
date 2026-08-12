@@ -9,6 +9,7 @@ import { handleMcpPost, handleSse } from "./mcp.mjs";
 import { renderSkill, renderVerbFile, PREAMBLE, VERBS } from "../../engine/prompts.mjs";
 import { renderReference, REFERENCE } from "../../engine/reference.mjs";
 import { renderInstall } from "./install-doc.mjs";
+import { VERSION } from "./version.mjs";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -45,7 +46,7 @@ export default {
       if (pathname === "/sse" && request.method === "GET") return handleSse(url, CORS);
 
       // ---- health ----
-      if (pathname === "/health") return json({ ok: true, fonts: stats.fonts, corpus: stats.corpus });
+      if (pathname === "/health") return json({ ok: true, version: VERSION, fonts: stats.fonts, corpus: stats.corpus });
 
       // ---- REST API ----
       if (pathname === "/api/color" && request.method === "GET") {
@@ -62,11 +63,12 @@ export default {
           body = {
             ground: q.get("ground"), ink: q.get("ink"),
             accent: q.get("accent"), accent2: q.get("accent2") || undefined,
+            surface: q.get("surface") || undefined,
           };
         } else return err("method not allowed", 405);
-        const { ground, ink, accent, accent2 } = body || {};
+        const { ground, ink, accent, accent2, surface } = body || {};
         if (!ground || !ink || !accent) return err("need ground, ink, accent");
-        return json(engine.checkPalette(ground, ink, accent, accent2));
+        return json(engine.checkPalette(ground, ink, accent, accent2, surface));
       }
 
       if (pathname === "/api/fonts" && request.method === "GET") {

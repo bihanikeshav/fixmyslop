@@ -32,10 +32,16 @@ Gives a URL like `https://fixmyslop.<your-subdomain>.workers.dev`. Endpoints:
 - MCP prompts: `prompts/list` (7 canonical verbs: `explore`, `improve_design`,
   `design_review`, `theme`, `colorize`, `typeset`, `polish`) · `prompts/get` (renders one)
 
-The MCP now exposes 24 tools: 5 color/font + 15 system (type, spacing, radius, shadow,
-layout, motion, controls) split into generators and auditors, the `design_system`
-flagship, plus 4 connected-engine tools (`resolve_intent`, `style_genome`,
-`suggest_layout`, `font_neighbors`) that resolve one coherent direction from a StyleIntent.
+The MCP exposes its current catalog through `tools/list`: the color/font and system auditors/generators, the
+`design_system` flagship, `check_svg`, and the connected-engine tools
+(`resolve_intent`, `style_genome`, `connected_style_genome`,
+`connected_explore_directions`, `connected_build_spec`, `connected_v2_catalog`,
+`suggest_layout`, `font_neighbors`) plus the dashboard path
+(`dashboard_system`, `fluid_components`, `check_dashboard_layout`). Font responses distinguish verified
+repository-local assets from publicly loadable URLs. The Worker does not host the
+ignored `data/fonts-cache` binaries, so remote callers must provide a licensed
+asset host or use a system fallback. SVG output must pass
+`check_svg` before it enters a page.
 All back onto the single pure `apps/engine` module.
 
 Point an MCP client at `https://fixmyslop.<subdomain>.workers.dev/mcp`.

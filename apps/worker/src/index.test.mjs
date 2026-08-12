@@ -2,6 +2,13 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import worker from "./index.mjs";
 
+test("GET /health reports release version", async () => {
+  const response = await worker.fetch(new Request("http://x/health"));
+  const body = await response.json();
+  assert.equal(body.ok, true);
+  assert.equal(body.version, "0.1.0");
+});
+
 test("GET /api/tool/shadow?elevation=4 returns a layered shadow", async () => {
   const res = await worker.fetch(new Request("http://x/api/tool/shadow?elevation=4"));
   assert.equal(res.status, 200);
@@ -28,6 +35,7 @@ test("GET /skill installs the staggered fix-ai-slop skill (index + passes)", asy
   assert.match(script, /NAME=fix-ai-slop/);
   assert.match(script, /SKILL\.md/);
   assert.match(script, /for V in explore .* polish/);   // fetches the pass files (dynamic from VERBS)
+  assert.match(script, /technical-product/);            // fetches the specialized landing reference
 });
 
 test("staggered skill files: SKILL.md index, a pass, the design law, and 404", async () => {
@@ -51,6 +59,10 @@ test("staggered skill files: SKILL.md index, a pass, the design law, and 404", a
   assert.equal(ref.status, 200);
   assert.match(await ref.text(), /fix-ai-slop reference/);
 
+  const technical = await worker.fetch(new Request("http://x/skill/reference/technical-product.md"));
+  assert.equal(technical.status, 200);
+  assert.match(await technical.text(), /Write the narrative spine before styling/);
+
   const missing = await worker.fetch(new Request("http://x/skill/nope.md"));
   assert.equal(missing.status, 404);
 });
@@ -64,6 +76,8 @@ test("GET /install.md covers MCP + skill with the live origin", async () => {
   assert.match(md, /fix-ai-slop skill/);          // skill section
   assert.match(md, /example\.test\/mcp/);         // base URL interpolated from origin
   assert.match(md, /example\.test\/skill/);
+  assert.match(md, /live tool catalog/);
+  assert.doesNotMatch(md, /\b\d+ tools\b/, "install guide must not hard-code a drifting tool count");
   const alias = await worker.fetch(new Request("http://example.test/install"));
   assert.equal(alias.status, 200);                // /install alias also works
 });

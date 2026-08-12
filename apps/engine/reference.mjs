@@ -5,239 +5,95 @@
 
 export const REFERENCE = [
   {
-    key: "foundations",
-    title: "Foundations",
-    when: "signifiers, affordances, hierarchy, control states",
-    body: `UI is a language: a stranger reads relationships, availability, and priority with no manual.
-
-**Signifiers & affordances**
-- Show function AND state: containers, contrast, active fills. Related items share a container; selected sets get a distinct fill or outline.
-- Inactive = reduced contrast, never primary-clickable.
-- Four states per control: default, hover/focus, pressed, disabled — missing states is the loudest beginner tell (\`check_motion\`).
-- Obscure icons: ~1s-delayed tooltip. Universal ones (home, search, user) stand alone.
-- Spatial relationships (from → to): icon + alignment beats wordy labels.
-
-**Hierarchy is contrast**
-- Deliberate difference: size, weight, position, color, space, isolation.
-- One primary job per region, made strongest; meta (dates, helpers) smaller, quieter.
-- If everything is bold, nothing is — must survive grayscale before color.
-- Marketing may run large display type; product UI text stays ≤ ~24px.
-
-**Whole house**
-Map entry, skip, search, error, return. Design empty/loading/error/success, not just the demo frame. Reuse components. No dead clickable-looking chrome; no nav without an active state.`,
+    "key": "foundations",
+    "title": "Foundations",
+    "when": "signifiers, affordances, hierarchy, control states",
+    "body": "UI is a language: a stranger reads relationships, availability, and priority with no manual.\n\n**Signifiers & affordances**\n- Show function AND state: containers, contrast, active fills. Related items share a container; selected sets get a distinct fill or outline.\n- Inactive = reduced contrast, never primary-clickable.\n- Four states per control: default, hover/focus, pressed, disabled — missing states is the loudest beginner tell (`check_motion`).\n- Obscure icons: ~1s-delayed tooltip. Universal ones (home, search, user) stand alone.\n- Spatial relationships (from → to): icon + alignment beats wordy labels.\n\n**Hierarchy is contrast**\n- Deliberate difference: size, weight, position, color, space, isolation.\n- One primary job per region, made strongest; meta (dates, helpers) smaller, quieter.\n- If everything is bold, nothing is — must survive grayscale before color.\n- Marketing may run large display type; product UI text stays ≤ ~24px.\n\n**Whole house**\nMap entry, skip, search, error, return. Design empty/loading/error/success, not just the demo frame. Reuse components. No dead clickable-looking chrome; no nav without an active state."
   },
   {
-    key: "layout",
-    title: "Layout & structure",
-    when: "grids, spacing, section rhythm, density vs air",
-    body: `**Spacing system**
-- One base, 4 or 8px; every gap a multiple — no random 13/17px (\`spacing_scale\` / \`check_spacing\`).
-- Proximity groups: related closer, unrelated more air. Equal spacing = no grouping.
-- Wireframe first; grayscale failure isn't saved by color. Five-second scroll test: structure alone conveys the product.
-
-**Captivating vs chaotic**
-- Guide the eye. Hold a grid rhythm; break it once, deliberately.
-- Archetype/hero via \`structure_ideas\`; grid math via \`layout\` (container tokens on the outer wrapper; never re-add margin on \`inner\`).
-- Vary width, media placement, density per section — no identical slabs.
-- Ornaments in the margins, never on the message.
-
-**Two densities, both legal**
-- Marketing (Apple-like): big product focus, confident whitespace, one idea at a time.
-- Product: real density — compact type, layered neutrals, data-first — labels still scannable.
-
-No crammed competing sections, no decorative dead cards. Structure earns polish, never the reverse.`,
+    "key": "layout",
+    "title": "Layout & structure",
+    "when": "grids, spacing, section rhythm, density vs air",
+    "body": "**Spacing system**\n- One base, 4 or 8px; every gap a multiple — no random 13/17px (`spacing_scale` / `check_spacing`).\n- Proximity groups: related closer, unrelated more air. Equal spacing = no grouping. A 2:1 between-vs-within ratio is a reliable start; label→input gap smaller than field→field; more space above a heading than below it.\n- Start with too much space and remove it (Refactoring UI) — subtraction, not padding, is the default move.\n- Wireframe first; grayscale failure isn't saved by color. Five-second scroll test: structure alone conveys the product.\n\n**Balance & focal point**\n- One element wins per view — dominant / sub-dominant / subordinate, three levels not five. Isolate ONE thing; isolating several dilutes it to zero. Squint gate: blur the render (`filter: blur(8px)`), the intended primary must still be the most prominent shape.\n- Balance by visual weight, not mirror symmetry: a large element balances against several small ones plus negative space — calibrate it, never strand a column. Unexplained asymmetry reads as disorder.\n- Resolve the edges: columns and sections share baselines and bottom edges; align to as few axes as possible; misaligned columns make related content feel unrelated.\n- Height is content-driven, never a fixed frame content can't fill — trapped leftover space and empty multi-column are tells. Negative space must amplify the primary. If a column empties out, rebalance widths or merge — don't pad the void.\n- Boxitis: wrapping every section in a border/card collapses the hierarchy into equal regions. A border is additive signal, not a default — whitespace between sections usually groups them.\n\n**Captivating vs chaotic**\n- Guide the eye. Hold a grid rhythm; break it once, deliberately.\n- Archetype/hero via `structure_ideas`; grid math via `layout` (container tokens on the outer wrapper; never re-add margin on `inner`).\n- Vary width, media placement, density per section — no identical slabs.\n- Ornaments in the margins, never on the message.\n\n**Two densities, both legal**\n- Marketing (Apple-like): big product focus, confident whitespace, one idea at a time.\n- Product: real density — compact type, layered neutrals, data-first — labels still scannable.\n\nNo crammed competing sections, no decorative dead cards. Structure earns polish, never the reverse."
   },
   {
-    key: "typography",
-    title: "Typography",
-    when: "type scales, roles, product vs marketing type",
-    body: `**One family, many roles**
-- One strong sans, several weights; hierarchy over novelty.
-- Three roles: display/heading, body/paragraph, label/meta. \`suggest_fonts\` returns a pairing — \`pairing.body\` is the workhorse; verify with \`check_font\`.
-- Marketing: up to ~6 size steps. Dashboards: tighter — hero sizes steal density.
-
-**Practical scale (Mizko blueprint)**
-- Small increments, often 2px. Labels and paragraphs are separate styles.
-- Labels: 10 / 12 / 14 / 16, compact line-height.
-- Paragraphs: 12 / 14 / 16 / 18, reading line-height.
-- Build with \`type_scale\` (modular, ≤7 sizes); verify with \`check_type\`. Bind as tokens — never freehand.
-
-**Setting details**
-- Large headings: tracking −2% to −3%, line-height ~110–120%.
-- Body takes more line-height than a single-line label; long measure needs air.
-- Mobile headings reduce slightly from desktop.
-
-Most-broken rule: a display or novelty face for running text reads as slop instantly.`,
+    "key": "typography",
+    "title": "Typography",
+    "when": "type scales, roles, product vs marketing type",
+    "body": "**One family, many roles**\n- One strong sans, several weights; hierarchy over novelty.\n- Three roles: display/heading, body/paragraph, label/meta. Prefer the connected\n  pairing; `pairing.body` is the workhorse. A family is usable only when its\n  `asset.available` and role gate pass. Emit the exact `@font-face`, await\n  `document.fonts.ready`, and render a headline/body/label specimen before judging\n  the pairing. Candidate research pairings are not human-validated truth.\n- Marketing: up to ~6 size steps. Dashboards: tighter — hero sizes steal density.\n\n**Practical scale (Mizko blueprint)**\n- Small increments, often 2px. Labels and paragraphs are separate styles.\n- Labels: 10 / 12 / 14 / 16, compact line-height.\n- Paragraphs: 12 / 14 / 16 / 18, reading line-height.\n- Build with `type_scale` (modular, ≤7 sizes); verify with `check_type`. Bind as tokens — never freehand.\n\n**Setting details**\n- Large headings: tracking −2% to −3%, line-height ~110–120%.\n- Body takes more line-height than a single-line label; long measure needs air.\n- Mobile headings reduce slightly from desktop.\n\nMost-broken rule: a display or novelty face for running text reads as slop instantly."
   },
   {
-    key: "color",
-    title: "Color systems",
-    when: "ramps, semantics, dark mode, 60-30-10 in apps",
-    body: `**Less color, more meaning**
-- Neutrals dominate; color = status, selection, brand moments. Linear, Notion, Vercel, Supabase run ~90%+ neutral with a tiny accent.
-- One brand accent for primary actions. Semantics distinct: success / warning / danger / info — destructive is never playful.
-- Icons mostly monochrome; color only for state. Rainbow cards fail hierarchy and a11y. Gate shipped color with \`check_color\` / \`check_palette\`.
-
-**Why 60-30-10 breaks in apps**
-- Landing pages can run 60/30/10; apps need layered surfaces.
-- Neutral stack: 3–4 background elevations, 1–2 strokes, ~3 text steps. Layers: frame → chrome/sidebar → card → overlay, plus borders, text tiers, accent+states, semantics, data-viz.
-- Soft near-gray borders, no pure-black hairlines. Importance maps to contrast; primary button strongest. Ramps via \`generate_palette\` / \`design_system\`.
-
-**Ramps & dark mode**
-- Brand ramp 50–900. Dark mode is retuned, not mirrored.
-- Light primary: mid-dark (600/700); dark primary: lighter mid (300/400).
-- Dark surfaces get LIGHTER as they elevate — double the perceptual distance; a dark card is never darker than the page.
-- Dim pure white text on dark; brighten borders. Charts: separate data palette; may break brand monotony on purpose.`,
+    "key": "color",
+    "title": "Color systems",
+    "when": "ramps, semantics, dark mode, 60-30-10 in apps",
+    "body": "**Less color, more meaning**\n- Neutrals dominate; color = status, selection, brand moments. Linear, Notion, Vercel, Supabase run ~90%+ neutral with a tiny accent.\n- One brand accent for primary actions. Semantics distinct: success / warning / danger / info — destructive is never playful.\n- Icons mostly monochrome; color only for state. Rainbow cards fail hierarchy and a11y. Gate shipped color with `check_color` / `check_palette`.\n\n**Why 60-30-10 breaks in apps**\n- Landing pages can run 60/30/10; apps need layered surfaces.\n- Neutral stack: 3–4 background elevations, 1–2 strokes, ~3 text steps. Layers: frame → chrome/sidebar → card → overlay, plus borders, text tiers, accent+states, semantics, data-viz.\n- Soft near-gray borders, no pure-black hairlines. Importance maps to contrast; primary button strongest. Per-hue 50→950 ramps via `shade_ramp`; status colors via `semantic_colors`; whole palettes via `generate_palette` / `design_system`.\n\n**Ramps & dark mode**\n- Brand ramp 50–900. Dark mode is retuned, not mirrored.\n- Light primary: mid-dark (600/700); dark primary: lighter mid (300/400).\n- Dark surfaces get LIGHTER as they elevate — double the perceptual distance; a dark card is never darker than the page.\n- Dim pure white text on dark; brighten borders. Charts: separate data palette; may break brand monotony on purpose.\n\n**Surface rules (tasteskill.dev)**\n- Off-black / off-white, never pure `#000`/`#fff`; tint neutrals ~0.005–0.02 chroma toward the brand hue — pure black/white/gray don't occur in nature.\n- Neutral base + ONE accent, saturation < 80% — a rare committed accent beats an evenly-saturated palette. Gate with `check_color` / `check_palette`.\n- Tint shadows to the background hue; no pure-black drop shadows on light. Alpha everywhere is a smell (incomplete palette) — define explicit surface/overlay colors per elevation, keep alpha for focus/interactive states.\n- One radius scale, locked (all-sharp / all-soft ~12–16px / all-pill); mix only with a rule. `radius_scale` / `check_radius`.\n- Glass only over real layering: `backdrop-filter` + 1px inner border + inset highlight + solid fallback under `prefers-reduced-transparency`. Grain/noise on a fixed `pointer-events-none` overlay only, never on scrollers.\n- Rotate the palette family across builds; refuse category defaults (tasteskill bans cream+brass \"premium\") — ground in THIS subject, not the next fashionable alternative."
   },
   {
-    key: "components",
-    title: "Components",
-    when: "buttons, cards, tables, forms, icons, AI surfaces",
-    body: `**Buttons**
-- Primary / secondary / tertiary obvious and consistent product-wide; one primary per region.
-- Same destination ⇒ same CTA label. Destructive = danger color + confirm when irreversible.
-- Dense toolbars may reveal secondary actions on hover.
-
-**Cards, lists, tables**
-- Form matches the data. Cards: identity → title → meta → actions.
-- Tables: right-align numbers, chips for enums, truncate long text, shade inactive rows. Lists beat bordered card stacks for density and empty states.
-- Time series → timeline/line chart, not a table. Bulk actions on multi-select.
-
-**Icons**
-One library (Lucide, Phosphor, Feather), consistent stroke width, SVG. Emoji as system chrome is a vibe-code tell unless Notion-intentional.
-
-**AI surfaces**
-- Prompt box as the primary object; context chips for mode/files/code/drive.
-- Compress large pastes into code blocks. Stream tokens; short loaders or a step trail, not a frozen spinner.
-- Inline refine (rewrite/shorten), not only full regeneration. Show steps/sources when trust matters. Progressive disclosure for advanced controls and token cost.`,
+    "key": "components",
+    "title": "Components",
+    "when": "buttons, cards, tables, forms, interaction states, density, nested surfaces, AI surfaces",
+    "body": "**Component contract**\n- Start with the semantic primitive and preserve its keyboard behavior, focus visibility, accessible name, disabled semantics, and ARIA relationships. Motion never substitutes for semantics.\n- Define the full state matrix before polish: resting, hover, focus-visible, pressed, selected/open, disabled, loading, error, success, and empty where relevant. State must read without color alone.\n- Keep component geometry stable across states. Loading preserves the label width; validation does not make fields jump; active indicators do not reflow neighboring labels.\n- Expose named slots for replaceable icons and supporting content. Use one icon library and one stroke language instead of per-component SVG inventions.\n\n**Preview intent before commitment**\n- In a contiguous group such as tabs, menu rows, accordions, or table rows, let the nearest eligible item receive a faint preview before click. The selected item remains unmistakable.\n- Scope proximity feedback to the group, keep it subordinate to hover/focus/selection, and enable it only for `(hover: hover) and (pointer: fine)`. Never make controls chase the pointer across the page.\n- Use shared geometry to show relationships: a merged selection background, sliding tab indicator, or expanding panel should explain which item became active and where its content came from.\n\n**Density is a region decision**\n- Offer a small, coherent density ladder instead of arbitrary per-control sizes. A useful desktop starting pair is 36px default and 28px compact; keep touch targets at least ~44px on touch surfaces.\n- Scale control height, type, icons, horizontal padding, and gaps together. Compact is for a dense region, not one randomly tiny button.\n- Pass density through context and portals so a select trigger, popover, menu rows, and nested controls inherit the same rhythm.\n\n**Surfaces lift relative to their substrate**\n- Model a bounded elevation stack. A popover inside a dialog must lift from the dialog, not reuse a global card color that collapses the layers.\n- In light mode, higher levels may converge toward a light surface while shadow carries depth. In dark mode, higher levels usually become slightly lighter with disciplined layered shadows.\n- Derive hover and selected treatments from the current substrate, not one universal translucent overlay. Verify contrast at every nesting level.\n\n**Buttons, forms, lists, and tables**\n- Primary / secondary / tertiary remain obvious product-wide; allow one primary per region. Same destination ⇒ same CTA label. Confirm irreversible destructive actions.\n- Inputs keep labels persistent, errors adjacent, and help text stable. Groups, selects, and dialogs inherit size and surface context across portals.\n- Form matches the data. Cards: identity → title → meta → actions. Lists beat bordered card stacks for density and empty states.\n- Tables right-align numbers, truncate long text accessibly, support keyboard row actions, and reveal bulk actions only after selection. Time series → timeline/line chart, not a table.\n\n**AI surfaces**\n- Prompt box as the primary object; context chips for mode/files/code/drive.\n- Compress large pastes into code blocks. Stream tokens; use short loaders or a step trail with complete / active / pending states, not a frozen spinner.\n- Inline refine (rewrite/shorten), not only full regeneration. Show steps/sources when trust matters. Progressive disclosure for advanced controls and token cost.\n\n**Pre-ship composition check**\nTest each component alone, adjacent to peers, inside a compact region, inside a nested overlay, at 200% zoom, with keyboard only, with touch, and under reduced motion. Interaction quality that survives composition is the bar.\n\n_Patterns distilled from [Fluid Functionalism](https://www.fluidfunctionalism.com/docs) and its [MIT-licensed source](https://github.com/mickadesign/fluid-functionalism): take the interaction principles, not the visual skin or component code._"
   },
   {
-    key: "dashboards",
-    title: "Dashboards & data UI",
-    when: "sidebar + object list + charts, density, statuses",
-    body: `**Anatomy**
-- Sidebar is the spine: icon + short label, grouped, rare items at the bottom, active indicator, collapsible-ready. Main canvas = the job-to-be-done.
-- Charts are real: axes, numbers, legends, range controls. Data drives form: enums → chips, magnitudes → aligned numbers/bars, time → timeline/line.
-- Layered neutrals, one accent, semantic statuses. Design the zero-data empty state; bulk actions on multi-select. Account card, not a gradient-letter avatar.
-
-**Recipe:** sidebar spine + object list/table + 1–2 real charts with ranges. Usually NO hero-sized centrepiece — it steals density.
-
-**Optimistic UI:** low-risk frequent actions update immediately, reconcile async — toast + undo. Never optimistic-delete without undo.
-
-**Three tells**
-- Widget-dump dashboards with no primary job.
-- The same KPI strip on every page (vanity spam).
-- Context-blind layouts — analytics widgets on a settings page.
-
-Density where power users live; air where newcomers decide. \`check_layout\` for the grid, \`check_palette\` for statuses.`,
+    "key": "product-ui",
+    "title": "Professional product UI",
+    "when": "the craft behind Linear/Vercel/Stripe/Cloudflare — restraint, density, interaction, without cloning",
+    "body": "The transferable craft behind Linear, Vercel, Stripe, Cloudflare, Notion — PRINCIPLES, not a skin to copy. The LOOK (dark + one blue/purple accent + Geist/Inter + glass) is a median cluster; cloning it is slop. Take the discipline; ground palette, type, and layout in THIS subject.\n\n**Restraint is the strategy, not a side-effect**\n- Monochrome foundation + ONE accent used rarely — ideally once per screen, never on every element (Linear). An accent that hits hard is one you almost never spend.\n- High contrast: crisp ink-on-paper / paper-on-ink, nothing muddy in the middle. Importance is carried by contrast and weight, not by adding more color.\n- Whitespace is air, not emptiness — often more than feels necessary. Generous, confident spacing reads as craft; cramped-but-decorated reads as slop.\n\n**Type does the identity work**\n- One considered, slightly cold/geometric family carried across everything, so the rest can be stripped bare — a distinctive face IS the brand (Vercel). Earn it from the subject; don't reach for Geist/Inter because it looks pro.\n- Tabular / monospaced numerals for data, metrics, and money; tight tracking on large display; align optically, not just on metrics.\n\n**Density discipline**\n- Dense where power users live, airy where newcomers decide. Compress AND breathe deliberately — every element earns its place; nothing purely decorative survives. This is the opposite of padding a weak layout.\n\n**Interaction has weight**\n- Keyboard-first: a command palette, real shortcuts, and a sane focus order — power surfaces reward the keyboard, not just the mouse.\n- Optimistic UI: low-risk actions land instantly and reconcile async, with undo; never a blocking spinner where an optimistic update belongs.\n- Spring, not just duration: interactions carry mass — they settle, they don't merely fade. One signature motion; everything else stays quiet.\n\n**Component maturity is a pro tell**\n- Every component defines ALL states — resting / hover / active / focus / disabled / loading / empty / error / success — and holds up in isolation AND in composition. Design the zero-data state first, not last.\n- One locked language for radius, spacing, shadow, and border — no arbitrary values. Pixel/grid precision is invisible when present and glaring when absent.\n\n**The anti-clone test**\n- If the screen could belong to another company's product unchanged, it's a clone — change an axis: a palette from the real material, a type move the subject earns, a layout its content demands. Professional is not Linear-colored; professional is disciplined AND subject-true."
   },
   {
-    key: "landing",
-    title: "Landing & marketing",
-    when: "hero, craft levels, narrative, CTAs",
-    body: `**Craft levels**
-- L1 template: alternating slabs, stock art, flat nav, vague copy, mismatched CTAs.
-- L2 cohesive: layout variety, matching CTAs, basic motion, tighter type.
-- L3 crafted: product-true visuals, strong hierarchy, intentional transitions.
-- L4 captivating: narrative scroll, one signature motion, exploratory-but-gridded composition.
-
-**Checklist (decisions, not defaults)**
-- One primary conversion path; nav emphasizes it. Hero = specific short promise + real product visual + ONE primary CTA (\`structure_ideas\`).
-- Visuals show the actual product — no lorem or stock filler.
-- Section variety: width, media, density; no identical slabs.
-- Radius language matches between media and controls (\`radius_scale\` / \`check_radius\`).
-- Motion supports the story and is removable (\`motion_tokens\`).
-
-**Apple-like**
-- Confident whitespace; one idea at a time.
-- Scroll reveals that teach — core content ships in markup, never opacity:0-until-scroll.
-- Gridded yet exploratory, non-templated placement.
-
-Refuse the median landing: symmetric hero left, widget card right, three feature cards, one CTA. Ground hero and sections in THIS subject so a swap would break it.`,
+    "key": "dashboards",
+    "title": "Dashboards & data UI",
+    "when": "sidebar + object list + charts, density, statuses",
+    "body": "**Anatomy**\n- Sidebar is the spine: icon + short label, grouped, rare items at the bottom, active indicator, collapsible-ready. Main canvas = the job-to-be-done.\n- Charts are real: axes, numbers, legends, range controls. Data drives form: enums → chips, magnitudes → aligned numbers/bars, time → timeline/line.\n- Layered neutrals, one accent, semantic statuses. Design the zero-data empty state; bulk actions on multi-select. Account card, not a gradient-letter avatar.\n\n**Recipe:** sidebar spine + object list/table + 1–2 real charts with ranges. Usually NO hero-sized centrepiece — it steals density.\n\n**Balance the three columns (sidebar · list · inspector):**\n- The object list is the job — keep it dominant. A detail/inspector rail must not out-weigh it (wider column, heavier button, bigger title) while holding less information; the inspector assists, it doesn't star. Two co-equal big titles across list and inspector = no focal point.\n- One status channel per row: a colored dot OR a word OR a row tint — never all three. Cap per-row treatments; the row's job is scannability, not signal density. Align magnitudes and timestamps on a shared axis.\n- Columns resolve to shared edges. A sidebar or inspector that dead-ends in dead space needs its width rebalanced or its content merged — not padded. Height is content-driven; never a fixed frame the content can't fill.\n\n**Optimistic UI:** low-risk frequent actions update immediately, reconcile async — toast + undo. Never optimistic-delete without undo.\n\n**Three tells**\n- Widget-dump dashboards with no primary job.\n- The same KPI strip on every page (vanity spam).\n- Context-blind layouts — analytics widgets on a settings page.\n\nDensity where power users live; air where newcomers decide. `check_layout` for the grid, `check_palette` for statuses."
   },
   {
-    key: "mobile",
-    title: "Mobile & gestures",
-    when: "targets, bottom nav, thumb reach, swipe",
-    body: `**Fundamentals**
-- Thumb zones rule: primary actions at the bottom, in easy reach.
-- Bottom tabs ≤5. Content-first; prefer platform conventions.
-- Touch targets ~44px min. Every list and page reacts to touch.
-
-**Gestures**
-- Swipe reveals secondary actions (Reminders/Mail pattern) — remove redundant chevrons once it exists.
-- Don't duplicate controls the platform already provides (e.g. back).
-- Visibility follows frequency and risk: global primary always visible; secondary on swipe; a temporary tooltip teaches the next action.
-
-**Onboarding**
-- One next action at a time — not a six-bullet modal dump.
-- Preset lists still need search / custom / skip.
-
-A tap with no visual response reads as broken. Verify press/transition timing with \`check_motion\` (ease-out, ≤500ms, honor prefers-reduced-motion).`,
+    "key": "landing",
+    "title": "Landing & marketing",
+    "when": "hero, craft levels, narrative, CTAs",
+    "body": "**Craft levels**\n- L1 template: alternating slabs, stock art, flat nav, vague copy, mismatched CTAs.\n- L2 cohesive: layout variety, matching CTAs, basic motion, tighter type.\n- L3 crafted: product-true visuals, strong hierarchy, intentional transitions.\n- L4 captivating: narrative scroll, one signature motion, exploratory-but-gridded composition.\n\n**Checklist (decisions, not defaults)**\n- One primary conversion path; nav emphasizes it. Hero = specific short promise + real product visual + ONE primary CTA (`structure_ideas`).\n- Visuals show the actual product — no lorem or stock filler.\n- Section variety: width, media, density; no identical slabs.\n- Radius language matches between media and controls (`radius_scale` / `check_radius`).\n- Motion supports the story and is removable (`motion_tokens`).\n\n**Apple-like**\n- Confident whitespace; one idea at a time.\n- Scroll reveals that teach — core content ships in markup, never opacity:0-until-scroll.\n- Gridded yet exploratory, non-templated placement.\n\nRefuse the median landing: symmetric hero left, widget card right, three feature cards, one CTA. Ground hero and sections in THIS subject so a swap would break it."
   },
   {
-    key: "motion",
-    title: "Motion",
-    when: "micro-interactions, restraint, meaningful transitions",
-    body: `Motion is feedback and delight AFTER structure works — never a substitute. Tokens via \`motion_tokens\`; verify with \`check_motion\`.
-
-**Micro-interactions**
-- Hover/press: slide the text, scale the press, shift the color — physical feel.
-- Toasts: quick enter/exit, optional undo. Tooltips: ~1s delay.
-- Loading: skeleton or streamed tokens, not a frozen spinner.
-
-**Restraint**
-- Ease-out, feedback ≤500ms; no linear robotic fades.
-- Identical fade-ins everywhere is a tell. One signature motion carries the page; the rest stays quiet.
-- Parallax and ornaments only in spacious margins, never on the message.
-- Scroll storytelling only when it explains value; degrade cleanly.
-
-**Never**
-- Motion that blocks navigation or delays the next action.
-- opacity:0-until-scroll — core content ships in markup on load.
-- Purpose-free complexity — over-animation is a top AI-slop tell.
-
-Under prefers-reduced-motion, everything works and nothing stays hidden.`,
+    "key": "technical-product",
+    "title": "Technical product landing",
+    "when": "developer tools, APIs, AI infrastructure, technical catalog/editorial pages with real product proof",
+    "body": "Use this archetype when the product has enough technical substance to teach: developer tools, APIs, infrastructure, data systems, AI platforms, or research-led products. The quality comes from making the product's mechanism visible, not from applying a blue SaaS skin.\n\n**Write the narrative spine before styling**\n- Give each section one job and one objection to resolve. A strong sequence is: category claim → product catalog → mechanism/how it works → measurable proof → use cases → deployment/trust → customer evidence → pricing → FAQ/close. Change or remove stages to fit the real buying journey.\n- Numbering, progress marks, or section rails may make a long page feel like one technical document. Use them as navigation and orientation, not decorative eyebrows repeated on every card.\n- Alternate explanation and proof. Never stack seven feature sections before showing evidence.\n\n**Hero: state the category and expose the product**\n- Lead with one short, ownable category sentence. Let one product-native word, glyph, diagram fragment, or data object interrupt the headline; never use an arbitrary emoji or generic orb.\n- Follow with a concrete mechanism sentence: what enters, what the system does, and what improves. Avoid mission-language that could describe any startup.\n- Offer one primary action and one genuinely different secondary action. For developer products, add a copyable install command or minimal invocation beneath them.\n- Place real adoption evidence near the hero: named customers, usage, or a verifiable research result. A logo strip is proof only when the relationship is truthful and permissioned.\n- Earn one signature media band or live stage below the hero. Keep it product-native—system visualization, computational texture, real interface, or technical film—and keep the headline visible without JavaScript.\n\n**Build an editorial grid, not a card stack**\n- Use the `layout` container as a stable spine. Structural outer rails, hairline rules, aligned column boundaries, and occasional full-bleed transitions can make the page read like a product catalog or technical report.\n- Prefer sharp or low-radius geometry when the subject calls for precision. Borders must connect and organize the page; isolated rounded cards around every paragraph are still boxitis.\n- Alternate full-width statements, split explanation/visual plates, dense evidence grids, and one or two color-inverted moments. Do not repeat the same three-column feature row.\n- Use micro-labels once per section for taxonomy, step, or proof type. Keep them small, terse, and aligned to the grid.\n\n**Type carries authority**\n- Pair a distinctive display grotesk with a readable body sans only when the generated pairing and runtime assets pass. The observed reference uses Space Grotesk for display and DM Sans for body; treat that as evidence for role contrast, never a prescribed pair.\n- A technical hero may start around 64–80px on desktop with tight leading and tracking, then reduce fluidly. Verify every wrap at desktop and mobile; do not preserve a dramatic size that breaks the sentence.\n- Use compact uppercase or monospaced labels for indices, code, and measurements—not for paragraphs. Let large editorial statements and small technical metadata create the contrast.\n\n**Information is the ornament**\n- Show a semantic product catalog: a vertical or horizontal tab list, one large visual stage, and a concise title/explanation for the selected capability. Preserve native tab semantics, keyboard traversal, focus visibility, and a useful stacked mobile fallback.\n- Explain the mechanism with real code, an architecture diagram, or an interactive sequence. Use syntax and data from the product; fake terminal chrome and decorative code are slop.\n- Prefer subject-native media: captured UI, generated data visualizations, benchmark charts, isometric system diagrams, dithered raster/video, or one restrained Rive/Lottie scene. Choose one visual language and reuse it. Gate authored SVG with `check_svg`.\n- Keep expensive canvas/video work below the critical text path, lazy-load it, reserve its dimensions, and provide a static poster plus reduced-motion fallback.\n\n**Proof has a methodology**\n- Every metric needs a unit, comparison basis, and source or explanation. Label benchmark conditions; do not turn marketing claims into fake charts.\n- Comparison tables prioritize the buyer's actual decision criteria. Make headers persistent, cells scannable, and the highlighted product column legible without relying on color alone.\n- Pair testimonials with a named person, company, concrete outcome, and source. Pair security badges with the exact certification and a verification path.\n- Pricing and FAQ complete the argument: expose the billing unit, limits, deployment options, and the questions that could block adoption.\n\n**Interaction and motion**\n- Spend motion on the product catalog, mechanism sequence, one proof visualization, or the signature hero media—not all four. Use the shared tiers in `reference/motion.md`; reversals continue from the current state and exits finish faster.\n- Marquees must contain real proof, pause or remain operable on hover/focus, hide duplicate accessibility content, and become a static/wrapping list under reduced motion.\n- Carousels expose previous/next controls, current position, keyboard behavior, and a non-carousel mobile layout when swiping would hide content.\n\n**Responsive translation**\n- Collapse decorative rails before content. Preserve section identity with a compact label and number.\n- Turn split plates into a deliberate reading order; place the explanation before or after the visual according to what the user needs first.\n- Convert vertical product tabs to a scrollable tab strip or accordion, keep tap targets ≥44px, and never strand important content behind hover.\n- Give wide benchmarks and pricing either a focused comparison view or labeled horizontal scrolling; do not squeeze desktop tables into illegibility.\n\n**Build sequence**\n1. Write the claim and section-by-section objection map.\n2. Generate and gate the type, palette, layout, spacing, radius, shadow, and motion systems.\n3. Plan the real assets and evidence before drawing placeholder surfaces.\n4. Build the hero and product catalog first; they establish the page language.\n5. Add mechanism, proof, use cases, trust, pricing, and FAQ in that order only when each earns its place.\n6. Test loading, keyboard, touch, reduced motion, 200% zoom, mobile wrapping, media failure, and real data extremes. Finish with the full audit suite.\n\n**Do not clone the reference**\nDo not reproduce Supermemory's copy, wordmark, mascot, blue, illustrations, benchmark claims, or exact section order. Borrow the transferable grammar—technical-document rails, product-native media, editorial type contrast, interactive explanation, and proof density—and regenerate every expression choice from THIS subject.\n\n_Patterns observed from [Supermemory](https://supermemory.ai/) as a high-quality reference for technical product storytelling._"
   },
   {
-    key: "failure-modes",
-    title: "Failure modes",
-    when: "the recognizable AI-slop tells + concrete fixes",
-    body: `The ranked tells, each with a one-line fix — hunt in this order.
-
-- **shadcn/Tailwind default kit** (slate cards, one recycled blue, uniform padding + rounding) → ground palette and structure in the subject; \`check_color\` / \`check_palette\` / \`check_layout\`.
-- **AI-purple / indigo accent** → derive the accent from real material; \`check_color\`.
-- **Purple→blue gradient, especially gradient-on-text** → ban outright; one committed accent.
-- **Over-animation** (everything fades/floats) → keep only motion that carries meaning; \`check_motion\`.
-- **Rounded-everything** at one fat radius → concentric, varied radii; \`radius_scale\` / \`check_radius\`.
-- **Dark + neon glow** (near-black ground + saturated accent) → give the ground a real hue, drop the glow.
-- **Emoji as icons / bullets / chrome** → one real icon set (Lucide, Phosphor, Feather).
-- **Default Inter / Geist** → a subject-grounded pairing; \`suggest_fonts\` / \`check_font\`.
-- **Symmetric hero + three cards + CTA** → break it with a real hero and section variety; \`structure_ideas\` / \`check_layout\`.
-
-**Structural tells:** harsh hard shadows (use soft, tinted, large-blur — \`shadow\` / \`check_shadow\`); inconsistent radius/type/button sizes; mismatched icon sets; flat hierarchy with no empty/loading/error states; five confused pricing tiers with hidden discounts; missing real pages (billing detail, analytics, empty).
-
-**Sterile mush vs clutter:** stripping everything leaves a dead SaaS. Add structured personality — margin ornaments, one micro-motion, product-true visuals — while text stays calm.`,
+    "key": "mobile",
+    "title": "Mobile & gestures",
+    "when": "targets, bottom nav, thumb reach, swipe",
+    "body": "**Fundamentals**\n- Thumb zones rule: primary actions at the bottom, in easy reach.\n- Bottom tabs ≤5. Content-first; prefer platform conventions.\n- Touch targets ~44px min. Every list and page reacts to touch.\n\n**Gestures**\n- Swipe reveals secondary actions (Reminders/Mail pattern) — remove redundant chevrons once it exists.\n- Don't duplicate controls the platform already provides (e.g. back).\n- Visibility follows frequency and risk: global primary always visible; secondary on swipe; a temporary tooltip teaches the next action.\n\n**Onboarding**\n- One next action at a time — not a six-bullet modal dump.\n- Preset lists still need search / custom / skip.\n\nA tap with no visual response reads as broken. Verify press/transition timing with `check_motion` (ease-out, ≤500ms, honor prefers-reduced-motion)."
   },
   {
-    key: "checklist",
-    title: "Ship checklist",
-    when: "the master pre-ship checklist + surface recipes",
-    body: `**Pre-ship checklist**
-Structure — one primary job per screen? Grayscale-readable hierarchy? Related items grouped? Spacing on the 4/8 grid? Form matches data shape?
-Interaction — hover/focus/active/disabled defined? Empty/loading/success/error designed? Progressive disclosure for secondary actions? Escape hatches (search/skip/cancel/back)? Feedback on destructive/async actions?
-Visual — one type family, limited size steps? Neutrals dominate, accent scarce, semantics correct? AA contrast? One icon set, no emoji chrome? Radius/shadow language consistent? Dark mode retuned if offered? Run \`audit_system\` over the tokens.
-Content — copy specific and short, CTAs match destinations? Product-true visuals? Motion removable? No dead cards or duplicated vanity KPIs?
-
-**Surface recipes**
-- SaaS dashboard: sidebar spine + object list/table + 1–2 real charts with ranges; layered neutrals, one accent, semantic statuses; first-run empty state; account card, not gradient-letter avatar.
-- Marketing landing: hero = specific promise + product visual + one CTA; section variety; matching CTA labels; motion after structure.
-- Mobile app: bottom nav ≤5, thumb-friendly targets; swipe for secondary; one onboarding action at a time.
-- AI tool: prompt box first, context chips, streaming output; steps/sources for trust; inline refine, progressive advanced controls.
-- Settings/billing: two-column or tabbed, no dead cards; honest price hierarchy, show discounts, fewer plans, payment method visible.
-
-When in doubt: reduce color, strengthen hierarchy, finish the flow, make the next action obvious.`,
+    "key": "motion",
+    "title": "Motion",
+    "when": "micro-interactions, spring tiers, interruption, meaningful transitions, reduced motion",
+    "body": "Motion is feedback and delight AFTER structure works — never a substitute. Every transition must clarify state, causality, hierarchy, or spatial relationship. Tokens via `motion_tokens`; verify with `check_motion`.\n\n**One shared motion language**\n- Centralize a small tier ladder: fast for local hover/focus/fades, moderate for controls and small overlays, slow for large dialogs, drawers, or stepped flows. Map travel distance and object mass to a tier; no component invents private timing.\n- Use the engine's spring tokens for entry and movement. Interruption must be natural: a reversal continues from the current value instead of finishing, snapping back, or restarting.\n- Exits are crisp and final: use no bounce and finish roughly one tier faster than the corresponding entry.\n\n**Motion communicates relationships**\n- Hover previews intent; press confirms contact; a shared selection background shows grouping; an expanding panel reveals where content came from. If the relationship is already obvious, prefer color/opacity over movement.\n- Animate transform and opacity where possible. Never animate `top`, `left`, `width`, or `height` frame-by-frame when a transform or layout animation can express the same change.\n- Animated variable-font weight can reflow labels. Prefer a non-layout treatment; if weight motion is essential, reserve the maximum width with an invisible ghost copy and keep the accessible name singular.\n\n**Micro-interactions**\n- Hover/press may shift color, weight, shadow, or a few pixels of transform. Keep the effect local and subordinate to focus-visible and selected states.\n- Toasts enter quickly and exit faster, with undo when appropriate. Tooltips use a short deliberate delay.\n- Loading uses skeletons, streamed tokens, determinate progress, or a step trail matched to expected wait time — not a frozen spinner.\n\n**Restraint**\n- Ease-out, feedback ≤500ms; no linear robotic fades. Identical fade-ins everywhere are a tell.\n- One signature motion may carry a page; ordinary components share the quiet token ladder.\n- Parallax and ornaments live in spacious margins, never on the message. Scroll storytelling only when it explains value and degrades cleanly.\n- Multi-item reveals get a deliberate choreography: `cascade`, `wave`, or `simultaneous`; never add a uniform stagger by reflex.\n- Text reveals per word/character belong only to narrative surfaces and never gate core copy. Numbers can count up when the change itself matters.\n\n**Reduced motion is reduced displacement**\n- Preserve instant state feedback through opacity, color, outline, and content changes. Remove positional travel, scale, parallax, and layout shifts.\n- Disable proximity and magnetic attraction under reduced motion and on coarse pointers. Nothing stays hidden, inaccessible, or ambiguous.\n\n**Never**\n- Motion that blocks navigation or delays the next action.\n- `opacity: 0` until scroll — core content ships visible in markup.\n- Purpose-free complexity or multiple competing signature motions.\n\n_Patterns distilled from Fluid Functionalism's [motion guidance](https://github.com/mickadesign/fluid-functionalism/blob/main/motion-guidelines.md); keep the shared principles while using this engine's generated tokens._"
   },
+  {
+    "key": "expression-v2",
+    "title": "Connected v2 expression",
+    "when": "accent type, component dialects, texture, cursor/scroll treatments, fallbacks",
+    "body": "Use the connected v2 fields to make interaction, materials, and typography feel like\none authored language. They are constrained recommendations, not a menu to exhaust.\n\n## Read the output\n\n- `type.display` carries identity and headings.\n- `type.body` carries paragraphs and sustained reading.\n- `type.accent` is optional and only for short accents, labels, pull quotes, or one\n  highlighted word. Never use it for body copy.\n- `material.component` selects a control dialect and supplies button states plus\n  resting, hover, and active shadow behavior.\n- `material.texture` selects a surface dialect or explicitly withholds texture when the\n  page is dense, low-power, or utility-first.\n- `expression` selects at most one high-commitment centrepiece and may add one quiet\n  texture treatment. Always carry `responsive` and `reducedMotion` into the build.\n\n## Treatment rules\n\n- Magnetic cursors are desktop-only and belong to portfolios, agencies, galleries, or\n  experimental campaigns. Keep the native pointer as the fallback.\n- Image trails belong to galleries/portfolios and must be removed on touch and reduced\n  motion. Do not use them on trust-heavy or dense product surfaces.\n- Scroll reveal is a low-cost polish; it must not hide content before JavaScript runs.\n- Sticky narrative stacks and asymmetric split pinning need a normal-flow mobile order.\n- Horizontal gallery pans need native horizontal scrolling on mobile and must not become\n  the primary reading path.\n- Grain, paper, film, mesh, and filtered surfaces are material channels. Keep opacity low,\n  place them deliberately, and remove or lighten them for dense/low-power surfaces.\n- Outline, mask/crop, and kinetic type are display treatments only. Never apply them to\n  paragraphs, forms, error messages, or localization-heavy copy.\n\n## Budget\n\nPrefer one centrepiece. A quiet texture can support it. Do not combine a cursor trail,\nkinetic type, pinned scroll, heavy texture, and bouncy controls merely because each is\navailable. The v2 compatibility data encodes this as a hard rule and the runtime marks\nhuman interaction replay as pending, so verify hover, focus, press, keyboard, touch, and\nreduced-motion states in the actual page."
+  },
+  {
+    "key": "fluid-dashboards",
+    "title": "Fluid Functionalism dashboards",
+    "when": "dashboard layout math, Fluid registry components, data-dense product personality",
+    "body": "## Source components, not a borrowed skin\n\nFor dashboards, admin tools, and AI product surfaces, the functional component source is [Fluid Functionalism](https://www.fluidfunctionalism.com/) and its [MIT-licensed registry](https://github.com/mickadesign/fluid-functionalism). Call `fluid_components` and install the returned `@fluid/*` registry items. Do not recreate lookalike buttons, cards, tables, inputs, selects, dropdowns, tabs, dialogs, tooltips, switches, scroll areas, or AI controls.\n\nLet Fluid own component anatomy, named icon slots, state transitions, proximity behavior, SizeContext, SurfaceContext, and spring physics. Radix is the default; use the returned `-base` sibling only when the host application is already built on Base UI. Preserve the registry source and license provenance.\n\n## Geometry is computed\n\nCall `dashboard_system` before placing dashboard UI. Use its exact shell rectangles, responsive 12/6/1-column tracks, gutter, outer inset, type roles, 28px compact or 36px default Fluid density, relative surface roles, and responsive inspector mode. The primary work area must survive before an inspector is allowed to dock. Do not eyeball spacing, font sizes, or placement.\n\nThe returned placements are the initial viewport contract. Content can grow vertically, but shared axes, column starts, within-group gaps, and between-group gaps stay bound to the generated variables. Dashboard type remains compact and hero-sized display type is forbidden.\n\n## Personality surrounds the components\n\nThe product may add its own palette, background fades, at most two faint pattern layers, and one small ambient animation behind the canvas or in its margins. Decorative layers use `pointer-events: none`, stay at or below 0.08 opacity, keep data contrast intact, and disappear under reduced motion/transparency as appropriate. They never alter Fluid component internals or compete with interaction feedback.\n\n## Required verification\n\nPass implemented region coordinates, component provenance, and personality layers to `check_dashboard_layout`. Fix every SLOP issue before ship: off-grid values, out-of-bounds or colliding regions, non-Fluid functional controls, mismatched component density, too many decorative layers, intrusive opacity, or decor that intercepts input. Then run the normal palette, accessibility, form, state, and motion checks."
+  },
+  {
+    "key": "failure-modes",
+    "title": "Failure modes",
+    "when": "the recognizable AI-slop tells + concrete fixes",
+    "body": "The ranked tells, each with a one-line fix — hunt in this order.\n\n- **shadcn/Tailwind default kit** (slate cards, one recycled blue, uniform padding + rounding) → ground palette and structure in the subject; `check_color` / `check_palette` / `check_layout`.\n- **AI-purple / indigo accent** → derive the accent from real material; `check_color`.\n- **Purple→blue gradient, especially gradient-on-text** → ban outright; one committed accent.\n- **Over-animation** (everything fades/floats) → keep only motion that carries meaning; `check_motion`.\n- **Rounded-everything** at one fat radius → concentric, varied radii; `radius_scale` / `check_radius`.\n- **Dark + neon glow** (near-black ground + saturated accent) → give the ground a real hue, drop the glow.\n- **Emoji as icons / bullets / chrome** → one real icon set (Lucide, Phosphor, Feather).\n- **Default Inter / Geist** → a subject-grounded pairing; `suggest_fonts` / `check_font`.\n- **Symmetric hero + three cards + CTA** → break it with a real hero and section variety; `structure_ideas` / `check_layout`.\n\n**Structural tells:** harsh hard shadows (use soft, tinted, large-blur — `shadow` / `check_shadow`); inconsistent radius/type/button sizes; mismatched icon sets; flat hierarchy with no empty/loading/error states; five confused pricing tiers with hidden discounts; missing real pages (billing detail, analytics, empty).\n\n**Composition & hierarchy tells** (these read as \"ugly / unbalanced\" even when color and fonts are clean):\n- **Two co-equal headlines / everything bold** (nothing leads) → one primary per view, three weight levels max; run the squint test (`filter: blur(8px)`).\n- **Eyebrow chip on every block** (a mono kicker above each section) → label by proximity; keep kickers only where structure needs them — the eyebrow-on-every-block cluster is named slop.\n- **Status encoded three ways** (color bar + dot + word on one row) → one channel per meaning; de-emphasize secondary content, don't add markers.\n- **Uniform padding everywhere** (nothing groups) → related tighter, unrelated looser; a 2:1 between-vs-within ratio.\n- **Trapped whitespace / empty multi-column** (columns strand at different heights, a fixed frame won't fill) → resolve shared edges, content-driven height, balance by weight; rebalance widths instead of padding the void.\n- **Boxitis** (every section wrapped in its own card) → whitespace groups; a border is additive signal, not a default.\n\n**Sterile mush vs clutter:** stripping everything leaves a dead SaaS — but the cure is structure and scale, not added ornament. Earn life from ONE crafted centrepiece, real hierarchy, and product-true visuals, then subtract everything that isn't load-bearing (if removing it would break nothing, remove it). Ornament decorating a weak layout is slop regardless of scale."
+  },
+  {
+    "key": "checklist",
+    "title": "Ship checklist",
+    "when": "the master pre-ship checklist + surface recipes",
+    "body": "**Pre-ship checklist**\nStructure — one primary job per screen? Grayscale-readable hierarchy? Related items grouped? Spacing on the 4/8 grid? Form matches data shape?\nInteraction — hover/focus/active/disabled defined? Empty/loading/success/error designed? Progressive disclosure for secondary actions? Escape hatches (search/skip/cancel/back)? Feedback on destructive/async actions?\nVisual — one type family, limited size steps? Neutrals dominate, accent scarce, semantics correct? AA contrast? One icon set, no emoji chrome? Radius/shadow language consistent? Dark mode retuned if offered? Run `audit_system` over the tokens.\nContent — copy specific and short, CTAs match destinations? Product-true visuals? Motion removable? No dead cards or duplicated vanity KPIs?\n\n**Surface recipes**\n- SaaS dashboard: sidebar spine + object list/table + 1–2 real charts with ranges; layered neutrals, one accent, semantic statuses; first-run empty state; account card, not gradient-letter avatar.\n- Marketing landing: hero = specific promise + product visual + one CTA; section variety; matching CTA labels; motion after structure.\n- Mobile app: bottom nav ≤5, thumb-friendly targets; swipe for secondary; one onboarding action at a time.\n- AI tool: prompt box first, context chips, streaming output; steps/sources for trust; inline refine, progressive advanced controls.\n- Settings/billing: two-column or tabbed, no dead cards; honest price hierarchy, show discounts, fewer plans, payment method visible.\n\nWhen in doubt: reduce color, strengthen hierarchy, finish the flow, make the next action obvious."
+  }
 ];
 
 export const REFERENCE_BY_KEY = Object.fromEntries(REFERENCE.map((r) => [r.key, r]));

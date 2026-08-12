@@ -5,7 +5,9 @@
 // the MCP Worker. Logic is ported faithfully from viz/personality-test/{color/*,api.mjs}.
 
 import * as SYS from "./system.mjs";
+import * as DASH from "./dashboard.mjs";
 import fontSpaceBundle from "./data/font-space.json" with { type: "json" };
+import fontRuntimeBundle from "./data/font-runtime.v1.json" with { type: "json" };
 import { deriveBaseHue, hashToUint32, functionalScore, FUNCTIONAL_THRESHOLD, deriveRegister } from "./intent.mjs";
 
 // ===========================================================================
@@ -45,6 +47,7 @@ function hydrateFontSpace(bundle) {
   return { records, byId, byFamily };
 }
 const FONT_SPACE = hydrateFontSpace(fontSpaceBundle);
+const FONT_RUNTIME = fontRuntimeBundle;
 
 // ===========================================================================
 // Color-space math (OKLab/OKLCH/ΔEok/WCAG) — pure. From color/color-space.mjs.
@@ -386,12 +389,61 @@ export function mulberry32(a) {
 // ===========================================================================
 // Engine factory — inject {corpus:[{hex,weight}], brands:[{name,ic:[]}], fonts:[...]}
 // ===========================================================================
-export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace = FONT_SPACE } = {}) {
+export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace = FONT_SPACE, fontRuntime = FONT_RUNTIME } = {}) {
   // pre-compute corpus labs + weights for the KDE
   const pts = corpus.map((c) => ({ lab: hexToOklab(c.hex), w: c.weight || 1 }));
   const brandLabs = brands.flatMap((b) => (b.ic || []).map((hex) => {
     try { return { name: b.name, hex, lab: hexToOklab(hex) }; } catch { return null; }
   }).filter(Boolean));
+
+  // A freshness verdict is not a shipping recommendation. This manifest is
+  // built from the existing index/cache (no font recrawl) and is the runtime
+  // gate that prevents an agent from naming a family the page cannot load.
+  const runtimeByFamily = new Map((fontRuntime?.entries || []).map((entry) => [String(entry.family).toLowerCase(), entry]));
+  const runtimeById = new Map((fontRuntime?.entries || []).map((entry) => [String(entry.id).toLowerCase(), entry]));
+  const runtimeFor = (font) => runtimeByFamily.get(String(font?.family || "").toLowerCase())
+    || runtimeById.get(String(font?.id || "").toLowerCase()) || null;
+  const assetEvidence = (font) => {
+    const runtime = runtimeFor(font);
+    const family = runtime?.family || font?.family || "";
+    const localFormats = runtime?.localFormats || runtime?.formats || { ttf: null, woff2: [] };
+    const publicFormats = runtime?.publicFormats || { ttf: null, woff2: [] };
+    const facesFor = (formats) => (formats.woff2 || []).length
+      ? formats.woff2.map((path) => {
+        const weight = Number(String(path).match(/-(400|500|600|700)\.woff2$/)?.[1] || 400);
+        return `@font-face { font-family: "${family}"; src: url("${path}") format("woff2"); font-weight: ${weight}; font-style: normal; font-display: swap; }`;
+      })
+      : (formats.ttf ? [`@font-face { font-family: "${family}"; src: url("${formats.ttf}") format("truetype"); font-weight: 400; font-style: normal; font-display: swap; }`] : []);
+    const localFaces = facesFor(localFormats);
+    const faces = facesFor(publicFormats);
+    const repositoryAvailable = !!runtime?.assetAvailable && localFaces.length > 0;
+    const remotelyLoadable = !!runtime?.remoteAssetAvailable && faces.length > 0;
+    return {
+      // `available` remains the repository/runtime gate used by the local engine.
+      // Remote consumers must check remotelyLoadable before binding a URL.
+      available: repositoryAvailable,
+      repositoryAvailable,
+      remotelyLoadable,
+      id: runtime?.id || font?.id || null,
+      localFormats,
+      publicFormats,
+      recommendedWeights: runtime?.recommendedWeights || [],
+      metrics: runtime?.metrics || font?.metrics || null,
+      metricsReal: runtime?.metricsReal ?? !!font?.metricsReal,
+      loadSpec: {
+        status: remotelyLoadable ? "bind-before-use" : (repositoryAvailable ? "repository-local-only" : "unavailable"),
+        family,
+        faces,
+        localFaces,
+        localBase: repositoryAvailable ? "repository-root" : null,
+      },
+      source: runtime ? "font-runtime.v1" : "font-runtime-missing",
+      reason: remotelyLoadable
+        ? "verified public font asset exists"
+        : (repositoryAvailable ? "verified repository-local asset exists; the remote service does not host this binary" : "no verified local asset in the runtime manifest"),
+    };
+  };
+  const metricsFor = (font) => ({ ...(runtimeFor(font)?.metrics || {}), ...(font?.metrics || {}) });
 
   function density(lab, bandwidth = CONFIG.BANDWIDTH) {
     const twoSigma2 = 2 * bandwidth * bandwidth;
@@ -500,7 +552,13 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
     };
   }
 
-  function checkPalette(ground, ink, accent, accent2) {
+  // checkPalette(ground, ink, accent, accent2?, surface?) — role-by-role slop gate plus the
+  // COMBINATION gates a per-hex check can't see: near-duplicate roles, ink↔ground contrast, the
+  // design-law dark+neon ban (near-black ground + saturated glow accent — each hex can be
+  // individually legal while the pair is the banned look), and (when `surface` is supplied) the
+  // surface-elevation step (cards must sit visibly above the ground, and surface is deliberately
+  // EXCLUDED from the duplicate check — it is supposed to live near the ground).
+  function checkPalette(ground, ink, accent, accent2, surface) {
     const roles = [["ground", ground], ["ink", ink], ["accent", accent]];
     if (accent2) roles.push(["accent2", accent2]);
     const perRole = {};
@@ -523,9 +581,45 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
     // contrast (ink on ground) — a11y hint
     let contrast = null;
     if (ground && ink) { try { contrast = +contrastRatio(ground, ink).toFixed(2); } catch { /* bad hex */ } }
+    // accent visibility vs ground — informational (WCAG 1.4.11 wants 3:1 only when the accent
+    // carries small UI boundaries; a large tinted fill is legal below that, so no auto-fail).
+    let contrastAccent = null;
+    if (ground && accent) { try { contrastAccent = +contrastRatio(ground, accent).toFixed(2); } catch { /* bad hex */ } }
+    const issues = [];
+    // COMBINATION gate — design-law hard ban: near-black ground (OKLCH L<0.2) + saturated glow
+    // accent (C≥0.17). Each hex alone can pass hardBanned(); the PAIR is the banned dark+neon look.
+    // generatePalette's dark mood caps accent chroma at 0.15 (chromaScale 0.75), so its own output
+    // clears this with margin — only caller-authored dark+neon palettes fail here.
+    if (ground) {
+      try {
+        const gL = hexToOklch(ground)[0];
+        if (gL < 0.2) {
+          for (const [role, hex] of [["accent", accent], ["accent2", accent2]]) {
+            if (!hex) continue;
+            try {
+              const [, C] = hexToOklch(hex);
+              if (C >= 0.17) issues.push(`dark+neon: near-black ground (L ${gL.toFixed(2)}) + saturated ${role} (C ${C.toFixed(2)} ≥ 0.17) — banned combination; desaturate the accent (the dark ground already makes it pop) or lift the ground`);
+            } catch { /* bad hex already flagged per-role */ }
+          }
+        }
+      } catch { /* bad ground hex already flagged per-role */ }
+    }
+    // optional surface (card/panel elevation) — must be non-slop AND a visible step above ground
+    let surfaceReport = null;
+    if (surface) {
+      try {
+        const cls = classify(surface);
+        let ratio = null;
+        if (ground) { try { ratio = +contrastRatio(surface, ground).toFixed(3); } catch { /* bad ground */ } }
+        surfaceReport = { hex: cls.hex, verdict: cls.verdict, contrastVsGround: ratio };
+        if (cls.verdict === "HARD-BANNED" || cls.verdict === "OVERUSED") issues.push(`surface ${cls.hex} is ${cls.verdict}${cls.ban ? ` (${cls.ban})` : ""}`);
+        if (ratio != null && ratio < 1.1) issues.push(`surface≈ground (contrast ${ratio} < 1.1) — cards need a distinct elevation step or they read muddy`);
+      } catch { issues.push(`surface "${surface}" is not a valid hex`); }
+    }
     return {
-      perRole, duplicates: dupes, contrast,
-      pass: Object.values(perRole).every((r) => r.verdict === "SAFE" || r.verdict === "NEUTRAL-ok") && dupes.length === 0,
+      perRole, duplicates: dupes, contrast, contrastAccent,
+      surface: surfaceReport, issues,
+      pass: Object.values(perRole).every((r) => r.verdict === "SAFE" || r.verdict === "NEUTRAL-ok") && dupes.length === 0 && issues.length === 0,
     };
   }
 
@@ -601,40 +695,115 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
   };
   function checkFont(family) {
     const f = findFont(family);
-    if (!f) return { family, verdict: "UNKNOWN", why: `"${family}" is not in the font index — can't certify it; prefer a known fresh family.`, isFoundational: false, alternatives: suggestFonts(4).picks };
+    if (!f) return {
+      family,
+      verdict: "UNKNOWN",
+      usable: false,
+      why: `"${family}" is not in the font index — can't certify it; prefer a known fresh family.`,
+      asset: assetEvidence({ family }),
+      roleSuitability: { display: false, body: false },
+      isFoundational: false,
+      alternatives: suggestFonts(4).picks,
+    };
     const fam = f.family.toLowerCase();
     const onAvoid = AVOID_LIST.has(fam);
     const topTier = (f.popularityRank || 9999) <= POPULARITY_SLOP_TOP_N;
     const isSlop = onAvoid || topTier;
-    const base = { family: f.family, supplier: f.supplier, category: f.category, popularityRank: f.popularityRank };
+    const readability = readabilityChecks(f);
+    const asset = assetEvidence(f);
+    const roleSuitability = { display: readability.displaySuitable, body: readability.bodySuitable && asset.available };
+    const base = {
+      family: f.family,
+      supplier: f.supplier,
+      category: f.category,
+      popularityRank: f.popularityRank,
+      asset,
+      roleSuitability,
+      isFoundational: !!f.isFoundational,
+      usable: asset.available && (roleSuitability.display || roleSuitability.body),
+    };
     const slopWhy = onAvoid ? "on the avoid-list" : `top-${POPULARITY_SLOP_TOP_N} popularity (rank ${f.popularityRank})`;
-    if (isSlop && f.isFoundational) return { ...base, verdict: "SLOP-allowed-foundational", isFoundational: true, why: `${f.family} is AI-monoculture slop (${slopWhy}), but isFoundational=true rescues it: usable as a NEUTRAL body workhorse only — never the display face.`, alternatives: suggestFonts(4).picks };
+    if (!asset.available) return {
+      ...base,
+      verdict: "UNAVAILABLE",
+      usable: false,
+      why: `${f.family} is catalogued, but no verified local font asset exists. A freshness score cannot authorize a page to use it.`,
+      alternatives: suggestFonts(4).picks,
+    };
+    if (isSlop && f.isFoundational) return { ...base, verdict: "SLOP-allowed-foundational", isFoundational: true, why: `${f.family} is AI-monoculture slop (${slopWhy}), but isFoundational=true rescues it as a readable body workhorse only — never the display face.`, alternatives: suggestFonts(4).picks };
     if (isSlop) return { ...base, verdict: "SLOP", isFoundational: false, why: `${f.family} is AI-monoculture slop (${slopWhy}) — do NOT use it for ANY role.`, alternatives: suggestFonts(4).picks };
-    return { ...base, verdict: "FRESH", isFoundational: !!f.isFoundational, why: `${f.family} is not on the avoid-list and not top-tier popular (rank ${f.popularityRank ?? "?"}, supplier ${f.supplier}) — a distinctive choice.`, alternatives: [] };
+    return { ...base, verdict: "FRESH", why: `${f.family} is catalogued, locally available, role-gated, and not on the avoid-list or top-tier popular (rank ${f.popularityRank ?? "?"}, supplier ${f.supplier}).`, alternatives: [] };
   }
   function suggestFonts(n = 4, { category = null, intent = null } = {}) {
     const experimentalism = intent ? clamp01Local(intent.experimentalism, 0) : 0;
     const disp = fonts.map((f) => ({ f, score: freshnessScore(f, { experimentalism }) })).filter((x) => x.score > -Infinity)
-      .filter((x) => x.f.category === "display").sort((a, b) => b.score - a.score);
+      .filter((x) => x.f.category === "display" && assetEvidence(x.f).available && readabilityChecks(x.f).displaySuitable).sort((a, b) => b.score - a.score);
     const body = fonts.map((f) => ({ f, score: bodyScore(f) })).filter((x) => x.score > -Infinity)
+      .filter((x) => assetEvidence(x.f).available && readabilityChecks(x.f).bodySuitable)
       .sort((a, b) => b.score - a.score);
     const pickOf = (arr) => arr.map((x) => ({
       family: x.f.family, supplier: x.f.supplier, category: x.f.category, popularityRank: x.f.popularityRank,
       isFoundational: !!x.f.isFoundational,
-      why: `${x.f.category === "display" ? "characterful display" : "readable body workhorse"}: rank ${x.f.popularityRank}, ${x.f.supplier}`,
+      asset: assetEvidence(x.f),
+      roleSuitability: { display: readabilityChecks(x.f).displaySuitable, body: readabilityChecks(x.f).bodySuitable },
+      why: `${x.f.category === "display" ? "characterful display" : "readable body workhorse"}: locally available, role-gated, rank ${x.f.popularityRank}, ${x.f.supplier}`,
     }));
-    if (category === "display") return { picks: pickOf(disp).slice(0, n), pairing: pairFrom(disp, body) };
-    if (category === "body") return { picks: pickOf(body).slice(0, n), pairing: pairFrom(disp, body) };
+    const pairing = pairFrom(disp, body);
+    if (category === "display") return { picks: pickOf(disp).slice(0, n), pairing };
+    if (category === "body") return { picks: pickOf(body).slice(0, n), pairing };
     const half = Math.max(1, Math.ceil(n / 2));
-    const picks = [...pickOf(disp).slice(0, half), ...pickOf(body).slice(0, n - half)].slice(0, n);
-    return { picks, pairing: pairFrom(disp, body) };
+    const all = [...pickOf(disp).slice(0, half), ...pickOf(body).slice(0, n - half)];
+    for (const family of [pairing.display, pairing.body]) {
+      const pairedPick = [...pickOf(disp), ...pickOf(body)].find((pick) => pick.family === family);
+      if (pairedPick && !all.some((pick) => pick.family === family)) {
+        if (all.length >= n) all.pop();
+        all.push(pairedPick);
+      }
+    }
+    return { picks: all.slice(0, n), pairing };
   }
   function pairFrom(disp, body) {
+    const pairs = [];
+    for (const d of disp.slice(0, 16)) {
+      for (const b of body.slice(0, 16)) {
+        const score = fontPairScore(d.f, b.f);
+        if (Number.isFinite(score)) pairs.push({ display: d.f, body: b.f, score });
+      }
+    }
+    pairs.sort((a, b) => b.score - a.score || a.display.family.localeCompare(b.display.family));
+    const chosen = pairs[0];
     return {
-      display: disp[0]?.f.family || null,
-      body: body[0]?.f.family || null,
-      note: "Display face carries identity (headings, name); body face carries running text — never swap them. The display pick is distinctive; confirm it reads for your context.",
+      display: chosen?.display.family || null,
+      body: chosen?.body.family || null,
+      score: chosen ? round3(chosen.score) : null,
+      assets: chosen ? { display: assetEvidence(chosen.display), body: assetEvidence(chosen.body) } : null,
+      gate: chosen ? "asset-present + role-readable + metric-compatible" : "no pair survived the strict asset/readability gate",
+      note: "Display carries identity; body carries running text. Pairing is chosen by role, asset availability, category contrast, and metric compatibility — never by freshness alone. Render the exact pair and await document.fonts.ready before shipping.",
     };
+  }
+
+  function fontPairScore(display, body) {
+    if (!display || !body || display.family === body.family) return -Infinity;
+    if (!assetEvidence(display).available || !assetEvidence(body).available) return -Infinity;
+    const bodyReadability = readabilityChecks(body);
+    if (!bodyReadability.bodySuitable) return -Infinity;
+    const displayGenre = classifyFontGenre(display);
+    if (["decorative", "blackletter"].includes(displayGenre)) return -Infinity;
+    const dm = metricsFor(display), bm = metricsFor(body);
+    const finite = (v) => Number.isFinite(Number(v));
+    let score = display.isFoundational ? 0.15 : 0.35;
+    if (display.category !== body.category) score += 0.7;
+    if (["serif", "slab", "ornate-serif"].includes(displayGenre) && body.category === "sans-serif") score += 0.65;
+    if (["sans", "display-other"].includes(displayGenre) && body.category === "serif") score += 0.55;
+    // x-height matching is a PRIMARY pairing criterion (Bringhurst): a display and body whose
+    // x-heights disagree read as two unrelated typefaces sharing a page. The old 0.8×/cap-0.45
+    // penalty was too soft (a 0.20 mismatch cost only 0.16, still ranking well) — harden it so a
+    // real mismatch actually loses. (Stroke-contrast DIFFERENCE stays a mild reward below: a
+    // high-contrast display over a low-contrast body — Didone + grotesque — is a classic pairing.)
+    if (finite(dm.xHeightRatio) && finite(bm.xHeightRatio)) score -= Math.min(0.6, Math.abs(Number(dm.xHeightRatio) - Number(bm.xHeightRatio)) * 1.3);
+    if (finite(bm.apertureOpenness)) score += Math.min(0.25, Math.max(0, Number(bm.apertureOpenness) - 0.45) * 0.5);
+    if (finite(dm.strokeContrast) && finite(bm.strokeContrast)) score += Math.min(0.3, Math.abs(Number(dm.strokeContrast) - Number(bm.strokeContrast)) * 0.35);
+    return score;
   }
 
   // retrieveFonts — Subsystem 4: rich, neighbor-aware retrieval over fontSpace
@@ -655,16 +824,33 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
     return p;
   }
   function readabilityChecks(f, { allowMonospaceBody = false } = {}) {
-    const x = Number((f.metrics || {}).xHeightRatio);
+    const metrics = metricsFor(f);
+    const x = Number(metrics.xHeightRatio);
+    const aperture = Number(metrics.apertureOpenness);
+    const counter = Number(metrics.counterSize);
     // HARD body gate: a text workhorse must be serif/sans (or, on a functional/
     // data-dense surface, monospace — numeral alignment) with a generous x-height.
     // This is the structural fix for the "display serif as body" failure.
     const catOk = BODY_CATEGORIES.has(f.category) || (allowMonospaceBody && f.category === "monospace");
-    const bodySuitable = catOk && (!Number.isFinite(x) || x >= 0.48);
-    return { bodySuitable, displaySuitable: true };
+    const xHeightOk = !Number.isFinite(x) || x >= 0.48;
+    const apertureOk = !Number.isFinite(aperture) || aperture >= 0.35;
+    const counterOk = !Number.isFinite(counter) || counter >= 0.35;
+    const bodySuitable = catOk && xHeightOk && apertureOk && counterOk;
+    const displaySuitable = !["mono"].includes(classifyFontGenre(f)) && !/icon|symbol|dingbat|wingding|notdef/i.test(f.family || "");
+    return {
+      bodySuitable,
+      displaySuitable,
+      evidence: { xHeight: Number.isFinite(x), aperture: Number.isFinite(aperture), counter: Number.isFinite(counter) },
+      reasons: [
+        !catOk ? "category is not a body text category" : null,
+        !xHeightOk ? "x-height below 0.48" : null,
+        !apertureOk ? "aperture openness below 0.35" : null,
+        !counterOk ? "counter size below 0.35" : null,
+      ].filter(Boolean),
+    };
   }
   function featureDistanceFor(f, role, intent) {
-    const m = f.metrics || {};
+    const m = metricsFor(f);
     const g = (k, d) => (Number.isFinite(Number(m[k])) ? Number(m[k]) : d);
     const ideal = role === "body"
       ? { xHeightRatio: 0.72, apertureOpenness: 0.6, strokeContrast: 0.2 }
@@ -711,6 +897,8 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
     for (const f of pool) {
       if (ex.has((f.family || "").toLowerCase()) || ex.has((f.id || "").toLowerCase())) continue;
       if (exRoots.has(familyRoot(f.family))) continue;
+      const asset = assetEvidence(f);
+      if (!asset.available) continue; // freshness without a loadable asset is not a recommendation
       if (role === "display" && isNoveltyDisplay(f) && !allowNovelty) continue; // pixel/bitmap gimmick — never the default display face
       if (role === "display" && genreRules.exclude.has(classifyFontGenre(f))) continue; // FIX 1: register↔personality mismatch (blackletter/script/decorative out of register for this subject)
       const rc = readabilityChecks(f, { allowMonospaceBody: envelope.functional });
@@ -744,12 +932,13 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
           fit -= PRESENCE_MISMATCH * Math.max(0, presence - layoutAir); // space-hungry face in a tight layout: the worst case
           fit += PRESENCE_MATCH * (1 - Math.abs(presence - layoutAir)); // reward presence ≈ air
         } else if (role === "body" && layoutAir < 0.4) {
-          const xh = Number((f.metrics || {}).xHeightRatio);
+          const xh = Number(metricsFor(f).xHeightRatio);
           if (Number.isFinite(xh)) fit += 0.2 * Math.max(0, xh - 0.6); // dense layout: favor a legible high-x-height body
         }
       }
       scored.push({
         family: f.family, role, fit, category: f.category,
+        asset,
         featureDistance: round3(featureDistance),
         visualDistance: simById ? round3(1 - sim) : null,
         overusePenalty: round3(pen),
@@ -788,6 +977,10 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
     };
     const violations = [];
     const bodyCategory = categoryOf(body);
+    const displayRecord = recordFor(display);
+    const bodyRecord = recordFor(body);
+    if (!assetEvidence(displayRecord).available) violations.push({ role: "display", family: display, reason: "no verified local font asset", fallback: null });
+    if (!assetEvidence(bodyRecord).available) violations.push({ role: "body", family: body, reason: "no verified local font asset", fallback: null });
     if (envelope.functional && bodyCategory && !["sans-serif", "monospace"].includes(bodyCategory)) {
       violations.push({
         role: "body", family: body, category: bodyCategory,
@@ -865,8 +1058,15 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
       fbGround: "#eceae3", fbSurface: "#e1ddd2", fbInk: "#17150f",
     },
     dark: {
+      // chromaScale 0.75 on dark (−25%): a saturated accent on a near-black ground "vibrates" (neon
+      // trap, slop-colors.md). Desaturate the accent on dark instead of boosting it — the dark
+      // ground already makes it pop. Multiplicative, not additive: the old −0.015 boost was only a
+      // ~12% cut at balanced chroma and let a bold accent reach C 0.185 on an L≤0.17 ground —
+      // squarely the banned dark+neon combination checkPalette now gates. 0.75 caps bold at C 0.15,
+      // safely under the 0.17 dark+neon line. Light/tinted/contrast keep their boost (accent on a
+      // light ground can carry more chroma).
       groundL: [0.08, 0.17], groundC: [0.012, 0.03], inkL: [0.88, 0.96], inkC: [0.006, 0.02],
-      surfaceLOffset: 0.05, chromaBoost: 0.02, secondaryHueOffset: 150,
+      surfaceLOffset: 0.05, chromaBoost: 0, chromaScale: 0.75, secondaryHueOffset: 150,
       fbGround: "#141210", fbSurface: "#201c17", fbInk: "#f2efe9",
     },
     tinted: {
@@ -895,8 +1095,22 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
     const rnd = (lo, hi) => lo + rand() * (hi - lo);
     const buildHex = (L, C, H) => { const o = oklabToSrgb(oklchToOklab([L, C, H])); return o.inGamut ? o.hex : null; };
     const [cLoBase, cHiBase] = ENERGY_CHROMA[energy] || ENERGY_CHROMA.balanced;
-    const cLo = Math.min(0.22, cLoBase + profile.chromaBoost);
-    const cHi = Math.min(0.24, cHiBase + profile.chromaBoost);
+    // hue-calibrated chroma parity (color.md: "equal saturation across hues looks inconsistent").
+    // Warm yellow/green read vivid at a chroma where reds/cyans read moderate — so tame just those
+    // hues toward perceptual parity. Cool hues stay at 1.0 (never PUSH chroma toward the banned
+    // indigo band; isSafeAccentLab would only reject a boosted purple anyway).
+    const hueChromaScale = (h) => {
+      if (h == null) return 1;
+      const H = ((h % 360) + 360) % 360;
+      if (H >= 75 && H < 120) return 0.82;   // yellows
+      if (H >= 120 && H < 170) return 0.88;  // greens
+      if (H >= 40 && H < 75) return 0.92;    // orange/amber
+      return 1;
+    };
+    const hScale = hueChromaScale(hue);
+    const mScale = profile.chromaScale ?? 1; // dark-mode −25% accent desaturation (see MOOD_PROFILES.dark)
+    const cLo = Math.min(0.22, (cLoBase + profile.chromaBoost) * hScale * mScale);
+    const cHi = Math.min(0.24, (cHiBase + profile.chromaBoost) * hScale * mScale);
     const wrap = (h) => ((h % 360) + 360) % 360;
     // an accent around a given hue center (± small jitter) or free; chroma band is caller-set —
     // shared by the primary accent, accent2, and the (mood-gated) secondary hue below.
@@ -937,7 +1151,9 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
       }
       for (let t = 0; t < 300; t++) {
         const L = rnd(lo, hi);
-        const nH = hue != null ? wrap(hue + rnd(-30, 30)) : rand() * 360;
+        // neutrals tint only 3-8° toward the brand hue (color.md) — a whisper of undertone, not a
+        // ±30° swing that reads as a saturated wash of the accent's hue across the whole canvas.
+        const nH = hue != null ? wrap(hue + rnd(-8, 8)) : rand() * 360;
         const hex = buildHex(L, rnd(Clo, Chi), nH);
         if (!hex) continue;
         const v = classify(hex).verdict;
@@ -949,12 +1165,27 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
     };
     for (let a = 0; a < 60; a++) {
       const acc = anchored() || freshAccent() || "#1f6e4c";
+      // accent2 is a HARMONIC partner, not a second random hue: when the intent hue is known, place
+      // it at a split-complement (+150°), or — when that slot lands in a banned band (e.g. brand
+      // hue ~90 puts +150 at ~240, mid-indigo) — the MIRROR split-complement (−150°), then triadic
+      // (+120°), so the two accents still relate instead of collapsing back to the primary's own
+      // hue. Falls back to a fresh accent (then the primary) only if every harmonic slot is banned.
+      const accent2 = (hue != null
+        ? (freshAccentAt(wrap(hue + 150), cLo, cHi)
+          || freshAccentAt(wrap(hue - 150), cLo, cHi)
+          || freshAccentAt(wrap(hue + 120), cLo, cHi)
+          || freshAccent())
+        : freshAccent()) || acc;
       const pal = {
         ground: freshNeutral("ground"), surface: freshNeutral("surface"), ink: freshNeutral("ink"),
-        accent: acc, accent2: freshAccent() || acc,
+        accent: acc, accent2,
       };
       const p = checkPalette(pal.ground, pal.ink, pal.accent, pal.accent2);
-      if (p.pass && p.contrast != null && p.contrast >= 4.5) {
+      // surface must be a distinct elevation from ground, or cards read muddy (color.md dark-mode
+      // elevation / WCAG 1.4.11). surfaceLOffset already offsets it; this just refuses the rare
+      // collision where they land too close.
+      const surfaceOk = contrastRatio(pal.surface, pal.ground) >= 1.12;
+      if (p.pass && surfaceOk && p.contrast != null && p.contrast >= 4.5) {
         const secondary = profile.secondaryHueOffset != null && hue != null
           ? freshAccentAt(wrap(hue + profile.secondaryHueOffset), cLoBase, cHiBase)
           : null;
@@ -967,9 +1198,66 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
     };
     return { ...fb, contrast: +contrastRatio(fb.ground, fb.ink).toFixed(2), hue, energy, mood };
   }
+  // shadeRamp(hue, opts) — an even-lightness OKLCH ramp (a 50→950-style scale) for ONE hue: the
+  // primitive tier a full design-system palette needs (layered surfaces, text levels, semantic
+  // scales) that generatePalette's 5 roles don't provide. Chroma tapers toward the light/dark
+  // extremes so the end steps read as tints, not saturated blocks, and every step is pulled into
+  // gamut. hue=null → a near-neutral gray ramp — anchored WARM (H 75, matching the engine's own
+  // warm-paper fallback neutrals), not the cool ~250 blue-gray that IS the Tailwind-slate default
+  // the design law names as slop. At 10+ steps the darkest step is labeled 950 (the Tailwind-style
+  // 50…900,950 scale); below that, plain hundreds.
+  function shadeRamp(hue = null, { steps = 9, chroma = null, Lmin = 0.16, Lmax = 0.975 } = {}) {
+    const neutral = hue == null;
+    const H = neutral ? 75 : ((Number(hue) % 360) + 360) % 360;
+    const baseC = chroma != null ? chroma : (neutral ? 0.012 : 0.09);
+    const n = Math.max(2, Math.round(steps));
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const t = n === 1 ? 0 : i / (n - 1);
+      const L = Lmax - t * (Lmax - Lmin);           // light → dark
+      const taper = Math.sin(Math.PI * t);           // bell: full chroma mid-ramp, ~0 at the ends
+      let C = baseC * (0.25 + 0.75 * taper);
+      let o = oklabToSrgb(oklchToOklab([L, C, H]));
+      let guard = 0;
+      while (!o.inGamut && C > 0.001 && guard++ < 40) { C *= 0.9; o = oklabToSrgb(oklchToOklab([L, C, H])); }
+      out.push({ step: i === 0 ? 50 : (n >= 10 && i === n - 1 ? 950 : i * 100), hex: o.hex, L: +L.toFixed(3), C: +C.toFixed(3), H: +H.toFixed(1) });
+    }
+    return out;
+  }
+
+  // semanticColors(accentHue, energy) — functional status colors anchored to fixed perceptual hues
+  // (error ~25, success ~145, warning ~75, info ~205 — kept below the banned indigo band 215-280),
+  // each nudged a few degrees toward the brand so they read as part of THIS system, and each gated
+  // non-slop (falls back to a safe low-chroma tone rather than ever emitting a banned color).
+  function semanticColors(accentHue = null, energy = "balanced") {
+    const [cLo, cHi] = ENERGY_CHROMA[energy] || ENERGY_CHROMA.balanced;
+    const C0 = (cLo + cHi) / 2;
+    const wrapH = (h) => ((h % 360) + 360) % 360;
+    const nudge = (base) => {
+      if (accentHue == null) return base;
+      let d = ((accentHue - base + 540) % 360) - 180; // shortest signed delta to the accent
+      d = Math.max(-6, Math.min(6, d * 0.1));
+      return wrapH(base + d);
+    };
+    // per-role lightness band: the 0.56→0.40 search is right for red/green/blue-teal, but a yellow
+    // hue at L≤0.56 is olive/brown, not amber — warning searches a HIGHER band (0.72→0.55) so it
+    // actually reads as a warning color. (H~75 never enters the L≥0.65 cyan ban band, which starts
+    // at H 170.)
+    const mk = (baseH, Lhi = 0.56, Llo = 0.4) => {
+      const H = nudge(baseH);
+      for (let L = Lhi; L >= Llo - 1e-9; L -= 0.03) {
+        const o = oklabToSrgb(oklchToOklab([L, C0, H]));
+        if (o.inGamut) { const v = classify(o.hex).verdict; if (v === "SAFE" || v === "NEUTRAL-ok") return o.hex; }
+      }
+      return oklabToSrgb(oklchToOklab([(Lhi + Llo) / 2, 0.03, H])).hex; // safe near-neutral fallback (never slop)
+    };
+    return { error: mk(25), success: mk(145), warning: mk(75, 0.72, 0.55), info: mk(205) };
+  }
+
   function designSystem({ baseFont = 18, baseUnit = 4, ratio = "perfect-fourth", radiusBase = 8, hue = null, energy = "balanced", accent = null, seed = 1 } = {}) {
+    const palette = generatePalette({ hue, energy, accent, seed });
     return {
-      palette: generatePalette({ hue, energy, accent, seed }),
+      palette: { ...palette, ramp: shadeRamp(palette.hue, { chroma: palette.hue == null ? 0.012 : 0.09 }), semantic: semanticColors(palette.hue, energy) },
       type: SYS.typeScale({ base: baseFont, ratio }),
       spacing: SYS.spacingScale({ base: baseUnit }),
       radius: SYS.radiusScale({ base: radiusBase }),
@@ -995,7 +1283,8 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
     classifyFontGenre, fontPresence, deriveRegister,
     classify, nearestSafe, brandClone,
     density: densityHex, contrastRatio, CONFIG,
-    generatePalette, designSystem, auditSystem,
+    generatePalette, shadeRamp, semanticColors, designSystem, auditSystem,
     ...SYS,
+    ...DASH,
   };
 }

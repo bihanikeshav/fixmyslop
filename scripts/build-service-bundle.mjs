@@ -7,7 +7,7 @@
 // Writes apps/engine/data/{corpus,brands,fonts,font-space}.json
 
 import { loadCorpus } from "../viz/personality-test/color/corpus.mjs";
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 const OUT = resolve(process.cwd(), "apps/engine/data");
@@ -38,6 +38,33 @@ const fontsTrim = fonts.map((f) => ({
   isBrandFont: !!f.isBrandFont, quality: f.quality || 0,
 }));
 writeFileSync(resolve(OUT, "fonts.json"), JSON.stringify(fontsTrim));
+
+// 3b) runtime font assets — freshness is not enough to recommend a family.
+// Keep this derived from the existing index/cache; no font recrawl is involved.
+const fontCache = resolve(process.cwd(), "data/fonts-cache");
+const embedCache = resolve(fontCache, "embed");
+const ttfNames = new Set(readdirSync(fontCache).filter((name) => name.toLowerCase().endsWith(".ttf")));
+const woff2Names = new Set(readdirSync(embedCache).filter((name) => name.toLowerCase().endsWith(".woff2")));
+const slug = (id) => String(id || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const runtimeEntries = fonts.map((font) => {
+  const base = slug(font.id);
+  const ttfName = `${base}.ttf`;
+  const weightFiles = [400, 500, 600, 700].map((weight) => `${base}-${weight}.woff2`).filter((name) => woff2Names.has(name));
+  return {
+    id: font.id, family: font.family, category: font.category, supplier: font.supplier,
+    metrics: font.metrics || null, metricsReal: !!font.metricsReal, isFoundational: !!font.isFoundational,
+    assetAvailable: ttfNames.has(ttfName) || weightFiles.length > 0,
+    remoteAssetAvailable: false,
+    localFormats: { ttf: ttfNames.has(ttfName) ? `data/fonts-cache/${ttfName}` : null, woff2: weightFiles.map((name) => `data/fonts-cache/embed/${name}`) },
+    publicFormats: { ttf: null, woff2: [] },
+    recommendedWeights: weightFiles.length ? weightFiles.map((name) => Number(name.match(/-(400|500|600|700)\.woff2$/)?.[1])).filter(Boolean) : [400],
+  };
+});
+writeFileSync(resolve(OUT, "font-runtime.v1.json"), JSON.stringify({
+  schemaVersion: "font-runtime.v1", generatedFrom: ["data/fonts.index.json", "data/fonts-cache/"],
+  noFontRecrawl: true, policy: { recommendationRequiresAsset: true, assetScope: "repository-local", remoteServiceHostsAssets: false, bodyRequiresReadableRole: true, fallbackWhenUnavailable: "known-local-or-system-pair", visualProof: "required-before-ship" },
+  entries: runtimeEntries,
+}));
 
 // 4) font-space — retrieval bundle for `retrieveFonts` (Subsystem 4). Lean: cap
 //    neighbors to top 12/font, no raw visual/deep vectors, small feature vectors only.
@@ -78,4 +105,4 @@ const fontSpace = { metricKeys: METRIC_KEYS, entryFields: ENTRY_FIELDS, ids, ent
 writeFileSync(resolve(OUT, "font-space.json"), JSON.stringify(fontSpace));
 
 const kb = (o) => Math.round(JSON.stringify(o).length / 1024);
-console.log(`corpus ${corpus.length} pts (${kb(corpus)}kb) · brands ${brandsTrim.length} (${kb(brandsTrim)}kb) · fonts ${fontsTrim.length} (${kb(fontsTrim)}kb) · font-space ${Object.keys(fontSpace).length} (${kb(fontSpace)}kb)`);
+console.log(`corpus ${corpus.length} pts (${kb(corpus)}kb) · brands ${brandsTrim.length} (${kb(brandsTrim)}kb) · fonts ${fontsTrim.length} (${kb(fontsTrim)}kb) · font-runtime ${runtimeEntries.filter((entry) => entry.assetAvailable).length}/${runtimeEntries.length} assets · font-space ${Object.keys(fontSpace).length} (${kb(fontSpace)}kb)`);

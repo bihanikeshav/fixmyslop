@@ -59,8 +59,9 @@ dependency) — the needed surface (`initialize`, `tools/list`, `tools/call`,
 - **Streamable HTTP:** `POST /mcp` — send a JSON-RPC request, get a JSON response.
 - **SSE discovery:** `GET /sse` — emits an `endpoint` event pointing at `/mcp`.
 
-Tools: `check_color`, `check_palette`, `suggest_fonts`, `check_font`,
-`structure_ideas`. Each `tools/call` returns
+The catalog includes `dashboard_system` for exact dashboard geometry and type/spacing
+math, `fluid_components` for genuine Fluid Functionalism registry installs, and
+`check_dashboard_layout` for implementation verification. Each `tools/call` returns
 `{ content: [{ type: "text", text: JSON.stringify(result) }] }`.
 
 ```bash
