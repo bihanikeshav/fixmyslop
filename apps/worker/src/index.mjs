@@ -139,6 +139,10 @@ echo "Invoke it: /fixmyslop  (full guide, agent picks passes)  or  /fixmyslop:po
 echo "Connect the tools:"
 echo "  Claude Code:  claude mcp add --transport http fixmyslop ${base}/mcp"
 echo "  Cursor:       add {\\"fixmyslop\\":{\\"url\\":\\"${base}/mcp\\"}} to ~/.cursor/mcp.json"
+echo "  Grok CLI:     grok mcp add --transport http fixmyslop ${base}/mcp"
+echo "  OpenCode:     opencode mcp add fixmyslop --url ${base}/mcp"
+echo "  Cline:        cline mcp add fixmyslop ${base}/mcp --type http"
+echo "  VS Code:      add a fixmyslop http server to .vscode/mcp.json"
 `;
         return new Response(script, { headers: { ...CORS, "content-type": "text/x-shellscript; charset=utf-8" } });
       }

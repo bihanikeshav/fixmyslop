@@ -21,8 +21,28 @@ claude mcp add --transport http fixmyslop https://fixmyslop.bihanikeshav.workers
 Then in a session: `/mcp` to confirm it's connected. Ask e.g. *"use fixmyslop to
 check if #6366f1 is slop and suggest alternatives."*
 
-### Claude Desktop / Cursor / Windsurf (JSON config)
-Clients that speak remote Streamable HTTP directly:
+### Grok CLI
+Grok can register a remote Streamable HTTP server from the terminal:
+```bash
+grok mcp add --transport http fixmyslop https://fixmyslop.bihanikeshav.workers.dev/mcp
+grok mcp doctor fixmyslop
+```
+You can also add the same server to `~/.grok/config.toml`:
+```toml
+[mcp_servers.fixmyslop]
+url = "https://fixmyslop.bihanikeshav.workers.dev/mcp"
+```
+
+### Codex — `~/.codex/config.toml`
+Add the remote server to your Codex MCP configuration:
+```toml
+[mcp_servers.fixmyslop]
+url = "https://fixmyslop.bihanikeshav.workers.dev/mcp"
+```
+Restart Codex, then check the MCP connection in the client UI.
+
+### Cursor — `.cursor/mcp.json`
+Create or update the project file (or use Cursor's global MCP settings):
 ```json
 {
   "mcpServers": {
@@ -30,7 +50,62 @@ Clients that speak remote Streamable HTTP directly:
   }
 }
 ```
-Clients that need a stdio bridge (older Claude Desktop): use `mcp-remote`:
+
+### Windsurf — `~/.codeium/windsurf/mcp_config.json`
+Open **Settings → Manage MCPs → View raw config**, then add:
+```json
+{
+  "mcpServers": {
+    "fixmyslop": { "serverUrl": "https://fixmyslop.bihanikeshav.workers.dev/mcp" }
+  }
+}
+```
+Some Windsurf builds label the same field `url`; use the field shown by your editor.
+
+### OpenCode — `opencode.json`
+Current OpenCode builds use `mcp.servers` for remote servers:
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "servers": {
+      "fixmyslop": {
+        "type": "remote",
+        "url": "https://fixmyslop.bihanikeshav.workers.dev/mcp"
+      }
+    }
+  }
+}
+```
+If your OpenCode build supports the CLI helper, the equivalent is:
+```bash
+opencode mcp add fixmyslop --url https://fixmyslop.bihanikeshav.workers.dev/mcp
+opencode mcp list
+```
+Older OpenCode builds use the pre-v2 schema; put the `fixmyslop` object directly under `mcp`.
+
+### VS Code / GitHub Copilot — `.vscode/mcp.json`
+Use **MCP: Add Server** or create the workspace file:
+```json
+{
+  "servers": {
+    "fixmyslop": {
+      "type": "http",
+      "url": "https://fixmyslop.bihanikeshav.workers.dev/mcp"
+    }
+  }
+}
+```
+
+### Cline
+From the Cline CLI:
+```bash
+cline mcp add fixmyslop https://fixmyslop.bihanikeshav.workers.dev/mcp --type http
+```
+Or open Cline's **MCP Servers** panel and add the same Streamable HTTP URL.
+
+### Claude Desktop / clients that need a stdio bridge
+For clients that cannot speak remote HTTP directly, use `mcp-remote`:
 ```json
 {
   "mcpServers": {
@@ -42,6 +117,24 @@ Clients that need a stdio bridge (older Claude Desktop): use `mcp-remote`:
 }
 ```
 Restart the client after editing its config.
+
+### xAI API (Grok Responses API)
+For programmatic Grok calls, add the remote MCP tool to the request's `tools` array:
+```json
+{
+  "type": "mcp",
+  "server_url": "https://fixmyslop.bihanikeshav.workers.dev/mcp",
+  "server_label": "fixmyslop"
+}
+```
+Use `server_label: "fixmyslop"` so tool calls are easy to identify; add `allowed_tools`
+if you want to restrict the catalog.
+
+Client references: [Grok MCP](https://docs.x.ai/build/features/mcp-servers),
+[Cursor MCP](https://docs.cursor.com/context/model-context-protocol),
+[OpenCode MCP](https://opencode.ai/v2/docs/mcp-servers),
+[VS Code MCP](https://code.visualstudio.com/docs/agent-customization/mcp-servers),
+[Windsurf MCP](https://docs.windsurf.com/windsurf/cascade/mcp).
 
 ### Verify the connection
 ```bash

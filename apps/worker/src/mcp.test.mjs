@@ -7,7 +7,7 @@ const call = async (msg) => JSON.parse(await (await handleMcpPost(new Request("h
 test("initialize advertises prompts + carries server instructions with the two hard rules", async () => {
   const r = await call({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} });
   assert.ok(r.result.capabilities.prompts);
-  assert.equal(r.result.serverInfo.version, "0.1.1");
+  assert.equal(r.result.serverInfo.version, "0.1.2");
   assert.equal(typeof r.result.instructions, "string");
   assert.match(r.result.instructions, /pairing\.body/);   // fonts rule rides along
   assert.match(r.result.instructions, /container|margin/); // layout rule rides along
