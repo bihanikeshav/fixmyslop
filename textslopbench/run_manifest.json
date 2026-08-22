@@ -1,0 +1,21 @@
+{
+  "benchmark": "TextSlopBench",
+  "snapshot": "0.1.0",
+  "fixture_source": "textslopbench/fixtures.jsonl",
+  "fixture_count": 12,
+  "skill": {
+    "display_name": "FixMySlop:Humanizer",
+    "package_id": "fixmyslop-humanizer",
+    "version": "0.1.0"
+  },
+  "baseline": {
+    "display_name": "humanizer",
+    "path": "C:/Users/Keshav/.agents/skills/humanizer/SKILL.md",
+    "version": "2.2.0"
+  },
+  "scoring": {
+    "primary_automatic_guardrails": ["exact_fidelity", "protected_span_presence", "content_overlap"],
+    "human_evaluation_required_for": ["naturalness", "writing_quality", "voice", "overall_preference"],
+    "detector_scores": "excluded"
+  }
+}

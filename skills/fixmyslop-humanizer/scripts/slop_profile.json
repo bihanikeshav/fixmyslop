@@ -1,0 +1,47 @@
+{
+  "profile_version": "0.1.0-seed",
+  "provenance": "SEED weights adapted from the Antislop paper's reported examples and widely-published cross-model slop lists. These are approximate overrepresentation ratios (rho = f_LLM / f_human), NOT a slop-forensics-derived table. Replace with a genre-conditioned, forensics-computed profile (Reddit-creative + Gutenberg is the wrong human baseline for support emails / abstracts / READMEs). Flags are review_in_context, never bans.",
+  "baseline": "cross-model consensus (default when source model is unknown)",
+  "human_baseline_note": "generic English; genre-conditioned baselines are a TODO (see genre_overrides).",
+  "weighting": "weight = log2(rho); density = sum(weight of matched patterns) / tokens * 1000",
+  "default_action": "review_in_context",
+  "unigrams": {
+    "delve": 20.0, "delves": 18.0, "delving": 16.0, "tapestry": 15.0, "testament": 8.0,
+    "boasts": 6.0, "realm": 7.0, "underscore": 6.0, "underscores": 6.0, "showcasing": 6.0,
+    "seamless": 9.0, "seamlessly": 9.0, "vibrant": 7.0, "multifaceted": 10.0, "intricate": 6.0,
+    "pivotal": 6.0, "crucial": 5.0, "moreover": 5.0, "furthermore": 5.0, "additionally": 4.0,
+    "nuanced": 5.0, "leverage": 4.0, "myriad": 8.0, "plethora": 9.0, "elevate": 5.0,
+    "unwavering": 8.0, "meticulous": 7.0, "meticulously": 7.0, "bustling": 9.0, "whimsical": 8.0,
+    "endeavor": 5.0, "foster": 4.0, "fostering": 4.0, "garner": 6.0, "interplay": 7.0,
+    "beacon": 8.0, "landscape": 4.0, "harnessing": 6.0, "profound": 4.0, "notably": 4.0
+  },
+  "bigrams": {
+    "rich tapestry": 40.0, "vibrant tapestry": 35.0, "bustling metropolis": 30.0,
+    "profound impact": 12.0, "stark reminder": 12.0, "rich history": 8.0,
+    "gentle reminder": 14.0, "double-edged sword": 10.0, "ever-evolving landscape": 20.0,
+    "cutting-edge technology": 9.0, "seamless integration": 11.0, "pivotal role": 10.0,
+    "vital role": 9.0, "crucial role": 8.0, "rich cultural": 9.0
+  },
+  "trigrams": {
+    "rich cultural tapestry": 60.0, "rich cultural heritage": 22.0,
+    "plays a pivotal": 12.0, "plays a vital": 10.0, "plays a crucial": 9.0,
+    "wide range possibilities": 8.0, "stands testament": 12.0
+  },
+  "templates": [
+    {"id": "not_x_but_y", "pattern": "not <X> but <Y>", "regex": "(?i)\\bnot (?:only |just |merely |simply )?[^,.;:!?]{1,45}?\\bbut\\b", "type": "rhetorical_template", "overrepresentation": 6.3, "confidence": "high", "action": "review_in_context"},
+    {"id": "its_not_just", "pattern": "it's not just X, it's Y", "regex": "(?i)\\bit'?s not just [^,.;:!?]{1,45}?,? it'?s\\b", "type": "rhetorical_template", "overrepresentation": 8.0, "confidence": "high", "action": "review_in_context"},
+    {"id": "stands_as_testament", "pattern": "stands as a testament", "regex": "(?i)\\bstands? as a testament\\b", "type": "rhetorical_template", "overrepresentation": 12.0, "confidence": "high", "action": "review_in_context"},
+    {"id": "plays_role", "pattern": "plays a (vital|crucial|pivotal|key) role", "regex": "(?i)\\bplays? an? (?:vital|crucial|pivotal|key|significant) role\\b", "type": "rhetorical_template", "overrepresentation": 9.0, "confidence": "high", "action": "review_in_context"},
+    {"id": "when_it_comes_to", "pattern": "when it comes to", "regex": "(?i)\\bwhen it comes to\\b", "type": "lexical_bundle", "overrepresentation": 5.0, "confidence": "medium", "action": "review_in_context"},
+    {"id": "in_the_realm_of", "pattern": "in the realm of", "regex": "(?i)\\bin the realm of\\b", "type": "lexical_bundle", "overrepresentation": 9.0, "confidence": "high", "action": "review_in_context"}
+  ],
+  "genre_overrides": {
+    "academic abstract": {"exempt_unigrams": ["crucial", "notably", "profound", "interplay"], "note": "measured hedged emphasis words are register-appropriate here"},
+    "research abstract": {"exempt_unigrams": ["crucial", "notably", "profound", "interplay"]},
+    "release notes": {"exempt_unigrams": ["seamless", "seamlessly"], "note": "'seamless' may be a genuine product claim; still flag if unsupported"}
+  },
+  "model_profiles": {
+    "note": "Optional per-model/family multipliers keyed by source_model. Empty by default; TextSlopBench can populate these from controlled benchmark items where the generating model is known.",
+    "families": {}
+  }
+}

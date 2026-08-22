@@ -1,0 +1,4 @@
+interface:
+  display_name: "FixMySlop:Humanizer"
+  short_description: "Natural rewrites with fidelity checks"
+  default_prompt: "Use $fixmyslop-humanizer to revise this text for naturalness while preserving its meaning and protected details."

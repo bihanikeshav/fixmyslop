@@ -31,6 +31,8 @@ textslopbench/data_raw/
 textslopbench/results/
 *.raw.json
 *[Bb]aumler*
+# ...but the Baumler *adapter code* (reads the corpus; contains no corpus text) ships:
+!textslopbench/adapters/baumler.py
 
 # Python hygiene (this repo also hosts the Python text side)
 __pycache__/
