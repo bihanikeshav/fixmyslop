@@ -35,10 +35,10 @@ Beemo shows a real tradeoff, but not a win for this iteration: new FixMySlop is 
 
 Baumler was retrieved and normalized, including treatment post-edits and independent-control tasks, but its public repository has no explicit license file. It is held locally pending terms confirmation. WQ/WQRM was not scored because a safe usable preference-pair snapshot was not retrieved.
 
-Machine-readable reports: [lamp-eval-24.json](textslopbench/results/lamp-eval-24.json), [beemo-eval-24.json](textslopbench/results/beemo-eval-24.json).
+Machine-readable reports: [lamp-eval-24.json](../../textslopbench/results/lamp-eval-24.json), [beemo-eval-24.json](../../textslopbench/results/beemo-eval-24.json).
 
 ## Do-no-harm human-original slice
 
 The 24 Beemo human outputs were re-used as inputs, not references to optimize toward. FixMySlop preserved all 24 texts exactly and passed all inferred-anchor checks. Baseline Humanizer preserved 0/24 exactly, had mean normalized edit 0.5350, content Jaccard 0.5483, and passed the inferred-anchor check on 5/24. Three diagnostic judges then compared untouched original vs each rewrite. For baseline, the rewrite was preferred 44/72 times, original 20/72, with 8 ties; for FixMySlop, all 72 comparisons were ties because the output was identical. This illustrates why preference and preservation must be reported separately: the judge preference for baseline does not erase its large automatic edits to human-written inputs.
 
-Details: [DONOHARM_EVAL.md](DONOHARM_EVAL.md), [donoharm-eval-24.json](textslopbench/results/donoharm-eval-24.json), and [donoharm-judges-24.json](textslopbench/results/donoharm-judges-24.json).
+Details: [DONOHARM_EVAL.md](DONOHARM_EVAL.md), [donoharm-eval-24.json](../../textslopbench/results/donoharm-eval-24.json), and [donoharm-judges-24.json](../../textslopbench/results/donoharm-judges-24.json).

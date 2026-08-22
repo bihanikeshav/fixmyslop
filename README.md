@@ -63,6 +63,26 @@ before→after proof. Regenerate the data-backed parts with:
 node scripts/build-personality-skill.mjs
 ```
 
+## The text side — Humanizer + TextSlopBench
+
+fixmyslop fights AI slop in *type and color*; the text side fights it in *prose*.
+
+- **`skills/fixmyslop-humanizer/`** — a Claude Code skill that rewrites text to remove
+  the fingerprints of AI writing (inflated symbolism, promotional language, em-dash
+  overuse, the rule of three, formulaic vocabulary, …) with a two-stage pipeline: an
+  aggressive/rule-grounded de-slop draft followed by a 2-round anchor + fidelity repair
+  that guarantees numbers, names, dates, quotes, and URLs survive untouched. All prompts
+  are first-party.
+- **`textslopbench/`** — a deterministic, **human-edit-grounded** benchmark: it scores a
+  rewrite by whether it moves text the way *human editors* did, not by an AI detector.
+  See [`docs/textslop/TEXTSLOPBENCH_CARD.md`](docs/textslop/TEXTSLOPBENCH_CARD.md) and the
+  [metrics glossary](docs/textslop/METRICS_GLOSSARY.md).
+
+External evaluation corpora are fetched locally and **never committed** (some have
+unconfirmed or absent redistribution terms — see
+[`docs/textslop/DATASET_ADAPTER_PLAN.md`](docs/textslop/DATASET_ADAPTER_PLAN.md)). Run the
+Python tests from the repo root with `py -m pytest tests/`.
+
 ## Run it
 
 ```bash

@@ -28,7 +28,7 @@ These baseline/FixMySlop host outputs were generated before the final narrowing 
 classifier. The preservation result is unaffected (identical output preserves everything), but
 rerun before quoting exact final provenance.
 
-Machine-readable: [human-input-track-24.json](textslopbench/results/human-input-track-24.json)
+Machine-readable: [human-input-track-24.json](../../textslopbench/results/human-input-track-24.json)
 (recomputed deterministically by `textslopbench/human_input_track.py`), preservation details in
-[donoharm-eval-24.json](textslopbench/results/donoharm-eval-24.json), judgments in
-[donoharm-judges-24.json](textslopbench/results/donoharm-judges-24.json).
+[donoharm-eval-24.json](../../textslopbench/results/donoharm-eval-24.json), judgments in
+[donoharm-judges-24.json](../../textslopbench/results/donoharm-judges-24.json).
