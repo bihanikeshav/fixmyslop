@@ -21,3 +21,19 @@ data/
 # app build artifacts (apps/web/vendor is committed — it's the static deploy bundle)
 apps/**/node_modules/
 apps/worker/.wrangler/
+
+# ---- text-side (TextSlopBench) data guards ----
+# External corpora are fetched locally and NEVER committed. Baumler has no license
+# file and LAMP raw-text redistribution is unconfirmed, so raw corpora AND all run
+# outputs stay out of this public repo. Shippable ID-only manifests + own synthetic
+# fixtures live in textslopbench/manifests/ instead. See docs/textslop/DATASET_ADAPTER_PLAN.md.
+textslopbench/data_raw/
+textslopbench/results/
+*.raw.json
+*[Bb]aumler*
+
+# Python hygiene (this repo also hosts the Python text side)
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
