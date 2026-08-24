@@ -76,8 +76,8 @@ button:disabled { cursor: not-allowed; opacity: .46; }
 .decision-grid { min-height: 570px; display: grid; grid-template-columns: minmax(248px, .72fr) minmax(440px, 1.45fr) minmax(255px, .78fr); border: 1px solid var(--line); background: #f7f8f7; }
 .direction-list, .evidence-panel { min-width: 0; padding: clamp(18px, 2vw, 28px); }
 .direction-list { border-right: 1px solid var(--line); }
-.direction-options { margin-top: 23px; border-top: 1px solid var(--line); }
-.direction-option { width: 100%; min-height: 110px; display: grid; grid-template-columns: 26px 1fr; grid-template-rows: auto auto; gap: 9px 11px; align-items: start; padding: 17px 0; border: 0; border-bottom: 1px solid var(--line); background: transparent; text-align: left; cursor: pointer; transition: color var(--fast) ease-out, padding var(--moderate) var(--ease); }
+.direction-options { min-width: 0; margin-top: 23px; border-top: 1px solid var(--line); }
+.direction-option { width: 100%; min-width: 0; min-height: 110px; display: grid; grid-template-columns: 26px minmax(0, 1fr); grid-template-rows: auto auto; gap: 9px 11px; align-items: start; padding: 17px 0; border: 0; border-bottom: 1px solid var(--line); background: transparent; text-align: left; cursor: pointer; transition: color var(--fast) ease-out, padding var(--moderate) var(--ease); }
 .direction-option:hover { color: var(--accent); }
 .direction-option.selected { padding-left: 9px; color: var(--ink); }
 .direction-option.selected .option-index { color: var(--accent); }
@@ -127,7 +127,8 @@ button:disabled { cursor: not-allowed; opacity: .46; }
 .diagram-rooms > div.hot { margin: 24px 0; border-color: var(--accent); background: var(--accent); color: #fff9f5; }
 .diagram-rooms i { padding: 12px; background: #2a353b; color: #e8eded; font-style: normal; line-height: 1.3; }.diagram-rooms .hot i { background: #c54124; }
 .diagram-compact.diagram-rooms { gap: 4px; }.diagram-compact.diagram-rooms > div { height: 30px; padding: 0; background: #dce2e4; border-color: var(--line); }.diagram-compact.diagram-rooms > div.hot { margin: 5px 0; height: 20px; background: var(--accent); border-color: var(--accent); }.diagram-compact.diagram-rooms span, .diagram-compact.diagram-rooms i { display: none; }
-.diagram-connected:not(.diagram-compact) { display: grid; grid-template-columns: .8fr 1.35fr .8fr; gap: 10px; align-items: center; }
+.diagram-connected { min-width: 0; }
+.diagram-connected:not(.diagram-compact) { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.35fr) minmax(0, .8fr); gap: 10px; align-items: center; }
 .connected-object-rail, .connected-state-rail { display: flex; flex-direction: column; gap: 6px; }
 .connected-object-rail i, .connected-state-rail i { padding: 10px; border: 1px solid #46535a; background: var(--dark-panel); color: #aeb9bc; font-style: normal; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .connected-object-rail i.hot, .connected-state-rail i.hot { border-color: var(--accent); color: #fff9f5; background: var(--accent); }
@@ -135,7 +136,7 @@ button:disabled { cursor: not-allowed; opacity: .46; }
 .connected-proof span { color: var(--accent); font-size: 8px; text-transform: uppercase; letter-spacing: .08em; }
 .connected-proof strong { margin-top: 18px; color: #f0f3f1; font: 650 20px/1.05 "Hanken Grotesk", system-ui, sans-serif; text-wrap: balance; }
 .connected-proof p { margin: 14px 0 0; color: #aeb9bc; line-height: 1.45; }
-.diagram-compact.diagram-connected { display: grid; grid-template-columns: 1fr 1.4fr 1fr; gap: 4px; min-height: 30px; height: 30px; }
+.diagram-compact.diagram-connected { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr); gap: 4px; min-height: 30px; height: 30px; }
 .diagram-compact .connected-object-rail, .diagram-compact .connected-state-rail { flex-direction: row; gap: 3px; }
 .diagram-compact .connected-object-rail i, .diagram-compact .connected-state-rail i { min-width: 0; flex: 1; height: 30px; padding: 0; border-color: var(--line); background: #dce2e4; color: transparent; }
 .diagram-compact .connected-object-rail i.hot, .diagram-compact .connected-state-rail i.hot { background: var(--accent); border-color: var(--accent); }
@@ -158,7 +159,7 @@ button:disabled { cursor: not-allowed; opacity: .46; }
 .revision-control { display: block; margin-top: 18px; }
 .revision-control label > span { display: block; margin-bottom: 11px; font-size: 10px; font-weight: 650; }
 .revision-control output { display: block; min-height: 28px; margin-top: 5px; color: var(--accent); font: 500 8px/1.4 "Spline Sans Mono", ui-monospace, monospace; }
-.revision-control input { width: 100%; accent-color: var(--accent); }
+.revision-control input { display: block; width: calc(100% - 2px); max-width: 100%; accent-color: var(--accent); }
 .revision-control .secondary-action { width: 100%; min-height: 34px; margin-top: 10px; font-size: 10px; }
 
 .audit-workspace, .humanize-workspace { padding-top: clamp(30px, 5vw, 70px); }

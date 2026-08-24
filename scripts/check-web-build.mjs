@@ -25,11 +25,19 @@ if (summaryIndex < 0 || textPageIndex < 0 || summaryIndex > textPageIndex) {
 
 const compiledApp = readFileSync(resolve(web, "build", "app.js"), "utf8");
 const bootstrap = readFileSync(resolve(web, "build", "engine-bootstrap.mjs"), "utf8");
+const styles = readFileSync(resolve(web, "demo", "app-styles.css"), "utf8");
 for (const contract of ["aria-modal", "app-page-layer", "prefers-reduced-motion", "Escape"]) {
   if (!compiledApp.includes(contract)) failures.push(`compiled route shell is missing ${contract}`);
 }
 for (const contract of ["window.FIXMYSLOP_BROWSER", "new URL(\"./apps/engine/data/\", import.meta.url)", "fixed-acceptance-demo"]) {
   if (!bootstrap.includes(contract)) failures.push(`engine bootstrap is missing ${contract}`);
+}
+for (const contract of [
+  ".direction-option { width: 100%; min-width: 0;",
+  ".diagram-compact.diagram-connected { display: grid; grid-template-columns: minmax(0, 1fr)",
+  ".revision-control input { display: block; width: calc(100% - 2px)",
+]) {
+  if (!styles.includes(contract)) failures.push(`responsive proof layout is missing ${contract}`);
 }
 
 for (const runtimeFile of [
