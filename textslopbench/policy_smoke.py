@@ -14,6 +14,7 @@ Two batched host calls on gpt-5.6-luna (one per policy); all scoring determinist
 from __future__ import annotations
 
 import ast
+import hashlib
 import json
 import re
 import statistics
@@ -149,16 +150,26 @@ def select():
 
 
 def _call(messages, tag):
-    cache = RESULTS / f"policy-smoke-{tag}.raw.json"
+    request_payload = {"model": MODEL, "messages": messages}
+    request_bytes = json.dumps(request_payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    request_sha256 = hashlib.sha256(request_bytes).hexdigest()
+    cache = RESULTS / f"policy-smoke-{tag}-{request_sha256[:16]}.raw.json"
     if cache.exists():
-        return json.loads(cache.read_text(encoding="utf-8"))["content"]
-    body = json.dumps({"model": MODEL, "messages": messages}).encode()
+        saved = json.loads(cache.read_text(encoding="utf-8"))
+        if saved.get("request_sha256") == request_sha256:
+            return saved["content"]
+    body = request_bytes
     req = urllib.request.Request(ENDPOINT, data=body, method="POST",
                                  headers={"Authorization": "Bearer claudex-local", "Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=240) as r:
         data = json.loads(r.read().decode())
     content = data["choices"][0]["message"]["content"]
-    cache.write_text(json.dumps({"content": content, "raw": data}, ensure_ascii=False, indent=2), encoding="utf-8")
+    cache.write_text(json.dumps({
+        "request_sha256": request_sha256,
+        "model": MODEL,
+        "content": content,
+        "raw": data,
+    }, ensure_ascii=False, indent=2), encoding="utf-8")
     return content
 
 

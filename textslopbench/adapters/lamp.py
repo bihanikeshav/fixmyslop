@@ -10,6 +10,32 @@ from pathlib import Path
 from .base import Adapter, AdapterError, as_text, first, list_text, load_objects, normalized_record
 
 
+GROUPING_KEYS = (
+    "writer_id",
+    "author_id",
+    "annotator_id",
+    "participant_id",
+    "prompt_id",
+    "source_id",
+    "document_id",
+)
+
+
+def _grouping_metadata(raw: dict[str, object]) -> dict[str, object]:
+    """Retain the released grouping fields and select the strongest cluster id."""
+    grouping_ids = {
+        key: as_text(raw.get(key))
+        for key in GROUPING_KEYS
+        if raw.get(key) not in (None, "")
+    }
+    source = next(iter(grouping_ids), None)
+    return {
+        "group_id": grouping_ids.get(source) if source else None,
+        "group_source": source,
+        "grouping_ids": grouping_ids,
+    }
+
+
 class LAMPAdapter(Adapter):
     dataset = "LAMP"
 
@@ -40,6 +66,7 @@ class LAMPAdapter(Adapter):
             supplied_id = first(raw, "id", "uid", "example_id")
             source_digest = hashlib.sha256(source.encode("utf-8")).hexdigest()[:10]
             record_id = f"{supplied_id}:{source_model}:{source_digest}" if supplied_id is not None and source_model else f"LAMP:{source_digest}"
+            grouping = _grouping_metadata(raw)
             records.append(normalized_record(
                 dataset=self.dataset,
                 source_text=source,
@@ -54,6 +81,7 @@ class LAMPAdapter(Adapter):
                     "edit_categories": edit_categories,
                     "edit_log": first(raw, "edits", "edit_operations", "fine_grained_edits"),
                     "source_parse_repaired": parse_repaired,
+                    **grouping,
                 },
             ))
             if limit and len(records) >= limit:

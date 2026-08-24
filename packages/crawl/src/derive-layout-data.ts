@@ -1518,7 +1518,7 @@ function slopCandidates(record: AnyRecord): AnyRecord[] {
   const glows = elements.filter((e) => /rgba?\(/.test(e.boxShadow || "") && e.boxShadow !== "none");
   const gradients = elements.filter((e) => (e.backgroundImage || "").includes("gradient"));
   const repeated = elements.filter((e) => e.repeatedGroup);
-  const fonts = new Set(elements.map((e) => String(e.fontFamily || "").split(",")[0].replace(/["']/g, "").trim().toLowerCase()).filter(Boolean));
+  const fonts = new Set(elements.map((e) => (String(e.fontFamily || "").split(",")[0] ?? "").replace(/["']/g, "").trim().toLowerCase()).filter(Boolean));
   const cardLike = repeated.filter((e) => e.rect.width > 180 && e.rect.height > 100 && (e.boxShadow !== "none" || e.borderRadius >= 8));
   add("pill-heavy", rounded.length >= 8 && rounded.length / Math.max(1, elements.length) > 0.08 ? "medium" : "", rounded, "Pills are prevalent enough to inspect for unearned UI uniformity; frequency alone is not a final slop judgment.");
   add("colored-glow-shadow", glows.filter((e) => /rgba?\([^)]*(?:[1-9][0-9]|2[0-5][0-9]),/i.test(e.boxShadow || "")).length >= 3 ? "medium" : "", glows, "Colored shadows require visual review for hierarchy or decorative glow misuse.");
@@ -1531,7 +1531,8 @@ function slopCandidates(record: AnyRecord): AnyRecord[] {
 
 function fingerprint(genome: AnyRecord): string {
   const importantRoles = new Set(["nav", "hero", "proof", "features", "pricing", "faq", "cta", "footer"]);
-  const roleSet = [...new Set(genome.sectionGrammar.map((section: AnyRecord) => String(section.role || "unknown")))]
+  const roles: string[] = genome.sectionGrammar.map((section: AnyRecord) => String(section.role || "unknown"));
+  const roleSet = [...new Set<string>(roles)]
     .filter((role) => importantRoles.has(role)).sort();
   const columns = Number(genome.macro.columnCount || 1) >= 4 ? "4+" : String(genome.macro.columnCount || 1);
   return [

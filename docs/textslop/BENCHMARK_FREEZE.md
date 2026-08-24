@@ -1,5 +1,11 @@
 # BENCHMARK FREEZE — metric set for the frozen-100 comparison
 
+> **2026-08-24 uncertainty erratum:** this historical freeze used item-level
+> resampling without recording whether repeated items shared a writer or prompt.
+> Its intervals and replication labels are descriptive, not inferential. Current
+> runs must preserve the explicit grouping unit, use cluster resampling, and suppress
+> significance when grouping is unavailable or fewer than two clusters survive.
+
 Frozen 2026-08-18, before the frozen-100 run and before seeing which system wins. **After this point,
 metrics are not tuned based on results.** Scored deterministically (no LLM judges) against the single
 professional human reference. LAMP and Beemo reported separately. Implementation: `chea.py`,
@@ -27,7 +33,7 @@ false moves. Legacy Reference CHEA keeps its original `|delta| > EPS` definition
 All six reported for `overall, lexical, phrasal, syntax, rhythm, rhetoric, semantic`.
 
 ## Fidelity & magnitude
-- **fidelity_pass_rate** — deterministic hard-anchor audit pass.
+- **anchor_mutation_safety_pass_rate** — deterministic hard-anchor and owned mutation audit pass; not general semantic fidelity. The `fidelity_pass_rate` alias is deprecated in the 0.2 metric schema.
 - **exact** — exact-anchor preservation score.
 - **edit_magnitude** — 1 − word-level difflib ratio (source→rewrite).
 - **jaccard_to_human** — content-token overlap of rewrite vs human reference. **Labeled explicitly as
@@ -41,9 +47,12 @@ All six reported for `overall, lexical, phrasal, syntax, rhythm, rhetoric, seman
 - **residual_interval_hit** — 1 if `SED_final ∈ [p25, p75]` of the conditional residual estimator
   `E[SED_H | SED_S, genre]`, else 0.
 
-## Uncertainty
-Paired **item-level bootstrap** (2000 iters, seed 1234, 95% CI) on every FixMySlop − Humanizer delta,
-with paired **win/loss/tie** counts. A difference is called only when the CI excludes 0.
+## Uncertainty (historical method; superseded)
+The frozen run used a paired **item-level bootstrap** (2000 iterations, seed 1234,
+95% interval) on every FixMySlop − Humanizer delta, with paired win/loss/tie counts.
+Because the run did not retain grouping provenance, an interval excluding zero no
+longer licenses a difference claim. The method is retained here only to reproduce
+the archived artifact.
 
 ## Diagnostic
 All six CHEA components reported; the smallest set of features explaining meaningful system gaps is

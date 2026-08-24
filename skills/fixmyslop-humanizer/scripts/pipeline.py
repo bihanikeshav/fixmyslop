@@ -135,6 +135,7 @@ def targeted_correction_plan(
     context: dict[str, object],
     rewritten: str,
     rewritten_stats: dict[str, object],
+    fidelity: dict[str, object] | None = None,
 ) -> dict[str, object]:
     """Turn post-rewrite evidence into a bounded correction request.
 
@@ -167,11 +168,22 @@ def targeted_correction_plan(
     instructions: list[str] = []
     if not anchor_result["passed"]:
         instructions.append("Restore every missing or underrepresented hard anchor exactly before returning the revision.")
+    if fidelity is not None and not fidelity.get("passed", False):
+        instructions.append(
+            "The candidate failed the conservative fidelity gate. Restore the source's actors, polarity, negation, qualifications, and claim direction; if uncertain, return the source wording."
+        )
     if actionable:
         instructions.append("Edit only the spans named in `actionable_findings`; leave everything else, including all diagnostic findings, unchanged.")
     return {
         "stage": "targeted_correction",
         "anchor_coverage": anchor_result,
+        "fidelity_failures": {
+            "blocking_drift_flags": list((fidelity or {}).get("blocking_drift_flags", [])),
+            "failed_checks": [
+                check.get("name") for check in (fidelity or {}).get("checks", [])
+                if not check.get("passed", True)
+            ],
+        },
         "actionable_findings": actionable,
         "diagnostic_findings": diagnostic[:16],
         "instructions": instructions,
@@ -192,7 +204,7 @@ def finish_rewrite_context(
     """Append the second scan, correction plan, and fidelity result."""
     genre = str(context["genre_inference"]["genre"])
     rewritten_stats = analyze(rewritten, genre)
-    correction = targeted_correction_plan(context, rewritten, rewritten_stats)
+    correction = targeted_correction_plan(context, rewritten, rewritten_stats, fidelity)
     context["rewrite"] = {"text": rewritten}
     context["rewrite_humanstats"] = rewritten_stats
     context["targeted_correction"] = correction

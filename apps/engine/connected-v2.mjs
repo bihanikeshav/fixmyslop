@@ -131,6 +131,8 @@ export function shipworthyFont(font, role = "display") {
   const quality = Number(evidence.quality);
   const floor = SHIP_QUALITY_FLOOR[role] ?? SHIP_QUALITY_FLOOR.display;
   if (evidence.asset?.available !== true || !Number.isFinite(quality) || quality < floor) return false;
+  if ((role === "display" || role === "accent") && font?.readabilityChecks?.displaySuitable === false) return false;
+  if (role === "body" && font?.readabilityChecks?.bodySuitable === false) return false;
   if (role === "body" && !["serif", "sans-serif", "monospace"].includes(evidence.category)) return false;
   return true;
 }
@@ -165,6 +167,22 @@ function profileFamily(profileId, intent = {}) {
 }
 
 const ACCENT_GENRE_PREFERENCE = {
+  "creative-tool-workbench": ["sans", "mono", "slab", "display-other", "serif"],
+  "incident-operations": ["sans", "mono", "slab", "serif"],
+  "civic-service-flow": ["sans", "serif", "slab"],
+  "research-evidence": ["serif", "sans", "slab", "ornate-serif", "mono"],
+  "community-service-discovery": ["sans", "serif", "slab", "mono"],
+  "care-capacity-command": ["sans", "mono", "slab", "serif"],
+  "fulfillment-picking": ["sans", "mono", "slab", "serif"],
+  "work-handoff-coordination": ["sans", "slab", "mono", "serif"],
+  "api-reference-execution": ["sans", "mono", "slab", "serif"],
+  "cultural-collection-exploration": ["serif", "sans", "slab", "ornate-serif"],
+  "grant-application-flow": ["sans", "serif", "slab"],
+  "process-control": ["sans", "mono", "slab", "serif"],
+  "emergency-evacuation": ["sans", "slab", "mono", "serif"],
+  "financial-planning-workspace": ["sans", "mono", "slab", "serif"],
+  "guided-audio-session": ["sans", "serif", "slab", "ornate-serif"],
+  "procedural-execution": ["sans", "mono", "slab", "serif"],
   "music-nightlife": ["display-other", "script", "ornate-serif", "slab", "mono", "serif", "sans"],
   "earth-craft": ["ornate-serif", "serif", "display-other", "script", "slab", "sans"],
   "climate-civic": ["serif", "ornate-serif", "slab", "sans", "display-other"],
@@ -298,6 +316,22 @@ export function deriveColorScene(engine, genome, intent, textureRef = "none-obse
 }
 
 const TEXTURE_PREFERENCES = {
+  "creative-tool-workbench": ["none-observed", "dither", "filtered-surface"],
+  "incident-operations": ["none-observed"],
+  "civic-service-flow": ["none-observed"],
+  "research-evidence": ["paper-grain", "none-observed", "filtered-surface"],
+  "community-service-discovery": ["none-observed", "paper-grain"],
+  "care-capacity-command": ["none-observed"],
+  "fulfillment-picking": ["none-observed"],
+  "work-handoff-coordination": ["none-observed"],
+  "api-reference-execution": ["none-observed", "dither"],
+  "cultural-collection-exploration": ["paper-grain", "none-observed", "filtered-surface"],
+  "grant-application-flow": ["none-observed"],
+  "process-control": ["none-observed", "filtered-surface"],
+  "emergency-evacuation": ["none-observed"],
+  "financial-planning-workspace": ["none-observed"],
+  "guided-audio-session": ["none-observed", "paper-grain", "filtered-surface"],
+  "procedural-execution": ["none-observed"],
   "music-nightlife": ["film-grain", "filtered-surface", "halftone", "dither", "mesh"],
   "earth-craft": ["paper-grain", "image-or-pattern-surface", "film-grain", "filtered-surface"],
   "climate-civic": ["paper-grain", "image-or-pattern-surface", "none-observed"],
@@ -346,6 +380,22 @@ export function selectTextureDialect(genome, intent, profileId = null, seed = 0)
 }
 
 const COMPONENT_PREFERENCES = {
+  "creative-tool-workbench": ["technical", "crisp", "tactile"],
+  "incident-operations": ["technical", "crisp", "calm"],
+  "civic-service-flow": ["calm", "crisp"],
+  "research-evidence": ["editorial", "crisp", "calm"],
+  "community-service-discovery": ["calm", "crisp", "organic"],
+  "care-capacity-command": ["technical", "crisp", "calm"],
+  "fulfillment-picking": ["technical", "crisp", "calm"],
+  "work-handoff-coordination": ["crisp", "calm", "technical"],
+  "api-reference-execution": ["technical", "crisp", "calm"],
+  "cultural-collection-exploration": ["editorial", "crisp", "calm"],
+  "grant-application-flow": ["calm", "crisp"],
+  "process-control": ["technical", "crisp", "calm"],
+  "emergency-evacuation": ["crisp", "technical", "calm"],
+  "financial-planning-workspace": ["technical", "crisp", "calm"],
+  "guided-audio-session": ["calm", "tactile", "organic"],
+  "procedural-execution": ["technical", "crisp", "calm"],
   "music-nightlife": ["playful", "tactile", "brutalist"],
   "earth-craft": ["tactile", "organic", "luxury"],
   "climate-civic": ["organic", "editorial", "calm"],
@@ -429,6 +479,14 @@ function contextTokens(intent, profileId) {
   if (profile === "earth-craft") tokens.add("craft");
   if (profile === "music-nightlife") tokens.add("film");
   if (profile === "climate-civic") tokens.add("paper");
+  if (profile === "creative-tool-workbench") { tokens.add("technical-observability"); tokens.add("most-marketing"); tokens.add("tool"); }
+  if (profile === "incident-operations") tokens.add("technical-observability");
+  if (profile === "research-evidence") { tokens.add("editorial"); tokens.add("paper"); }
+  if (profile === "community-service-discovery") tokens.add("climate-civic");
+  if (["care-capacity-command", "fulfillment-picking", "work-handoff-coordination", "api-reference-execution", "process-control", "emergency-evacuation", "financial-planning-workspace", "procedural-execution"].includes(profile)) tokens.add("technical-observability");
+  if (profile === "cultural-collection-exploration") { tokens.add("editorial"); tokens.add("paper"); }
+  if (profile === "grant-application-flow") tokens.add("climate-civic");
+  if (profile === "guided-audio-session") tokens.add("most-marketing");
   return { profile, tokens };
 }
 
@@ -451,6 +509,27 @@ function chooseTreatment(category, preferredIds, tokens, intent, seed) {
 }
 
 const EXPRESSION_PREFERENCES = {
+  "creative-tool-workbench": {
+    cursor: [],
+    scroll: ["scroll-reveal-stagger"],
+    texture: [],
+    typography: [],
+  },
+  "incident-operations": { cursor: [], scroll: [], texture: [], typography: [] },
+  "civic-service-flow": { cursor: [], scroll: [], texture: [], typography: [] },
+  "research-evidence": { cursor: [], scroll: ["sticky-narrative-stack", "scroll-reveal-stagger"], texture: ["grain-surface-overlay"], typography: [] },
+  "community-service-discovery": { cursor: [], scroll: ["scroll-reveal-stagger"], texture: [], typography: [] },
+  "care-capacity-command": { cursor: [], scroll: [], texture: [], typography: [] },
+  "fulfillment-picking": { cursor: [], scroll: [], texture: [], typography: [] },
+  "work-handoff-coordination": { cursor: [], scroll: [], texture: [], typography: [] },
+  "api-reference-execution": { cursor: [], scroll: [], texture: [], typography: [] },
+  "cultural-collection-exploration": { cursor: [], scroll: ["sticky-narrative-stack", "scroll-reveal-stagger"], texture: ["grain-surface-overlay"], typography: [] },
+  "grant-application-flow": { cursor: [], scroll: [], texture: [], typography: [] },
+  "process-control": { cursor: [], scroll: [], texture: [], typography: [] },
+  "emergency-evacuation": { cursor: [], scroll: [], texture: [], typography: [] },
+  "financial-planning-workspace": { cursor: [], scroll: [], texture: [], typography: [] },
+  "guided-audio-session": { cursor: [], scroll: ["scroll-reveal-stagger"], texture: [], typography: [] },
+  "procedural-execution": { cursor: [], scroll: [], texture: [], typography: [] },
   "music-nightlife": {
     cursor: ["cursor-image-trail", "cursor-magnetic-action"],
     scroll: ["horizontal-gallery-pan", "asymmetric-split-pinning", "scroll-reveal-stagger"],
@@ -502,14 +581,44 @@ export function deriveExpressionPlan(intent, genome, profileId = null, texture =
     const grainCompatible = ["paper-grain", "film-grain", "filtered-surface", "halftone", "dither"].includes(texture.dialect);
     if (grain && grainCompatible && treatmentMatches(grain, tokens) > 0 && !selected.some((treatment) => treatment.id === grain.id)) selected.push(grain);
   }
-  // One high-commitment centrepiece, plus at most one quiet supporting texture.
+  // Catalogue treatments are presentation techniques, never proof. The
+  // subject mechanism owns the centrepiece; this prevents a motion editor from
+  // being reduced to "scroll reveal" or an editorial pinning treatment.
   const centreCandidates = selected.filter((treatment) => ["cursor", "scroll", "typography"].includes(treatment.category));
-  const centrepiece = centreCandidates[0] || null;
-  const finalTreatments = selected.filter((treatment) => treatment === centrepiece || treatment.category === "texture").slice(0, 2);
+  const presentationTreatment = centreCandidates[0] || null;
+  const finalTreatments = selected.filter((treatment) => treatment === presentationTreatment || treatment.category === "texture").slice(0, 2);
+  const mechanism = intent?.mechanismPlan || null;
+  const mechanismValid = !!(
+    mechanism?.validity?.pass
+    && mechanism?.centrepiece?.id
+    && mechanism?.centrepiece?.status !== "rejected"
+    && mechanism?.proofObject?.id
+  );
+  const centrepiecePlan = mechanismValid
+    ? { ...mechanism.centrepiece, mechanismId: mechanism.id, proofObjectId: mechanism.proofObject.id }
+    : {
+      id: "subject-proof-object",
+      kind: "required-fallback",
+      description: "a subject-specific functional proof object must be defined before visual treatment",
+      relevance: "subject-mechanism-required",
+      status: "needs-subject-plan",
+      mechanismId: null,
+      proofObjectId: null,
+    };
   return {
     schemaVersion: expressionTreatmentsV1.schemaVersion,
     profile,
-    centrepiece: centrepiece ? centrepiece.id : null,
+    centrepiece: centrepiecePlan.id,
+    centrepiecePlan,
+    presentationTreatment: presentationTreatment?.id || null,
+    rejectedCentrepieces: presentationTreatment ? [{ id: presentationTreatment.id, reason: "presentation treatment cannot replace the subject proof object" }] : [],
+    centrepieceValidation: {
+      status: mechanismValid ? "accepted" : "requires-subject-mechanism",
+      nonNull: true,
+      mechanismMatch: mechanismValid,
+      proofObjectPresent: !!mechanism?.proofObject?.id,
+      rule: "accept only a non-decorative centrepiece owned by the subject mechanism",
+    },
     treatments: finalTreatments,
     constraints: expressionTreatmentsV1.combinationRules || [],
     compatibility: {
@@ -574,6 +683,10 @@ export function applyConnectedV2(engine, genome, intent, { seed = 0, profileId =
         componentDialect: component.dialect,
         textureDialect: texture.dialect,
         centrepiece: expression.centrepiece,
+        mechanism: intent?.mechanismPlan?.id || null,
+        proofObject: intent?.mechanismPlan?.proofObject?.id || null,
+        artDirection: intent?.directionRealization?.id || null,
+        centrepieceValidation: expression.centrepieceValidation,
       },
     },
     provenance: {

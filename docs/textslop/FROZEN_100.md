@@ -1,5 +1,12 @@
 # Frozen-100 results — FixMySlop vs baseline Humanizer
 
+> **2026-08-24 statistical status:** all asterisks, “replicated,” “tie,” and
+> “confirmed” labels in this archival report came from item-level resampling without
+> verified writer/prompt grouping. Those inferential labels are withdrawn. The table's
+> point estimates remain useful historical diagnostics, but the comparisons require a
+> grouping-complete cluster rerun before they support superiority, non-inferiority, or
+> replication claims.
+
 Scored by the frozen metric set (BENCHMARK_FREEZE.md) on the full held-out sets: LAMP n=98 (2 lost to a
 model JSON error, salvaged 11/12 of one chunk), Beemo n=100. Deterministic; no LLM judges. Paired
 item-level bootstrap (2000 iters, seed 1234); `*` = 95% CI excludes 0. Δ = FixMySlop − Humanizer.

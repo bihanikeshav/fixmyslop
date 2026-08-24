@@ -1,4 +1,4 @@
-/* The Index — a living octagon of eight fixes. One viewport, never scrolls.
+/* The Index — a living ring of fixes. One viewport, never scrolls.
    The blobs have real physics: a snappy spring (rAF) drives size + a lean toward
    the cursor. Whatever you're nearest to writes itself into the centre — but it
    pops in and bursts out like a balloon, with a dwell before it commits, so the
@@ -11,10 +11,10 @@ const IX = {
   paper: "#ECEDEF", ink: "#16181D", sub: "#6B6F78",
   mono: "'Martian Mono', monospace", serif: "'Instrument Serif', serif",
 };
-const IX_LABEL = { surfaces: "Surfaces", color: "Color", imagery: "Imagery", controls: "Controls", compose: "Layout", type: "Type", copy: "Copy", motion: "Motion" };
+const IX_LABEL = { surfaces: "Surfaces", color: "Color", imagery: "Imagery", controls: "Controls", compose: "Layout", type: "Type", copy: "Copy", motion: "Motion", text: "Text" };
 
 // Favicon = the brand lockup (bordered square + inner filled square). The inner
-// square's colour tracks whichever octagon node is hovered; default = ink.
+// square's colour tracks whichever ring node is hovered; default = ink.
 function setFavicon(inner) {
   const link = document.getElementById("favicon");
   if (!link) return;
@@ -358,7 +358,7 @@ const ENGINE_HTML = `
 </footer>
 `;
 
-// The eight nodes — rendered once and memoised, so the rAF loop owns their size /
+// The route nodes — rendered once and memoised, so the rAF loop owns their size /
 // transform imperatively and React never clobbers it on a centre re-render.
 const HubNodes = React.memo(function HubNodes({ pages, verts, discRefs, btnRefs, numRefs, labRefs, onRoute, setFocus, clearFocus }) {
   return (
@@ -433,7 +433,7 @@ function IndexLayer({ onRoute, onReset, active }) {
     return undefined;
   }, [activeIdx]);
 
-  // favicon inner-square colour follows the hovered octagon node (default ink)
+  // favicon inner-square colour follows the hovered route node (default ink)
   useEffectIx(() => {
     setFavicon(activeIdx != null && pages[activeIdx] ? pages[activeIdx].dot : IX.ink);
   }, [activeIdx]);
@@ -521,7 +521,7 @@ function IndexLayer({ onRoute, onReset, active }) {
     <div ref={rootRef} style={{ height: "100%", overflowY: "auto", background: IX.paper, color: IX.ink, fontFamily: IX.mono, scrollBehavior: "smooth" }}>
       <style>{IX_CSS}</style>
 
-      {/* ── SCREEN 1: the octagon hub — wrapped only, markup unchanged ── */}
+      {/* ── SCREEN 1: the route hub ── */}
       <section style={{ minHeight: "100vh", display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
 
       <div style={{ flex: "0 0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, padding: "16px clamp(16px,3vw,30px)", borderBottom: `1px solid ${IX.ink}1f` }}>
@@ -558,13 +558,13 @@ function IndexLayer({ onRoute, onReset, active }) {
               ) : (
                 <React.Fragment>
                   <div style={{ fontFamily: IX.serif, fontStyle: "italic", fontSize: "clamp(30px,4.6vw,60px)", lineHeight: 0.98 }}>Intent.</div>
-                  <div style={{ fontSize: "clamp(8.5px,1vw,11px)", letterSpacing: ".14em", textTransform: "uppercase", color: IX.sub, marginTop: 13, lineHeight: 1.9 }}>Eight tells · eight fixes<br />made on purpose</div>
+                  <div style={{ fontSize: "clamp(8.5px,1vw,11px)", letterSpacing: ".14em", textTransform: "uppercase", color: IX.sub, marginTop: 13, lineHeight: 1.9 }}>Nine tells · nine fixes<br />made on purpose</div>
                 </React.Fragment>
               )}
             </div>
           </div>
 
-          {/* the eight living nodes (memoised; rAF owns their motion) */}
+          {/* living route nodes (memoised; rAF owns their motion) */}
           <HubNodes pages={pages} verts={verts} discRefs={discRefs} btnRefs={btnRefs} numRefs={numRefs} labRefs={labRefs}
             onRoute={onRoute} setFocus={setFocus} clearFocus={clearFocus} />
 

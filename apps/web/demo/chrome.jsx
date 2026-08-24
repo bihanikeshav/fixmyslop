@@ -61,10 +61,10 @@ function CircleFix({ onClick, theme, size = 60 }) {
 function BackTab({ onClick, theme, label = "Index" }) {
   return (
     <button className="back-tab" onClick={onClick} style={{
-      display: "inline-flex", alignItems: "center", gap: 9, padding: "9px 16px 9px 13px",
+      display: "inline-flex", alignItems: "center", gap: 9, minHeight: 44, padding: "9px 16px 9px 13px",
       border: `1.5px solid ${theme.line || theme.ink}`, background: "transparent", color: theme.ink,
       fontFamily: theme.mono, fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase",
-      borderRadius: theme.radius || 0, transition: "background .18s, color .18s",
+      borderRadius: theme.radius || 0, transition: "background .18s, color .18s", cursor: "pointer",
     }}>
       <span style={{ fontSize: 14 }}>&larr;</span>{label}
     </button>

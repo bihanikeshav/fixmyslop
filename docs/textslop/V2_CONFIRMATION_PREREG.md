@@ -1,4 +1,13 @@
-# v2 confirmation — preregistered protocol (FROZEN before running)
+# v2 confirmation — preregistered protocol (historical, corrected)
+
+> **2026-08-23 statistical erratum:** the original runner used the upper confidence
+> bound (`ci_high >= 0`) as a zero-margin non-inferiority test. That is a failure-to-
+> reject-inferiority rule, not a valid non-inferiority test. The runner now requires
+> the lower confidence bound to clear the preregistered negative margin. The historical
+> “Pareto gain,” “non-inferior,” and “beat Humanizer” verdicts below are withdrawn until
+> the original held-out outputs are rescored with the corrected rule, clustered
+> uncertainty, identity/gaming baselines, and the content-hashed full comparison skill.
+> The recorded tables remain here as provenance, not as current product claims.
 
 Date: 2026-08-19. Deterministic scoring, no LLM judges. This freezes the confirmation of **FixMySlop v2
 = A_nolock** before it is run on untouched held-out data. Written after dev iterations 1–5 (see
@@ -22,7 +31,13 @@ conditional_population, conditional_consensus_only, rhetoric. Safety (higher bet
 exact_anchor. Descriptive (reported, not gated): jaccard, jaccard_edited, edit_magnitude, normalized_hcsr.
 
 ## Success criteria (preregistered)
-Per corpus, v2 vs hz, paired item-level bootstrap (2000 iters, seed 1234), per-item value = mean over k=3.
+The historical protocol specified a paired item-level bootstrap (2000 iterations,
+seed 1234), with each item's value averaged over k=3. That unit understated dependence
+when one writer or prompt contributed multiple items. The corrected runner resamples
+the explicit writer/prompt/source cluster, records the grouping source, and refuses
+inferential significance or non-inferiority when grouping falls back to record IDs or
+when fewer than two clusters survive. Therefore the archived item-level intervals below
+remain descriptive provenance until a grouping-complete rerun is available.
 
 **Tier 1 — Pareto gain (primary, must hold on BOTH corpora):**
 1. STRICT superiority on fidelity_pass and exact_anchor (paired Δ>0, CI excludes 0).
@@ -65,13 +80,14 @@ Paired item-level bootstrap (2000 iters, seed 1234), per-item = mean over k=3. �
 | **exact** | 88.7 | **98.8** | **+10.2\*** | 89.1 | **99.7** | **+10.6\*** |
 | jaccard | 0.606 | 0.614 | +0.008\* | 0.350 | 0.351 | +0.002\* |
 
-**Tier 2 (alignment non-inferiority): PASS on BOTH corpora by CI AND by strict point-margin.** Every
-alignment axis has a paired CI including 0 and clears its point-margin; v2 even beats hz on Beemo
+**WITHDRAWN Tier 2 result:** the historical runner printed PASS on both corpora. The corrected
+lower-bound rule has not been rerun on these records, so the old non-inferiority verdict is invalid. Every
+alignment axis had a paired CI including 0 and cleared its point-margin; the old runner favored v2 on Beemo
 coverage/cond_dir/rhetoric/jaccard. The n=40 dev point-margin misses (coverage, rhetoric) vanished at
 n=80/100 — confirming they were underpower, not deficits.
 
-**Tier 1 (Pareto gain): PASS on LAMP; PARTIAL on Beemo.** Both corpora: v2 is STRICTLY superior to hz on
-fidelity and exact (CI excludes 0) and jaccard is non-inferior — the core "beat Humanizer" claim. LAMP
+**WITHDRAWN Tier 1 result:** the historical runner printed PASS on LAMP and PARTIAL on Beemo. Its
+fidelity, exact-anchor, and jaccard point estimates remain archival; they no longer support a “beat Humanizer” claim. LAMP
 also meets the v1-parity ceiling (fidelity 0.987 ≥ 0.98, exact 99.7 ≥ 99.5). **Beemo misses the ceiling
 only**: fidelity 0.9625 (< 0.98), exact 98.83 (< 99.5) — still crushing hz's 0.56/88.7, but v2 still
 breaks fidelity on ~3.75% of Beemo items (the `low_content_overlap` full-paraphrase class with no
@@ -80,8 +96,8 @@ discrete anchor to restore; a source-revert/micro-restore backstop would close i
 **Coherence gate: PASS.** 10/10 sampled outputs (5 per corpus) read as coherent, natural, faithful
 prose. No seaming (v2 is a single draft + repair, not span-composition).
 
-**VERDICT:** v2 = A_nolock is **confirmed a Pareto gain over Humanizer on untouched held-out data, both
-corpora** (dominates on fidelity/exact, non-inferior on all alignment), with clean coherence. On LAMP it
+**WITHDRAWN HISTORICAL VERDICT:** the old harness labeled v2 = A_nolock a Pareto gain on both
+corpora. The corrected statistical rule does not confirm that claim. The archived run reported clean coherence; on LAMP it
 is a full clean domination meeting every preregistered criterion. The single preregistered miss is
 Beemo's absolute fidelity/exact ceiling (0.96/98.8 vs the 0.98/99.5 bar) — a small residual with an
 identified fix (source-revert backstop for the no-anchor paraphrase class), NOT a loss to Humanizer.

@@ -13,6 +13,15 @@ data/
 # Env
 .env
 .env.local
+.env.*
+!.env.example
+
+# Browser/session exports are credentials, even when created for local research.
+**/[Cc]ookies.txt
+**/*_cookies.txt
+**/*-cookies.txt
+**/cookies.json
+**/Cookies
 
 # Playwright MCP browser snapshots
 .playwright-mcp/
@@ -21,6 +30,18 @@ data/
 # app build artifacts (apps/web/vendor is committed — it's the static deploy bundle)
 apps/**/node_modules/
 apps/worker/.wrangler/
+apps/web/build/
+
+# Local blinded UI benchmark runs (screenshots + private system key)
+benchmarks/ui-skills/runs/
+
+# Local visual-research workspace and root-level QA captures. Curated references
+# belong under docs/, viz/, or apps/web; raw video/frame dumps stay local.
+kole-ui-guide/
+/archetype-viewer.html
+/*.png
+/*.jpg
+/*.jpeg
 
 # ---- text-side (TextSlopBench) data guards ----
 # External corpora are fetched locally and NEVER committed. Baumler has no license

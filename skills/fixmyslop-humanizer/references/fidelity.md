@@ -14,6 +14,14 @@ capitalized entities. Also inspect for dropped qualifications, stronger causalit
 new sentiment, invented detail, and large unexplained length changes. Embedding or
 lexical overlap can flag drift but cannot prove fidelity.
 
+The bundled deterministic audit additionally rejects a bounded set of high-precision
+mutations: negation and modality changes, known polarity opposites, explicit numeric-range
+reversals, comparative-direction reversals, and cause/effect reversal in a few explicit
+clause frames. It recognizes conventional month-first, day-first, and numeric dates while
+excluding the month or proper name `May` from modal analysis. These checks are regression
+guardrails, not a general entailment model; unsupported qualifiers and causal constructions
+still require source-aware review.
+
 If a candidate fails an exact check, restore the affected source span and rerun the
 audit. If the meaning is uncertain, prefer the source wording and report the limit.
 

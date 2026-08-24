@@ -25,7 +25,9 @@ def _missing_anchors(result: dict) -> set[str]:
             miss.add(str(m))
     hac = result.get("hard_anchor_coverage", {}) or {}
     for m in hac.get("missing", []):
-        miss.add(str(m.get("value", m)) if isinstance(m, dict) else str(m))
+        miss.add(str(m.get("text", m)) if isinstance(m, dict) else str(m))
+    for m in hac.get("modified_or_underrepresented", []):
+        miss.add(str(m.get("text", m)) if isinstance(m, dict) else str(m))
     return miss
 
 

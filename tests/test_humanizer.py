@@ -70,6 +70,21 @@ class HumanizerTests(unittest.TestCase):
         )
         self.assertEqual(context["genre_inference"]["genre"], "product onboarding UI")
 
+    def test_soft_vocabulary_is_diagnostic_not_host_actionable(self):
+        context = prepare_rewrite_context(
+            "This is a crucial detail in the method.",
+            "academic abstract",
+        )
+        actionable = {row["family"] for row in context["model_summary"]["actionable_findings"]}
+        diagnostic = {row["family"] for row in context["model_summary"]["contextual_signals"]}
+        self.assertNotIn("ai_vocabulary", actionable)
+        self.assertIn("ai_vocabulary", diagnostic)
+
+    def test_explicit_custom_genre_is_not_silently_overridden(self):
+        context = prepare_rewrite_context("The parties agree to the following terms.", "legal contract")
+        self.assertEqual(context["genre_inference"]["genre"], "legal contract")
+        self.assertEqual(context["genre_inference"]["method"], "explicit_custom_genre")
+
     def test_hard_anchor_map_catches_modified_claim(self):
         context = prepare_rewrite_context("The study found 38% fewer failures, but the result may be preliminary.", "auto")
         result = audit("The study found 38% fewer failures, but the result may be preliminary.", "The study found 18% fewer failures.", content_map=context["source_content_map"])
@@ -81,11 +96,95 @@ class HumanizerTests(unittest.TestCase):
         self.assertNotIn("—", result["rewrite"])
         self.assertIn(";", result["rewrite"])
 
+    def test_contextual_pass_preserves_intentional_typography_and_voice(self):
+        text = "The tool—despite its flaws—works. I kept the 🔥 because it is the whole joke."
+        result = rewrite(text, "personal social post")
+        self.assertEqual(result["rewrite"], text)
+
+    def test_plain_typography_reframes_paired_dash_as_an_aside(self):
+        result = rewrite("The tool—despite its flaws—works.", "general prose", typography="plain")
+        self.assertEqual(result["rewrite"], "The tool (despite its flaws) works.")
+
+    def test_ambiguous_words_and_parallel_syntax_are_not_broken(self):
+        cases = [
+            "These features are intentional.",
+            "Jordan boasts about the result.",
+            "She is, of course, ready.",
+            "Not only did Maya ship the fix, but she also wrote the tests.",
+        ]
+        for text in cases:
+            with self.subTest(text=text):
+                self.assertEqual(rewrite(text, "general prose")["rewrite"], text)
+
+    def test_soft_reporting_verb_is_not_a_banned_word(self):
+        text = "This release showcases faster exports."
+        self.assertEqual(rewrite(text, "software release notes")["rewrite"], text)
+
+    def test_layout_is_preserved_when_there_is_no_greeting(self):
+        text = "\n  - first item\n\n    nested note\n"
+        self.assertEqual(rewrite(text, "general prose")["rewrite"], text)
+
+    def test_fidelity_blocks_actor_loss_and_claim_flip(self):
+        actor = audit("Ravi reviewed the release.", "The team approved it unanimously.")
+        flip = audit(
+            "Acme revenue increased to 5 million dollars in 2025 because demand rose.",
+            "Acme revenue decreased to 5 million dollars in 2025 because demand collapsed.",
+        )
+        self.assertFalse(actor["passed"])
+        self.assertFalse(flip["passed"])
+        self.assertTrue(flip["claim_drift_flags"])
+
+    def test_fidelity_recognizes_day_first_dates_without_treating_may_as_modal(self):
+        changed_date = audit("The launch is 4 May 2026.", "The launch is 4 June 2026.")
+        same_date = audit("May approved it on 4 May 2026.", "On 4 May 2026, May approved it.")
+        self.assertFalse(changed_date["passed"])
+        self.assertIn("4 May 2026", changed_date["checks"][2]["missing"])
+        self.assertTrue(same_date["passed"])
+        self.assertNotIn("modality_changed", same_date["claim_drift_flags"])
+
+    def test_fidelity_blocks_explicit_numeric_range_reversal(self):
+        result = audit(
+            "Latency fell from 400ms to 250ms.",
+            "Latency fell from 250ms to 400ms.",
+        )
+        self.assertFalse(result["passed"])
+        self.assertIn("numeric_range_reversed", result["claim_drift_flags"])
+
+    def test_fidelity_blocks_causal_direction_reversal(self):
+        result = audit(
+            "The queue failed because the token expired.",
+            "The token expired because the queue failed.",
+        )
+        self.assertFalse(result["passed"])
+        self.assertIn("causal_direction_reversed", result["claim_drift_flags"])
+
+    def test_fidelity_accepts_equivalent_comparative_inversion(self):
+        valid = audit(
+            "Maya processed more orders than Ravi.",
+            "Ravi processed fewer orders than Maya.",
+        )
+        flipped = audit(
+            "Maya processed more orders than Ravi.",
+            "Ravi processed more orders than Maya.",
+        )
+        self.assertTrue(valid["passed"])
+        self.assertFalse(flipped["passed"])
+        self.assertIn("comparative_direction_reversed", flipped["claim_drift_flags"])
+
+    def test_duplicate_protected_occurrences_are_counted(self):
+        result = audit("Keep TOKEN twice: TOKEN.", "Keep TOKEN once.", ["TOKEN", "TOKEN"])
+        self.assertFalse(result["passed"])
+        self.assertTrue(result["checks"][0]["modified_or_underrepresented"])
+
     def test_editable_curly_quotes_are_normalized_but_protected_quotes_survive(self):
-        result = rewrite("The writer’s draft was ready. She said “keep it simple.”", "auto")
+        result = rewrite("The writer’s draft was ready. She said “keep it simple.”", "auto", typography="plain")
         self.assertIn('“keep it simple.”', result["rewrite"])
         self.assertIn("writer's", result["rewrite"])
         self.assertNotIn("writer’s", result["rewrite"])
+
+    def test_contextual_typography_preserves_curly_apostrophe(self):
+        text = "The writer’s draft was ready."
+        self.assertEqual(rewrite(text, "auto")["rewrite"], text)
 
 
 if __name__ == "__main__":

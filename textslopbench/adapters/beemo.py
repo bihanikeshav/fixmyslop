@@ -7,6 +7,35 @@ from pathlib import Path
 from .base import Adapter, AdapterError, as_text, first, list_text, load_objects, normalized_record
 
 
+GROUPING_KEYS = (
+    "prompt_id",
+    "source_id",
+    "document_id",
+    "conversation_id",
+    "writer_id",
+    "author_id",
+)
+
+
+def _grouping_metadata(raw: dict[str, object], prompt: object) -> dict[str, object]:
+    """Preserve Beemo's explicit ids, using its prompt as the source-item group."""
+    grouping_ids = {
+        key: as_text(raw.get(key))
+        for key in GROUPING_KEYS
+        if raw.get(key) not in (None, "")
+    }
+    source = next(iter(grouping_ids), None)
+    group_id = grouping_ids.get(source) if source else as_text(prompt)
+    if source is None and group_id:
+        source = "prompt"
+        grouping_ids["prompt"] = group_id
+    return {
+        "group_id": group_id,
+        "group_source": source,
+        "grouping_ids": grouping_ids,
+    }
+
+
 class BeemoAdapter(Adapter):
     dataset = "Beemo"
 
@@ -21,12 +50,10 @@ class BeemoAdapter(Adapter):
             human = list_text(first(raw, "human_text", "human", "human_output", "original_human"))
             if not machine:
                 continue
+            prompt = first(raw, "prompt", "instruction", "task")
             candidates = []
             if human:
                 candidates.append({"label": "human", "text": human[0]})
-            if expert:
-                candidates.append({"label": "expert_edit", "text": expert[0]})
-            candidates = [{"label": "human", "text": human[0]}] if human else []
             if expert:
                 candidates.append({"label": "expert_edit", "text": expert[0]})
             records.append(normalized_record(
@@ -38,10 +65,11 @@ class BeemoAdapter(Adapter):
                 human_references=expert,
                 candidates=candidates,
                 metadata={
-                    "prompt": first(raw, "prompt", "instruction", "task"),
+                    "prompt": prompt,
                     "use_case": first(raw, "use_case", "category", "task_type"),
                     "source_model": first(raw, "model", "source_model"),
                     "llm_edit": first(raw, "llm_edit", "machine_edit"),
+                    **_grouping_metadata(raw, prompt),
                 },
             ))
             if limit and len(records) >= limit:

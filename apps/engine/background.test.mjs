@@ -31,7 +31,7 @@ const SOME_FAMILIES = ["hero-thesis-single", "contrast-band-flow", "instrument-c
 test("purity: background.mjs carries no Math.random/Date.now/new Date in executable code", () => {
   const path = fileURLToPath(new URL("background.mjs", import.meta.url));
   const src = readFileSync(path, "utf8");
-  const codeOnly = src.split("\n").map((l) => l.replace(/\/\/.*$/, "")).join("\n");
+  const codeOnly = src.split("\n").map((l) => l.replace(/\/\/.*/, "")).join("\n");
   assert.ok(!/Math\.random/.test(codeOnly), "calls Math.random");
   assert.ok(!/Date\.now/.test(codeOnly), "calls Date.now");
   assert.ok(!/new Date/.test(codeOnly), "calls new Date");

@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-24T04:20:12.6191412+05:30",
+  "title": "Design System: fixmyslop",
+  "extensions": {
+    "colorMeta": {
+      "instrument-ink": { "role": "neutral", "displayName": "Instrument Ink", "canonical": "#172026", "tonalRamp": ["#071014", "#10191e", "#172026", "#344047", "#5b6870", "#8e9ba1", "#c8d0d3", "#f4f6f5"] },
+      "workbench-paper": { "role": "neutral", "displayName": "Workbench Paper", "canonical": "#f4f6f5", "tonalRamp": ["#11191e", "#202a30", "#46535a", "#76838a", "#aeb8bb", "#dce2e4", "#e1e8ea", "#f7f8f7"] },
+      "revision-orange": { "role": "primary", "displayName": "Revision Orange", "canonical": "#b5452c", "tonalRamp": ["#3b1008", "#641d12", "#8d2d1d", "#a83c27", "#b5452c", "#d87861", "#eab2a4", "#f4d9d1"] },
+      "verified-green": { "role": "secondary", "displayName": "Verified Green", "canonical": "#18725d", "tonalRamp": ["#06261f", "#0d4135", "#125846", "#18725d", "#3a9179", "#6eb19e", "#a9d2c7", "#d8ebe5"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Product Thesis", "purpose": "Audit and Humanize thesis lines only." },
+      "body": { "displayName": "Operational Reading", "purpose": "Briefs, explanations, editable prose, and evidence." },
+      "label": { "displayName": "Evidence Metadata", "purpose": "Runs, anchors, gates, and compact process state." }
+    },
+    "shadows": [
+      { "name": "executable-key", "value": "0 1px 0 #172026, 3px 3px 0 #172026", "purpose": "Primary executable action at rest." },
+      { "name": "verified-halo", "value": "0 0 0 3px #d8ebe5", "purpose": "Small verified status dot only." }
+    ],
+    "motion": [
+      { "name": "feedback-fast", "value": "140ms cubic-bezier(.22, 1, .36, 1)", "purpose": "Hover, press, focus, and tab feedback." },
+      { "name": "recompose-moderate", "value": "240ms cubic-bezier(.22, 1, .36, 1)", "purpose": "Direction selection and panel recomposition." },
+      { "name": "compute-trace", "value": "620ms cubic-bezier(.22, 1, .36, 1)", "purpose": "One optional sweep that exposes a fresh generated run; removed under reduced motion." }
+    ],
+    "breakpoints": [
+      { "name": "compact", "value": "460px" },
+      { "name": "stacked", "value": "760px" },
+      { "name": "compressed-grid", "value": "1080px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single consequential action in a view.",
+      "html": "<button class=\"ds-btn-primary\">Generate directions</button>",
+      "css": ".ds-btn-primary { min-height: 42px; padding: 0 15px; border: 1px solid #b5452c; border-radius: 2px; background: #b5452c; color: #fff9f5; box-shadow: 0 1px 0 #172026, 3px 3px 0 #172026; font: 700 12px/1.2 'Hanken Grotesk', system-ui, sans-serif; transition: transform 140ms cubic-bezier(.22,1,.36,1), box-shadow 140ms cubic-bezier(.22,1,.36,1); } .ds-btn-primary:hover { transform: translate(-1px,-1px); box-shadow: 0 1px 0 #172026, 4px 4px 0 #172026; } .ds-btn-primary:active { transform: translate(2px,2px); box-shadow: 0 0 0 #172026, 1px 1px 0 #172026; } .ds-btn-primary:focus-visible { outline: 2px solid #b5452c; outline-offset: 3px; }"
+    },
+    {
+      "name": "Secondary Action",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "A reversible supporting action that never competes with release or generation.",
+      "html": "<button class=\"ds-btn-secondary\">Revert to source</button>",
+      "css": ".ds-btn-secondary { min-height: 42px; padding: 0 14px; border: 1px solid #172026; border-radius: 2px; background: transparent; color: #172026; font: 700 12px/1.2 'Hanken Grotesk', system-ui, sans-serif; } .ds-btn-secondary:hover { background: #e8edef; } .ds-btn-secondary:focus-visible { outline: 2px solid #b5452c; outline-offset: 3px; }"
+    },
+    {
+      "name": "Mode Tab",
+      "kind": "nav",
+      "refersTo": "mode-active",
+      "description": "One of the three primary product jobs with an explicit active state.",
+      "html": "<button class=\"ds-mode-tab\" aria-current=\"page\"><span aria-hidden=\"true\">2</span>Audit</button>",
+      "css": ".ds-mode-tab { min-width: 116px; min-height: 58px; padding: 0 18px; border: 0; border-right: 1px solid #c8d0d3; background: #172026; color: #f4f6f5; font: 650 13px/1.2 'Hanken Grotesk', system-ui, sans-serif; } .ds-mode-tab span { margin-right: 9px; color: #b5452c; font: 500 9px/1 'Spline Sans Mono', monospace; } .ds-mode-tab:focus-visible { outline: 2px solid #b5452c; outline-offset: -4px; }"
+    },
+    {
+      "name": "Protected Anchor",
+      "kind": "chip",
+      "description": "A claim invariant whose missing state is visible in both words and color.",
+      "html": "<span class=\"ds-anchor ds-anchor-missing\"><i aria-hidden=\"true\"></i>99.9% — missing</span>",
+      "css": ".ds-anchor { display: inline-flex; align-items: center; padding: 7px 8px; border: 1px solid #455158; color: #cad2d4; background: #11191e; font: 500 8px/1.2 'Spline Sans Mono', monospace; } .ds-anchor i { width: 5px; height: 5px; margin-right: 6px; border-radius: 999px; background: #18725d; } .ds-anchor-missing { border-color: #b5452c; color: #ffab91; } .ds-anchor-missing i { background: #b5452c; }"
+    },
+    {
+      "name": "Evidence Gate",
+      "kind": "custom",
+      "description": "A bounded decision record with status, gate name, and visible evidence.",
+      "html": "<div class=\"ds-gate\"><span>PASS</span><strong>Subject mechanism</strong><p>Objects and actions match the brief.</p></div>",
+      "css": ".ds-gate { display: grid; grid-template-columns: 76px 1fr; gap: 4px 10px; padding: 18px 20px; border-bottom: 1px solid #c8d0d3; background: #f7f8f7; color: #172026; font-family: 'Hanken Grotesk', system-ui, sans-serif; } .ds-gate span { color: #18725d; font: 600 8px/1.5 'Spline Sans Mono', monospace; } .ds-gate strong { font-size: 12px; } .ds-gate p { grid-column: 2; margin: 3px 0 0; color: #667078; font-size: 10px; line-height: 1.45; }"
+    },
+    {
+      "name": "Connected Proof Diagram",
+      "kind": "custom",
+      "refersTo": "connected-proof-diagram",
+      "description": "A dark subject-specific instrument with object rails, a mechanism ID, and current states.",
+      "html": "<div class=\"ds-connected-proof\"><div class=\"ds-object-rail\">work item</div><div class=\"ds-proof\"><span>decision-handoff</span><strong>Proof instrument</strong></div><div class=\"ds-state-rail\">in-review</div></div>",
+      "css": ".ds-connected-proof { display: grid; grid-template-columns: .8fr 1.35fr .8fr; gap: 10px; align-items: center; min-height: 170px; padding: 22px; border: 1px solid #b5452c; border-radius: 2px; background: #202a30; color: #aeb9bc; } .ds-proof strong { display: block; margin-top: 18px; color: #f0f3f1; font: 650 20px/1.05 'Hanken Grotesk', system-ui, sans-serif; }"
+    },
+    {
+      "name": "Engine Status",
+      "kind": "status",
+      "refersTo": "engine-status",
+      "description": "A truthful runtime marker that distinguishes connected output, loading, and fixed acceptance.",
+      "html": "<div class=\"ds-engine-status\"><i></i>connected run <b>FMS-0000</b></div>",
+      "css": ".ds-engine-status { color: #667078; font: 500 10px/1 'Spline Sans Mono', monospace; text-transform: uppercase; letter-spacing: .06em; } .ds-engine-status i { display: inline-block; width: 6px; height: 6px; margin-right: 8px; border-radius: 50%; background: #b5452c; box-shadow: 0 0 0 3px #f4d9d1; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Evidence Workbench",
+    "overview": "fixmyslop feels like a serious instrument opened mid-decision: pale structural surfaces, dark inspection fields, one revision signal, and evidence immediately beside the choice it qualifies. Its confidence comes from useful density and inspectable state, not visual theatre. The interface is a product workbench even when it appears on the landing page.",
+    "keyCharacteristics": ["Flat structural planes divided by alignment and one-pixel rules.", "Dark inspection fields reserved for the mechanism or protected evidence.", "Revision orange used for the next consequential action, never ambient decoration.", "Compact mono metadata paired with plain, readable grotesk copy.", "Every pass, bound, rejection, and human judgment remains visible."],
+    "rules": [
+      { "name": "The One Revision Signal Rule", "body": "Revision Orange owns one consequential action or state per view. If it becomes atmosphere, hierarchy has failed.", "section": "colors" },
+      { "name": "The Dark Field Rule", "body": "Dark surfaces contain inspectable product truth. They are never empty hero backdrops, neon stages, or glass containers.", "section": "colors" },
+      { "name": "The Evidence Is Small, Not Vague Rule", "body": "Mono labels may be compact, but their contrast and wording must remain explicit.", "section": "typography" },
+      { "name": "The Flat Until Action Rule", "body": "A resting surface is flat. Elevation appears only to make an action, focus state, or verified status more legible.", "section": "elevation" },
+      { "name": "The Runtime Truth Rule", "body": "Connected, loading, and fixed-acceptance states must be named; a fallback may never masquerade as generated output.", "section": "components" }
+    ],
+    "dos": ["Do put a working product object or protected claim field in the dominant dark plane.", "Do keep evidence, rejection conditions, and pending human judgment beside the decision they qualify.", "Do recompose Generate, Audit, and Humanize for touch instead of shrinking desktop."],
+    "donts": ["Don't build a parody-first anti-slop museum.", "Don't use beige or cream editorial taste as universal refinement.", "Don't use generic AI SaaS or copy a competing skill's complete skin.", "Don't present a deterministic score as proof of taste or general superiority."]
+  }
+}

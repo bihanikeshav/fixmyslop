@@ -159,12 +159,14 @@ function extractFonts(text: string): string[] {
 
   // Match fontFamily: <rest-of-line>
   for (const m of text.matchAll(/fontFamily:\s*([^\n]+)/g)) {
-    parseFontFamilyLine(m[1]);
+    const value = m[1];
+    if (value !== undefined) parseFontFamilyLine(value);
   }
 
   // Match font-family: <rest-of-line> (kebab variant)
   for (const m of text.matchAll(/font-family:\s*([^\n]+)/g)) {
-    parseFontFamilyLine(m[1]);
+    const value = m[1];
+    if (value !== undefined) parseFontFamilyLine(value);
   }
 
   // ── Markdown-prose font mentions ──────────────────────────────────────────
@@ -178,7 +180,8 @@ function extractFonts(text: string): string[] {
     ];
     for (const pat of proseFontPatterns) {
       for (const m of text.matchAll(pat)) {
-        const candidate = m[1].trim();
+        const candidate = m[1]?.trim();
+        if (candidate === undefined) continue;
         if (
           candidate.length > 2 &&
           candidate.length < 60 &&
@@ -192,7 +195,8 @@ function extractFonts(text: string): string[] {
 
     // Backtick-quoted font names only when no YAML tokens found
     for (const m of text.matchAll(/`([A-Z][A-Za-z0-9\s\-]+)`/g)) {
-      const candidate = m[1].trim();
+      const candidate = m[1]?.trim();
+      if (candidate === undefined) continue;
       if (/^[A-Z]/.test(candidate) && !/[{}:;=@#]/.test(candidate) && candidate.length < 50) {
         if (!GENERIC_FAMILIES.test(candidate) && !/^(Design|System|Color|Button|Section|Feature|Background)$/.test(candidate)) {
           addFontStack(candidate, seen);
@@ -438,6 +442,7 @@ async function main(): Promise<void> {
   try {
     for (let i = 0; i < todo.length; i++) {
       const brand = todo[i];
+      if (brand === undefined) continue;
       const progress = `[${i + 1}/${todo.length}]`;
       process.stdout.write(`${progress} ${brand.name.padEnd(20)} `);
 

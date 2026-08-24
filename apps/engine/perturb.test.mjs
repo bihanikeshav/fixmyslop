@@ -34,7 +34,7 @@ test("purity: perturb.mjs and fingerprint.mjs carry no Math.random/Date.now/new 
     const src = readFileSync(path, "utf8");
     const codeOnly = src
       .split("\n")
-      .map((line) => line.replace(/\/\/.*$/, "")) // strip line comments before checking
+      .map((line) => line.replace(/\/\/.*/, "")) // strip line comments before checking
       .join("\n");
     assert.ok(!/Math\.random/.test(codeOnly), `${file} calls Math.random`);
     assert.ok(!/Date\.now/.test(codeOnly), `${file} calls Date.now`);

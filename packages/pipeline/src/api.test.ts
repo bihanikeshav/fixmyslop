@@ -1,17 +1,27 @@
+// @ts-nocheck -- build-time JavaScript API intentionally has no declaration file.
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-// The build-time API lives as standalone Node ESM next to the other checkers
-// (viz/personality-test/api.mjs). We import the pure functions directly; vitest
-// resolves .mjs fine. No types — treat as any.
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
-import {
-  colorReport, paletteReport, fontReport, freshFonts, audit, autoFix,
-} from "../../../viz/personality-test/api.mjs";
 import { writeFileSync, rmSync, copyFileSync, readFileSync, existsSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
 const HTML_DIR = resolve(__dirname, "../../../viz/personality-test");
+const API = resolve(HTML_DIR, "api.mjs");
+
+function api(command: string, args: string[] = []) {
+  const output = execFileSync(process.execPath, [API, command, ...args, "--json"], {
+    encoding: "utf8",
+    maxBuffer: 10 * 1024 * 1024,
+  });
+  return JSON.parse(output);
+}
+
+const colorReport = (hex: string) => api("color", [hex]);
+const paletteReport = (...colors: string[]) => api("palette", colors);
+const fontReport = (family: string) => api("font", [family]);
+const freshFonts = (count: number) => api("fonts", [String(count)]);
+const audit = (file: string) => api("audit", [file]);
+const autoFix = (file: string) => api("audit", [file, "--fix"]);
 
 describe("color()", () => {
   it("flags #6366f1 as banned with a lower-slop alternative", () => {

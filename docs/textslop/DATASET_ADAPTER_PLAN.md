@@ -26,9 +26,22 @@ Each adapter emits JSONL records with:
   "source_text": "raw AI or draft text",
   "human_references": ["professional or participant edit"],
   "candidates": [],
-  "metadata": {}
+  "metadata": {
+    "group_id": "writer-or-prompt-id",
+    "group_source": "writer_id",
+    "grouping_ids": {"writer_id": "writer-or-prompt-id"}
+  }
 }
 ```
+
+Grouping metadata is part of the evaluation contract, not incidental provenance.
+Adapters preserve all recognized writer, author, participant, prompt, source, and
+document identifiers in `grouping_ids`, then select the strongest available value as
+`group_id`. Beemo uses its prompt text when the release has no separate prompt ID.
+The runner records the selected source and whether it had to fall back to `record_id`.
+A record-ID fallback may support descriptive item resampling, but it must not support
+a significance or non-inferiority claim. The same restriction applies when a scored
+slice contains fewer than two independent clusters.
 
 Run an adapter without modifying the source dataset:
 
@@ -38,9 +51,9 @@ py -m textslopbench.adapters.cli lamp path/to/local/data.jsonl --split test --li
 
 Adapters live in `textslopbench/adapters/`:
 
-- `lamp.py`: raw/original/response plus human-edit/reference aliases and edit-category metadata.
+- `lamp.py`: raw/original/response plus human-edit/reference aliases, edit-category metadata, and released writer/author grouping IDs.
 - `baumler.py`: traverses participant `responses`, emits treatment and control metadata, and preserves character-level edit logs when present.
-- `beemo.py`: maps machine, human, expert-edited, and optional LLM-edited variants.
+- `beemo.py`: maps machine, human, expert-edited, and optional LLM-edited variants; it preserves prompt/source IDs and prompt-level grouping.
 - `wq.py`: maps writing-quality preference pairs into chosen/rejected candidates.
 
 ## Dataset-specific status
@@ -100,7 +113,8 @@ Sources: [WQ/WQRM paper](https://arxiv.org/abs/2504.07532),
 4. Create a locked evaluation ID list before running either humanizer.
 5. Run source, baseline Humanizer, FixMySlop, and human-reference conditions with the same host configuration where applicable.
 6. Score exact protected-span/fact checks, edit deltas, human-edit alignment, and blinded human judgments separately.
-7. Report dataset-specific results; never merge LAMP creative-writing scores with Baumler personal-style or WQ preference scores into one unqualified number.
+7. Resample the independent writer/prompt/source grouping unit and report its source. If grouping is missing, or fewer than two clusters survive metric filtering, label uncertainty descriptive and suppress inferential verdicts.
+8. Report dataset-specific results; never merge LAMP creative-writing scores with Baumler personal-style or WQ preference scores into one unqualified number.
 
 ## Current limitations
 

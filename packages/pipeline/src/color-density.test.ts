@@ -1,9 +1,8 @@
+// @ts-nocheck -- standalone JavaScript color modules intentionally have no declarations.
 import { describe, it, expect } from "vitest";
 // The color model lives as standalone Node ESM under viz/personality-test/color
 // (it ships next to slop-check.mjs as a runnable CLI). We import the pure .mjs
-// modules directly; vitest resolves .mjs fine. No types — treat as any.
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
+// modules directly; vitest resolves .mjs fine.
 import {
   hexToRgb, rgbToHex, hexToOklab, oklabToSrgb, hexToOklch,
   srgbToLinear, linearToSrgb, linearToOklab, oklabToLinear,

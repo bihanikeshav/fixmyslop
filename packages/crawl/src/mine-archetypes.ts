@@ -126,12 +126,16 @@ async function main(): Promise<void> {
     (qualityLabelsRaw?.records ?? []).map((r: AnyRecord) => [r.host, r]),
   );
 
-  const zipped: AnyRecord[] = genomes.map((genome, i) => ({
-    genome,
-    host: manifest[i].host,
-    url: manifest[i].url,
-    screenshots: manifest[i].screenshots,
-  }));
+  const zipped: AnyRecord[] = genomes.map((genome, i) => {
+    // The line-count equality check above guarantees a manifest row here.
+    const manifestRow = manifest[i]!;
+    return {
+      genome,
+      host: manifestRow.host,
+      url: manifestRow.url,
+      screenshots: manifestRow.screenshots,
+    };
+  });
 
   // ---------------------------------------------------------------------------
   // 1.1 Pre-filter
@@ -412,7 +416,7 @@ function buildDendrogram(vectors: number[][]): Merge[] {
   const key = (a: number, b: number) => (a < b ? `${a},${b}` : `${b},${a}`);
   for (let i = 0; i < n; i++) {
     for (let j = i + 1; j < n; j++) {
-      dist.set(key(i, j), 1 - cosine(vectors[i], vectors[j]));
+      dist.set(key(i, j), 1 - cosine(vectors[i]!, vectors[j]!));
     }
   }
 
@@ -423,8 +427,10 @@ function buildDendrogram(vectors: number[][]): Merge[] {
     const ids = [...alive];
     for (let i = 0; i < ids.length; i++) {
       for (let j = i + 1; j < ids.length; j++) {
-        const d = dist.get(key(ids[i], ids[j]))!;
-        if (!best || d < best.d) best = { a: ids[i], b: ids[j], d };
+        const a = ids[i]!;
+        const b = ids[j]!;
+        const d = dist.get(key(a, b))!;
+        if (!best || d < best.d) best = { a, b, d };
       }
     }
     const { a, b, d } = best!;
@@ -451,9 +457,14 @@ function buildDendrogram(vectors: number[][]): Merge[] {
 function cutAt(merges: Merge[], n: number, h: number): number[][] {
   const parent = new Array(n * 2).fill(0).map((_, i) => i); // generous upper bound for synthetic ids
   function find(x: number): number {
-    while (parent[x] !== x) {
-      parent[x] = parent[parent[x]];
-      x = parent[x];
+    let current = parent[x];
+    if (current === undefined) throw new Error(`cluster id ${x} is outside the union-find`);
+    while (current !== x) {
+      const grandparent = parent[current];
+      if (grandparent === undefined) throw new Error(`cluster parent ${current} is outside the union-find`);
+      parent[x] = grandparent;
+      x = grandparent;
+      current = parent[x]!;
     }
     return x;
   }
@@ -491,14 +502,14 @@ function tuneCut(merges: Merge[], n: number, minSize: number): number[][] {
   // prefer a height whose valid cluster count lands in [3,8], closest to 0.35
   const inRange = candidates.filter((c) => c.validCount >= 3 && c.validCount <= 8);
   const pick = (pool: typeof candidates) => pool.slice().sort((x, y) => Math.abs(x.h - 0.35) - Math.abs(y.h - 0.35))[0];
-  if (inRange.length) return pick(inRange).clusters;
+  if (inRange.length) return pick(inRange)!.clusters;
   // fallback: closest validCount to the [3,8] band, tie-break by proximity to 0.35
   const scored = candidates.map((c) => ({
     ...c,
     bandDist: c.validCount < 3 ? 3 - c.validCount : c.validCount > 8 ? c.validCount - 8 : 0,
   }));
   scored.sort((x, y) => x.bandDist - y.bandDist || Math.abs(x.h - 0.35) - Math.abs(y.h - 0.35));
-  return scored[0].clusters;
+  return scored[0]!.clusters;
 }
 
 // ---------------------------------------------------------------------------
@@ -508,7 +519,7 @@ function meanVector(vecs: number[][]): number[] {
   const n = vecs.length || 1;
   const dim = vecs[0]?.length ?? 0;
   const out = new Array(dim).fill(0);
-  for (const v of vecs) for (let i = 0; i < dim; i++) out[i] += v[i] / n;
+  for (const v of vecs) for (let i = 0; i < dim; i++) out[i] = (out[i] ?? 0) + v[i]! / n;
   return out;
 }
 
@@ -517,7 +528,7 @@ function meanPairwiseCosine(vecs: number[][]): number {
   let sum = 0, count = 0;
   for (let i = 0; i < vecs.length; i++) {
     for (let j = i + 1; j < vecs.length; j++) {
-      sum += cosine(vecs[i], vecs[j]);
+      sum += cosine(vecs[i]!, vecs[j]!);
       count++;
     }
   }
@@ -539,8 +550,8 @@ function kmeans2(vecs: number[][]): number[][] {
       }
     }
   }
-  let centroidA = vecs[seedA].slice();
-  let centroidB = vecs[seedB].slice();
+  let centroidA = vecs[seedA]!.slice();
+  let centroidB = vecs[seedB]!.slice();
   let assign = new Array(n).fill(0);
   for (let iter = 0; iter < 15; iter++) {
     const next = vecs.map((v) => (cosine(v, centroidA) >= cosine(v, centroidB) ? 0 : 1));
@@ -564,23 +575,27 @@ function kmeans2(vecs: number[][]): number[][] {
  * two clusters (each an array of `members` indices) after optional visual bisection.
  */
 function visualSharpen(idxs: number[], members: AnyRecord[], visualEmbeddings: AnyRecord, minSize: number): number[][] {
-  const hosts = idxs.map((i) => members[i].host);
-  const embedded = idxs.filter((i) => Array.isArray(visualEmbeddings[members[i].host]?.top));
+  const embedded = idxs.filter((i) => {
+    const member = members[i];
+    return member !== undefined && Array.isArray(visualEmbeddings[member.host]?.top);
+  });
   const coverage = embedded.length / (idxs.length || 1);
   if (coverage < 0.6) return [idxs]; // insufficient embedding coverage — leave structural cluster as-is
 
-  const embVecs = embedded.map((i) => unitNorm(visualEmbeddings[members[i].host].top));
+  const embVecs = embedded.map((i) => unitNorm(visualEmbeddings[members[i]!.host].top));
   const coherence = meanPairwiseCosine(embVecs);
   if (coherence >= 0.55) return [idxs]; // already visually coherent
 
   // bisect via 2-means on the embedded subset's visual vectors
-  const [localA, localB] = kmeans2(embVecs);
-  const embeddedIdxA = new Set(localA.map((li) => embedded[li]));
-  const embeddedIdxB = new Set(localB.map((li) => embedded[li]));
+  const localGroups = kmeans2(embVecs);
+  const localA = localGroups[0] ?? [];
+  const localB = localGroups[1] ?? [];
+  const embeddedIdxA = new Set(localA.map((li) => embedded[li]).filter((i): i is number => i !== undefined));
+  const embeddedIdxB = new Set(localB.map((li) => embedded[li]).filter((i): i is number => i !== undefined));
 
   // structural centroids from the embedded members already assigned, for non-embedded fallback
-  const structA = meanVector([...embeddedIdxA].map((i) => members[i].vec));
-  const structB = meanVector([...embeddedIdxB].map((i) => members[i].vec));
+  const structA = meanVector([...embeddedIdxA].map((i) => members[i]!.vec));
+  const structB = meanVector([...embeddedIdxB].map((i) => members[i]!.vec));
 
   const groupA: number[] = [], groupB: number[] = [];
   for (const i of idxs) {
@@ -589,8 +604,10 @@ function visualSharpen(idxs: number[], members: AnyRecord[], visualEmbeddings: A
     } else if (embeddedIdxB.has(i)) {
       groupB.push(i);
     } else {
-      const simA = cosine(members[i].vec, structA);
-      const simB = cosine(members[i].vec, structB);
+      const member = members[i];
+      if (member === undefined) continue;
+      const simA = cosine(member.vec, structA);
+      const simB = cosine(member.vec, structB);
       (simA >= simB ? groupA : groupB).push(i);
     }
   }
@@ -626,8 +643,11 @@ function findVisualCentroidHost(recs: AnyRecord[], visualEmbeddings: AnyRecord):
   const centroid = unitNorm(meanVector(vecs));
   let best: { host: string; sim: number } | null = null;
   for (let k = 0; k < embedded.length; k++) {
-    const sim = cosine(vecs[k], centroid);
-    const host = embedded[k].host;
+    const vec = vecs[k];
+    const rec = embedded[k];
+    if (vec === undefined || rec === undefined) continue;
+    const sim = cosine(vec, centroid);
+    const host = rec.host;
     if (!best || sim > best.sim) best = { host, sim };
   }
   return { host: best!.host, galleryShare: 0 }; // v1 mines v3 only (main crawl) — no gallery members possible (trap 3)
@@ -654,9 +674,9 @@ function encodeProposal(cluster: AnyRecord, visualEmbeddings: AnyRecord): AnyRec
 
   // sectionGrammar: modal role sequence; heightShares = median over members sharing that sequence
   const sequences = genomes.map((g) => (g.sectionGrammar ?? []).map((s: AnyRecord) => s.role));
-  const modalSeq: string[] = mode(sequences.map((seq) => JSON.stringify(seq))) as unknown as string[];
-  const modalSeqArr: string[] = JSON.parse(modalSeq as unknown as string);
-  const sharing = genomes.filter((g) => JSON.stringify((g.sectionGrammar ?? []).map((s: AnyRecord) => s.role)) === modalSeq);
+  const modalSeqJson = String(mode(sequences.map((seq) => JSON.stringify(seq))));
+  const modalSeqArr = JSON.parse(modalSeqJson) as string[];
+  const sharing = genomes.filter((g) => JSON.stringify((g.sectionGrammar ?? []).map((s: AnyRecord) => s.role)) === modalSeqJson);
 
   const focalModal = (pos: number) => mode(sharing.map((g) => g.sectionGrammar[pos]?.focalPoint ?? "center"));
   const heightMedian = (pos: number) => median(sharing.map((g) => Number(g.sectionGrammar[pos]?.heightShare ?? 0)));
@@ -665,7 +685,7 @@ function encodeProposal(cluster: AnyRecord, visualEmbeddings: AnyRecord): AnyRec
   const shareSum = rawShares.reduce((a, b) => a + b, 0) || 1;
   const sectionGrammar = modalSeqArr.map((role, pos) => ({
     role,
-    heightShare: round(rawShares[pos] / shareSum, 4),
+    heightShare: round((rawShares[pos] ?? 0) / shareSum, 4),
     focalPoint: focalModal(pos),
     composition: "TODO: author composition string (human curation)",
   }));
@@ -719,9 +739,11 @@ function encodeProposal(cluster: AnyRecord, visualEmbeddings: AnyRecord): AnyRec
 
 function buildReviewEntry(cluster: AnyRecord, visualEmbeddings: AnyRecord, qualityByHost: Map<string, AnyRecord>): AnyRecord {
   const recs: AnyRecord[] = cluster.memberRecs;
+  if (!recs.length) throw new Error(`cluster ${cluster.clusterId ?? "unknown"} has no members`);
   const visualCentroid = findVisualCentroidHost(recs, visualEmbeddings);
-  const repHost = visualCentroid?.host ?? recs[0].host;
-  const repRec = recs.find((r) => r.host === repHost) ?? recs[0];
+  const firstRec = recs[0]!;
+  const repHost = visualCentroid?.host ?? firstRec.host;
+  const repRec = recs.find((r) => r.host === repHost) ?? firstRec;
 
   const embeddedCount = recs.filter((r) => Array.isArray(visualEmbeddings[r.host]?.top)).length;
   const qualityLabeledCount = recs.filter((r) => qualityByHost.has(r.host)).length;

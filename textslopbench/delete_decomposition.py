@@ -6,7 +6,7 @@ classify the deleted unit by scope and role, its anchor overlap, and its claim i
 deterministic anchor/fidelity machinery). Then measure the SAFE-delete opportunity, what Fix does on
 human-safe-delete spans instead of deleting, operation co-occurrence with deletion, and Humanizer's
 safe-vs-protected deletions. Reports how much of the +0.57 doc-level delete gap is closeable without
-touching FixMySlop's fidelity guarantees.
+touching FixMySlop's deterministic fidelity guardrails.
 """
 from __future__ import annotations
 

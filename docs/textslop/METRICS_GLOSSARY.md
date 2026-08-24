@@ -6,8 +6,8 @@ script in this repository (Iteration 2, review point 2).
 
 ## Reserve "fidelity" for meaning preservation only
 
-**Fidelity** is measured against the *source claim set*, not against a human reference or
-any overlap statistic. It covers:
+**Full fidelity** is measured against the *source claim set*, not against a human reference
+or any overlap statistic. It covers:
 
 - **Hard-anchor preservation** — numbers, dates, entities, URLs, citations, commands, UI
   labels, quotations reproduced exactly (`anchors.audit_anchor_coverage`, `fidelity.audit`).
@@ -19,6 +19,19 @@ any overlap statistic. It covers:
 A rewrite can have low overlap with the source and still be perfectly faithful (heavy but
 meaning-preserving edit), and can have high overlap and still be unfaithful (a single
 flipped number). Overlap is therefore never fidelity.
+
+The bundled deterministic `fidelity.audit` does **not** prove this full definition. Its
+canonical name is **anchor + mutation safety**: exact anchors, occurrence counts, a
+conservative overlap gate, and a bounded high-precision mutation set for negation, modality,
+known polarity opposites, explicit numeric ranges, comparatives, and causal direction. Report
+its boolean as `anchor_mutation_safety_pass`, never as proof of claim or semantic fidelity.
+Judge- or NLI-based claim fidelity is a separate axis and remains unvalidated until it clears
+the owned ClaimFlipBench valid-paraphrase and corruption suites.
+
+ClaimFlipBench v0.2.0 contains 40 first-party cases: 15 valid rewrites and 25 known
+corruptions. A 100% result means all 40 owned cases passed. It does not estimate performance
+on open-domain prose; always report the item counts, Wilson intervals, and scope note with the
+point estimates.
 
 ## Do NOT call these "fidelity"
 

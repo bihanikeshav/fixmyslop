@@ -100,10 +100,10 @@ function hexToOklch(hex: string): [number, number, number] {
 function parseColor(s: string): { r: number; g: number; b: number; a: number } | null {
   const m = s.match(/rgba?\(([^)]+)\)/i);
   if (!m) return null;
-  const parts = m[1].split(",").map((p) => p.trim());
+  const parts = m[1]?.split(",").map((p) => p.trim()) ?? [];
   if (parts.length < 3) return null;
-  const r = parseFloat(parts[0]); const g = parseFloat(parts[1]); const b = parseFloat(parts[2]);
-  const a = parts.length >= 4 ? parseFloat(parts[3]) : 1;
+  const r = parseFloat(parts[0]!); const g = parseFloat(parts[1]!); const b = parseFloat(parts[2]!);
+  const a = parts[3] === undefined ? 1 : parseFloat(parts[3]);
   if ([r, g, b].some((v) => Number.isNaN(v))) return null;
   return { r, g, b, a: Number.isNaN(a) ? 1 : a };
 }
@@ -1108,12 +1108,15 @@ function hueLabel(H: number): string {
   return "red";
 }
 
+type StyleTell = "boxShadow" | "glowShadow" | "glass" | "textShadow" | "gradientText" |
+  "pill" | "bento" | "sparkleBadge" | "dropShadowFilter";
+
 interface Aggregates {
   okSites: number;
   totalSites: number;
   colors: Map<string, number>;
   accents: Map<string, number>;
-  styleTells: Record<string, number>;
+  styleTells: Record<StyleTell, number>;
   gradients: Map<string, number>;
   radii: Record<"sharp" | "rounded" | "pill", number>;
   animLibs: Map<string, number>;
@@ -1220,9 +1223,11 @@ function aggregateSite(agg: Aggregates, s: SiteRaw): void {
       const chromatic = stops
         .map((c) => quantHex(c.r, c.g, c.b))
         .filter((hex) => hexToOklch(hex)[1] >= CHROMA_CUTOFF);
-      if (chromatic.length >= 2) {
-        const h0 = hueLabel(hexToOklch(chromatic[0])[2]);
-        const h1 = hueLabel(hexToOklch(chromatic[chromatic.length - 1])[2]);
+      const firstChromatic = chromatic[0];
+      const lastChromatic = chromatic.at(-1);
+      if (firstChromatic !== undefined && lastChromatic !== undefined && chromatic.length >= 2) {
+        const h0 = hueLabel(hexToOklch(firstChromatic)[2]);
+        const h1 = hueLabel(hexToOklch(lastChromatic)[2]);
         const pair = [h0, h1].sort().join("->");
         siteGradientPairs.add(`${type}:${pair}`);
       }
@@ -1407,20 +1412,26 @@ function parseArgs(argv: string[]): Args {
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    if (a === "--limit") out.limit = parseInt(argv[++i], 10);
-    else if (a === "--concurrency") out.concurrency = parseInt(argv[++i], 10);
-    else if (a === "--timeout") out.timeout = parseInt(argv[++i], 10);
+    const takeValue = (): string => {
+      const value = argv[i + 1];
+      if (value === undefined) throw new Error(`${a ?? "argument"} requires a value`);
+      i++;
+      return value;
+    };
+    if (a === "--limit") out.limit = parseInt(takeValue(), 10);
+    else if (a === "--concurrency") out.concurrency = parseInt(takeValue(), 10);
+    else if (a === "--timeout") out.timeout = parseInt(takeValue(), 10);
     else if (a === "--fresh") out.fresh = true;
     else if (a === "--layout-v2") out.layoutV2 = true;
-    else if (a === "--raw-v2") out.rawV2 = argv[++i] || null;
+    else if (a === "--raw-v2") out.rawV2 = takeValue() || null;
     else if (a === "--retry-partial") out.retryPartial = true;
     // New capture recipe (networkidle nav + content wait + autoscroll +
     // IntersectionObserver stub). Opt-in: does not change default behavior
     // or default output paths.
     else if (a === "--rich-capture") out.richCapture = true;
-    else if (a === "--screenshot-dir") out.screenshotDir = argv[++i] || null;
+    else if (a === "--screenshot-dir") out.screenshotDir = takeValue() || null;
     // Comma-separated host allowlist, for targeted re-crawl samples.
-    else if (a === "--only-hosts") out.onlyHosts = (argv[++i] || "").split(",").map((h) => h.trim()).filter(Boolean);
+    else if (a === "--only-hosts") out.onlyHosts = takeValue().split(",").map((h) => h.trim()).filter(Boolean);
   }
   return out;
 }
@@ -1524,6 +1535,7 @@ async function mainLayoutV2(args: Args): Promise<void> {
           const myIndex = index++;
           if (myIndex >= todo.length) return;
           const site = todo[myIndex];
+          if (site === undefined) return;
           let record: LayoutSiteRaw;
           try {
             record = await crawlLayoutSite(browser, site.host, site.url, args.timeout, args.richCapture);
@@ -1597,6 +1609,7 @@ async function main(): Promise<void> {
           const myIdx = idx++;
           if (myIdx >= todo.length) return;
           const s = todo[myIdx];
+          if (s === undefined) return;
           let rec: SiteRaw;
           try {
             rec = await crawlSite(browser, s.host, s.url, args.timeout);

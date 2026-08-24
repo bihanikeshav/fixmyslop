@@ -1,0 +1,58 @@
+name: quality
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  deterministic-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Install Python test runner
+        run: python -m pip install --disable-pip-version-check pytest
+
+      - name: Repository hygiene
+        run: node scripts/check-repo-hygiene.mjs
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: JavaScript tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Static web smoke checks
+        run: npm run test:web
+
+      - name: Connected semantic benchmark
+        run: npm run benchmark:engine
+
+      - name: Python tests
+        run: python -m pytest -q
+
+      - name: Owned TextSlopBench safety suite
+        run: python textslopbench/local_benchmark_suite.py
+
+      - name: Patch hygiene
+        run: git diff --check

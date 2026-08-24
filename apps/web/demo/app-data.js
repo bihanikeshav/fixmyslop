@@ -44,6 +44,7 @@
     { key: "type", dot: "#C8175A", tell: "Inter for the hero and the body", code: "font-family: Inter", fix: "Two voices that disagree.", why: "A display face that argues with the body gives a page a shape you can navigate by." },
     { key: "copy", dot: "#1F6E4C", tell: "✨ AI-powered · “unlock the power of…”", code: "vague headline; \"Submit\"", fix: "Say what it is; name what it does.", why: "Name the thing and name the action, and nobody has to guess what a control will do." },
     { key: "motion", dot: "#F0A93B", tell: "animate-pulse, fade-up, spin", code: "animation: pulse 2s infinite", fix: "Motion that reports something.", why: "Motion that obeys physics tells you something moved, and roughly why. Looping decoration says nothing." },
+    { key: "text", dot: "#8C5858", tell: "stock AI phrasing; flattened voice", code: "transformative · seamless · unlock", fix: "Keep the voice. Cut the tells.", why: "A useful rewrite removes the scaffolding while preserving the writer’s claims, register, and protected text." },
   ];
 
   // --- Searchable font index: measured slop saturation 0–1 (×100 = slop score).

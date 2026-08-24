@@ -23,6 +23,9 @@ Then pick the **mode** — it changes every rule below: **landing** (convert —
 ## Always apply
 - **Fonts & layout** — the TL;DR two; the most common breakages.
 - **Composition** — weight must resolve, detail must be earned. Subtract, don't decorate (a border/card/eyebrow is additive signal, not a default). Encode each status once (color OR dot OR word). Space by grouping — related tight, unrelated loose, never uniform. Columns share baselines/edges; height is content-driven, never a fixed frame content can't fill (trapped whitespace + empty multi-column are tells). Depth in `design-law.md`.
+- **Mechanism before art direction** — for every interactive product, tool, dashboard, form, or product-led landing, load `reference/mechanism-and-art-direction.md`. Define objects, state, three actions, visible outcomes, recovery, and input/motion equivalents before styling. Reject subject-swappable or internally flagged connected output; expression supports the working loop and never substitutes for it.
+- **Language & proof** — interface copy and long-form prose are different systems. Use `audit_microcopy` for controls. For generated prose, benchmarks, or technical claims, load `reference/text-and-proof.md`; preserve claim frames and voice, show the real mechanism, and never turn a detector score into a superiority claim.
+- **References & provenance** — when the user supplies bookmarks, screenshots, libraries, or another skill as a target, load `reference/reference-research.md`. Extract a subject-fit mechanic, record provenance, and benchmark by dimension; never clone a complete skin or average broken states into a taste score.
 
 ## Hard implementation handoff — never trust a name or a path
 
@@ -119,6 +122,9 @@ over any example here.
 | Connected v2 expression — accent type, component dialects, texture, cursor/scroll treatments, fallbacks | `reference/expression-v2.md` |
 | Fluid Functionalism dashboards — dashboard layout math, Fluid registry components, data-dense product personality | `reference/fluid-dashboards.md` |
 | Failure modes — the recognizable AI-slop tells + concrete fixes | `reference/failure-modes.md` |
+| Mechanism & art direction — turn a real product brief into working behavior first, then an expression system that supports it | `reference/mechanism-and-art-direction.md` |
+| Text & proof — humanize generated prose, protect UI labels and claims, and present benchmark evidence honestly | `reference/text-and-proof.md` |
+| Reference research & provenance — turn bookmarks, screenshots, libraries, and competing skills into subject-fit mechanics without cloning | `reference/reference-research.md` |
 | Ship checklist — the master pre-ship checklist + surface recipes | `reference/checklist.md` |
 
 Keep this index in context; pull detail only when you act on it.

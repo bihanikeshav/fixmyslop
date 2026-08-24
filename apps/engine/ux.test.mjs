@@ -7,7 +7,7 @@ import { auditMicrocopy, generateEmptyState, auditAccessibility, auditForm, chec
 
 test("purity: ux.mjs has no Math.random/Date.now/new Date", () => {
   const src = readFileSync(fileURLToPath(new URL("ux.mjs", import.meta.url)), "utf8")
-    .split("\n").map((l) => l.replace(/\/\/.*$/, "")).join("\n");
+    .split("\n").map((l) => l.replace(/\/\/.*/, "")).join("\n");
   assert.ok(!/Math\.random|Date\.now|new Date/.test(src));
 });
 

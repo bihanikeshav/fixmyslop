@@ -1,5 +1,10 @@
 # v2.1 — designing our own Stage 1 (operator audit + Stage-1 benchmark)
 
+> **2026-08-23 status:** historical development evidence only. The “beats” wording
+> below describes point estimates from the old scorer; it is not a current statistical
+> superiority verdict. Current comparisons require the identity baseline, writer/prompt
+> clustering, and corrected confidence-bound rule in the v2 confirmation harness.
+
 Branch `v2.1-stage1`. Dev data only (Beemo dev-40 + LAMP dev-40); the v2 confirmation holdouts are NOT
 touched. Goal (per the v2.1 vision): replace the Humanizer Stage-1 with **our own** high-coverage Stage-1,
 inspired by Humanizer's operators but better aligned to human editors, benchmarked SEPARATELY from the
@@ -26,7 +31,7 @@ not a clean per-operator signal; the repair stage owns fidelity anyway.)
 
 **Key insight:** the Humanizer wastes edit budget on operators humans don't touch (hedges, inflation,
 vague-attribution) and over-applies de-nominalization against the human direction. Concentrating budget on
-the high-direction operators should beat Humanizer's direction accuracy.
+the high-direction operators were expected to improve direction accuracy against that comparator.
 
 ## Stage-1 benchmark (`results/v2_1-stage1-bench.json`, `-bench2.json`) — our Stage-1 vs Humanizer (pre-repair)
 
@@ -35,7 +40,7 @@ the high-direction operators should beat Humanizer's direction accuracy.
 | Humanizer | 0.636 | 0.884 | 0.497 | 0.675 | 0.959 |
 | our targeted Stage-1 | **0.696 (+0.060)** | 0.884 (tie) | 0.401 (−20%) | 0.588 (−0.086) | 0.927 |
 
-**Result: our targeted Stage-1 BEATS Humanizer on Beemo** — +0.06 conditional-direction, better rhetoric,
+**Historical point estimate: our targeted Stage-1 led the comparator on Beemo** — +0.06 conditional-direction, better rhetoric,
 SAME coverage with ~20% less editing (the operator-audit thesis, proven on light-edit text). **But it LOSES
 on LAMP**, and making it more aggressive did not fix it (cond_dir still −0.094).
 

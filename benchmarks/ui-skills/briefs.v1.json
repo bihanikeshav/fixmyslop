@@ -1,0 +1,71 @@
+{
+  "schema": "fixmyslop-ui-briefs/1.0",
+  "version": "1.1.0",
+  "run_conditions": {
+    "model": "record-exact-model-and-version",
+    "starting_commit": "record-git-commit",
+    "time_minutes": 45,
+    "max_turns": 12,
+    "tool_policy": "same filesystem, browser, and implementation tools",
+    "network_policy": "same network access and asset policy",
+    "viewports": [
+      { "name": "desktop", "width": 1440, "height": 1000 },
+      { "name": "mobile", "width": 390, "height": 844 }
+    ]
+  },
+  "briefs": [
+    {
+      "id": "observability-workspace",
+      "surface": "technical product dashboard",
+      "prompt": "Build an observability incident workspace for an on-call engineer. Show one active incident, service health, an event timeline, logs, ownership, and a clear acknowledge/escalate path. Dense information must remain legible; include loading, empty, error, and resolved states.",
+      "subject_mechanic": "The incident timeline and causal service path should be the visual centrepiece, not decorative dashboard cards.",
+      "required_functional_checks": [
+        { "id": "causal-path-central", "requirement": "A causal service path and incident timeline are central, connected, and populated with representative incident data." },
+        { "id": "acknowledge-changes-state", "requirement": "Acknowledge visibly changes incident state, ownership, or timeline history." },
+        { "id": "escalate-changes-state", "requirement": "Escalate visibly changes routing or ownership and records the outcome." },
+        { "id": "recovery-visible", "requirement": "Loading, empty, error, active, and resolved states are reachable or captured with a recovery path." },
+        { "id": "dense-data-usable", "requirement": "Logs, service health, and ownership remain legible and operable without blocking overflow at both viewports." }
+      ]
+    },
+    {
+      "id": "civic-application",
+      "surface": "public-service form",
+      "prompt": "Build a benefits application flow for a city resident. Explain eligibility in plain language, collect household and income details, show progress, validate errors next to fields, and provide save-and-return and confirmation states.",
+      "subject_mechanic": "Trust, comprehension, and recovery from mistakes should shape the composition more than brand decoration.",
+      "required_functional_checks": [
+        { "id": "progress-and-context", "requirement": "A resident can tell where they are, what remains, and why requested information is needed." },
+        { "id": "inline-validation", "requirement": "Invalid household or income input produces an adjacent, specific, non-destructive correction path." },
+        { "id": "save-and-return", "requirement": "Save-and-return produces visible confirmation and a credible resume state." },
+        { "id": "review-and-confirm", "requirement": "A review step and final confirmation preserve entered information and state the next step." },
+        { "id": "keyboard-completion", "requirement": "The complete form path, including error recovery, can be completed with the keyboard." }
+      ]
+    },
+    {
+      "id": "research-edition",
+      "surface": "editorial research story",
+      "prompt": "Build a long-form research story about heat islands across five neighbourhoods. Combine narrative, a comparison table, sourced measurements, map-like evidence, methodology, and uncertainty without inventing facts.",
+      "subject_mechanic": "The measurements and comparisons should become visual material while citations and uncertainty remain inspectable.",
+      "required_functional_checks": [
+        { "id": "five-way-comparison", "requirement": "Five neighbourhoods can be compared through cited measurements without implying unavailable precision." },
+        { "id": "evidence-links-narrative", "requirement": "A table or map-like evidence view visibly connects measurements to the narrative." },
+        { "id": "uncertainty-inspectable", "requirement": "Uncertainty, missing data, and methodological limits remain visible beside the relevant claims." },
+        { "id": "provenance-inspectable", "requirement": "Sources and methodology are inspectable without invented citations, measurements, or institutions." },
+        { "id": "evidence-responsive", "requirement": "The comparison and evidence model remains understandable on mobile without reducing it to decorative cards." }
+      ]
+    },
+    {
+      "id": "motion-tool",
+      "surface": "creative tool landing page",
+      "prompt": "Build a landing page for a browser-based motion choreography tool. Demonstrate a real editable sequence, explain the model, show export formats and pricing, and include keyboard, reduced-motion, and touch alternatives.",
+      "subject_mechanic": "A working sequence editor or truthful simulation should prove the product; avoid a generic screenshot floating over gradients.",
+      "required_functional_checks": [
+        { "id": "timeline-object-model", "requirement": "The proof contains tracks, keyframes, a playhead, selection, and an editable motion property." },
+        { "id": "play-and-scrub", "requirement": "Play, pause, and scrub visibly and deterministically change the preview and playhead state." },
+        { "id": "select-and-edit", "requirement": "Selecting a keyframe and editing at least one property visibly changes the sequence." },
+        { "id": "input-equivalence", "requirement": "Keyboard and touch-sized controls preserve the editor's primary actions." },
+        { "id": "reduced-motion-functional", "requirement": "Reduced motion removes non-essential animation while preserving preview, editing, and state feedback." },
+        { "id": "commercial-contract", "requirement": "Export formats and pricing are present, specific, and connected to the demonstrated product model." }
+      ]
+    }
+  ]
+}

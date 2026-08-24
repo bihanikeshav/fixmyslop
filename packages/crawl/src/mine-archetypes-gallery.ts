@@ -91,7 +91,7 @@ function meanVector(vecs: number[][]): number[] {
   const n = vecs.length || 1;
   const dim = vecs[0]?.length ?? 0;
   const out = new Array(dim).fill(0);
-  for (const v of vecs) for (let i = 0; i < dim; i++) out[i] += v[i] / n;
+  for (const v of vecs) for (let i = 0; i < dim; i++) out[i] = out[i]! + v[i]! / n;
   return out;
 }
 function meanPairwiseCosine(vecs: number[][]): number {
@@ -150,13 +150,13 @@ function fitNumericStats(genomes: AnyRecord[]) {
 }
 function numericZVector(g: AnyRecord, stats: ReturnType<typeof fitNumericStats>): number[] {
   return NUMERIC_FIELD_GETTERS.map(([, get], i) => {
-    const { m, s } = stats[i];
+    const { m, s } = stats[i]!;
     return (Number(get(g) ?? 0) - m) / s;
   });
 }
 function euclid(a: number[], b: number[]): number {
   let sum = 0;
-  for (let i = 0; i < a.length; i++) sum += (a[i] - b[i]) ** 2;
+  for (let i = 0; i < a.length; i++) sum += (a[i]! - b[i]!) ** 2;
   return Math.sqrt(sum);
 }
 
@@ -165,16 +165,16 @@ function featureShapeVector(sectionGrammar: AnyRecord[]): number[] {
   const counts = Object.fromEntries(FEATURE_SHAPES.map((s) => [s, 0]));
   for (const s of sectionGrammar ?? []) {
     const shape = FEATURE_SHAPES.includes(s.featureShape) ? s.featureShape : "plain";
-    counts[shape] += Number(s.heightShare ?? 1);
+    counts[shape] = (counts[shape] ?? 0) + Number(s.heightShare ?? 1);
   }
   const total = Object.values(counts).reduce((a: number, b) => a + (b as number), 0) || 1;
-  return FEATURE_SHAPES.map((s) => counts[s] / total);
+  return FEATURE_SHAPES.map((s) => (counts[s] ?? 0) / total);
 }
 function dominantFeatureShape(sectionGrammar: AnyRecord[]): string {
   const v = featureShapeVector(sectionGrammar);
   let best = 0;
-  for (let i = 1; i < v.length; i++) if (v[i] > v[best]) best = i;
-  return FEATURE_SHAPES[best];
+  for (let i = 1; i < v.length; i++) if (v[i]! > v[best]!) best = i;
+  return FEATURE_SHAPES[best]!;
 }
 
 // ---------------------------------------------------------------------------
@@ -197,8 +197,10 @@ function buildDendrogramFromDistFn(n: number, distFn: (i: number, j: number) => 
     const ids = [...alive];
     for (let i = 0; i < ids.length; i++) {
       for (let j = i + 1; j < ids.length; j++) {
-        const d = dist.get(key(ids[i], ids[j]))!;
-        if (!best || d < best.d) best = { a: ids[i], b: ids[j], d };
+        const a = ids[i]!;
+        const b = ids[j]!;
+        const d = dist.get(key(a, b))!;
+        if (!best || d < best.d) best = { a, b, d };
       }
     }
     const { a, b, d } = best!;
@@ -220,7 +222,7 @@ function buildDendrogramFromDistFn(n: number, distFn: (i: number, j: number) => 
 function cutAt(merges: Merge[], n: number, h: number): number[][] {
   const parent = new Array(n * 2).fill(0).map((_, i) => i);
   function find(x: number): number {
-    while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; }
+    while (parent[x] !== x) { parent[x] = parent[parent[x]!]!; x = parent[x]!; }
     return x;
   }
   function union(x: number, y: number) {
@@ -257,7 +259,7 @@ function tuneCutGallery(merges: Merge[], n: number, minSize: number, cap: number
     const maxCount = Math.max(...inRange.map((c) => c.validCount));
     const best = inRange.filter((c) => c.validCount === maxCount);
     best.sort((x, y) => Math.abs(x.h - 0.35) - Math.abs(y.h - 0.35));
-    return best[0].clusters;
+    return best[0]!.clusters;
   }
   // fallback: closest validCount to [2,cap], tie-break by proximity to 0.35
   const scored = candidates.map((c) => ({
@@ -265,7 +267,7 @@ function tuneCutGallery(merges: Merge[], n: number, minSize: number, cap: number
     bandDist: c.validCount < 2 ? 2 - c.validCount : c.validCount > cap ? c.validCount - cap : 0,
   }));
   scored.sort((x, y) => x.bandDist - y.bandDist || Math.abs(x.h - 0.35) - Math.abs(y.h - 0.35));
-  return scored[0].clusters;
+  return scored[0]!.clusters;
 }
 
 // ---------------------------------------------------------------------------
@@ -284,8 +286,8 @@ function findVisualCentroidHost(recs: AnyRecord[], embByHost: Map<string, number
   const centroid = unitNorm(meanVector(vecs));
   let best: { host: string; sim: number } | null = null;
   for (let k = 0; k < recs.length; k++) {
-    const sim = cosine(vecs[k], centroid);
-    if (!best || sim > best.sim) best = { host: recs[k].host, sim };
+    const sim = cosine(vecs[k]!, centroid);
+    if (!best || sim > best.sim) best = { host: recs[k]!.host, sim };
   }
   return best!;
 }
@@ -321,7 +323,7 @@ function encodeProposal(cluster: AnyRecord, embByHost: Map<string, number[]>): A
   const shareSum = rawShares.reduce((a, b) => a + b, 0) || 1;
   const sectionGrammar = modalSeqArr.map((role, pos) => ({
     role,
-    heightShare: round(rawShares[pos] / shareSum, 4),
+    heightShare: round(rawShares[pos]! / shareSum, 4),
     focalPoint: focalModal(pos),
     featureShape: shapeModal(pos),
     composition: "TODO: author composition string (human curation)",
@@ -413,9 +415,9 @@ async function main(): Promise<void> {
 
   const zipped: AnyRecord[] = genomes.map((genome, i) => ({
     genome,
-    host: manifest[i].host,
-    url: manifest[i].url,
-    screenshots: manifest[i].screenshots,
+    host: manifest[i]!.host,
+    url: manifest[i]!.url,
+    screenshots: manifest[i]!.screenshots,
   }));
   const manifestByHost = new Map<string, AnyRecord>(manifest.map((m) => [m.host, m]));
 
@@ -456,7 +458,7 @@ async function main(): Promise<void> {
   const numericPairs: number[] = [];
   for (let i = 0; i < survivors.length; i += 1) {
     for (let j = i + 1; j < survivors.length; j += 3) { // sample every 3rd pair to bound cost
-      numericPairs.push(euclid(survivors[i].numVec, survivors[j].numVec));
+      numericPairs.push(euclid(survivors[i]!.numVec, survivors[j]!.numVec));
     }
   }
   const kNumeric = median(numericPairs) || 1;
@@ -503,7 +505,7 @@ async function main(): Promise<void> {
       clustersPerPageKind[pageKind] = 0;
       continue;
     }
-    const merges = buildDendrogramFromDistFn(members.length, (i, j) => combinedDist(members[i], members[j]));
+    const merges = buildDendrogramFromDistFn(members.length, (i, j) => combinedDist(members[i]!, members[j]!));
     const clusters = tuneCutGallery(merges, members.length, MIN_CLUSTER_SIZE, CAP_PER_PAGEKIND);
     clusters.sort((a, b) => b.length - a.length);
     const capped = clusters.slice(0, CAP_PER_PAGEKIND);
@@ -517,7 +519,7 @@ async function main(): Promise<void> {
         clusterId: `gallery-${pageKind}-${clusterSeq}`,
         pageKind,
         memberIdxs: idxs,
-        memberRecs: idxs.map((i) => members[i]),
+        memberRecs: idxs.map((i) => members[i]!),
       });
     }
   }

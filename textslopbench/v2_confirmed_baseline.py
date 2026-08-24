@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """V2 CONFIRMATION (held-out, preregistered — see V2_CONFIRMATION_PREREG.md).
 v2 = A_nolock (raw Humanizer -> 2-round anchor repair, no pre-lock) vs Humanizer (hz).
-Beemo holdout-80 + LAMP holdout-100, k=3. Paired item-level bootstrap. Tier1/Tier2 verdicts.
+Beemo holdout-80 + LAMP holdout-100, k=3. Paired cluster bootstrap. Tier1/Tier2 verdicts.
 Dumps 10 sample outputs for the manual coherence gate. Deterministic scoring; resumable (cached tags)."""
 from __future__ import annotations
 import json
 import statistics
 import sys
+from collections import Counter
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
@@ -20,7 +21,7 @@ from fidelity import audit as fidelity_audit
 from slop_overrepresentation import weighted_density
 from chea import build_conditional_model
 from humanizer_vs_current import humanizer_messages
-from bootstrap import paired_bootstrap
+from bootstrap import paired_cluster_bootstrap
 
 WORKERS, CHUNK, KGENS = 8, 10, 3
 CORRECTION_SYS = (
@@ -42,6 +43,25 @@ def _par(jobs):
         return list(ex.map(run, jobs))
 
 
+GROUPING_KEYS = ("writer_id", "author_id", "annotator_id", "participant_id", "prompt_id", "source_id", "document_id", "prompt")
+
+
+def _grouping_for(record):
+    """Return a stable cluster plus provenance; record-id grouping is descriptive only."""
+    metadata = record.get("metadata") if isinstance(record.get("metadata"), dict) else {}
+    group_id = metadata.get("group_id")
+    group_source = metadata.get("group_source")
+    if group_id not in (None, ""):
+        source = str(group_source or "metadata.group_id")
+        return str(group_id), source, False
+    for location, values in (("record", record), ("metadata", metadata)):
+        for key in GROUPING_KEYS:
+            value = values.get(key)
+            if value not in (None, ""):
+                return str(value), f"{location}.{key}", False
+    return str(record["record_id"]), "record_id", True
+
+
 def load_items(fname, corpus):
     rows = []
     for line in (RESULTS / fname).read_text(encoding="utf-8").splitlines():
@@ -52,7 +72,10 @@ def load_items(fname, corpus):
         if not refs:
             continue
         S, H = str(r["source_text"]), str(refs[0])
-        rows.append({"rid": r["record_id"], "corpus": corpus, "S": S, "H": H,
+        cluster_id, cluster_source, cluster_fallback = _grouping_for(r)
+        cluster = f"{cluster_source}\x1f{cluster_id}"
+        rows.append({"rid": r["record_id"], "cluster": cluster, "cluster_id": cluster_id, "cluster_source": cluster_source,
+                     "cluster_fallback": cluster_fallback, "corpus": corpus, "S": S, "H": H,
                      "sed_s": weighted_density(S), "sed_h": weighted_density(H)})
     return rows
 
@@ -129,6 +152,11 @@ POINT_MARGIN = {"move_coverage": -0.02, "cond_dir": -0.02, "reference_chea": -0.
 ALLM = ALIGN + ["fidelity", "exact", "jaccard", "edit_magnitude"]
 
 
+def noninferiority_pass(ci_low: float | None, margin: float, inference_valid: bool = True) -> bool:
+    """A one-sided non-inferiority claim needs the lower bound above its margin."""
+    return inference_valid and ci_low is not None and ci_low >= margin
+
+
 def run_corpus(corpus, fname, samples):
     items = load_items(fname, corpus)
     build_conditional_model(corpus)
@@ -156,6 +184,27 @@ def run_corpus(corpus, fname, samples):
         return out
     hz_m, A_m = pim(hz_g), pim(A_g)
 
+    cluster_by_rid = {it["rid"]: it["cluster"] for it in items}
+    source_by_rid = {it["rid"]: it["cluster_source"] for it in items}
+    fallback_by_rid = {it["rid"]: it["cluster_fallback"] for it in items}
+    grouping_sources = Counter(source_by_rid.values())
+    grouping = {
+        "cluster_sources": dict(sorted(grouping_sources.items())),
+        "fallback_items": sum(fallback_by_rid.values()),
+        "clusters": len(set(cluster_by_rid.values())),
+    }
+    grouping["inference_valid"] = grouping["clusters"] >= 2 and grouping["fallback_items"] == 0
+    grouping["inference_reason"] = (
+        "fewer_than_two_clusters" if grouping["clusters"] < 2
+        else "missing_explicit_grouping" if grouping["fallback_items"]
+        else None
+    )
+    print(
+        f"  [{corpus}] grouping clusters={grouping['clusters']} "
+        f"sources={grouping['cluster_sources']} fallback_items={grouping['fallback_items']} "
+        f"inference_valid={grouping['inference_valid']}"
+    )
+
     def am(p, m):
         vs = [p[r][m] for r in p if p[r].get(m) is not None]
         return round(statistics.mean(vs), 4) if vs else None
@@ -163,24 +212,37 @@ def run_corpus(corpus, fname, samples):
     boots = {}
     for m in ALLM:
         cm = [r for r in A_m if r in hz_m and A_m[r].get(m) is not None and hz_m[r].get(m) is not None]
-        boots[m] = paired_bootstrap([A_m[r][m] for r in cm], [hz_m[r][m] for r in cm]) if len(cm) >= 3 else None
+        metric_sources = sorted({source_by_rid[r] for r in cm})
+        boots[m] = paired_cluster_bootstrap(
+            [A_m[r][m] for r in cm], [hz_m[r][m] for r in cm], [cluster_by_rid[r] for r in cm],
+            cluster_source=metric_sources[0] if len(metric_sources) == 1 else metric_sources,
+            grouping_fallback=bool(grouping["fallback_items"]),
+        ) if len(cm) >= 3 else None
 
     tier1 = {
         "fidelity_strict_superior": bool(boots["fidelity"] and boots["fidelity"]["delta"] > 0 and boots["fidelity"]["significant"]),
         "exact_strict_superior": bool(boots["exact"] and boots["exact"]["delta"] > 0 and boots["exact"]["significant"]),
         "fidelity_ceiling": means["v2"]["fidelity"] >= 0.98,
         "exact_ceiling": means["v2"]["exact"] >= 99.5,
-        "jaccard_non_inferior": bool(boots["jaccard"] and boots["jaccard"]["ci_high"] >= -0.0001 and (means["v2"]["jaccard"] - means["hz"]["jaccard"]) >= -0.02),
+        "jaccard_non_inferior": noninferiority_pass(
+            boots["jaccard"]["ci_low"] if boots["jaccard"] else None,
+            -0.02,
+            bool(boots["jaccard"] and boots["jaccard"]["inference_valid"]),
+        ),
     }
     tier1["pass"] = all(tier1.values())
     tier2 = {}
     for m in ALIGN:
         b = boots[m]
         tier2[m] = {"delta": b["delta"] if b else None, "ci_low": b["ci_low"] if b else None, "ci_high": b["ci_high"] if b else None,
-                    "ci_non_inferior": bool(b and b["ci_high"] >= 0), "point_margin_pass": (means["v2"][m] >= means["hz"][m] + POINT_MARGIN[m])}
+                    "margin": POINT_MARGIN[m],
+                    "ci_non_inferior": noninferiority_pass(
+                        b["ci_low"] if b else None, POINT_MARGIN[m], bool(b and b["inference_valid"])
+                    ),
+                    "point_margin_pass": (means["v2"][m] >= means["hz"][m] + POINT_MARGIN[m])}
     tier2["ci_all_pass"] = all(tier2[m]["ci_non_inferior"] for m in ALIGN)
     tier2["point_all_pass"] = all(tier2[m]["point_margin_pass"] for m in ALIGN)
-    return {"n": len(items), "means": means, "paired_vs_hz": boots, "tier1": tier1, "tier2": tier2}
+    return {"n": len(items), "grouping": grouping, "means": means, "paired_vs_hz": boots, "tier1": tier1, "tier2": tier2}
 
 
 def main():
@@ -209,8 +271,8 @@ def main():
         print(f"  TIER1 pass={r['tier1']['pass']}  {r['tier1']}")
         print(f"  TIER2 ci_all={r['tier2']['ci_all_pass']} point_all={r['tier2']['point_all_pass']}")
     print(f"\n===== VERDICT =====")
-    print(f"Tier1 (Pareto gain) BOTH corpora: {report['tier1_both_corpora']}")
-    print(f"Tier2 (alignment non-inferiority, CI) BOTH corpora: {report['tier2_ci_both_corpora']}")
+    print(f"Tier1 (preregistered gates) BOTH corpora: {report['tier1_both_corpora']}")
+    print(f"Tier2 (alignment non-inferiority; CI lower bound above margin) BOTH corpora: {report['tier2_ci_both_corpora']}")
     print("wrote results/v2-confirmation.json (+ coherence_samples for manual gate)")
 
 

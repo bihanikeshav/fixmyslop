@@ -1,8 +1,9 @@
 // apps/engine/prompts.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { PREAMBLE, VERBS, renderPrompt, renderSkill, renderVerbFile } from "./prompts.mjs";
-import { renderReference } from "./reference.mjs";
+import { REFERENCE, renderReference } from "./reference.mjs";
 
 const REAL_TOOLS = new Set(["check_color","check_palette","suggest_fonts","check_font","structure_ideas",
   "design_system","audit_system","type_scale","spacing_scale","radius_scale","shadow","layout",
@@ -10,6 +11,7 @@ const REAL_TOOLS = new Set(["check_color","check_palette","suggest_fonts","check
   "resolve_intent","style_genome","suggest_layout","font_neighbors","check_svg","explore_directions",
   "connected_style_genome","connected_explore_directions","connected_build_spec","connected_v2_catalog",
   "dashboard_system","fluid_components","check_dashboard_layout",
+  "magic_ui_component","check_magic_ui_composition",
   "check_composition","shade_ramp","semantic_colors","audit_microcopy","generate_empty_state",
   "audit_accessibility","audit_form","check_component_states","check_information_architecture"]);
 
@@ -51,7 +53,47 @@ test("renderSkill is a cheap staggered index named fixmyslop", () => {
   assert.match(skill, /container/);
   assert.match(skill, /improve_design\.md/);                // references on-demand pass files
   assert.match(skill, /design-law\.md/);                    // references the full law
+  assert.match(skill, /reference\/text-and-proof\.md/);
+  assert.match(skill, /reference\/reference-research\.md/);
+  assert.match(skill, /reference\/mechanism-and-art-direction\.md/);
   assert.ok(skill.length < PREAMBLE.length, "index must be cheaper than the full design law");
+});
+
+test("text proof and reference research are available on demand", () => {
+  const proof = renderReference("text-and-proof");
+  assert.match(proof, /identity\/no-op baseline/i);
+  assert.match(proof, /release the source unchanged/i);
+
+  const research = renderReference("reference-research");
+  assert.match(research, /Extract mechanics, not skins/i);
+  assert.match(research, /passing deterministic scanner.*never proof of taste/i);
+});
+
+test("mechanism and art direction contract requires working, relevant, iterated behavior", () => {
+  const mechanism = renderReference("mechanism-and-art-direction");
+  assert.match(mechanism, /three primary user actions/i);
+  assert.match(mechanism, /visible outcome of each action/i);
+  assert.match(mechanism, /subject-swap tests/i);
+  assert.match(mechanism, /revise at least once/i);
+
+  const skill = renderSkill();
+  assert.match(skill, /Mechanism before art direction/i);
+  assert.match(skill, /internally flagged connected output/i);
+});
+
+test("checked-in skill files exactly match their canonical runtime sources", () => {
+  const skillRoot = new URL("../../skills/fixmyslop/", import.meta.url);
+  assert.equal(readFileSync(new URL("SKILL.md", skillRoot), "utf8"), renderSkill());
+  assert.equal(readFileSync(new URL("design-law.md", skillRoot), "utf8"), PREAMBLE);
+  for (const verb of VERBS) {
+    assert.equal(readFileSync(new URL(`${verb.name}.md`, skillRoot), "utf8"), renderVerbFile(verb.name));
+  }
+  for (const reference of REFERENCE) {
+    assert.equal(
+      readFileSync(new URL(`reference/${reference.key}.md`, skillRoot), "utf8"),
+      renderReference(reference.key),
+    );
+  }
 });
 
 test("renderVerbFile returns one lean pass on demand; null for unknown", () => {

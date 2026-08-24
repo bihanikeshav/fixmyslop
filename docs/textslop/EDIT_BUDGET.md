@@ -1,5 +1,9 @@
 # Span / pattern-family edit-budget model + counterfactual (no model calls)
 
+> **2026-08-23 status:** exploratory counterfactual. Predicted HCSR values are not
+> observed rewrite outcomes, and comparator language from the earlier scorer should
+> not be read as a current superiority result.
+
 Document-level SED failed as a prompt control (`POLICY_SMOKE.md` round 2): the host cannot steer an
 abstract residual. This converts the research signals into **discrete local edit decisions**.
 `textslopbench/edit_budget.py`.
@@ -55,7 +59,7 @@ Per item (predicted residual SED under budget vs human):
 - ✅ **Meaningfully reduces over-editing** — 59% fewer edits; predicted HCSR ~53 → ~20.
 - ✅ **Redundancy weight kept full (1.0)** — but redundancy/filler occurrences were ~0 in these 8
   items, so this is untested here, not exercised.
-- ⚠️ **Preserve rhetoric (where FixMySlop beats Humanizer)** — rhetoric edit **count** is cut 60 → 23
+- ⚠️ **Preserve the archived rhetoric advantage** — rhetoric edit **count** is cut 60 → 23
   (toward the human rate; the highest-E patterns like `tapestry` stay in budget, low-E like
   `bustling` are preserved). Direction should hold, but **the rewrite smoke must verify rhetoric
   CHEA does not drop** from the volume reduction.

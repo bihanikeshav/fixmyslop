@@ -364,7 +364,8 @@ async function pool<T, R>(items: T[], size: number, fn: (item: T) => Promise<R>)
     while (true) {
       const idx = i++;
       if (idx >= items.length) break;
-      results[idx] = await fn(items[idx]);
+      // `idx` was checked against `items.length` immediately above.
+      results[idx] = await fn(items[idx]!);
     }
   });
   await Promise.all(workers);
@@ -426,7 +427,7 @@ async function main(): Promise<void> {
 
   // Tally raw by source.
   for (const c of allRaw) {
-    const key = c.source.split(":")[0];
+    const key = c.source.split(":")[0] ?? "unknown";
     bySource.set(key, (bySource.get(key) ?? 0) + 1);
   }
 
@@ -450,7 +451,7 @@ async function main(): Promise<void> {
   if (doReach) {
     console.log(`\n== Reachability (GET->HEAD, conc=12) over ${deduped.length} hosts ==`);
     const flags = await pool(deduped, 12, (c) => isReachable(c.url));
-    final = deduped.filter((_, i) => flags[i]);
+    final = deduped.filter((_, i) => flags[i] === true);
     console.log(`  reachable (2xx/3xx HTML): ${final.length} / ${deduped.length}`);
   } else {
     console.log("\n== Reachability skipped (--no-reach) ==");
@@ -466,7 +467,7 @@ async function main(): Promise<void> {
   // Final summary.
   const finalBySource = new Map<string, number>();
   for (const c of final) {
-    const key = c.source.split(":")[0];
+    const key = c.source.split(":")[0] ?? "unknown";
     finalBySource.set(key, (finalBySource.get(key) ?? 0) + 1);
   }
   console.log("\n=================== SUMMARY ===================");

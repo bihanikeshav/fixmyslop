@@ -9,6 +9,26 @@ Run the deterministic local candidate:
 py textslopbench/run_textslopbench.py --local
 ```
 
+Run the complete dependency-free safety suite (owned rewrite fixtures + identity
+baseline + ClaimFlipBench + InterventionBench):
+
+```text
+py textslopbench/local_benchmark_suite.py
+```
+
+- **ClaimFlipBench v0.2.0** pairs 15 independently phrased valid rewrites with 25
+  known corruptions of numbers,
+  entities/roles, negation, polarity, modality, causality, temporal order, membership,
+  numeric ranges, comparative direction, scope, quotations, URLs, and occurrence counts.
+  It reports corruption recall and valid-paraphrase specificity with Wilson intervals.
+- **InterventionBench** balances targeted defects against clean, voice-sensitive
+  controls and reports intervention recall, clean preservation, exact recovery,
+  idempotence, and anchor/mutation safety.
+
+Neither benchmark proves general semantic equivalence. They are owned regression
+gates that make detector blind spots and over-editing measurable without a paid API.
+For ClaimFlipBench, 100% means only that every case in the 40-item owned pack passed.
+
 Each external black-box run must produce JSONL with one record per fixture:
 
 ```json

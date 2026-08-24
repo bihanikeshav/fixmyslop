@@ -4,6 +4,17 @@ Documentation for the text side of fixmyslop — the `fixmyslop-humanizer` skill
 `TextSlopBench`. Start with the **[benchmark card](TEXTSLOPBENCH_CARD.md)** and the
 **[metrics glossary](METRICS_GLOSSARY.md)**.
 
+Start with the dependency-free local gates:
+
+```text
+py textslopbench/local_benchmark_suite.py
+```
+
+This reports the identity/no-op baseline alongside the local humanizer, then runs
+ClaimFlipBench (known claim mutations) and InterventionBench (edit-vs-preserve,
+idempotence, and formatting/voice controls). See
+[`../../textslopbench/README.md`](../../textslopbench/README.md) for scope and commands.
+
 ## Map
 
 - **Benchmark & metrics** — [TEXTSLOPBENCH_CARD.md](TEXTSLOPBENCH_CARD.md),

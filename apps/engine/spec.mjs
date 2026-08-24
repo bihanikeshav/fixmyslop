@@ -62,6 +62,14 @@ function weightsFor(hierarchy) {
   };
 }
 
+function availableWeight(font, desired) {
+  const listed = font?.asset?.recommendedWeights;
+  if (!Array.isArray(listed) || !listed.length) return desired;
+  const numeric = listed.map(Number).filter(Number.isFinite);
+  if (!numeric.length) return desired;
+  return numeric.reduce((best, weight) => Math.abs(weight - desired) < Math.abs(best - desired) ? weight : best, numeric[0]);
+}
+
 const STEP_LABELS = { 4: "H2", 3: "H3", 2: "H4 / lead paragraph", 1: "body-large / intro", 0: "body (base)", "-1": "small / caption" };
 
 function typeSection(genome) {
@@ -70,10 +78,24 @@ function typeSection(genome) {
   const headingScaleRatio = genome.layout?.hierarchy?.headingScaleRatio ?? 1.75;
   const ratioName = scaleRatioName(headingScaleRatio);
   const scale = typeScale({ base, ratio: ratioName, up: 4, down: 1 });
-  const w = weightsFor(genome.layout?.hierarchy);
-  const heroPx = Math.round(base * headingScaleRatio);
+  const desiredWeights = weightsFor(genome.layout?.hierarchy);
+  const hasHero = (genome.layout?.sectionGrammar || []).some((section) => section?.role === "hero");
+  const largestScalePx = Math.max(...scale.map((step) => Number(step.px) || 0));
+  // headingScaleRatio is a hierarchy signal, not permission to make a nominal hero smaller than
+  // H2. Keep the computed hero strictly above the rest of the reference scale.
+  const heroPx = Math.max(Math.round(base * headingScaleRatio), Math.ceil(largestScalePx * 1.2));
   const display = genome.type?.display?.family || "system-ui";
   const body = genome.type?.body?.family || "system-ui";
+  const w = {
+    heading: availableWeight(genome.type?.display, desiredWeights.heading),
+    body: availableWeight(genome.type?.body, desiredWeights.body),
+    accent: availableWeight(genome.type?.body, desiredWeights.accent),
+  };
+  const displayAsset = genome.type?.display?.asset;
+  const bodyAsset = genome.type?.body?.asset;
+  const displaySuitable = genome.type?.display?.readabilityChecks?.displaySuitable;
+  const bodySuitable = genome.type?.body?.readabilityChecks?.bodySuitable;
+  const productSurface = ["dashboard", "data-admin", "app"].includes(genome.layout?.pageKind);
 
   const rows = scale
     .slice()
@@ -81,22 +103,32 @@ function typeSection(genome) {
     .map((s) => `| ${STEP_LABELS[s.step] || `step ${s.step}`} | ${px(s.px)} (${s.rem}rem) |`)
     .join("\n");
 
+  const heroRule = hasHero
+    ? `Hero reference: ${px(heroPx)} (= the only text role above the ${px(largestScalePx)} scale ceiling). Keep the hero strictly larger than every other text role at each breakpoint; a responsive \`clamp()\` may reduce it on narrow screens while preserving that ordering.`
+    : `This grammar has no hero. Do not invent a hero headline or reserve hero-sized type; use the scale below for the interface hierarchy.`;
+
+  const fontGate = `Font delivery gate:
+- The named families are implementation candidates, not fallback hints. ${displayAsset?.available === true ? `${display} has a verified asset record` : `${display} still needs a verified asset`}; ${bodyAsset?.available === true ? `${body} has a verified asset record` : `${body} still needs a verified asset`}.
+- Before visual QA, use the exact licensed asset declarations from the connected font handoff, await \`document.fonts.ready\`, and verify \`document.fonts.check()\` for every shipped family/weight.
+- ${displaySuitable === false ? `BLOCKED: ${display} has not passed the display-role suitability gate; re-resolve the pairing before implementation.` : `Require ${display} to pass the display-role suitability gate.`} ${bodySuitable === false ? `BLOCKED: ${body} has not passed the body-role suitability gate; re-resolve the pairing before implementation.` : `Require ${body} to pass the body-role suitability gate.`} Never hide a failed or missing face behind a generic fallback.`;
+
   return `## Type
 
-Font families (never swap these two roles — display carries identity, body carries running text):
-- Heading / display font: **${display}**, weight ${w.heading}
+Font roles (never swap them — display carries identity, body carries running text):
+- Heading / display candidate: **${display}**, weight ${w.heading}${productSurface ? "; reserve it for identity and genuinely prominent headings, not routine controls or data labels" : ""}
 - Body / running-text font: **${body}**, weight ${w.body}
 - Accent / UI text (buttons, nav links, labels, badges, form controls): **${body}**, weight ${w.accent}
 
-Hero size — the ONE largest headline on the page, exactly once, at:
-- ${px(heroPx)} (= base ${px(base)} × headingScaleRatio ${num(headingScaleRatio)}), font: ${display}, weight ${w.heading}
+${heroRule}
 
-Type scale (base ${px(base)}, modular ratio "${ratioName}") — use these sizes for every other text role, no other sizes:
+Reference type scale (base ${px(base)}, modular ratio "${ratioName}"):
 | role | size |
 |---|---|
 ${rows}
 
-Do not introduce any font-size not listed above (hero size + the scale table). Line-height: 1.5 for body text, 1.15-1.35 for headings (tighter as size increases).`;
+Treat these as hierarchy anchors, not a ban on interpolation. Prefer the listed values; use fluid values between adjacent anchors when viewport fit, localization, or optical correction requires it, and preserve a clear hierarchy. Line-height: 1.5 for body text, 1.15-1.35 for headings (tighter as size increases).
+
+${fontGate}`;
 }
 
 // ── layout section ───────────────────────────────────────────────────────────────────────────
@@ -105,36 +137,36 @@ function layoutSection(genome) {
   const macro = L.macro || {};
   const h = L.hierarchy || {};
   const grammar = L.sectionGrammar || [];
-  const centrepieceRole = centrepieceRoleOf(grammar);
+  const primaryRole = centrepieceRoleOf(grammar);
+  const productSurface = ["dashboard", "data-admin", "app"].includes(L.pageKind);
   const sections = grammar
     .map((s, i) => {
-      const isCentrepiece = s.role === centrepieceRole;
-      const centrepieceNote = s.role === "hero"
-        ? " **← THE CENTREPIECE lives here — build it large, as the dominant visual/statement of the page, not just a headline.**"
-        : " **← THE CENTREPIECE lives here — build it large/edge-to-edge, filling this section. Do not shrink it into the hero or a small card.**";
-      const purpose = purposeForRole(s.role) + (isCentrepiece ? centrepieceNote : "");
+      const isPrimary = s.role === primaryRole;
+      const primaryNote = productSurface
+        ? " **← PRIMARY WORK AREA: put the real product objects, actions, and visible outcomes here. Decorative expression cannot substitute for the workflow.**"
+        : " **← FOCAL COMPOSITION: give the subject-specific mechanism or proof the strongest visual weight here.**";
+      const purpose = purposeForRole(s.role) + (isPrimary ? primaryNote : "");
       return `| ${i + 1} | ${s.role} | ${pct(s.heightShare)} emphasis (not a height) | ${s.focalPoint} | ${s.composition} | ${s.surface === "inverted" ? "inverted (dark band on a light theme, or vice-versa)" : "normal"} | ${purpose} |`;
     })
     .join("\n");
   const mobile = (genome.responsive?.collapseRules && genome.responsive.collapseRules[0]) || L.responsive?.mobileTransform || "stack sections full-width, preserve order";
-  const centrepieceIsHero = centrepieceRole === "hero";
-  const centrepieceRule = centrepieceRole
-    ? centrepieceIsHero
-      ? `The CENTREPIECE — this layout's one dominant visual/statement — belongs specifically in the **hero** section named above, built large there. It does not get pushed into a smaller section further down the page, and it does not get skipped because it's "handled elsewhere" — if the hero renders as a headline with no real dominant visual/statement, you have not followed this spec.`
-      : `The CENTREPIECE — this layout's one dominant visual/instrument/statement — belongs specifically in the **${centrepieceRole}** section named above, built large or edge-to-edge THERE. It does not belong in the hero as a small card, and it does not get skipped because it's "handled elsewhere" — if you build a small trace/demo card in the hero and leave the ${centrepieceRole} section blank, you have not followed this spec.`
-    : `Build every section fully — none may be left blank.`;
+  const primaryRule = primaryRole
+    ? productSurface
+      ? `The **${primaryRole}** is the primary work area, not a marketing centrepiece. It must expose the subject's real workflow and states at useful density. Do not add a hero above it.`
+      : `The **${primaryRole}** is the suggested focal region. Its visual dominance must come from subject-specific content or proof, not from an expression effect alone.`
+    : `Preserve every necessary product function even if regions are merged.`;
 
   return `## Layout
 
 Archetype: **${L.family || "unspecified"}** (page kind: ${L.pageKind || "n/a"})
 
-Build the page as EXACTLY these sections, in this exact order, top to bottom. \`heightShare\` is that section's RELATIVE EMPHASIS — which sections matter most — NOT a pixel or vh height target. Do NOT set a fixed or min-height from it, and do NOT pad a section with empty space to reach a size. Let CONTENT determine each section's actual height: a large share means MORE content, bigger type, or a richer/denser visual in that section — never a tall empty band. No section, of any height share, may contain more than ~150px of contiguous empty vertical space. The "content purpose" column is not optional flavor text — it is what that section MUST contain:
+Treat this grammar as a reference sequence, not a wireframe to copy literally. Preserve every named product function and the hierarchy encoded by \`heightShare\`, but merge supporting regions, reorder adjacent support around the user's task, or change the desktop grouping when the brief, content, or interaction model requires it. Document each structural departure in one sentence. \`heightShare\` is RELATIVE EMPHASIS — which functions matter most — NOT a pixel or vh height target. Do NOT set a fixed or min-height from it, and do NOT pad a region with empty space to reach a size. Let CONTENT determine actual height. No region may contain more than ~150px of contiguous empty vertical space unless that space is visibly serving the focal composition. The "content purpose" column is the functional contract, not optional flavor text:
 
 | # | section role | relative emphasis | focal point | composition | surface | content purpose |
 |---|---|---|---|---|---|---|
 ${sections}
 
-**No empty sections, no exceptions.** Build EVERY section above fully, with real content proportional to its emphasis — no section may render as a blank/void band, a color-only placeholder, or a caption with nothing under it. A high-emphasis section that is sparse on content is a spec violation just as much as a missing section is. ${centrepieceRule}
+**No empty functions.** Every required purpose above must be implemented with real content, whether it remains a standalone section or is merged into a better workflow. No blank band, color-only placeholder, or caption without an object beneath it. ${primaryRule}
 
 Macro proportions:
 - Content max-width: ${pct(macro.contentWidthShare)} of viewport width (centered, generous side margins outside it)
@@ -144,7 +176,7 @@ Macro proportions:
 - Whitespace level: ${pct(macro.whitespace)} — ${Number(macro.whitespace) >= 0.5 ? "generous breathing room between blocks, don't crowd it" : "tight/dense spacing between blocks, pack content efficiently"} — content density target ${pct(macro.contentDensity)}
 
 Hierarchy numbers:
-- Focal area (the single largest/most dominant element, e.g. hero visual or headline) occupies ~${pct(h.focalAreaShare)} of its section
+- Focal area reference: ~${pct(h.focalAreaShare)} of its region. Adapt within the available content and viewport; preserve dominance without clipping or manufacturing dead space
 - CTA prominence: ${pct(h.ctaProminence)} — ${Number(h.ctaProminence) >= 0.6 ? "make the primary call-to-action visually loud (large, high-contrast, isolated)" : "keep the primary call-to-action present but understated, not shouting"}
 - Contrast concentration: ${pct(h.contrastConcentration)} — concentrate strong value/color contrast on the focal element(s), keep the rest of the page comparatively quiet
 
@@ -155,20 +187,29 @@ Mobile behavior (below ~640px): ${mobile}.`;
 function colorSection(genome) {
   const c = genome.color || {};
   const theme = genome.sourceIntent?.theme === "dark" ? "dark" : "light";
+  const secondary = c.accent2 || c.secondary;
+  const roles = [
+    c.ground && ["background", c.ground, "page background and major canvas surfaces"],
+    c.surface && ["surface", c.surface, "panels or nested surfaces that need a distinct neutral level"],
+    c.ink && ["text", c.ink, "body copy and headings"],
+    c.accent && ["accent (primary)", c.accent, "primary actions, active selection, and the highest-priority interactive signal"],
+    secondary && ["accent (secondary)", secondary, "a subordinate counterpoint selected with the primary; use for comparison, secondary data, or a distinct state, never as a competing CTA"],
+  ].filter(Boolean);
+  const rows = roles.map(([role, value, use]) => `| ${role} | \`${value}\` | ${use} |`).join("\n");
+  const secondaryGuidance = secondary
+    ? "The secondary accent is a deliberate counterpoint to the primary, not a license to add arbitrary hues: test them together in the same view and keep the secondary visibly subordinate."
+    : "No secondary accent is supplied. Do not invent one unless the product needs a distinct semantic or comparative channel; if it does, resolve and gate that role with the rest of the palette.";
   return `## Color
 
-Theme: **${theme}**. Use exactly these 4 colors, no others (tints/shades of them for hover/disabled states are fine):
+Theme: **${theme}**. This genome supplies ${roles.length} palette roles:
 
 | role | hex | use for |
 |---|---|---|
-| background | \`${c.ground}\` | **NEUTRAL** — page background, section backgrounds (unless a section is marked "inverted" above — invert background/text there). Do NOT tint the page with the accent hue: this is a near-gray/off-white or true-neutral-dark ground, not a pastel wash of the brand color. |${c.surface ? `\n| surface | \`${c.surface}\` | **NEUTRAL** — cards, panels, elevated/nested surfaces — a second neutral, distinct in lightness from the page background. Never a tint of the accent. |` : ""}
-| text | \`${c.ink}\` | all body copy, headings |
-| accent (primary) | \`${c.accent}\` | primary CTA buttons, links, active/selected states, the single most important interactive element per screen |
-| accent (secondary) | \`${c.accent2}\` | secondary accents, badges, chart/data highlights — never the primary CTA |
+${rows}
 
-Neutrals dominate; the accent is scarce (60-30-10: background + surface carry the page as genuinely NEUTRAL ground — near-gray/off-white in light, true-neutral-dark in dark, only a whisper of hue if any — while the accent appears ONLY on CTAs, key data, and small emphasis). The saturated hue below is confident where it appears; it must not flood the ground. Contrast requirement: background/text pair measures ${num(c.contrast, 2)}:1 — this MUST stay at or above 4.5:1 (WCAG AA) for all body text. Do not lighten text or add translucency that would drop it below that.
+Treat the palette as role relationships, not a literal-color-count ceiling. Derived tints/shades are allowed for interaction states and surface depth. Add semantic success, warning, error, or info colors only when the product needs those meanings; gate every added color against its actual background and keep it distinct from the primary action color. ${secondaryGuidance}
 
-Accent hue: ${Math.round(Number(c.hue) || 0)}° (OKLCH). Do not introduce a second, unrelated hue family anywhere on the page — and do not let the accent hue bleed into background/surface at anything beyond a faint neutral tint.`;
+Contrast requirement: background/text pair measures ${num(c.contrast, 2)}:1 — this MUST stay at or above 4.5:1 (WCAG AA) for body text; large/UI text stays at or above 3:1. Do not lighten text or add translucency that drops below those thresholds. Accent hue reference: ${Math.round(Number(c.hue) || 0)}° (OKLCH).`;
 }
 
 // ── background section ───────────────────────────────────────────────────────────────────────
@@ -181,13 +222,16 @@ function fmtParams(params = {}) {
 function backgroundSection(genome) {
   const bg = genome.background || {};
   const field = bg.field || {};
+  const productSurface = ["dashboard", "data-admin", "app"].includes(genome.layout?.pageKind);
   const slotRows = Object.entries(bg.slots || {})
     .map(([name, s]) => `| ${name} | ${s.treatment} | ${fmtParams(s.params)} |`)
     .join("\n");
+  const intensityRule = productSurface
+    ? "On this product surface, the background should support scanning and state changes. Keep treatments quiet enough that data, controls, selection, and focus remain the strongest signals."
+    : "Make the assigned field treatment intentional and visible enough to establish the scene, while keeping copy and proof dominant.";
   return `## Background
 
-The background is a PRESENT design element, not a whisper — it should read as a visible, intentional
-ground the type sits on, not near-invisible white. Build it at the intensity given below.
+${intensityRule}
 
 Page field (the base page background treatment): **${field.treatment}**
 Params: ${fmtParams(field.params)}
@@ -207,8 +251,13 @@ function motionSection(genome) {
   const d = m.defaults || {};
   const scroll = m.scroll || {};
   const reveal = m.reveal || {};
-  const hero = m.heroFit || { targetHeightShare: 1.0, tolerance: 0.1 };
   const t = m.transitions || {};
+  const grammar = genome.layout?.sectionGrammar || [];
+  const hero = grammar.find((section) => section?.role === "hero");
+  const singleViewport = grammar.find((section) => section?.singleViewport === true);
+  const viewportRule = hero || singleViewport
+    ? `First-screen composition: **${hero?.role || singleViewport?.role}** is the initial focal region. Aim to make its promise, proof, and primary action understandable in the first viewport when the real content fits. Content height wins: never force \`100vh\`, clip text, or shrink controls to satisfy a viewport target.`
+    : "This layout has no hero or single-viewport region. Do not add a hero-height block or reserve a viewport of empty space. Let task content determine the block size; an app workspace may occupy remaining viewport space only when its internal scrolling and keyboard reachability are explicit.";
 
   return `## Motion
 
@@ -224,8 +273,8 @@ Section transitions (expand/collapse if any): use \`${t.section?.technique || "c
 
 ### Hard guarantees (non-negotiable, verify before finishing)
 1. **Reduced motion**: every animation/transition above MUST be wrapped so \`@media (prefers-reduced-motion: reduce)\` collapses it to instant/no-motion. No exceptions.
-2. **No content gated on scroll/JS**: the headline, hero copy, and all primary body content must be present and visible in the initial render — never \`opacity:0\` or \`visibility:hidden\` waiting on a scroll or JS event to reveal core content. Reveal-on-scroll (if used above) is a decorative *polish* layer only, on secondary content.
-3. **Hero fits the first screen**: the hero section's height must be ${pct(hero.targetHeightShare)} of the viewport height (±${pct(hero.tolerance)}), i.e. roughly one screen — no content spilling past ~100vh, and nothing important cut off above the fold.`;
+2. **No content gated on scroll/JS**: primary copy, controls, and the product mechanism's meaningful initial state must be present and visible in the initial render — never \`opacity:0\` or \`visibility:hidden\` waiting on a scroll or JS event to reveal core content. Reveal-on-scroll (if used above) is a decorative *polish* layer only, on secondary content.
+3. **Content-driven geometry**: ${viewportRule}`;
 }
 
 // ── spacing / material section ───────────────────────────────────────────────────────────────
@@ -235,7 +284,7 @@ function spacingMaterialSection(genome) {
   const spacingRow = spacing.map((s) => `${s.token}=${px(s.px)}`).join(", ");
   return `## Spacing & Material
 
-Spacing scale (4px base grid) — use only these gaps/paddings/margins: ${spacingRow}.
+Spacing scale (4px base grid) — use these as rhythm anchors: ${spacingRow}. Prefer the scale, but permit bounded intermediate values for optical alignment, safe-area insets, touch targets, and responsive fit. Record repeated exceptions as a new token instead of accumulating one-offs.
 
 Radius scale: none=0, sm=${px(mat.radii?.sm)}, md=${px(mat.radii?.md)}, lg=${px(mat.radii?.lg)}, xl=${px(mat.radii?.xl)}, full=${mat.radii?.full}px (pills/avatars only). Radius language: ${mat.radiusLanguage}.
 
@@ -263,29 +312,31 @@ function briefSection(genome) {
   const expressive = fs < 0.55;
   const centrepieceGuidance = expressive
     ? `This is an expressive/marketing surface (functionalScore ${num(fs)} < 0.55) — it wants ONE
-bold, subject-grounded centrepiece: an interactive or computed instrument, a bold typographic or
-spatial statement, one signature motion, ambient background animation, a single attention-holding
-prop, or a data-driven visual. Decide what it is FIRST, build it in markup on load, and make it
-nameable — if you swapped the subject, this centrepiece should break. A palette, a mood, a
-parallax blob, or a stock screenshot does not qualify. Earn the whitespace this layout gives you:
+bold, subject-grounded product mechanism or proof: an interactive/computed instrument, a real
+product state that can be manipulated, or a data-driven demonstration. Decide what it is FIRST,
+build its meaningful initial state in markup, and make it nameable — if you swapped the subject,
+this mechanism should break. A type effect, signature motion, ambient animation, palette, mood,
+parallax object, or stock screenshot is expression, not the product mechanism, and does not qualify
+on its own. Expression may stage the mechanism but may never substitute for it. Earn the whitespace this layout gives you:
 generous space must be backed by oversized type, confident color, or motion — never left as empty,
 undecorated dead air. Fill every section with real content; no decorative dead cards, no empty
 voids masquerading as "breathing room."`
     : `This is a functional/data-dense surface (functionalScore ${num(fs)} ≥ 0.55) — it usually does
 NOT want a hero-sized centrepiece; that steals density from the data. Stay dense and legible. The
-boldness here is confident data hierarchy and deliberate color-coding, not big type or a signature
-moment. If a small instrument or one focal number earns its place, fine — but default to density
-over drama.`;
+boldness here is the subject's working mechanism, confident data hierarchy, and deliberate
+state-coding, not big type or a signature effect. Put real objects, actions, and outcomes in the
+primary work area. An expression treatment may support orientation or feedback, but it cannot count
+as the product centrepiece or replace the workflow.`;
 
   return `## Creative brief — read this before you build
 
 The sections below (Layout, Type, Color, Background, Motion, Spacing & Material) are YOUR SYSTEM:
-exact palette hex + relationships, the type scale, the spacing/radius/shadow ramps, the layout
-skeleton and section proportions, and the motion timing/easing tokens. That math is computed and
-pinned — build within it, don't recompute it. Everything else — the ideation, the exact
-composition, the content, the ONE bold centrepiece, and the expressive intensity — is yours to
-invent. This is a strong system and a strong direction, not a form to fill in; be bold and make it
-genuinely yours.
+palette roles + relationships, the type scale, the spacing/radius/shadow ramps, the layout
+hierarchy, and the motion timing/easing tokens. That math supplies reference anchors. Preserve its
+relationships and hard gates, then adapt the exact composition, region grouping, and bounded token
+values when product truth, content, localization, or responsive behavior requires it. The
+subject-specific product mechanism and expressive intensity are yours to invent. This is a strong
+direction, not a form to fill in.
 
 **Forbid the median.** Name the obvious safe version of this brief — the same-everything, timid
 build a weak model reaches for by default (predictable headline-left + widget-card-right hero,
@@ -294,19 +345,20 @@ and refuse the whole cluster. Mine the layout, the type move, and the font chara
 brief. Swap test: if the page could belong to a different brief unchanged, change an axis and
 retry.
 
-**The ONE centrepiece.** ${centrepieceGuidance}
+**Product mechanism before expression.** ${centrepieceGuidance}
 
-**Personality in the centrepiece, legibility in the body.** The headline and body copy stay calm
+**Personality without obscuring the mechanism.** The headline and body copy stay calm
 and immediately readable — never sacrifice legibility for personality there. The loud personality
-lives in the one centrepiece (if this surface has one) and in the margins/ornament, never smeared
-across the message itself.
+may stage the subject-specific mechanism and live in the margins/ornament, but it never replaces the
+mechanism or gets smeared across the message itself.
 
 **Hard gates — non-negotiable, verify before finishing:**
-- Body text uses the body font pinned below — never a display or novelty face for running text.
+- Body text uses the resolved body role below — never a display or novelty face for running text.
 - Every text/background pair meets WCAG AA (4.5:1 body, 3:1 large/UI) — computed, not eyeballed.
-- One real icon set (Lucide, Phosphor, Feather, Heroicons — pick one, never mix). NEVER emoji as
-  icons, bullets, or chrome. Never hand-draw illustrative SVG (figures, scenes, mascots).
-- Core content — centrepiece, headings, body copy — is present in markup on load, without JS.
+- One real icon set (Lucide, Phosphor, Feather, Heroicons — pick one, never mix), supplied as a
+  reviewed local subset or vetted inline paths rather than fetched from a runtime CDN. NEVER emoji
+  as icons, bullets, or chrome. Never hand-draw illustrative SVG (figures, scenes, mascots).
+- Core content — the product mechanism's meaningful initial state, headings, body copy — is present in markup on load, without JS.
   Never \`opacity:0\`-until-scroll; reveals start from a present, visible state.
 
 Where content is needed (copy, labels, data), invent plausible, concrete content that fits the
@@ -329,11 +381,13 @@ export function genomeToSpec(genome = {}) {
 
 Brief: ${brief || "(none given — design is fully specified below; invent plausible, concrete content consistent with the layout roles)"}
 
-Deliverable: a single, self-contained HTML file. Inline all CSS in a \`<style>\` tag and all JS in
-a \`<script>\` tag. No external stylesheets, fonts, scripts, or image requests — for the fonts
-named below, set them as the first item in a \`font-family\` stack followed by a plausible generic
-fallback (e.g. \`ui-sans-serif, system-ui, sans-serif\`), since the named font may not be locally
-installed; do not \`@import\` or link to a font file.
+Deliverable: one HTML entry point plus the licensed local font/assets explicitly named by the
+connected handoff. Inline page-specific CSS and JS when practical. Make no remote CDN, stylesheet,
+font, script, or image requests. Do not pretend a named family loaded by putting it before a generic
+fallback: copy the verified local asset, declare the exact face with \`@font-face\`, await
+\`document.fonts.ready\`, and verify it with \`document.fonts.check()\`. If the asset or role gate is
+missing, return to font resolution; only use a system stack when the engine deliberately selected
+one.
 
 ${sections.join("\n\n")}
 `;

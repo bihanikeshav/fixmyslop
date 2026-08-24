@@ -76,12 +76,12 @@ function hexToOklch(hex: string): [number, number, number] {
 function parseColor(s: string): { r: number; g: number; b: number; a: number } | null {
   const m = s.match(/rgba?\(([^)]+)\)/i);
   if (!m) return null;
-  const parts = m[1].split(",").map((p) => p.trim());
+  const parts = m[1]?.split(",").map((p) => p.trim()) ?? [];
   if (parts.length < 3) return null;
-  const r = parseFloat(parts[0]);
-  const g = parseFloat(parts[1]);
-  const b = parseFloat(parts[2]);
-  const a = parts.length >= 4 ? parseFloat(parts[3]) : 1;
+  const r = parseFloat(parts[0]!);
+  const g = parseFloat(parts[1]!);
+  const b = parseFloat(parts[2]!);
+  const a = parts[3] === undefined ? 1 : parseFloat(parts[3]);
   if ([r, g, b].some((v) => Number.isNaN(v))) return null;
   return { r, g, b, a: Number.isNaN(a) ? 1 : a };
 }

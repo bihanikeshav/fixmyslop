@@ -26,6 +26,7 @@ GENRE_DEFINITIONS: dict[str, dict[str, object]] = {
         ],
         "preserve": ["speaker labels", "first-person perspective", "spoken hesitation or emphasis when meaningful"],
         "avoid": ["press-release summaries", "formalizing every spoken phrase", "invented personality"],
+        "intentional_families": ["negative_parallelism", "ai_vocabulary"],
         "signals": [
             (r"(?im)^\s*(?:interviewer|interviewee|host|ravi|maya|alex)\s*:", 7, "speaker turns"),
             (r"(?i)\b(?:honestly|actually|could you explain|what changed)\b", 2, "spoken framing"),
@@ -56,6 +57,7 @@ GENRE_DEFINITIONS: dict[str, dict[str, object]] = {
         ],
         "preserve": ["first-person voice", "mixed feelings", "irony or understatement", "mentions and hashtags"],
         "avoid": ["brand-announcement voice", "generic upbeat conclusions", "neutralizing a deliberately messy opinion"],
+        "intentional_families": ["negative_parallelism", "promotional", "ai_vocabulary"],
         "signals": [
             (r"(?i)(?:^|\s)@[A-Za-z0-9_]+|#[A-Za-z0-9_]+", 4, "social markers"),
             (r"(?i)\b(?:anyway|genuinely|honestly|i don'?t know how to feel)\b", 2, "personal stance"),
@@ -176,6 +178,7 @@ GENRE_DEFINITIONS: dict[str, dict[str, object]] = {
         ],
         "preserve": ["first-person experience", "specific detail", "mixed sentiment", "rating"],
         "avoid": ["generic recommendation copy", "flattened complaint language", "invented experience"],
+        "intentional_families": ["negative_parallelism", "promotional", "ai_vocabulary"],
         "signals": [(r"(?i)\b(?:rating|visited|review|tea|app|ordering|experience)\b", 4, "review language")],
     },
     "general prose": {
@@ -231,6 +234,16 @@ def infer_genre(text: str, requested: str = "auto") -> dict[str, object]:
             "method": "explicit_request",
             "evidence": [{"text": "explicit genre request", "weight": 1.0}],
         }
+    if explicit != "auto":
+        return {
+            "inference_version": PROFILE_VERSION,
+            "requested_genre": requested,
+            "genre": explicit,
+            "register": f"user-specified {explicit}",
+            "confidence": 1.0,
+            "method": "explicit_custom_genre",
+            "evidence": [{"text": "explicit custom genre request", "weight": 1.0}],
+        }
 
     scores: list[tuple[str, int, list[dict[str, object]]]] = []
     for genre, definition in GENRE_DEFINITIONS.items():
@@ -253,8 +266,14 @@ def infer_genre(text: str, requested: str = "auto") -> dict[str, object]:
     else:
         genre, score, evidence = scores[0]
         second = scores[1][1] if len(scores) > 1 else 0
-        confidence = min(0.98, round(0.45 + min(0.45, score / 20) + min(0.08, max(0, score - second) / 20), 3))
-        method = "weighted_lexical_and_structural_signals"
+        if score == second and score < 6:
+            genre = "general prose"
+            confidence = 0.4
+            method = "ambiguous_signal_fallback"
+            evidence = [{"signal": "tied low-evidence genre candidates", "weight": score}]
+        else:
+            confidence = min(0.98, round(0.45 + min(0.45, score / 20) + min(0.08, max(0, score - second) / 20), 3))
+            method = "weighted_lexical_and_structural_signals"
     definition = GENRE_DEFINITIONS[genre]
     return {
         "inference_version": PROFILE_VERSION,
@@ -289,18 +308,32 @@ def build_pragmatic_profile(inference: dict[str, object], findings: Iterable[dic
     genre = str(inference["genre"])
     definition = GENRE_DEFINITIONS.get(genre, GENRE_DEFINITIONS["general prose"])
     finding_actions = []
+    actionable_findings = []
+    diagnostic_findings = []
+    intentional = set(definition.get("intentional_families", []))
     seen: set[str] = set()
     for finding in sorted(findings, key=lambda item: (-int(item.get("severity", 0)), int(item.get("start", 0)))):
         family = str(finding.get("family", ""))
         if family in seen:
             continue
         seen.add(family)
-        finding_actions.append({
+        entry = {
             "family": family,
             "severity": finding.get("severity", 1),
             "evidence": finding.get("evidence", ""),
             "action": FINDING_ACTIONS.get(family, "Review this finding in context and change only if it conflicts with the genre objective."),
-        })
+        }
+        severity = int(finding.get("severity", 0))
+        if family in intentional:
+            entry["disposition"] = "preserve_unless_user_requests_change"
+            diagnostic_findings.append(entry)
+        elif severity >= 2:
+            entry["disposition"] = "actionable"
+            actionable_findings.append(entry)
+        else:
+            entry["disposition"] = "diagnostic_review_in_context"
+            diagnostic_findings.append(entry)
+        finding_actions.append(entry)
     return {
         "profile_version": PROFILE_VERSION,
         "genre": genre,
@@ -312,8 +345,10 @@ def build_pragmatic_profile(inference: dict[str, object], findings: Iterable[dic
         # Finding families this genre treats as intentional voice; a surviving instance
         # of one of these is reported diagnostically rather than corrected. Empty by
         # default (no family is presumed intentional); populate per genre with evidence.
-        "intentional_families": list(definition.get("intentional_families", [])),
+        "intentional_families": list(intentional),
         "finding_actions": finding_actions,
+        "actionable_findings": actionable_findings,
+        "diagnostic_findings": diagnostic_findings,
     }
 
 
@@ -324,7 +359,8 @@ def concise_model_summary(
     content_map: dict[str, object],
 ) -> dict[str, object]:
     """Return the bounded context sent to a host rewriting model."""
-    findings = list(profile.get("finding_actions", []))[:8]
+    findings = list(profile.get("actionable_findings", []))[:8]
+    diagnostics = list(profile.get("diagnostic_findings", []))[:8]
     return {
         "genre": {
             "label": inference["genre"],
@@ -336,6 +372,8 @@ def concise_model_summary(
         "preserve": list(profile["preserve"])[:6],
         "avoid": list(profile["avoid"])[:5],
         "actionable_findings": findings,
+        "contextual_signals": diagnostics,
+        "signal_policy": "Only actionable_findings mandate an edit. Contextual signals are evidence to review, not banned words or automatic edits.",
         "measured_signals": {
             "formulaic_risk": original_stats.get("formulaic_risk", 0),
             "finding_count": len(original_stats.get("findings", [])),
