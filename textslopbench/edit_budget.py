@@ -96,18 +96,49 @@ def _cluster_density(span, spans, window=140):
     return sum(1 for (c, d) in spans if (c, d) != (a, b) and abs((c + d) / 2 - (a + b) / 2) <= window)
 
 
-def slop_cap_for_floor(occs, tokens, floor):
+# Below this token count, the per-1000-token density used by slop_cap_for_floor is too noisy
+# to budget on (a single removed span swings it by a large amount) — see slop_cap_for_floor_detail.
+MIN_TOKENS_FOR_SLOP_CAP = 40
+
+
+def slop_cap_for_floor_detail(occs, tokens, floor):
     """Max slop edits (remove highest-weight spans first) that keep predicted residual SED >= floor.
     Ties the slop budget to the conditional human residual so we cannot suppress below the human
-    band. floor is the estimator p75 for this source state."""
+    band. floor is the estimator p75 for this source state.
+
+    Returns (cap, reason). A cap of 0 is ambiguous on its own — it can mean genuinely "the floor
+    already forbids any slop edit" (the source is already at/under the human-residual floor) or it
+    can mean "this document is too short for the per-1000-token density to be a meaningful budget
+    at all" (audit fix, textslopbench item 13). `reason` disambiguates:
+      - "no_occurrences": there is nothing to budget (occs is empty); cap is trivially 0.
+      - "short_document": tokens < MIN_TOKENS_FOR_SLOP_CAP; the density metric is unstable for a
+        document this short, so cap is conservatively 0 rather than a number that isn't meaningful.
+      - "already_at_floor": even removing nothing (the current density) is already below floor;
+        a genuine zero budget — editing would only push it further below the human band.
+      - "ok": a normal, meaningful cap computed from the removal loop (may itself be 0 if the very
+        first, highest-weight removal would already cross the floor).
+    """
+    if not occs:
+        return 0, "no_occurrences"
+    if tokens < MIN_TOKENS_FOR_SLOP_CAP:
+        return 0, "short_document"
     weights = sorted((o["weight"] for o in occs), reverse=True)
     total = sum(weights)
+    if total / tokens * 1000 < floor:
+        return 0, "already_at_floor"
     removed, cap = 0.0, 0
     for w in weights:
         if (total - removed - w) / tokens * 1000 < floor:
             break
         removed += w
         cap += 1
+    return cap, "ok"
+
+
+def slop_cap_for_floor(occs, tokens, floor):
+    """Backward-compatible cap-only wrapper around slop_cap_for_floor_detail(); see that
+    function's docstring for why a bare int is ambiguous and when to use the detailed form."""
+    cap, _reason = slop_cap_for_floor_detail(occs, tokens, floor)
     return cap
 
 
@@ -142,8 +173,10 @@ def build_plan(source, genre, E=None, pragmatic_families=frozenset(), slop_resid
         budget = max(0, min(budget, len(occs)))
         # Fix #1: cap the SLOP budget by the conditional human residual (offline estimator) so we
         # never suppress below the human band on high-residual sources.
+        slop_cap_reason = None
         if family == "slop_overrepresentation" and slop_residual_floor is not None:
-            budget = min(budget, slop_cap_for_floor(occs, tokens, slop_residual_floor))
+            slop_cap, slop_cap_reason = slop_cap_for_floor_detail(occs, tokens, slop_residual_floor)
+            budget = min(budget, slop_cap)
         # rank occurrences: rho + within-doc repetition + local clustering + per-pattern E
         rep = defaultdict(int)
         for o in occs:
@@ -169,7 +202,7 @@ def build_plan(source, genre, E=None, pragmatic_families=frozenset(), slop_resid
             "occurrences": len(occs), "E": base_E, "E_level": level, "E_confidence": confidence,
             "sel_weight": sel_w, "pragmatic_relevant": pragmatic,
             "edit_budget": budget, "priority_spans": priority,
-            "instruction": instr,
+            "instruction": instr, "slop_cap_reason": slop_cap_reason,
             "_occs": occs,
         })
     plan.sort(key=lambda p: (-p["edit_budget"], -p["occurrences"]))

@@ -9,9 +9,21 @@ description: |
   returning a final version.
 metadata:
   version: 0.2.0
+license: Apache-2.0. Pattern taxonomy derives from Wikipedia's "Signs of AI writing"
+  (CC BY-SA 4.0, https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing); see
+  references/patterns.md for attribution. All prompts and code in this skill are
+  original, in-repo text (see scripts/v2_pipeline.py provenance note).
 ---
 
 # FixMySlop:Humanizer
+
+Attribution: the pattern taxonomy this skill detects and corrects for (inflated
+symbolism, promotional language, superficial "-ing" analyses, vague attributions, em
+dash overuse, rule of three, AI vocabulary, negative parallelisms, excessive
+conjunctive phrases, etc.) derives from Wikipedia's "Signs of AI writing" guidance,
+https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing, licensed CC BY-SA 4.0. No
+text from that guide is reproduced verbatim; all prompts and detector code here are
+original. See `references/patterns.md` for the derived taxonomy.
 
 Use this skill for revision, not regeneration. Make the smallest useful changes that
 remove formulaic or inflated prose while retaining the author's claims and register.
@@ -122,12 +134,44 @@ result.
   (n-grams/templates, via `actionable_slop`) is host-actionable; medium-confidence single-word
   flags stay diagnostic — a judged smoke showed global slop flags induce harmful edits on
   already-clean, register-sensitive genres (`../../docs/textslop/POLICY_SMOKE.md`).
+- [anchors.py](scripts/anchors.py): builds the source-content map — hard anchors
+  (numbers, dates, entities, URLs, citations, quotations) vs. editable targets — and
+  audits anchor coverage after a rewrite.
+- [pragmatics.py](scripts/pragmatics.py): genre/register inference and the
+  purpose-oriented pragmatic profile passed to the host model.
+- [pipeline.py](scripts/pipeline.py): the shared, generation-free execution contract
+  (target extraction -> genre inference -> scan -> profile -> host prompt prep ->
+  fidelity) used by both `humanize.py` and the host-model integration; also where the
+  optional bridges below are wired in (lazily, only when explicitly requested).
 - [humanize.py](scripts/humanize.py): conservative local rewrite loop with protected
-  spans, typography finalization, before/after scans, and fidelity checks.
+  spans, typography finalization, before/after scans, and fidelity checks. This is the
+  default entry point; it never imports the bridges below.
+- [v2_pipeline.py](scripts/v2_pipeline.py): optional v1/v2 mode switch that reproduces
+  the CONFIRMED v2 two-stage architecture (aggressive de-slop draft -> FixMySlop
+  anchor/fidelity repair) documented in `../../docs/textslop/V2_BASELINE.md`; v1
+  (default) is behavior-unchanged. Stage-1 prompts are original in-repo text; the
+  pattern taxonomy they encode derives from the CC BY-SA "Signs of AI writing" guide
+  (see the license note above).
 - [fidelity.py](scripts/fidelity.py): exact preservation plus bounded, conservative
   mutation checks; it is not a semantic-equivalence proof.
-- [patterns.md](references/patterns.md): behavior families and examples.
+- [structural_bridge.py](scripts/structural_bridge.py): **repo-only, optional,
+  evaluation.** Hardened, single-family (lexical/phrasal repetition) structural-findings
+  bridge for the preregistered Beemo holdout; default-off, byte-identical v1 output
+  unless explicitly requested. Requires `human_edit_grounded` from the repo-root
+  `textslopbench/` package — not available in a standalone skill install (raises a clear
+  `ImportError` there instead of failing on import).
+- [expendable_bridge.py](scripts/expendable_bridge.py): **repo-only, optional,
+  evaluation.** High-precision expendable-content deletion bridge (AI framing,
+  pleasantry, attribution filler, ornamental intensifiers only); default-off. Requires
+  `edit_operations`/`delete_scorer` from the repo-root `textslopbench/` package — same
+  standalone-install caveat as `structural_bridge.py`.
+- [patterns.md](references/patterns.md): behavior families and examples, derived from
+  Wikipedia's "Signs of AI writing" (CC BY-SA 4.0) — see the attribution note at the top
+  of that file.
 - [fidelity.md](references/fidelity.md): protected content and benchmark guardrails.
+- [agents/openai.yaml](agents/openai.yaml): optional agent manifest (display name,
+  short description, default prompt) for OpenAI-style agent hosts that discover skills
+  through a manifest file rather than this SKILL.md; not read by the Claude-side path.
 
 ## Evaluation-only modules (not part of the rewrite path)
 
@@ -143,4 +187,4 @@ do not change rewrite behavior:
 
 Fidelity is reserved for hard-anchor/claim/contradiction/semantic preservation; overlap and
 edit-magnitude measures are never called fidelity. The bundled audit reports **anchor +
-mutation safety**, not full fidelity. See `METRICS_GLOSSARY.md`.
+mutation safety**, not full fidelity. See `../../docs/textslop/METRICS_GLOSSARY.md`.

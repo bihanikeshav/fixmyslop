@@ -1,7 +1,7 @@
 ---
 name: personality
 description: Give a web page real, page-specific personality. Use when building a site/page/component and you want output that is distinctly itself, not generic AI aesthetics. Forces ideation that invents ONE bold, subject-grounded standout — with a different layout, type treatment, and standout every time.
-license: Apache-2.0. Slop taxonomy adapted from impeccable.style and Anthropic's frontend-design skill; see reference/slop-manifest.md for attribution.
+license: Apache-2.0. Slop taxonomy adapted from impeccable.style and Anthropic's frontend-design skill; see reference/slop-manifest.md for attribution. Color & surface rules in reference/type-and-color.md and reference/slop-manifest.md are attributed to tasteskill.dev (Leonxlnx/taste-skill, "the anti-slop frontend framework").
 ---
 
 This skill makes you *design*, not decorate. There are two failure modes it fixes,

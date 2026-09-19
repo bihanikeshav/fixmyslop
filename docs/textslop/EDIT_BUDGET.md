@@ -69,6 +69,23 @@ Per item (predicted residual SED under budget vs human):
 - ✅ **No reliance on low-support raw E** — uses span-validated annotation E + confidence + backoff.
 - ✅ **No HCSR as a host prompt target** — the plan is span-level; HCSR is scoring only.
 
+## `slop_cap_for_floor` short-document caveat (audit fix)
+
+`slop_cap_for_floor` (the slop-family budget cap tied to the conditional human residual floor)
+can return `0` for two very different reasons, which the plain `int` return does not
+distinguish:
+- the source is genuinely already at/under the human-residual floor (editing would push it
+  further below — a real zero budget), or
+- the document is too short (`< MIN_TOKENS_FOR_SLOP_CAP = 40` tokens) for the per-1000-token
+  density the cap is computed from to be a meaningful signal at all — a single removed span can
+  swing it by a large amount.
+
+`slop_cap_for_floor_detail(occs, tokens, floor)` returns `(cap, reason)` with
+`reason ∈ {"no_occurrences", "short_document", "already_at_floor", "ok"}`; `build_plan`'s
+per-family output now carries this as `slop_cap_reason` so a short-document `0` is never
+silently read as "the floor forbids editing here." `slop_cap_for_floor` itself is kept as a
+backward-compatible cap-only wrapper.
+
 ## Caveats (honest)
 
 - **beemo_cliche is over-preserved** (budget leaves 66, human kept 25 → HCSR worse). Beemo E is

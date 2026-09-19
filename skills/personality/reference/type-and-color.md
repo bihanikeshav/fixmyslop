@@ -30,34 +30,34 @@ font here is in the AVOID list above, pair the heading with a fresh body from th
 lists instead, or lean on the style move to carry the distinction.
 
 ### premium
-- Playfair Display / Inter · #1A1A1A · High-contrast serif headlines on flat near-black
-- Cormorant Garamond / DM Sans · #C9A84C · Editorial serif headings with gold ink
-- Playfair Display / Inter · #0a6b5c · Replace soft gradients with solid saturated color
+- Gambarino / Inter · #1A1A1A · High-contrast serif headlines on flat near-black
+- Recia / DM Sans · #C9A84C · Editorial serif headings with gold ink
+- Boska / Inter · #0a6b5c · Replace soft gradients with solid saturated color
 
 ### unique
-- Space Grotesk / Inter · #ff5c35 · Swap to warm off-black canvas, sharp edges
-- Instrument Serif / DM Sans · #C8522A · Terracotta ink on raw linen texture
-- Playfair Display / Source Sans Pro · #D946EF · Bold serif headlines on dark solid backgrounds
+- Array / Inter · #ff5c35 · Swap to warm off-black canvas, sharp edges
+- Erode / DM Sans · #C8522A · Terracotta ink on raw linen texture
+- Gambetta / Source Sans Pro · #D946EF · Bold serif headlines on dark solid backgrounds
 
 ### editorial
-- Fraunces / Newsreader · #1a1a1a · Oversized serif headlines on hairline-ruled off-white
-- Playfair Display / Source Serif 4 · #C8102E · Serif type, ink red, hard ruled lines
-- Playfair Display / Lora · #D32F2F · Kill glassmorphism, use serif/sans contrast
+- Neco / Newsreader · #1a1a1a · Oversized serif headlines on hairline-ruled off-white
+- Paquito / Source Serif 4 · #C8102E · Serif type, ink red, hard ruled lines
+- Rowan / Lora · #D32F2F · Kill glassmorphism, use serif/sans contrast
 
 ### minimal
-- Space Grotesk / Inter · #1A1A1A · Kill gradients; flat ink-on-bone with hairline borders
-- Cormorant Garamond / DM Sans · #1a1a1a · Kill color; let type carry the weight
+- Alpino / Inter · #1A1A1A · Kill gradients; flat ink-on-bone with hairline borders
+- Sprat / DM Sans · #1a1a1a · Kill color; let type carry the weight
 - Crimson Text / Inter · #1a1a1a · Remove border radius, serif headings only
 
 ### bold
 - Archivo / Archivo · #FF3B00 · Oversized tight-tracked headline, hard black borders
-- Bebas Neue / Space Grotesk · #FF3300 · Black borders, no radius, raw grid
-- Bebas Neue / IBM Plex Mono · #FF2E63 · Remove rounded corners, gradients, glassmorphism entirely
+- Boxing / Space Grotesk · #FF3300 · Black borders, no radius, raw grid
+- BackOut / IBM Plex Mono · #FF2E63 · Remove rounded corners, gradients, glassmorphism entirely
 
 ### playful
 - Bricolage Grotesque / Inter · #FF5C38 · Oversized chunky display headings, warm coral accent
-- Fraunces / DM Sans · #f97316 · Serif headings with warm orange punches
-- Poppins / Inter · #FF6B35 · Warm serif accent, friendly sans headings
+- Chubbo / DM Sans · #f97316 · Serif headings with warm orange punches
+- Amulya / Inter · #FF6B35 · Warm serif accent, friendly sans headings
 
 ## Palettes to AVOID by vibe
 - **ai-saas** (dark bg): blue (2/3) — e.g. #6366f1 #6366f1 #00d9ff

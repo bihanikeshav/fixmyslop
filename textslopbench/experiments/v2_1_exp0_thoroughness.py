@@ -8,7 +8,7 @@ import json, statistics, sys, math
 from difflib import SequenceMatcher
 from pathlib import Path
 
-ROOT = Path(r"C:\Users\Keshav\Documents\ChatGPT\fixslop")
+ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "skills" / "fixmyslop-humanizer" / "scripts"))
 sys.path.insert(0, str(ROOT / "textslopbench"))
 try:

@@ -9,13 +9,46 @@ philosophy, anchor/claim/certainty protection are untouched. Default-off in the 
 from __future__ import annotations
 
 import re
+import sys
+from pathlib import Path
 
-from edit_operations import _sents, _toks
+
+def _ensure_repo_textslopbench_on_path():
+    """Repo-only, optional research tool: `edit_operations`/`delete_scorer` live in the
+    repo-root `textslopbench/` package, not in this skill. If this is a checkout of the
+    full ai-slop-font repo, add textslopbench to sys.path; otherwise raise a clear
+    ImportError instead of a bare ModuleNotFoundError."""
+    repo_textslopbench = Path(__file__).resolve().parents[3] / "textslopbench"
+    if repo_textslopbench.is_dir() and str(repo_textslopbench) not in sys.path:
+        sys.path.insert(0, str(repo_textslopbench))
+    return repo_textslopbench.is_dir()
+
+
+try:
+    from edit_operations import _sents, _toks
+except ModuleNotFoundError:
+    if _ensure_repo_textslopbench_on_path():
+        from edit_operations import _sents, _toks
+    else:
+        raise ImportError(
+            "expendable_bridge.py is a repo-only, optional evaluation tool: it needs "
+            "'edit_operations' from the ai-slop-font repo's root-level textslopbench/ "
+            "package, which is not present in a standalone skill install. It is never "
+            "imported by the default (bridges off) humanize.py/pipeline.py rewrite path."
+        ) from None
 
 # reuse the corrected scorer's framing regex so detection == classification
 try:
     from delete_scorer import FRAMING_RE  # type: ignore
-except Exception:
+except ModuleNotFoundError:
+    if _ensure_repo_textslopbench_on_path():
+        try:
+            from delete_scorer import FRAMING_RE  # type: ignore
+        except ModuleNotFoundError:
+            FRAMING_RE = None
+    else:
+        FRAMING_RE = None
+if FRAMING_RE is None:
     FRAMING_RE = re.compile(r"^\s*(?:sure|certainly|of course)[.!,:]?|^\s*here(?:'s| is| are)\b"
                             r"|^\s*here's a (?:quick )?(?:summary|overview|breakdown|list)\b"
                             r"|^\s*the following (?:tips|steps|points)\b|^\s*below (?:is|are)\b", re.I)

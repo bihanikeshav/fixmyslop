@@ -17,20 +17,10 @@ ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "skills" / "fixmyslop-humanizer" / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
-from adapters.baumler import BaumlerAdapter
-from adapters.beemo import BeemoAdapter
-from adapters.lamp import LAMPAdapter
-from adapters.wq import WQAdapter
+from adapters import ADAPTERS  # single source of truth (textslopbench/adapters/__init__.py);
+# includes "tetra" — a registered scaffold adapter with no dataset behind it yet.
 from humanstats import analyze, lemma, words
 from pipeline import prepare_rewrite_context
-
-
-ADAPTERS = {
-    "lamp": LAMPAdapter,
-    "baumler": BaumlerAdapter,
-    "beemo": BeemoAdapter,
-    "wq": WQAdapter,
-}
 
 
 def stable_select(records: list[dict[str, object]], limit: int | None) -> list[dict[str, object]]:
@@ -189,7 +179,13 @@ def _sps(source: str, candidate: str) -> dict[str, object]:
     return slop_pattern_suppression(source, candidate)
 
 
-def prepare_prompts(records: list[dict[str, object]], output: Path, host_model: str = "gpt-5.6-terra") -> None:
+def prepare_prompts(records: list[dict[str, object]], output: Path, host_model: str) -> None:
+    """`host_model` is required (no silent default): it records provenance of which model the
+    prompts are meant for, and a wrong-but-unnoticed default silently mislabels a run (audit
+    fix, textslopbench item 12). Callers must pass the actual host model explicitly."""
+    if not host_model:
+        raise ValueError("prepare_prompts() requires a non-empty host_model for provenance; "
+                          "pass the real host model name, e.g. --host-model gpt-5.6-terra")
     rows: list[dict[str, object]] = []
     for record in records:
         source = str(record["source_text"])
@@ -214,7 +210,9 @@ def prepare_prompts(records: list[dict[str, object]], output: Path, host_model: 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", choices=sorted(ADAPTERS), required=True)
+    parser.add_argument("--dataset", choices=sorted(ADAPTERS), required=True,
+                         help="'tetra' is a registered scaffold: pending dataset, its adapter "
+                              "currently has no data behind it")
     parser.add_argument("--input", type=Path, required=True)
     parser.add_argument("--split", default="test")
     parser.add_argument("--limit", type=int, default=24)
@@ -222,7 +220,12 @@ def main() -> int:
     parser.add_argument("--freeze-manifest", type=Path, default=None, help="write a frozen id-list manifest (declared before Iteration 2)")
     parser.add_argument("--normalized-output", type=Path, required=True)
     parser.add_argument("--prompts-output", type=Path)
+    parser.add_argument("--host-model", default=None,
+                         help="required when --prompts-output is set: the actual model the "
+                              "prepared prompts are for (provenance; no silent default)")
     args = parser.parse_args()
+    if args.prompts_output and not args.host_model:
+        parser.error("--host-model is required when --prompts-output is set")
     records = ADAPTERS[args.dataset]().adapt(args.input, split=args.split)
     if args.stratify_key:
         selected = stratified_select(records, args.limit, args.stratify_key)
@@ -230,7 +233,7 @@ def main() -> int:
         selected = stable_select(records, args.limit)
     write_jsonl(args.normalized_output, selected)
     if args.prompts_output:
-        prepare_prompts(selected, args.prompts_output)
+        prepare_prompts(selected, args.prompts_output, args.host_model)
     strata_counts = Counter(record.get("stratum", stratum_of(record, args.stratify_key)) for record in selected) if args.stratify_key else {}
     manifest = {
         "dataset": args.dataset,

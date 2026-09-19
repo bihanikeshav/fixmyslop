@@ -23,7 +23,7 @@ we gated it.
 
 ## The gate (three deterministic experiments, cached drafts, no holdout inspection)
 
-### 1. Feature-level gap diagnostic (`results/v2_1-gap-diagnostic.json`, `textslopbench/v2_1_gap_diag.py`)
+### 1. Feature-level gap diagnostic (`results/v2_1-gap-diagnostic.json`, `textslopbench/experiments/v2_1_gap_diag.py`)
 Decomposed the Humanizer-vs-first-party Stage-1 reference-CHEA deficit **feature by feature**, bucketing each:
 **A** = fidelity-safe + strong source-state conditional signal + humans move it consistently; **B** =
 confident but fidelity-risky; **C** = diffuse (no consistent per-source-state direction, or no local operation).

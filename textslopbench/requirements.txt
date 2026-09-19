@@ -1,0 +1,22 @@
+# textslopbench third-party dependencies (audit fix, item 14).
+#
+# textslopbench/*.py (runners, scorers, dataset prep, analyses, experiments, utilities) is
+# STDLIB-ONLY: scanning every `import`/`from ... import` across textslopbench/*.py turns up
+# only the Python standard library (argparse, ast, collections, concurrent.futures, difflib,
+# functools, glob, hashlib, json, math, pathlib, random, re, statistics, sys, typing, urllib)
+# and this package's own sibling modules (adapters, common, bootstrap, chea, ...). There is
+# nothing to pip-install to run the benchmark scripts themselves.
+#
+# Two things sit outside that stdlib-only claim:
+#   - pytest: not imported by textslopbench/*.py, but required to run the test suite in
+#     tests/ at the repo root (`python -m pytest -q`).
+#   - pyarrow: OPTIONAL. Only textslopbench/adapters/base.py's parquet-reading path imports
+#     it (`import pyarrow.parquet`), lazily, inside a try/except that raises a clear
+#     AdapterError ("Reading parquet requires pyarrow") if it's missing. Only install it if
+#     you need to read a dataset shipped as .parquet.
+#
+# Install:
+#   pip install pytest
+#   pip install pyarrow    # optional; only for parquet-format dataset adapters
+pytest
+# pyarrow  # optional — see note above; uncomment if you need parquet dataset support

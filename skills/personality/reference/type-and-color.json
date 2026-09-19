@@ -409,19 +409,19 @@
       "intent": "premium",
       "options": [
         {
-          "heading": "Playfair Display",
+          "heading": "Gambarino",
           "body": "Inter",
           "accent": "#1A1A1A",
           "move": "High-contrast serif headlines on flat near-black"
         },
         {
-          "heading": "Cormorant Garamond",
+          "heading": "Recia",
           "body": "DM Sans",
           "accent": "#C9A84C",
           "move": "Editorial serif headings with gold ink"
         },
         {
-          "heading": "Playfair Display",
+          "heading": "Boska",
           "body": "Inter",
           "accent": "#0a6b5c",
           "move": "Replace soft gradients with solid saturated color"
@@ -432,19 +432,19 @@
       "intent": "unique",
       "options": [
         {
-          "heading": "Space Grotesk",
+          "heading": "Array",
           "body": "Inter",
           "accent": "#ff5c35",
           "move": "Swap to warm off-black canvas, sharp edges"
         },
         {
-          "heading": "Instrument Serif",
+          "heading": "Erode",
           "body": "DM Sans",
           "accent": "#C8522A",
           "move": "Terracotta ink on raw linen texture"
         },
         {
-          "heading": "Playfair Display",
+          "heading": "Gambetta",
           "body": "Source Sans Pro",
           "accent": "#D946EF",
           "move": "Bold serif headlines on dark solid backgrounds"
@@ -455,19 +455,19 @@
       "intent": "editorial",
       "options": [
         {
-          "heading": "Fraunces",
+          "heading": "Neco",
           "body": "Newsreader",
           "accent": "#1a1a1a",
           "move": "Oversized serif headlines on hairline-ruled off-white"
         },
         {
-          "heading": "Playfair Display",
+          "heading": "Paquito",
           "body": "Source Serif 4",
           "accent": "#C8102E",
           "move": "Serif type, ink red, hard ruled lines"
         },
         {
-          "heading": "Playfair Display",
+          "heading": "Rowan",
           "body": "Lora",
           "accent": "#D32F2F",
           "move": "Kill glassmorphism, use serif/sans contrast"
@@ -478,13 +478,13 @@
       "intent": "minimal",
       "options": [
         {
-          "heading": "Space Grotesk",
+          "heading": "Alpino",
           "body": "Inter",
           "accent": "#1A1A1A",
           "move": "Kill gradients; flat ink-on-bone with hairline borders"
         },
         {
-          "heading": "Cormorant Garamond",
+          "heading": "Sprat",
           "body": "DM Sans",
           "accent": "#1a1a1a",
           "move": "Kill color; let type carry the weight"
@@ -507,13 +507,13 @@
           "move": "Oversized tight-tracked headline, hard black borders"
         },
         {
-          "heading": "Bebas Neue",
+          "heading": "Boxing",
           "body": "Space Grotesk",
           "accent": "#FF3300",
           "move": "Black borders, no radius, raw grid"
         },
         {
-          "heading": "Bebas Neue",
+          "heading": "BackOut",
           "body": "IBM Plex Mono",
           "accent": "#FF2E63",
           "move": "Remove rounded corners, gradients, glassmorphism entirely"
@@ -530,13 +530,13 @@
           "move": "Oversized chunky display headings, warm coral accent"
         },
         {
-          "heading": "Fraunces",
+          "heading": "Chubbo",
           "body": "DM Sans",
           "accent": "#f97316",
           "move": "Serif headings with warm orange punches"
         },
         {
-          "heading": "Poppins",
+          "heading": "Amulya",
           "body": "Inter",
           "accent": "#FF6B35",
           "move": "Warm serif accent, friendly sans headings"

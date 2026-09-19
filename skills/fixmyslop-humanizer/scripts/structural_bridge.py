@@ -13,9 +13,28 @@ byte-identical v1.
 from __future__ import annotations
 
 import re
+import sys
 from collections import Counter
+from pathlib import Path
 
-from human_edit_grounded import feature_vector
+try:
+    from human_edit_grounded import feature_vector
+except ModuleNotFoundError:
+    # Repo-only, optional research tool: `human_edit_grounded` lives in the repo-root
+    # `textslopbench/` package, not in this skill. If this is a checkout of the full
+    # ai-slop-font repo, add textslopbench to sys.path; otherwise fail with a clear
+    # explanation instead of a bare ModuleNotFoundError.
+    _repo_textslopbench = Path(__file__).resolve().parents[3] / "textslopbench"
+    if _repo_textslopbench.is_dir():
+        sys.path.insert(0, str(_repo_textslopbench))
+        from human_edit_grounded import feature_vector
+    else:
+        raise ImportError(
+            "structural_bridge.py is a repo-only, optional evaluation tool: it needs "
+            "'human_edit_grounded' from the ai-slop-font repo's root-level textslopbench/ "
+            "package, which is not present in a standalone skill install. It is never "
+            "imported by the default (bridges off) humanize.py/pipeline.py rewrite path."
+        ) from None
 
 _WORD = re.compile(r"[A-Za-z0-9']+")
 _SENT = re.compile(r"[^.!?]*[.!?]+|\S[^.!?]*$")

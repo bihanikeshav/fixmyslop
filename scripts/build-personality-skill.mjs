@@ -46,10 +46,19 @@ for (const c of CATS) {
 
 // --- Per-intent fresh DIRECTIONS from the escape runs ---
 const intents = [...new Set(escapes.map((r) => r.intent))];
+// A direction must never recommend a HEADING font the same file tells the model to avoid:
+// drop options whose heading is in the computed avoid list or in SKILL.md's hard type gate
+// (tests/test_personality_type_and_color.py enforces this on the generated JSON).
+const GATE_BANNED_HEADINGS = [
+  "Inter", "Geist", "Space Grotesk", "Outfit", "Poppins", "Playfair Display", "Cormorant Garamond",
+  "Fraunces", "Instrument Serif", "Clash Display", "Bebas Neue",
+];
+const bannedHeadings = new Set([...avoidFonts.map((f) => f.family), ...GATE_BANNED_HEADINGS].map((f) => f.toLowerCase()));
 const directions = intents.map((intent) => ({
   intent,
   options: escapes
     .filter((r) => r.intent === intent)
+    .filter((r) => !bannedHeadings.has(String(r.headingFont).toLowerCase()))
     .map((r) => ({ heading: r.headingFont, body: r.bodyFont, accent: r.accentColor, move: r.styleMove })),
 }));
 

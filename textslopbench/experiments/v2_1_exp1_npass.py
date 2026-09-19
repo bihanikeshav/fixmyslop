@@ -15,7 +15,7 @@ from difflib import SequenceMatcher
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
-ROOT = Path(r"C:\Users\Keshav\Documents\ChatGPT\fixslop")
+ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "skills" / "fixmyslop-humanizer" / "scripts"))
 sys.path.insert(0, str(ROOT / "textslopbench"))
 try:

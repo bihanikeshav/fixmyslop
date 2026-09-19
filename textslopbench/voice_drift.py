@@ -90,17 +90,7 @@ def voice_drift(deltas, marker_std) -> dict[str, object]:
     }
 
 
-def _parse_refs(raw):
-    if isinstance(raw, list):
-        return raw
-    for parser in (json.loads, ast.literal_eval):
-        try:
-            v = parser(raw)
-            if isinstance(v, list):
-                return v
-        except Exception:
-            pass
-    return [raw] if isinstance(raw, str) and raw.strip() else []
+from common import parse_human_references as _parse_refs
 
 
 def _load(path):

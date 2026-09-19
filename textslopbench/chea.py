@@ -39,23 +39,18 @@ CORPUS_FILE = {"LAMP": "lamp-heldout-100.jsonl", "Beemo": "beemo-heldout-100.jso
                "Baumler": "baumler-corpus.jsonl"}
 
 
-def _refs(raw):
-    if isinstance(raw, list):
-        return raw
-    for p in (json.loads, ast.literal_eval):
-        try:
-            v = p(raw)
-            if isinstance(v, list):
-                return v
-        except Exception:
-            pass
-    return [raw] if isinstance(raw, str) and raw.strip() else []
+from common import parse_human_references as _refs
 
 
 def corpus_consensus(corpus_jsonl):
     """Population model from a single-reference corpus. Returns (cons, n_human_edits) where cons maps
     each feature -> 'pos'/'neg' (humans move it consistently), 'split' (they disagree), None (low
-    support). Stands in for {H_1..H_k} until we have several human edits per source."""
+    support). Stands in for {H_1..H_k} until we have several human edits per source.
+
+    NOT consolidated with multiref_check.corpus_consensus(): that one is hard-coded to
+    lamp-heldout-100.jsonl and returns only `cons` (no `n_human_edits`), because it backs a
+    different, LAMP-only multi-reference check. This one is corpus-parametric and used across
+    LAMP/Beemo/Baumler. Kept as two implementations deliberately (audit fix, textslopbench item 9)."""
     signs = defaultdict(list)
     n = 0
     for line in (RESULTS / corpus_jsonl).read_text(encoding="utf-8").splitlines():

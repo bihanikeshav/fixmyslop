@@ -30,17 +30,7 @@ MIN_BIN = 6
 HELDOUT = {"LAMP": "lamp-heldout-100.jsonl", "Beemo": "beemo-heldout-100.jsonl"}
 
 
-def _refs(raw):
-    if isinstance(raw, list):
-        return raw
-    for p in (json.loads, ast.literal_eval):
-        try:
-            v = p(raw)
-            if isinstance(v, list):
-                return v
-        except Exception:
-            pass
-    return [raw] if isinstance(raw, str) and raw.strip() else []
+from common import parse_human_references as _refs
 
 
 def _pav(centers, ys):
