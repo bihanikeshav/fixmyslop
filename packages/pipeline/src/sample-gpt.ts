@@ -1,11 +1,17 @@
 /**
  * Sample GPT-5.5 font defaults across the vibe taxonomy (OpenAI API).
  *
- *   OPENAI_API_KEY=... npx tsx src/sample-gpt.ts [vibeLimit]
+ *   OPENAI_API_KEY=... npx tsx src/sample-gpt.ts [vibeLimit] [--fresh]
  *
  * Produces the same observation shape as the Anthropic subagent collection, so
  * the two merge into one synthetic display-saturation signal. Skips (exit 0)
  * when no key is set.
+ *
+ * By default, each run ACCUMULATES: prior observations.gpt.json contents are
+ * aged by one window and the new run is appended as window 0 (see
+ * observations-merge.ts), so saturation's multi-window trend/decay logic has
+ * more than one window to work with. Pass --fresh to restore the old
+ * overwrite-every-run behaviour.
  */
 
 import { writeFile } from "node:fs/promises";
@@ -14,6 +20,7 @@ import { dirname, resolve } from "node:path";
 import type { Observation } from "@fixmyslop/core";
 import { VIBES } from "./vibes.js";
 import { slugify } from "./sources/gfonts.js";
+import { loadObservations, mergeObservations } from "./observations-merge.js";
 import {
   resolveOpenAiConfig,
   buildRankedPrompt,
@@ -30,7 +37,10 @@ async function main(): Promise<void> {
     console.log("No OPENAI_API_KEY set — skipping GPT sampling (key-ready, not run).");
     return;
   }
-  const vibeLimit = Number(process.argv[2] ?? "12");
+  const args = process.argv.slice(2);
+  const fresh = args.includes("--fresh");
+  const positional = args.filter((a) => a !== "--fresh");
+  const vibeLimit = Number(positional[0] ?? "12");
   const vibes = VIBES.slice(0, vibeLimit);
   console.log(`Sampling GPT (${cfg.model}) across ${vibes.length} vibes...`);
 
@@ -49,11 +59,20 @@ async function main(): Promise<void> {
     }
   }
 
-  const observations: Observation[] = [...points].map(([fontId, count]) => ({
+  const freshObservations: Observation[] = [...points].map(([fontId, count]) => ({
     fontId, role: "display", window: 0, count, signal: "synthetic",
   }));
-  await writeFile(resolve(DATA_DIR, "observations.gpt.json"), JSON.stringify(observations, null, 2));
-  console.log(`\nDone. ${ok}/${vibes.length} vibes sampled -> data/observations.gpt.json`);
+
+  const outPath = resolve(DATA_DIR, "observations.gpt.json");
+  const observations = fresh
+    ? freshObservations
+    : mergeObservations(await loadObservations(outPath), freshObservations);
+
+  await writeFile(outPath, JSON.stringify(observations, null, 2));
+  console.log(
+    `\nDone. ${ok}/${vibes.length} vibes sampled -> data/observations.gpt.json ` +
+      `(${fresh ? "overwritten (--fresh)" : "accumulated"}, ${observations.length} observations total)`,
+  );
 }
 
 main().catch((e) => {

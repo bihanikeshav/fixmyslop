@@ -1,5 +1,9 @@
 # A/B test — does the /personality skill work?
 
+> **Informal dev log, not a benchmark.** Unblinded, single-author (N=1), no
+> statistical claims. For a blinded, multi-rater comparison see
+> `benchmarks/ui-skills/`.
+
 **Case:** B2B AI SaaS landing page for "Cadence" (an AI meeting notetaker) — the most
 slop-prone brief. Same brief, same model (Sonnet), one variable: the skill.
 - `control.html` — built from the brief alone, no skill.

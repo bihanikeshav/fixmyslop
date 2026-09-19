@@ -1,3 +1,11 @@
+<!--
+  LEGACY SURFACE — predates DESIGN.md's Evidence Workbench system.
+  dashboard.html ships its own palette/type tokens (Rowan/Technor display
+  faces, a magenta #c8175a accent) that do not match the tokens in DESIGN.md.
+  It is being left as-is rather than redesigned; see apps/web/README.md
+  ("Known design-system divergence") for the full explanation. The real
+  product surface is index.html (the decision bench at ./).
+-->
 <!doctype html>
 <html lang="en">
 <head>
@@ -5,8 +13,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>fixmyslop — the anti-slop design engine</title>
 <meta name="description" content="Every AI builds the same website. This is the engine that fights back: fonts and colors scored by quality × low current-saturation, so anything trending mainstream auto-retires.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="fixmyslop — the anti-slop design engine">
+<meta property="og:description" content="Every AI builds the same website. This is the engine that fights back: fonts and colors scored by quality × low current-saturation, so anything trending mainstream auto-retires.">
+<meta property="og:url" content="https://fixmyslop.bihanikeshav.workers.dev/dashboard.html">
+<meta property="og:image" content="https://fixmyslop.bihanikeshav.workers.dev/preview.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="fixmyslop — the anti-slop design engine">
+<meta name="twitter:description" content="Every AI builds the same website. This is the engine that fights back: fonts and colors scored by quality × low current-saturation, so anything trending mainstream auto-retires.">
+<meta name="twitter:image" content="https://fixmyslop.bihanikeshav.workers.dev/preview.png">
 <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23eceae3"/><rect x="26" y="26" width="48" height="48" fill="%23c8175a"/></svg>'>
-<script>document.documentElement.classList.add('js')</script>
+<script src="js-flag.js"></script>
 <link rel="preconnect" href="https://api.fontshare.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://api.fontshare.com/v2/css?f[]=rowan@400,500&f[]=technor@400,500,600,700&display=swap" rel="stylesheet">
@@ -198,7 +215,7 @@
       ever a fixed "good list"; the feedback loop is the product.</p>
     <div class="hero-cta">
       <a class="btn" href="#lab">Open the Palette Lab →</a>
-      <a class="btn ghost" href="./">Watch the Slop-o-meter →</a>
+      <a class="btn ghost" href="./">Open the workbench →</a>
       <a class="btn ghost" href="#mcp">Connect via MCP</a>
     </div>
     <div class="stat-row">

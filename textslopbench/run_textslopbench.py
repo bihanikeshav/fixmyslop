@@ -25,7 +25,7 @@ from pipeline import finish_rewrite_context, prepare_rewrite_context
 
 
 BENCHMARK = "TextSlopBench"
-SNAPSHOT = "0.1.0"
+SNAPSHOT = "0.2.0"
 
 
 def load_fixtures(path: Path) -> list[dict[str, object]]:
@@ -34,7 +34,8 @@ def load_fixtures(path: Path) -> list[dict[str, object]]:
 
 def score_candidate(item: dict[str, object], candidate: str, system: str, debug: bool = False) -> dict[str, object]:
     source = str(item["source"])
-    context = prepare_rewrite_context(source, "auto", item.get("protected", []))
+    requested_genre = str(item.get("genre", "auto"))
+    context = prepare_rewrite_context(source, requested_genre, item.get("protected", []))
     genre = str(context["genre_inference"]["genre"])
     before = context["original_humanstats"]
     after = analyze(candidate, genre)
@@ -44,7 +45,8 @@ def score_candidate(item: dict[str, object], candidate: str, system: str, debug:
         "id": item["id"],
         "system": system,
         "condition": item.get("condition", "unknown"),
-        "requested_genre": item.get("genre", "auto"),
+        "requested_genre": requested_genre,
+        "genre_mode": "declared" if requested_genre != "auto" else "inferred",
         "genre": genre,
         "genre_confidence": context["genre_inference"]["confidence"],
         "source": source,
@@ -62,6 +64,8 @@ def score_candidate(item: dict[str, object], candidate: str, system: str, debug:
             "word_delta": after["token_count"] - before["token_count"],
             "fidelity_exact_score": fidelity["exact_check_score"],
             "fidelity_pass": fidelity["passed"],
+            "anchor_exact_score": fidelity["exact_check_score"],
+            "anchor_mutation_safety_pass": fidelity["passed"],
             "content_word_jaccard": fidelity["content_word_jaccard"],
             "drift_flags": fidelity["drift_flags"],
         },
@@ -88,7 +92,7 @@ def write_jsonl(path: Path, records: list[dict[str, object]]) -> None:
 def run_local(fixtures: list[dict[str, object]], output: Path, debug: bool = False) -> list[dict[str, object]]:
     records: list[dict[str, object]] = []
     for item in fixtures:
-        report = local_rewrite(str(item["source"]), "auto", debug=debug, protected_values=list(item.get("protected", [])))
+        report = local_rewrite(str(item["source"]), str(item.get("genre", "auto")), debug=debug, protected_values=list(item.get("protected", [])))
         records.append(score_candidate(item, str(report["rewrite"]), "FixMySlop:Humanizer/local-cli", debug=debug))
     write_jsonl(output, records)
     return records
@@ -98,7 +102,47 @@ def load_candidate_records(path: Path) -> list[dict[str, object]]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8-sig").splitlines() if line.strip()]
 
 
-def rescore_records(records: list[dict[str, object]], fixture_by_id: dict[str, dict[str, object]]) -> list[dict[str, object]]:
+def validate_candidate_records(
+    records: list[dict[str, object]],
+    fixture_by_id: dict[str, dict[str, object]],
+    *,
+    require_complete: bool = True,
+) -> None:
+    expected = set(fixture_by_id)
+    seen: set[tuple[str, str]] = set()
+    ids_by_system: dict[str, set[str]] = defaultdict(set)
+    config_by_system: dict[str, set[tuple[object, ...]]] = defaultdict(set)
+    for index, record in enumerate(records, 1):
+        if "id" not in record or "rewrite" not in record or "system" not in record:
+            raise ValueError(f"Candidate row {index} must contain id, rewrite, and system")
+        record_id = str(record["id"])
+        system = str(record["system"])
+        if record_id not in expected:
+            raise ValueError(f"Unknown fixture id: {record_id}")
+        key = (system, record_id)
+        if key in seen:
+            raise ValueError(f"Duplicate candidate for system={system!r}, id={record_id!r}")
+        seen.add(key)
+        ids_by_system[system].add(record_id)
+        config_by_system[system].add(tuple(record.get(field) for field in ("host", "ablation_condition", "source_manifest", "run_id")))
+    for system, configs in config_by_system.items():
+        if len(configs) > 1:
+            raise ValueError(f"System {system!r} mixes host/configuration metadata; use distinct system labels or one run manifest")
+    if require_complete:
+        for system, ids in ids_by_system.items():
+            missing = sorted(expected - ids)
+            extra = sorted(ids - expected)
+            if missing or extra:
+                raise ValueError(f"Incomplete run for {system!r}: missing={missing}, extra={extra}")
+
+
+def rescore_records(
+    records: list[dict[str, object]],
+    fixture_by_id: dict[str, dict[str, object]],
+    *,
+    require_complete: bool = True,
+) -> list[dict[str, object]]:
+    validate_candidate_records(records, fixture_by_id, require_complete=require_complete)
     scored = []
     for record in records:
         item = fixture_by_id.get(str(record["id"]))
@@ -119,7 +163,10 @@ def summary(records: list[dict[str, object]]) -> dict[str, object]:
     output: dict[str, object] = {
         "benchmark": BENCHMARK,
         "snapshot": SNAPSHOT,
-        "items": len(records),
+        "metric_schema": "0.2.0",
+        "metric_note": "Anchor + mutation safety is not full semantic fidelity.",
+        "items": len({str(record["id"]) for record in records}),
+        "records": len(records),
         "systems": {},
     }
     for system, rows in sorted(by_system.items()):
@@ -129,19 +176,19 @@ def summary(records: list[dict[str, object]]) -> dict[str, object]:
             "items": len(rows),
             "avg_before_to_after_risk_delta": round(sum(float(m["risk_delta"]) for m in metrics) / len(metrics), 2) if metrics else 0.0,
             "avg_finding_delta": round(sum(float(m["finding_delta"]) for m in metrics) / len(metrics), 2) if metrics else 0.0,
-            "fidelity_pass_rate": round(sum(bool(m["fidelity_pass"]) for m in metrics) / len(metrics), 4) if metrics else 0.0,
-            "avg_fidelity_exact_score": round(sum(float(m["fidelity_exact_score"]) for m in metrics) / len(metrics), 2) if metrics else 0.0,
+            "anchor_mutation_safety_pass_rate": round(sum(bool(m["anchor_mutation_safety_pass"]) for m in metrics) / len(metrics), 4) if metrics else 0.0,
+            "avg_anchor_exact_score": round(sum(float(m["anchor_exact_score"]) for m in metrics) / len(metrics), 2) if metrics else 0.0,
             "avg_content_word_jaccard": round(sum(float(m["content_word_jaccard"]) for m in metrics) / len(metrics), 4) if metrics else 0.0,
             "avg_word_delta": round(sum(float(m["word_delta"]) for m in metrics) / len(metrics), 2) if metrics else 0.0,
             "avg_rewrite_to_source_word_ratio": round(sum(float(m["rewrite_words"]) / max(float(m["source_words"]), 1) for m in metrics) / len(metrics), 4) if metrics else 0.0,
             "human_control_items": len(human),
-            "human_control_fidelity_pass_rate": round(sum(bool(row["metrics"]["fidelity_pass"]) for row in human) / len(human), 4) if human else None,
+            "human_control_anchor_mutation_safety_pass_rate": round(sum(bool(row["metrics"]["anchor_mutation_safety_pass"]) for row in human) / len(human), 4) if human else None,
             "human_control_avg_content_word_jaccard": round(sum(float(row["metrics"]["content_word_jaccard"]) for row in human) / len(human), 4) if human else None,
             "by_genre": {
                 genre: {
                     "items": len(genre_rows),
                     "avg_risk_delta": round(sum(float(row["metrics"]["risk_delta"]) for row in genre_rows) / len(genre_rows), 2),
-                    "fidelity_pass_rate": round(sum(bool(row["metrics"]["fidelity_pass"]) for row in genre_rows) / len(genre_rows), 4),
+                    "anchor_mutation_safety_pass_rate": round(sum(bool(row["metrics"]["anchor_mutation_safety_pass"]) for row in genre_rows) / len(genre_rows), 4),
                 }
                 for genre in sorted({str(row["genre"]) for row in rows})
                 for genre_rows in [[row for row in rows if row["genre"] == genre]]

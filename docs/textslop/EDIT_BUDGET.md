@@ -1,5 +1,9 @@
 # Span / pattern-family edit-budget model + counterfactual (no model calls)
 
+> **2026-08-23 status:** exploratory counterfactual. Predicted HCSR values are not
+> observed rewrite outcomes, and comparator language from the earlier scorer should
+> not be read as a current superiority result.
+
 Document-level SED failed as a prompt control (`POLICY_SMOKE.md` round 2): the host cannot steer an
 abstract residual. This converts the research signals into **discrete local edit decisions**.
 `textslopbench/edit_budget.py`.
@@ -55,7 +59,7 @@ Per item (predicted residual SED under budget vs human):
 - ✅ **Meaningfully reduces over-editing** — 59% fewer edits; predicted HCSR ~53 → ~20.
 - ✅ **Redundancy weight kept full (1.0)** — but redundancy/filler occurrences were ~0 in these 8
   items, so this is untested here, not exercised.
-- ⚠️ **Preserve rhetoric (where FixMySlop beats Humanizer)** — rhetoric edit **count** is cut 60 → 23
+- ⚠️ **Preserve the archived rhetoric advantage** — rhetoric edit **count** is cut 60 → 23
   (toward the human rate; the highest-E patterns like `tapestry` stay in budget, low-E like
   `bustling` are preserved). Direction should hold, but **the rewrite smoke must verify rhetoric
   CHEA does not drop** from the volume reduction.
@@ -64,6 +68,23 @@ Per item (predicted residual SED under budget vs human):
   the budget fixes the SED/magnitude problem, not the syntax-direction gap. Those are separate.
 - ✅ **No reliance on low-support raw E** — uses span-validated annotation E + confidence + backoff.
 - ✅ **No HCSR as a host prompt target** — the plan is span-level; HCSR is scoring only.
+
+## `slop_cap_for_floor` short-document caveat (audit fix)
+
+`slop_cap_for_floor` (the slop-family budget cap tied to the conditional human residual floor)
+can return `0` for two very different reasons, which the plain `int` return does not
+distinguish:
+- the source is genuinely already at/under the human-residual floor (editing would push it
+  further below — a real zero budget), or
+- the document is too short (`< MIN_TOKENS_FOR_SLOP_CAP = 40` tokens) for the per-1000-token
+  density the cap is computed from to be a meaningful signal at all — a single removed span can
+  swing it by a large amount.
+
+`slop_cap_for_floor_detail(occs, tokens, floor)` returns `(cap, reason)` with
+`reason ∈ {"no_occurrences", "short_document", "already_at_floor", "ok"}`; `build_plan`'s
+per-family output now carries this as `slop_cap_reason` so a short-document `0` is never
+silently read as "the floor forbids editing here." `slop_cap_for_floor` itself is kept as a
+backward-compatible cap-only wrapper.
 
 ## Caveats (honest)
 

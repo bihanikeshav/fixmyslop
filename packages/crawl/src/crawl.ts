@@ -3,6 +3,7 @@
  *
  *   npx tsx src/crawl.ts --urls https://a.com,https://b.com
  *   npx tsx src/crawl.ts --directory futurepedia --limit 15
+ *   npx tsx src/crawl.ts --urls https://a.com --ignore-robots   # bypass robots.txt (off by default)
  *
  * Writes data/crawl-profiles.json (per-site roles) and data/observations.crawl.json
  * (aggregated role-aware saturation observations, signal: "crawl").
@@ -30,7 +31,7 @@ async function main(): Promise<void> {
     for (const dir of args.directories) {
       const listing = AI_DIRECTORIES[dir] ?? dir;
       console.log(`Discovering product sites from ${listing} ...`);
-      const found = await discoverOutboundLinks(browser, listing, args.limit);
+      const found = await discoverOutboundLinks(browser, listing, args.limit, { ignoreRobots: args.ignoreRobots });
       console.log(`  found ${found.length} candidate sites`);
       urls.push(...found);
     }
@@ -41,7 +42,7 @@ async function main(): Promise<void> {
 
     const results: SiteProfile[] = [];
     for (const url of todo) {
-      const p = await crawlUrl(browser, url);
+      const p = await crawlUrl(browser, url, 20000, { ignoreRobots: args.ignoreRobots });
       const heroReal = p.heroFont && indexIds.has(slug(p.heroFont)) ? "" : " (non-GF)";
       console.log(p.ok ? `  ✓ ${url}  hero=${p.heroFont}${p.heroFont ? heroReal : ""}  body=${p.bodyFont}` : `  ✗ ${url}  ${p.error}`);
       results.push(p);
@@ -78,6 +79,7 @@ interface Args {
   urls: string[];
   directories: string[];
   limit: number;
+  ignoreRobots: boolean;
 }
 
 async function loadExistingProfiles(): Promise<SiteProfile[]> {
@@ -89,12 +91,13 @@ async function loadExistingProfiles(): Promise<SiteProfile[]> {
 }
 
 function parseArgs(argv: string[]): Args {
-  const out: Args = { urls: [], directories: [], limit: 15 };
+  const out: Args = { urls: [], directories: [], limit: 15, ignoreRobots: false };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--urls") out.urls = (argv[++i] ?? "").split(",").filter(Boolean);
     else if (argv[i] === "--directory") out.directories.push(argv[++i] ?? "");
     else if (argv[i] === "--directories") out.directories.push(...(argv[++i] ?? "").split(",").filter(Boolean));
     else if (argv[i] === "--limit") out.limit = Number(argv[++i] ?? "15");
+    else if (argv[i] === "--ignore-robots") out.ignoreRobots = true;
   }
   out.directories = out.directories.filter(Boolean);
   return out;

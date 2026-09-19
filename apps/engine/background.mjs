@@ -18,7 +18,7 @@
 // perturb.mjs's amplitude-0 passthrough / "no-seed path stays stable" contract).
 
 import { mulberry32 } from "./engine.mjs";
-import { hashToUint32 } from "./intent.mjs";
+import { hashToUint32, functionalScore } from "./intent.mjs";
 
 const clamp01 = (n, fallback = 0.5) => {
   const x = Number(n);
@@ -178,15 +178,18 @@ const GLASS_FILL_OPACITY_MAX = 0.16;
 const OFFBLACK_MIN_L = 0.04, OFFWHITE_MAX_L = 0.97;
 const MIN_TINT_CHROMA = 0.006;
 
-// functionalScore — SAME formula as engine.mjs's surfaceFontEnvelope / intent.mjs's deriveBaseHue
-// (0.4·contentDensity + 0.35·formality + 0.25·(1−energy)), duplicated here rather than imported so
-// this module stays a pure fn of the `iv` dial bag every axis already receives (matches the existing
-// duplication pattern between engine.mjs and intent.mjs). Used to make the background axis
-// surface-aware: functional/dense surfaces (dashboards, consoles) want a quieter-but-present ground;
-// expressive/marketing surfaces can carry a visibly stronger field.
-function functionalScoreOf(iv) {
-  return clamp01(0.4 * clamp01(iv.contentDensity) + 0.35 * clamp01(iv.formality) + 0.25 * (1 - clamp01(iv.energy)));
-}
+// functionalScore (0.4·contentDensity + 0.35·formality + 0.25·(1−energy)) — IMPORTED from
+// intent.mjs, which is the single definition. It used to be hand-copied into four modules
+// (intent.mjs, engine.mjs's surfaceFontEnvelope, here, and spec.mjs); intent.mjs is a leaf
+// with no imports of its own, and this module already imports hashToUint32 from it, so
+// sharing costs no new edge and removes the drift risk. The numbers are unchanged: all four
+// copies used the same expression over the same clamp01(v, 0.5).
+//
+// Used to make the background axis surface-aware: functional/dense surfaces (dashboards,
+// consoles) want a quieter-but-present ground; expressive/marketing surfaces can carry a
+// visibly stronger field. `iv` is the dial bag, which carries exactly the three fields
+// functionalScore reads.
+const functionalScoreOf = (iv) => functionalScore(iv);
 
 const CANVAS_CAPABLE_PAGEKINDS = new Set(["dashboard", "data-admin", "app", "technical", "explain"]);
 const canvasCapable = (pageKind) => CANVAS_CAPABLE_PAGEKINDS.has(pageKind);

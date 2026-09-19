@@ -1,5 +1,7 @@
 # Prompt/skill system + engine hardening — Implementation Plan
 
+> **Status (2026-09-19): shipped.** This is a historical execution plan. Its `- [ ]` checkboxes were never ticked; see [`docs/README.md`](../../README.md) for what actually shipped.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax.
 
 **Goal:** Stop the MCP shipping unreadable fonts and misusable layout numbers, and ship the design *process* as 6 MCP prompts + an installable self-contained skill — all from one canonical source.

@@ -5,12 +5,13 @@ Two independent deploys, both free-tier. One-time: `npx wrangler login`.
 ```
 apps/
   engine/   # pure query engine (createEngine) + data bundles — shared, no deploy
-  web/      # static theme-builder site        → Cloudflare PAGES
+  web/      # static inspectable design instrument → Cloudflare Pages
   worker/   # MCP server + REST API            → Cloudflare WORKERS
 ```
 
-The **web app is fully self-contained**: it bundles the engine + data and runs the
-slop-scoring in the browser, so it works with no backend. The **worker** is the
+The **web app needs no application backend**: its first-screen Generate/Audit/Humanize
+bench and supporting demonstrations run in the browser. Its pinned React runtime and
+fonts are loaded from CDNs, so the static shell is not an offline bundle. The **worker** is the
 front door for LLMs (MCP) and any external REST caller. They share `apps/engine`,
 so their verdicts can never drift.
 
@@ -46,19 +47,21 @@ All back onto the single pure `apps/engine` module.
 
 Point an MCP client at `https://fixmyslop.<subdomain>.workers.dev/mcp`.
 
-## 2. Web (theme-builder)
+## 2. Web (design instrument)
 
-Static — no build step. From the repo root:
+Compile the checked-in JSX to browser-ready JavaScript, then deploy the static folder:
 
 ```bash
+npm ci
+npm run build:web
 npx wrangler pages deploy apps/web --project-name fixmyslop
 ```
 
 ## 3. Post-deploy wiring (optional)
 
-- The site's MCP panel shows a placeholder URL (`mcp.fixmyslop.dev`). After the
-  worker deploys, update the `#mcpcfg` block in `apps/web/index.html` to the real
-  workers.dev URL (or attach a custom domain in the Cloudflare dashboard and use that).
+- The site's MCP panel endpoint is configured in `apps/web/demo/index-act.jsx`.
+  After the worker deploys, update that value to the real workers.dev URL (or attach
+  a custom domain in the Cloudflare dashboard and use that), rebuild, and smoke-test it.
 - To refresh the data later: re-run the crawl (`packages/crawl`), then
   `node scripts/build-service-bundle.mjs` (rebuilds `apps/engine/data`, which both
   apps consume) and redeploy. Nothing else changes.

@@ -1,3 +1,8 @@
+// REPO-LEVEL INTEGRATION TEST, parked in this package: it validates skills/personality
+// (owned outside packages/pipeline), not code in this package. It lives here because
+// `npx vitest run` in this package is where vitest already runs in this repo; there's no
+// vitest runner configured for skills/. Do not move it without also wiring up a runner
+// there, and coordinate with whoever owns skills/personality first.
 import { describe, it, expect } from "vitest";
 import { readFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";

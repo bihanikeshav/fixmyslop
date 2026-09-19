@@ -7,6 +7,7 @@
  */
 
 import type { FontRole, SaturationStat } from "./types.js";
+import { clamp01 } from "./util.js";
 
 /** One observation of a font used in a role, in a given weekly window. */
 export interface Observation {
@@ -37,7 +38,15 @@ export const DEFAULT_SATURATION_CONFIG: Omit<SaturationConfig, "currentWindow"> 
   saturationScale: 100,
 };
 
-const clamp01 = (n: number): number => (n < 0 ? 0 : n > 1 ? 1 : n);
+/**
+ * Minimum weighted display-role evidence (this window's + prior window's
+ * signal-weighted count, combined) before a trend is allowed to reach its full
+ * magnitude. Below this, the raw trend ratio is scaled down by
+ * evidence/MIN_TREND_EVIDENCE, so a single low-weight sighting (e.g. one
+ * community mention going from 0 to 1) can't produce a maximal (1.0) trend —
+ * that requires enough observations to actually support "rising".
+ */
+export const MIN_TREND_EVIDENCE = 5;
 
 /**
  * Compute role-segmented saturation stats for every font seen in the observations.
@@ -75,7 +84,11 @@ export function computeSaturation(
     const display = clamp01(e.display / config.saturationScale);
     const body = clamp01(e.body / config.saturationScale);
     const denom = e.displayPrev === 0 ? Math.max(1, e.displayNow) : e.displayPrev;
-    const trend = clamp01((e.displayNow - e.displayPrev) / denom);
+    const rawTrend = clamp01((e.displayNow - e.displayPrev) / denom);
+    // Confidence factor: don't let thin evidence produce a maximal trend.
+    const evidence = e.displayNow + e.displayPrev;
+    const confidence = clamp01(evidence / MIN_TREND_EVIDENCE);
+    const trend = rawTrend * confidence;
     out.set(fontId, { fontId, display, body, trend });
   }
   return out;

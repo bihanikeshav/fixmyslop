@@ -7,9 +7,23 @@ description: |
   over-editing, genre-aware cleanup, and TextSlopBench evaluation. Run the bundled
   humanstats analyzer before and after rewriting and the fidelity audit before
   returning a final version.
+metadata:
+  version: 0.2.0
+license: Apache-2.0. Pattern taxonomy derives from Wikipedia's "Signs of AI writing"
+  (CC BY-SA 4.0, https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing); see
+  references/patterns.md for attribution. All prompts and code in this skill are
+  original, in-repo text (see scripts/v2_pipeline.py provenance note).
 ---
 
 # FixMySlop:Humanizer
+
+Attribution: the pattern taxonomy this skill detects and corrects for (inflated
+symbolism, promotional language, superficial "-ing" analyses, vague attributions, em
+dash overuse, rule of three, AI vocabulary, negative parallelisms, excessive
+conjunctive phrases, etc.) derives from Wikipedia's "Signs of AI writing" guidance,
+https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing, licensed CC BY-SA 4.0. No
+text from that guide is reproduced verbatim; all prompts and detector code here are
+original. See `references/patterns.md` for the derived taxonomy.
 
 Use this skill for revision, not regeneration. Make the smallest useful changes that
 remove formulaic or inflated prose while retaining the author's claims and register.
@@ -41,9 +55,13 @@ raw analyzer report. That summary contains genre purpose, register objectives,
 actionable findings, measured signal counts, and the hard-anchor policy. The full
 context is for audit/debug output only.
 
-1. Extract editable targets and build a source-content map. Hard anchors include
-   numbers, dates, entities, URLs, citations, measured results, qualifications,
-   causal relationships, quotations, commands, routes, and required UI labels.
+1. Extract editable targets and build a source-content map. Exact hard anchors include
+   numbers, dates, entities, URLs, citations, measured results, quotations, commands,
+   routes, and required UI labels. Qualifications and causal relationships are claim
+   properties, not exact spans in the general case. The local audit covers a bounded,
+   high-precision set of negation, modality, polarity, comparative, numeric-range, and
+   explicit causal mutations; the host must still preserve other qualifications and
+   causal claims by meaning.
 2. Infer the genre/register when `genre=auto`; record the confidence and evidence.
    Use `scripts/pragmatics.py` to build a purpose-oriented profile. Profiles guide
    the host model; they are not new banned-word lists.
@@ -66,14 +84,17 @@ context is for audit/debug output only.
 6. Run `scripts/fidelity.py` or the structured output from `scripts/humanize.py`.
    A missing or modified hard anchor is a correction failure, not a soft quality
    tradeoff.
-7. Finalize editable prose with straight quotation marks and no em/en dashes by
-   default. Reframe dash constructions structurally; never blindly substitute a
-   dash character. Leave protected quotation/code interiors untouched.
+7. Preserve the source's typography by default. A single em dash, curly quote, emoji,
+   heading style, or bold span is not an error. If the user or artifact style guide asks
+   for plain typography, run the local CLI with `--typography plain`; reframe dash
+   constructions structurally and leave protected quotation/code interiors untouched.
+8. Fail closed. If the final hard-anchor or conservative drift audit fails, return the
+   source text (or ask the host for a bounded repair) instead of shipping a damaged draft.
 
 For a deterministic local pass, run:
 
 ```text
-python scripts/humanize.py input.txt --genre auto --json
+python scripts/humanize.py input.txt --genre auto --typography contextual --json
 ```
 
 Use the `rewrite` field as the candidate and inspect `fidelity`, `before`, `after`,
@@ -109,16 +130,48 @@ result.
 - [slop_overrepresentation.py](scripts/slop_overrepresentation.py) + [slop_profile.json](scripts/slop_profile.json):
   Antislop-style empirical overrepresentation scanning (rho = f_LLM/f_human), weighted flags
   (`review_in_context`, never bans), genre/model-aware profile, and the Slop Pattern
-  Suppression (SPS) metric. See `../../RESEARCH_REGISTRY.md`. Only high-confidence slop
+  Suppression (SPS) metric. See `../../docs/textslop/RESEARCH_REGISTRY.md`. Only high-confidence slop
   (n-grams/templates, via `actionable_slop`) is host-actionable; medium-confidence single-word
   flags stay diagnostic — a judged smoke showed global slop flags induce harmful edits on
-  already-clean, register-sensitive genres (`../../ANTISLOP_SMOKE.md`).
+  already-clean, register-sensitive genres (`../../docs/textslop/POLICY_SMOKE.md`).
+- [anchors.py](scripts/anchors.py): builds the source-content map — hard anchors
+  (numbers, dates, entities, URLs, citations, quotations) vs. editable targets — and
+  audits anchor coverage after a rewrite.
+- [pragmatics.py](scripts/pragmatics.py): genre/register inference and the
+  purpose-oriented pragmatic profile passed to the host model.
+- [pipeline.py](scripts/pipeline.py): the shared, generation-free execution contract
+  (target extraction -> genre inference -> scan -> profile -> host prompt prep ->
+  fidelity) used by both `humanize.py` and the host-model integration; also where the
+  optional bridges below are wired in (lazily, only when explicitly requested).
 - [humanize.py](scripts/humanize.py): conservative local rewrite loop with protected
-  spans, typography finalization, before/after scans, and fidelity checks.
-- [fidelity.py](scripts/fidelity.py): exact preservation and conservative drift
-  checks.
-- [patterns.md](references/patterns.md): behavior families and examples.
+  spans, typography finalization, before/after scans, and fidelity checks. This is the
+  default entry point; it never imports the bridges below.
+- [v2_pipeline.py](scripts/v2_pipeline.py): optional v1/v2 mode switch that reproduces
+  the CONFIRMED v2 two-stage architecture (aggressive de-slop draft -> FixMySlop
+  anchor/fidelity repair) documented in `../../docs/textslop/V2_BASELINE.md`; v1
+  (default) is behavior-unchanged. Stage-1 prompts are original in-repo text; the
+  pattern taxonomy they encode derives from the CC BY-SA "Signs of AI writing" guide
+  (see the license note above).
+- [fidelity.py](scripts/fidelity.py): exact preservation plus bounded, conservative
+  mutation checks; it is not a semantic-equivalence proof.
+- [structural_bridge.py](scripts/structural_bridge.py): **repo-only, optional,
+  evaluation.** Hardened, single-family (lexical/phrasal repetition) structural-findings
+  bridge for the preregistered Beemo holdout; default-off, byte-identical v1 output
+  unless explicitly requested. Requires `human_edit_grounded` from the repo-root
+  `textslopbench/` package — not available in a standalone skill install (raises a clear
+  `ImportError` there instead of failing on import).
+- [expendable_bridge.py](scripts/expendable_bridge.py): **repo-only, optional,
+  evaluation.** High-precision expendable-content deletion bridge (AI framing,
+  pleasantry, attribution filler, ornamental intensifiers only); default-off. Requires
+  `edit_operations`/`delete_scorer` from the repo-root `textslopbench/` package — same
+  standalone-install caveat as `structural_bridge.py`.
+- [patterns.md](references/patterns.md): behavior families and examples, derived from
+  Wikipedia's "Signs of AI writing" (CC BY-SA 4.0) — see the attribution note at the top
+  of that file.
 - [fidelity.md](references/fidelity.md): protected content and benchmark guardrails.
+- [agents/openai.yaml](agents/openai.yaml): optional agent manifest (display name,
+  short description, default prompt) for OpenAI-style agent hosts that discover skills
+  through a manifest file rather than this SKILL.md; not read by the Claude-side path.
 
 ## Evaluation-only modules (not part of the rewrite path)
 
@@ -133,4 +186,5 @@ do not change rewrite behavior:
   learn which families drive kept edits rather than merely correlate with AI authorship.
 
 Fidelity is reserved for hard-anchor/claim/contradiction/semantic preservation; overlap and
-edit-magnitude measures are never called fidelity. See `METRICS_GLOSSARY.md`.
+edit-magnitude measures are never called fidelity. The bundled audit reports **anchor +
+mutation safety**, not full fidelity. See `../../docs/textslop/METRICS_GLOSSARY.md`.

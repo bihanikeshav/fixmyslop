@@ -71,15 +71,18 @@ test("staggered skill files: SKILL.md index, a pass, the design law, and 404", a
   assert.equal(missing.status, 404);
 });
 
+// The origin baked into this page used to be `url.origin` — i.e. whatever Host header the
+// caller sent. It is now allowlisted (see guard.mjs / the origin-fallback test below), so
+// this test drives it from an allowed dev host instead of an arbitrary one.
 test("GET /install.md covers MCP + skill with the live origin", async () => {
-  const res = await worker.fetch(new Request("http://example.test/install.md"));
+  const res = await worker.fetch(new Request("http://localhost:8787/install.md"));
   assert.equal(res.status, 200);
   assert.match(res.headers.get("content-type"), /text\/markdown/);
   const md = await res.text();
   assert.match(md, /MCP endpoint/);               // MCP section
   assert.match(md, /Optional skill/);             // skill section
-  assert.match(md, /example\.test\/mcp/);         // base URL interpolated from origin
-  assert.match(md, /example\.test\/skill/);
+  assert.match(md, /localhost:8787\/mcp/);        // base URL interpolated from the allowed origin
+  assert.match(md, /localhost:8787\/skill/);
   assert.match(md, /grok mcp add/);
   assert.match(md, /\.grok\/config\.toml/);
   assert.match(md, /\.codex\/config\.toml/);
@@ -92,6 +95,6 @@ test("GET /install.md covers MCP + skill with the live origin", async () => {
   assert.doesNotMatch(md, /Tool catalog/);         // install page stays lean
   assert.ok(md.length < 5000, `install guide grew to ${md.length} bytes`);
   assert.doesNotMatch(md, /\b\d+ tools\b/, "install guide must not hard-code a drifting tool count");
-  const alias = await worker.fetch(new Request("http://example.test/install"));
+  const alias = await worker.fetch(new Request("http://localhost:8787/install"));
   assert.equal(alias.status, 200);                // /install alias also works
 });

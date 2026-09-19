@@ -1,93 +1,140 @@
 # fixmyslop
 
-An **anti-inductive saturation engine** that fights font/color homogeneity in
-AI-built websites. The core idea: nothing is ever a fixed "good list" — every
-recommendation is `high quality × low CURRENT saturation`, and anything trending
-toward the mainstream auto-retires. The feedback loop *is* the product.
+fixmyslop is a mechanism-first design engine for agents and frontend teams. It turns a
+real product brief into working behavior, materially different art directions, a
+coherent implementation system, and inspectable evidence. Its deterministic checks
+catch known failures; they are a safety floor, not a substitute for taste.
 
-See the full design in
-[`docs/superpowers/specs/2026-06-03-fixmyslop-design.md`](docs/superpowers/specs/2026-06-03-fixmyslop-design.md).
+The repository also includes a fail-closed prose humanizer, TextSlopBench, a browser
+demonstration, an MCP/REST worker, and a blinded comparative UI benchmark.
 
-## Status
+## What ships
 
-Early. The **deterministic Brain core** is built and tested.
+- **Connected design engine** — normalizes messy briefs, models the product objects and
+  actions, generates divergent realizations of the same mechanism, and emits a bounded
+  build handoff.
+- **Deterministic gates** — color, contrast, type roles and assets, layout, spacing,
+  radii, shadows, motion, SVG safety, accessibility, component states, composition,
+  microcopy, and information architecture.
+- **`skills/fixmyslop/`** — the generated, staggered agent skill. It loads task-specific
+  craft references on demand and requires a rendered desktop/mobile/input/reduced-motion
+  revision loop before a result can claim to pass.
+- **`skills/fixmyslop-humanizer/`** — bounded prose repair with anchor, claim-frame,
+  fidelity, and clean-text preservation checks. When verification fails, it releases the
+  source unchanged.
+- **`textslopbench/`** — human-edit-grounded evaluation for useful intervention,
+  clean-text preservation, and claim safety; detector scores are not treated as human
+  quality.
+- **`benchmarks/ui-skills/`** — opaque, seeded comparisons against Impeccable, Taste, or
+  another system. Brief-specific behavior is a hard gate and needs an inspectable
+  evidence artifact before visual ratings count.
+- **`benchmarks/engine/`** — frozen semantic-routing checks across twelve subjects and
+  three seeds; a missing mechanism, proof centrepiece, authored alternative, or readable
+  type role fails before visual comparison.
+- **`apps/web/` and `apps/worker/`** — the product demonstration and Cloudflare MCP/REST
+  surface, both backed by the same pure engine.
 
-| Part | State |
-|------|-------|
-| `@fixmyslop/core` — quality metrics, role classification, anti-inductive recommender, slop scorer | ✅ built, 21 tests passing |
-| `@fixmyslop/pipeline` — Google Fonts index (keyless, 1934 fonts) | ✅ built |
-| Real glyph-metric extraction (opentype.js: x-height, stroke contrast, counters) | ✅ built + verified on 30 fonts |
-| Synthetic saturation signal (sample LLM defaults) | ✅ built, key-ready (needs `ANTHROPIC_API_KEY` to run) |
-| O'Donovan attribute seeding (real personality vectors) | ✅ built, 131/200 study fonts matched to the index |
-| Synthetic slop matrix (12 vibes × Opus/Sonnet/Haiku) | ✅ collected; merged into display-saturation for 212 fonts |
-| GPT-5.5 (OpenAI) synthetic client | ✅ built, key-ready |
-| Deterministic crawl (`@fixmyslop/crawl`, headless Chromium) | ✅ built + verified; multi-supplier, role-aware, AI-directory discovery |
-| Slop-o-meter (paste a URL → score) | ⬜ next |
-| Brain API + MCP server | ⬜ |
-| Discovery site, palette picker | ⬜ |
+## Quick start
 
-## Pipeline
-
-```bash
-npm run index   -w @fixmyslop/pipeline   # fetch Google Fonts -> data/fonts.index.json (keyless)
-npm run metrics  -w @fixmyslop/pipeline 30 # extract real glyph metrics for top N fonts
-npm run personality -w @fixmyslop/pipeline # seed real personality from O'Donovan attributes
-ANTHROPIC_API_KEY=... npm run synthetic -w @fixmyslop/pipeline 20  # sample AI font defaults
-```
-
-## What's here now
-
-`packages/core` is the pure, deterministic heart everything else calls. No I/O,
-no `Date.now()`, no LLM — same input always yields the same output.
-
-- **`metrics.ts`** — objective quality floor (kills broken/limited fonts).
-- **`quality.ts`** — three-vote composite quality; the LLM vote is always outvotable.
-- **`role.ts`** — deterministic display/hero vs. body classification.
-- **`saturation.ts`** — role-aware, recency-weighted saturation from three signals.
-- **`recommend.ts`** — the anti-inductive recommender (quality floor is a hard gate;
-  saturation only re-orders *within* it; foundational fonts excluded from display).
-- **`slop.ts`** — the Slop-o-meter / `check_slop` scorer.
-
-## The /personality skill
-
-`skills/personality/` is a self-contained Claude Code skill that makes a model
-invent page-specific personality inside anti-slop constraints — a forced ideation
-process (absorb the subject → diverge 15 concepts → ground & commit → constrain →
-build), a personality-move catalog, a merged slop manifest (impeccable.style's 49
-rules + frontend-design DON'Ts + this repo's measured crawl tells), cited craft
-principles, and per-vibe type/color option-sets generated from the font data with
-a "rotate, never default" anti-convergence rule. See `viz/personality-demo/` for a
-before→after proof. Regenerate the data-backed parts with:
+Requires Node 20+ and Python 3.11+.
 
 ```bash
-node scripts/build-personality-skill.mjs
+npm ci
+npm test
+npm run build
+python -m pytest tests
 ```
 
-## The text side — Humanizer + TextSlopBench
-
-fixmyslop fights AI slop in *type and color*; the text side fights it in *prose*.
-
-- **`skills/fixmyslop-humanizer/`** — a Claude Code skill that rewrites text to remove
-  the fingerprints of AI writing (inflated symbolism, promotional language, em-dash
-  overuse, the rule of three, formulaic vocabulary, …) with a two-stage pipeline: an
-  aggressive/rule-grounded de-slop draft followed by a 2-round anchor + fidelity repair
-  that guarantees numbers, names, dates, quotes, and URLs survive untouched. All prompts
-  are first-party.
-- **`textslopbench/`** — a deterministic, **human-edit-grounded** benchmark: it scores a
-  rewrite by whether it moves text the way *human editors* did, not by an AI detector.
-  See [`docs/textslop/TEXTSLOPBENCH_CARD.md`](docs/textslop/TEXTSLOPBENCH_CARD.md) and the
-  [metrics glossary](docs/textslop/METRICS_GLOSSARY.md).
-
-External evaluation corpora are fetched locally and **never committed** (some have
-unconfirmed or absent redistribution terms — see
-[`docs/textslop/DATASET_ADAPTER_PLAN.md`](docs/textslop/DATASET_ADAPTER_PLAN.md)). Run the
-Python tests from the repo root with `py -m pytest tests/`.
-
-## Run it
+Useful focused commands:
 
 ```bash
-npm install
-npm run build --workspace @fixmyslop/core
-node scripts/demo.mjs          # end-to-end demo on sample data
-npx vitest run --root packages/core   # tests
+npm run test:apps                 # engine + worker contracts
+npm run test:ui-bench             # comparative harness
+npm run benchmark:engine          # 12 frozen semantic briefs x 3 deterministic seeds
+npm run build:web                 # compile the browser demonstration
+npm run test:web                  # production web smoke checks
+node scripts/build-skill.mjs      # regenerate skill markdown from engine sources
+node apps/engine/scripts/run-autonomous-cases.mjs
 ```
+
+On Windows, `py -m pytest tests` is equivalent to the Python command above.
+
+## Repository map
+
+```text
+apps/engine/                 pure deterministic and connected design engine
+apps/worker/                 Cloudflare Worker: MCP, prompts, skill, and REST
+apps/web/                    static interactive product demonstration
+packages/core/               font quality, saturation, roles, and slop scoring
+packages/pipeline/           font indexing and glyph-metric data pipeline
+packages/crawl/              source collection and corpus derivation
+skills/fixmyslop/            generated UI skill and craft references
+skills/fixmyslop-humanizer/  prose revision skill and verification pipeline
+skills/personality/          ideation-forcing design skill
+textslopbench/               text evaluation runners and dataset adapters
+benchmarks/                  engine regression pack + blinded UI comparison protocol
+viz/                         visualisations, prototypes, and a few production modules
+scripts/                     build, data, proof, and QA scripts (see scripts/README.md)
+tests/                       Python test suite for the text side
+docs/                        specs, research, plans (index: docs/README.md)
+archive/                     retired code, not built or deployed
+```
+
+Agents and new contributors: start with [`AGENTS.md`](AGENTS.md). Every directory above
+has its own README; [`docs/README.md`](docs/README.md) indexes all documentation.
+
+`apps/engine` is pure: the same inputs and seed produce the same output. The worker and
+web application share that engine so their gates do not drift. The generated skill has
+the same source of truth in `apps/engine/prompts.mjs` and `apps/engine/reference.mjs`;
+edit those sources and run `node scripts/build-skill.mjs`.
+
+## Text evaluation
+
+TextSlopBench compares rewrites with human editing behavior and protects invariants such
+as actors, polarity, modality, scope, temporal order, names, numbers, dates, URLs, and
+quotations. External corpora are fetched locally and never committed when redistribution
+terms are absent or unclear. Start with:
+
+- [`docs/textslop/TEXTSLOPBENCH_CARD.md`](docs/textslop/TEXTSLOPBENCH_CARD.md)
+- [`docs/textslop/METRICS_GLOSSARY.md`](docs/textslop/METRICS_GLOSSARY.md)
+- [`docs/textslop/DATASET_ADAPTER_PLAN.md`](docs/textslop/DATASET_ADAPTER_PLAN.md)
+
+## Comparative UI evaluation
+
+The UI benchmark locks the brief, model, starting commit, time/turn budget, tool policy,
+network policy, and desktop/mobile viewports. Missing behavior, accessibility, states,
+or evidence fails closed before aesthetic scores are compared. Results must be reported
+per brief and dimension; this repository does not turn a small frozen pack into a
+universal superiority claim.
+
+See [`benchmarks/ui-skills/README.md`](benchmarks/ui-skills/README.md).
+The connected adapter's narrower semantic contract is separately documented in
+[`benchmarks/engine/README.md`](benchmarks/engine/README.md).
+
+## Deploy
+
+The web demonstration deploys as static Cloudflare Pages content; the Worker exposes MCP,
+prompt, skill, and REST endpoints. See [`apps/DEPLOY.md`](apps/DEPLOY.md) for the current
+commands and endpoint catalog.
+
+## Product contract
+
+[`PRODUCT.md`](PRODUCT.md) records the audience, purpose, anti-references, design
+principles, and accessibility baseline. The core standard is simple: a passing output
+must work, must remain faithful to its subject, and must survive rendered inspection. A
+token score or anti-pattern scan alone is never proof of design quality.
+
+The reviewed X bookmark set is captured in
+[`docs/research/2026-08-24-x-bookmark-design-audit.md`](docs/research/2026-08-24-x-bookmark-design-audit.md).
+It records source mechanics and provenance as research inputs; the product regenerates
+their useful relationships for the current brief instead of cloning any complete skin.
+
+The final token and browser audit is in
+[`docs/research/2026-08-24-ui-quality-audit.md`](docs/research/2026-08-24-ui-quality-audit.md).
+
+## License
+
+Apache-2.0 — see [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE). Fonts, crawled sites, text
+corpora and borrowed guidance keep their own terms:
+[`docs/DATA-AND-LICENSING.md`](docs/DATA-AND-LICENSING.md). Contributing:
+[`CONTRIBUTING.md`](CONTRIBUTING.md).

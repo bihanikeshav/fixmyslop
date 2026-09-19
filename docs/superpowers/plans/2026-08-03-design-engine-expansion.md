@@ -1,5 +1,7 @@
 # Design-engine Expansion Implementation Plan
 
+> **Status (2026-09-19): shipped.** This is a historical execution plan. Its `- [ ]` checkboxes were never ticked; see [`docs/README.md`](../../README.md) for what actually shipped.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Grow the pure design engine from color+font into seven math domains (type, spacing, radius, shadow, layout, motion, controls), expose them through the MCP Worker + REST, add a CLI, and ship an engine-backed `atelier` design skill.

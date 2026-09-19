@@ -6,7 +6,7 @@ classify the deleted unit by scope and role, its anchor overlap, and its claim i
 deterministic anchor/fidelity machinery). Then measure the SAFE-delete opportunity, what Fix does on
 human-safe-delete spans instead of deleting, operation co-occurrence with deletion, and Humanizer's
 safe-vs-protected deletions. Reports how much of the +0.57 doc-level delete gap is closeable without
-touching FixMySlop's fidelity guarantees.
+touching FixMySlop's deterministic fidelity guardrails.
 """
 from __future__ import annotations
 
@@ -156,9 +156,11 @@ def deletions(S, T, anchors):
     return units
 
 
+from common import jaccard as _jaccard
+
+
 def _jac(a, b):
-    sa, sb = set(_toks(a)), set(_toks(b))
-    return len(sa & sb) / len(sa | sb) if (sa or sb) else 0.0
+    return _jaccard(a, b, _toks)
 
 
 def _jac_idx(a, ts):

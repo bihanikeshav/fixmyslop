@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * spam-filter.mjs — stream a geometry-crawl raw ndjson file, score each
  * record for spam / parked-domain / hijacked-WordPress signals, and emit

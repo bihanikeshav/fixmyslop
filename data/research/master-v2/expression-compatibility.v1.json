@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "expression-compatibility.v1",
+  "hardRules": [
+    "max-one-centrepiece",
+    "custom-cursor-is-desktop-only",
+    "scroll-hijack-requires-native-mobile-fallback",
+    "body-text-remains-readable",
+    "reduced-motion-must-be-defined"
+  ],
+  "defaultConflicts": [
+    [
+      "cursor-image-trail",
+      "heavy-webgl"
+    ],
+    [
+      "scroll-hijack",
+      "horizontal-gallery-pan"
+    ],
+    [
+      "variable-axis-kinetic-type",
+      "dense-body-copy"
+    ]
+  ],
+  "humanReview": "pending"
+}

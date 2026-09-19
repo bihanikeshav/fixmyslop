@@ -51,6 +51,12 @@ COMMON_CAPITALIZED = {
     "And", "But", "For", "From", "Overall", "Getting Started", "Welcome", "Great",
     "Honestly", "Certainly", "Anyway", "Rating", "Section", "Monday", "Tuesday",
     "Wednesday", "Thursday", "Friday", "Saturday", "Sunday",
+    "However", "Therefore", "Meanwhile", "Finally", "First", "Second", "Next",
+    "Due", "Use", "Orders", "Order", "Review", "Archive", "Customers", "Customer",
+    "Revenue", "Before", "After", "Because", "Although", "When", "Where",
+    "Sure", "Thank", "Thanks", "Here", "According",
+    "January", "February", "March", "April", "May", "June", "July", "August",
+    "September", "October", "November", "December",
 }
 
 
@@ -101,24 +107,21 @@ def extract_source_content_map(text: str, explicit_protected: Iterable[str] | No
         ("number", NUMBER_RE, "numeric or measured-result anchor"),
         ("citation", CITATION_RE, "citation marker or author-year reference"),
         ("quotation", QUOTE_RE, "quotation content should remain exact"),
-        ("qualification", QUALIFIER_RE, "qualification changes claim strength"),
-        ("causal_relationship", CAUSAL_RE, "causal or correlational relation changes meaning"),
         ("ui_or_command", UI_RE, "UI label, command, route, mention, or structured identifier"),
     ):
         for item in _find(text, regex):
             _unique_anchor(anchors, seen, kind, item, reason)
 
-    sentence_starts = {match.start() for match in re.finditer(r"(?:^|[.!?\n])\s*", text)}
     for item in _find(text, CAP_RUN_RE):
         value = str(item["text"])
         if value in COMMON_CAPITALIZED or len(value.split()) == 1 and value in COMMON_CAPITALIZED:
             continue
         if value.split()[0] in {"The", "This", "That", "These", "Those", "Your", "Our", "My"}:
             continue
-        if int(item["start"]) in sentence_starts and len(value.split()) == 1:
-            continue
         if len(value) >= 3 and (len(value.split()) >= 2 or any(char.isdigit() for char in value)):
             _unique_anchor(anchors, seen, "named_entity", item, "named entity or product name")
+        elif len(value.split()) == 1 and value not in COMMON_CAPITALIZED:
+            _unique_anchor(anchors, seen, "named_entity", item, "single-token named entity or product name")
 
     for anchor in anchors:
         anchor["occurrence_count"] = text.count(str(anchor["text"]))
@@ -158,7 +161,10 @@ def audit_anchor_coverage(content_map: dict[str, object], revised: str) -> dict[
     for anchor in content_map.get("hard_anchors", []):
         value = str(anchor["text"])
         required_count = int(anchor.get("occurrence_count", 1))
-        actual_count = revised.count(value)
+        if anchor.get("kind") in {"qualification", "causal_relationship", "named_entity"}:
+            actual_count = len(re.findall(re.escape(value), revised, flags=re.IGNORECASE))
+        else:
+            actual_count = revised.count(value)
         row = {"kind": anchor["kind"], "text": value, "required_count": required_count, "actual_count": actual_count}
         if actual_count == 0:
             missing.append(row)

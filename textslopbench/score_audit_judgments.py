@@ -6,11 +6,14 @@ from __future__ import annotations
 import json
 import random
 import statistics
+import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT))
+from common import resolve_system_for_text
 RESULTS = ROOT / "results"
 MODELS = {"1": "gpt-5.4", "2": "gpt-5.6-luna", "3": "gpt-5.6-terra"}
 METRICS = ("naturalness", "quality", "fidelity", "voice")
@@ -49,12 +52,17 @@ def load_system_outputs() -> dict[str, dict[str, str]]:
 
 
 def load_pairs(path: Path, outputs: dict[str, dict[str, str]]) -> dict[str, dict[str, str]]:
+    """`A`/`B` are resolved back to a system by exact text match. If A and B are byte-identical,
+    or a text doesn't map to exactly one system, that's an ambiguous attribution (audit fix,
+    textslopbench item 10): mark it `None` here so callers exclude/tie the pair instead of
+    silently misattributing it to `next()`'s first match."""
     result = {}
     for row in read_jsonl(path):
         group = outputs[str(row["id"])]
+        same_text = row["A"] == row["B"]
         result[str(row["id"])] = {
-            "A": next(system for system, text in group.items() if text == row["A"]),
-            "B": next(system for system, text in group.items() if text == row["B"]),
+            "A": None if same_text else resolve_system_for_text(group, row["A"]),
+            "B": None if same_text else resolve_system_for_text(group, row["B"]),
             "orientation": str(row.get("orientation", "unknown")),
         }
     return result
@@ -62,6 +70,7 @@ def load_pairs(path: Path, outputs: dict[str, dict[str, str]]) -> dict[str, dict
 
 def load_judgments(outputs: dict[str, dict[str, str]], pairs: dict[str, dict[str, dict[str, str]]]) -> list[dict[str, object]]:
     rows: list[dict[str, object]] = []
+    excluded_ambiguous = 0
     for path in sorted(RESULTS.glob("audit2_*.jsonl")):
         parts = path.stem.split("_")
         orientation = parts[1]
@@ -71,6 +80,25 @@ def load_judgments(outputs: dict[str, dict[str, str]], pairs: dict[str, dict[str
         for row in read_jsonl(path):
             fixture_id = str(row["id"])
             mapping = pair_map[fixture_id]
+            if mapping["A"] is None or mapping["B"] is None:
+                # Ambiguous exact-text attribution (see load_pairs): exclude rather than
+                # misattribute, but keep a record + counter for visibility.
+                excluded_ambiguous += 1
+                rows.append({
+                    "fixture_id": fixture_id,
+                    "orientation": orientation,
+                    "model": model,
+                    "source_file": path.name,
+                    "choice": str(row["choice"]),
+                    "winner": None,
+                    "a_system": mapping["A"],
+                    "b_system": mapping["B"],
+                    "excluded_ambiguous": True,
+                    "confidence": float(row.get("confidence", 0)),
+                    "reason": row.get("reason", ""),
+                    "scores": {},
+                })
+                continue
             choice = str(row["choice"])
             winner = None if choice == "Tie" else (mapping["A"] if choice == "A" else mapping["B"])
             scores = {}
@@ -86,10 +114,14 @@ def load_judgments(outputs: dict[str, dict[str, str]], pairs: dict[str, dict[str
                 "winner": winner,
                 "a_system": mapping["A"],
                 "b_system": mapping["B"],
+                "excluded_ambiguous": False,
                 "confidence": float(row.get("confidence", 0)),
                 "reason": row.get("reason", ""),
                 "scores": scores,
             })
+    if excluded_ambiguous:
+        print(f"WARNING: excluded {excluded_ambiguous} ambiguous-attribution judgment row(s) "
+              f"(A/B text did not resolve to exactly one system)", file=sys.stderr)
     return rows
 
 
@@ -130,7 +162,12 @@ def main() -> int:
         "orig": load_pairs(RESULTS / "blinded-pairs.jsonl", outputs),
         "rev": load_pairs(RESULTS / "blinded-pairs-reversed.jsonl", outputs),
     }
-    rows = load_judgments(outputs, pairs)
+    all_rows = load_judgments(outputs, pairs)
+    # Ambiguous-attribution rows (see load_pairs/load_judgments) are kept in raw_judgments
+    # for transparency but excluded from every scored/aggregated statistic below, so they
+    # can never silently count as a real tie, win, or loss.
+    rows = [row for row in all_rows if not row.get("excluded_ambiguous")]
+    excluded_ambiguous_pairs = sum(1 for row in all_rows if row.get("excluded_ambiguous"))
     score_summary = {}
     for system_index, system in enumerate(SYSTEMS):
         score_summary[system] = {
@@ -184,6 +221,7 @@ def main() -> int:
         "benchmark": "TextSlopBench",
         "snapshot": "0.1.0",
         "comparisons": len(rows),
+        "excluded_ambiguous_pairs": excluded_ambiguous_pairs,
         "passes": {
             "judge_models": list(MODELS.values()),
             "model_assignments": {f"audit2_orig_{key}.jsonl": value for key, value in MODELS.items()} | {f"audit2_rev_{key}.jsonl": value for key, value in MODELS.items()},
@@ -206,7 +244,7 @@ def main() -> int:
             "fleiss_kappa_over_winner_or_tie": fleiss_kappa(rows),
         },
         "per_system": score_summary,
-        "raw_judgments": rows,
+        "raw_judgments": all_rows,
     }
     (RESULTS / "benchmark-audit-v2.json").write_text(json.dumps(audit, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({key: value for key, value in audit.items() if key != "raw_judgments"}, ensure_ascii=False, indent=2))

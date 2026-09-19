@@ -32,21 +32,16 @@ MIN_SUPPORT = 10
 CONS_THRESH = 0.70   # dominant-direction fraction below this = humans split (non-consensus)
 
 
-def _refs(raw):
-    if isinstance(raw, list):
-        return raw
-    for p in (json.loads, ast.literal_eval):
-        try:
-            v = p(raw)
-            if isinstance(v, list):
-                return v
-        except Exception:
-            pass
-    return [raw] if isinstance(raw, str) and raw.strip() else []
+from common import parse_human_references as _refs
 
 
 def corpus_consensus():
-    """Per feature: 'pos'/'neg' if humans move it consistently, 'split' if they disagree."""
+    """Per feature: 'pos'/'neg' if humans move it consistently, 'split' if they disagree.
+
+    NOT consolidated with chea.corpus_consensus(corpus_jsonl): this one is hard-coded to
+    lamp-heldout-100.jsonl and returns only `cons`, since it backs a LAMP-only multi-reference
+    check; chea's version is corpus-parametric and also returns n_human_edits. Kept as two
+    implementations deliberately (audit fix, textslopbench item 9)."""
     signs = defaultdict(list)
     for line in (RESULTS / "lamp-heldout-100.jsonl").read_text(encoding="utf-8").splitlines():
         if not line.strip():

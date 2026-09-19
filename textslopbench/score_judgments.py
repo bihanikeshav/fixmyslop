@@ -5,8 +5,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from collections import Counter
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from common import resolve_system_for_text
 
 
 def main() -> int:
@@ -26,12 +30,23 @@ def main() -> int:
         raise SystemExit(f"expected two systems, got {systems}")
     counts = Counter()
     records = []
+    excluded_ambiguous = 0
     for path in args.judgments:
         for judgment in (json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()):
             pair = pairs[judgment["id"]]
             group = outputs[judgment["id"]]
-            a_system = next(system for system, text in group.items() if text == pair["A"])
-            b_system = next(system for system, text in group.items() if text == pair["B"])
+            # If A and B are byte-identical text, or either text doesn't map to exactly one
+            # system, exact-text attribution is ambiguous: exclude the pair instead of
+            # silently misattributing it via `next()`'s first match.
+            same_text = pair["A"] == pair["B"]
+            a_system = None if same_text else resolve_system_for_text(group, pair["A"])
+            b_system = None if same_text else resolve_system_for_text(group, pair["B"])
+            if same_text or a_system is None or b_system is None:
+                excluded_ambiguous += 1
+                counts["excluded_ambiguous"] += 1
+                records.append({**judgment, "a_system": a_system, "b_system": b_system,
+                                 "winner": None, "excluded_ambiguous": True})
+                continue
             choice = judgment["choice"]
             winner = None if choice == "Tie" else (a_system if choice == "A" else b_system)
             loser = None if winner is None else next(system for system in systems if system != winner)
@@ -40,11 +55,13 @@ def main() -> int:
                 counts[f"losses::{loser}"] += 1
             else:
                 counts["ties"] += 1
-            records.append({**judgment, "a_system": a_system, "b_system": b_system, "winner": winner})
+            records.append({**judgment, "a_system": a_system, "b_system": b_system, "winner": winner,
+                             "excluded_ambiguous": False})
     summary = {
         "benchmark": "TextSlopBench",
         "judgment_type": "independent agent pairwise proxy, not human panel data",
-        "comparisons": len(records),
+        "comparisons": len(records) - excluded_ambiguous,
+        "excluded_ambiguous_pairs": excluded_ambiguous,
         "systems": {
             system: {
                 "wins": counts[f"wins::{system}"],

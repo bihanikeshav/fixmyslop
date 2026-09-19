@@ -10,7 +10,7 @@
   },
   "baseline": {
     "display_name": "humanizer",
-    "path": "C:/Users/Keshav/.agents/skills/humanizer/SKILL.md",
+    "path": "~/.agents/skills/humanizer/SKILL.md",
     "version": "2.2.0"
   },
   "scoring": {

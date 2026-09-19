@@ -1,13 +1,18 @@
 # v2.1 — the Stage-2 gate, and the decision to ship Option 3
 
+> **2026-08-23 status:** this is a historical experiment log, not a current
+> superiority claim. Its comparator and alignment conclusions predate the corrected
+> clustered bootstrap and non-inferiority rule. Re-run with the current harness before
+> using any “wins,” “matches,” or “confirmed champion” language outside this record.
+
 Branch `v2.1-stage1`. Dev data only (LAMP dev-40 + Baumler dev-40); the confirmed-v2 holdouts are **not**
 touched or tuned against. This document records the gate that closed the v2.1 first-party investigation and
 the decision it produced.
 
 ## The question
 
-The confirmed v2 champion is **A_nolock = Humanizer draft → our 2-round fidelity repair** (held-out,
-preregistered, Pareto gain over Humanizer; see `V2_CONFIRMATION_PREREG.md`). For an honest **open-source**
+The historical v2 selection was **A_nolock = Humanizer draft → our 2-round fidelity repair** (held-out;
+see the withdrawn verdict in `V2_CONFIRMATION_PREREG.md`). For an honest **open-source**
 release we want a **first-party** Stage-1 built from our own slop taxonomy — not Humanizer's prompt.
 
 Established across ~5 first-party Stage-1 variants (`V2_1_STAGE1.md`, `results/v2_1-*.json`): a first-party
@@ -18,7 +23,7 @@ we gated it.
 
 ## The gate (three deterministic experiments, cached drafts, no holdout inspection)
 
-### 1. Feature-level gap diagnostic (`results/v2_1-gap-diagnostic.json`, `textslopbench/v2_1_gap_diag.py`)
+### 1. Feature-level gap diagnostic (`results/v2_1-gap-diagnostic.json`, `textslopbench/experiments/v2_1_gap_diag.py`)
 Decomposed the Humanizer-vs-first-party Stage-1 reference-CHEA deficit **feature by feature**, bucketing each:
 **A** = fidelity-safe + strong source-state conditional signal + humans move it consistently; **B** =
 confident but fidelity-risky; **C** = diffuse (no consistent per-source-state direction, or no local operation).
@@ -68,17 +73,17 @@ not the lever.** Option 1 (make our rewriter "more thorough") is bounded as genu
   recoverable mass is small (de-nominalize plus minor lexical work). The big safe slice — lexical diversity —
   is holistic, and its only *local* route (forced synonym rotation) is itself a canonical AI-writing tell:
   Goodharting the deterministic metric, not improving the text. We will not do that in an open-source system.
-- **"Rewrite more thoroughly under anchor protection" ≈ what Humanizer→repair already does** — our confirmed
-  champion. A first-party win would require our own aggressive rewrite to reach Humanizer's *edit-allocation
+- **"Rewrite more thoroughly under anchor protection" ≈ what Humanizer→repair already does** — the historical
+  selection. A first-party lead would require our own aggressive rewrite to reach Humanizer's *edit-allocation
   quality* without its prompt; every first-party variant so far under-allocates on heavy registers, and Exp 1
   shows volume alone doesn't fix it. That is a real open problem, not a release blocker.
 
 **What ships (wired):**
-1. **Champion unchanged:** A_nolock remains the confirmed, held-out v2 (tag `v2-confirmed-baseline`), the
+1. **Historical selection unchanged:** A_nolock remains the archived held-out v2 (tag `v2-confirmed-baseline`), the
    default in `v2_pipeline.py`. Its Stage-1 prompt is renamed `STAGE1_AGGRESSIVE_SYS` (back-compat alias
    `STAGE1_V2_SYS`); **bytes and the drift-freeze test are unchanged.**
 2. **First-party rule Stage-1** is wired as an optional, non-default v2 variant: `run(..., mode="v2",
-   variant="rules")` → `STAGE1_RULES_SYS`. It **wins Beemo and Baumler rhetoric**, is non-inferior where it
+   variant="rules")` → `STAGE1_RULES_SYS`. In the archived scoring it improved Beemo and Baumler rhetoric, held where it
    can be, and **loses heavy-corpus conditional-direction by ~0.055** — this diagnostic explains *why*
    (holistic edit-allocation, not volume) and why the only local fix is a cheat we decline. Default stays the
    champion; the recommendation is explicit, callers self-route. Bytes frozen by a sha256 drift test.

@@ -11,7 +11,7 @@ writing looks like, so averaging their aesthetics is not ground truth.
 
 | Axis | Source | Status |
 |---|---|---|
-| Claim Fidelity | source claim set (anchor/claim/contradiction/semantic) | available (deterministic anchor pass; NLI TODO) |
+| Anchor + mutation safety | exact hard anchors plus bounded high-precision negation, polarity, modality, explicit range/comparative/causal-direction, and overlap checks | available; **not full claim or semantic fidelity**. ClaimFlipBench v0.2.0 measures 15 valid rewrites and 25 known corruptions; even 40/40 is only owned-pack regression performance. Full semantic/NLI validation remains TODO |
 | Human-Edit Alignment | corpus-standardized cosine + direction agreement of ΔF vs ΔH on a ~40-feature vector | available ([HUMAN_EDIT_GROUNDED.md](HUMAN_EDIT_GROUNDED.md)) |
 | Conditional Human-Edit Alignment (CHEA) | human majority edit direction per (feature, source-state bucket) | available (LAMP-24; scales with data) |
 | **CHEA — dual (Reference + Population)** | `chea.py`, wired into `score()`/`aggregate()`. Reference = vs the one assigned editor (stricter); Population = plausibility vs the human edit distribution. Report BOTH + `mode` (`true_multireference`/`corpus_proxy`/`unavailable`) + `gap` (=Pop−Ref) + `population_support` (coverage, consensus/split counts, threshold, fallbacks) + consensus-only Population | available ([chea.py](../../textslopbench/chea.py), [METRICS_GLOSSARY.md](METRICS_GLOSSARY.md)). LAMP current FixMySlop below; Population is **corpus_proxy** (single-ref data) |

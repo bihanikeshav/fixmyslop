@@ -102,7 +102,7 @@ function meanVector(vecs: number[][]): number[] {
   const n = vecs.length || 1;
   const dim = vecs[0]?.length ?? 0;
   const out = new Array(dim).fill(0);
-  for (const v of vecs) for (let i = 0; i < dim; i++) out[i] += v[i] / n;
+  for (const v of vecs) for (let i = 0; i < dim; i++) out[i] = out[i]! + v[i]! / n;
   return out;
 }
 function meanPairwiseCosine(vecs: number[][]): number {
@@ -161,13 +161,13 @@ function fitNumericStats(genomes: AnyRecord[]) {
 }
 function numericZVector(g: AnyRecord, stats: ReturnType<typeof fitNumericStats>): number[] {
   return NUMERIC_FIELD_GETTERS.map(([, get], i) => {
-    const { m, s } = stats[i];
+    const { m, s } = stats[i]!;
     return (Number(get(g) ?? 0) - m) / s;
   });
 }
 function euclid(a: number[], b: number[]): number {
   let sum = 0;
-  for (let i = 0; i < a.length; i++) sum += (a[i] - b[i]) ** 2;
+  for (let i = 0; i < a.length; i++) sum += (a[i]! - b[i]!) ** 2;
   return Math.sqrt(sum);
 }
 
@@ -176,10 +176,10 @@ function featureShapeVector(sectionGrammar: AnyRecord[]): number[] {
   const counts = Object.fromEntries(FEATURE_SHAPES.map((s) => [s, 0]));
   for (const s of sectionGrammar ?? []) {
     const shape = FEATURE_SHAPES.includes(s.featureShape) ? s.featureShape : "plain";
-    counts[shape] += Number(s.heightShare ?? 1);
+    counts[shape] = (counts[shape] ?? 0) + Number(s.heightShare ?? 1);
   }
   const total = Object.values(counts).reduce((a: number, b) => a + (b as number), 0) || 1;
-  return FEATURE_SHAPES.map((s) => counts[s] / total);
+  return FEATURE_SHAPES.map((s) => (counts[s] ?? 0) / total);
 }
 
 // ---------------------------------------------------------------------------
@@ -198,8 +198,8 @@ function findVisualCentroidHost(recs: AnyRecord[], embByHost: Map<string, number
   const centroid = unitNorm(meanVector(vecs));
   let best: { host: string; sim: number } | null = null;
   for (let k = 0; k < recs.length; k++) {
-    const sim = cosine(vecs[k], centroid);
-    if (!best || sim > best.sim) best = { host: recs[k].host, sim };
+    const sim = cosine(vecs[k]!, centroid);
+    if (!best || sim > best.sim) best = { host: recs[k]!.host, sim };
   }
   return best!;
 }
@@ -235,7 +235,7 @@ function encodeProposal(cluster: AnyRecord, embByHost: Map<string, number[]>): A
   const shareSum = rawShares.reduce((a, b) => a + b, 0) || 1;
   const sectionGrammar = modalSeqArr.map((role, pos) => ({
     role,
-    heightShare: round(rawShares[pos] / shareSum, 4),
+    heightShare: round(rawShares[pos]! / shareSum, 4),
     focalPoint: focalModal(pos),
     featureShape: shapeModal(pos),
     composition: "TODO: author composition string (human curation)",
@@ -328,9 +328,9 @@ async function main(): Promise<void> {
 
   const zipped: AnyRecord[] = genomes.map((genome, i) => ({
     genome,
-    host: manifest[i].host,
-    url: manifest[i].url,
-    screenshots: manifest[i].screenshots,
+    host: manifest[i]!.host,
+    url: manifest[i]!.url,
+    screenshots: manifest[i]!.screenshots,
   }));
   const manifestByHost = new Map<string, AnyRecord>(manifest.map((m) => [m.host, m]));
 
@@ -409,7 +409,7 @@ async function main(): Promise<void> {
   const numericPairs: number[] = [];
   for (let i = 0; i < survivors.length; i += 1) {
     for (let j = i + 1; j < survivors.length; j += 3) {
-      numericPairs.push(euclid(survivors[i].numVec, survivors[j].numVec));
+      numericPairs.push(euclid(survivors[i]!.numVec, survivors[j]!.numVec));
     }
   }
   const kNumeric = median(numericPairs) || 1;
@@ -465,7 +465,7 @@ async function main(): Promise<void> {
   // Shell out to Python for Ward linkage + recursive bisection of oversized clusters
   // -------------------------------------------------------------------------
   await mkdir(SCRATCH, { recursive: true });
-  const VISUAL_DIM = embByHost.get(survivors[0].host)!.length;
+  const VISUAL_DIM = embByHost.get(survivors[0]!.host)!.length;
   const clusterInput = {
     minClusterSize: MIN_CLUSTER_SIZE,
     capPerPageKind: CAP_PER_PAGEKIND,

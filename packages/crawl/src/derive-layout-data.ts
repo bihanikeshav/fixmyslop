@@ -13,9 +13,10 @@
 import { createReadStream } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createInterface } from "node:readline";
+import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 
-const HERE = dirname(new URL(import.meta.url).pathname.replace(/^\/(?:[A-Za-z]:)/, (m) => m.slice(1)));
+const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "../../..");
 const DATA = resolve(ROOT, "data");
 const RAW_DEFAULT = resolve(DATA, "geometry-crawl-raw.v2.ndjson");
@@ -150,7 +151,7 @@ const PRICE_TOKEN_PATTERN = /\$\s?\d+(?:\.\d{1,2})?\s*(?:\/\s*|\s+per\s+)(mo|mon
 // used as actual plan-tier names.
 const TIER_WORD = /\b(pro|plus|premium|starter|enterprise|business|team|basic)\b/i;
 const BARE_PRICE = /\$\s?\d+(?:\.\d{1,2})?\b/g;
-function priceTokenCount(text: string): number {
+export function priceTokenCount(text: string): number {
   let count = (text.match(PRICE_TOKEN_PATTERN) || []).length;
   BARE_PRICE.lastIndex = 0;
   let m: RegExpExecArray | null;
@@ -241,7 +242,7 @@ function countAvatarImages(childElements: AnyRecord[]): number {
 // required for BOTH: an avatar next to a name-line alone (no quote) is just
 // as likely a "meet the team"/about-page card as a testimonial, so it's not
 // sufficient on its own.
-function hasQuoteAttributionShape(combinedText: string, childElements: AnyRecord[]): boolean {
+export function hasQuoteAttributionShape(combinedText: string, childElements: AnyRecord[]): boolean {
   if (!QUOTE_PUNCT.test(combinedText)) return false;
   return hasAttributionLine(childElements) || hasAvatarImage(childElements);
 }
@@ -361,7 +362,7 @@ function isCtaBandShape(section: AnyRecord, childElements: AnyRecord[], isTopFol
   return headings.length >= 1 && headings.length <= 2 && ctas.length >= 1 && ctas.length <= 2 && bodyCount <= 2;
 }
 
-function reclassifySectionRole(section: AnyRecord, childElements: AnyRecord[], options: { excludeRoles?: Set<string>; pageMaxHeadingSize?: number; confidenceOut?: { value: number } } = {}): string {
+export function reclassifySectionRole(section: AnyRecord, childElements: AnyRecord[], options: { excludeRoles?: Set<string>; pageMaxHeadingSize?: number; confidenceOut?: { value: number } } = {}): string {
   const excludeRoles = options.excludeRoles || new Set<string>();
   // decide() is a thin wrapper around every return in this function so a
   // caller can optionally read out WHY a role was picked (roleConfidence,
@@ -493,7 +494,7 @@ function reclassifySectionRole(section: AnyRecord, childElements: AnyRecord[], o
 // both over-counts and puts a bogus section before the real topmost one
 // (anthropic.com, adva-soft.com). Drop any near-full-page section that
 // visibly contains >= 2 meaningfully smaller siblings.
-function dropWrapperSections(sections: AnyRecord[]): AnyRecord[] {
+export function dropWrapperSections(sections: AnyRecord[]): AnyRecord[] {
   return sections.filter((section) => {
     const nh = Number(section.rect?.normalized?.h ?? 0);
     const nw = Number(section.rect?.normalized?.w ?? 0);
@@ -524,7 +525,7 @@ function sectionPageScale(sections: AnyRecord[]): { pageWidth: number; pageHeigh
 // Y-contiguous runs so unrelated same-width bands elsewhere on the page
 // don't merge. A run of >= 3 collapses into ONE synthetic band spanning the
 // run's bounds; its members are dropped from the individual section list.
-function collapseRepeatedSectionBands(sections: AnyRecord[]): AnyRecord[] {
+export function collapseRepeatedSectionBands(sections: AnyRecord[]): AnyRecord[] {
   const CARD_MAX_HEIGHT = 400;
   const RUN_GAP = 260;
   const WIDTH_TOLERANCE = 20;
@@ -1518,7 +1519,7 @@ function slopCandidates(record: AnyRecord): AnyRecord[] {
   const glows = elements.filter((e) => /rgba?\(/.test(e.boxShadow || "") && e.boxShadow !== "none");
   const gradients = elements.filter((e) => (e.backgroundImage || "").includes("gradient"));
   const repeated = elements.filter((e) => e.repeatedGroup);
-  const fonts = new Set(elements.map((e) => String(e.fontFamily || "").split(",")[0].replace(/["']/g, "").trim().toLowerCase()).filter(Boolean));
+  const fonts = new Set(elements.map((e) => (String(e.fontFamily || "").split(",")[0] ?? "").replace(/["']/g, "").trim().toLowerCase()).filter(Boolean));
   const cardLike = repeated.filter((e) => e.rect.width > 180 && e.rect.height > 100 && (e.boxShadow !== "none" || e.borderRadius >= 8));
   add("pill-heavy", rounded.length >= 8 && rounded.length / Math.max(1, elements.length) > 0.08 ? "medium" : "", rounded, "Pills are prevalent enough to inspect for unearned UI uniformity; frequency alone is not a final slop judgment.");
   add("colored-glow-shadow", glows.filter((e) => /rgba?\([^)]*(?:[1-9][0-9]|2[0-5][0-9]),/i.test(e.boxShadow || "")).length >= 3 ? "medium" : "", glows, "Colored shadows require visual review for hierarchy or decorative glow misuse.");
@@ -1531,7 +1532,8 @@ function slopCandidates(record: AnyRecord): AnyRecord[] {
 
 function fingerprint(genome: AnyRecord): string {
   const importantRoles = new Set(["nav", "hero", "proof", "features", "pricing", "faq", "cta", "footer"]);
-  const roleSet = [...new Set(genome.sectionGrammar.map((section: AnyRecord) => String(section.role || "unknown")))]
+  const roles: string[] = genome.sectionGrammar.map((section: AnyRecord) => String(section.role || "unknown"));
+  const roleSet = [...new Set<string>(roles)]
     .filter((role) => importantRoles.has(role)).sort();
   const columns = Number(genome.macro.columnCount || 1) >= 4 ? "4+" : String(genome.macro.columnCount || 1);
   return [
@@ -1818,4 +1820,10 @@ async function main(): Promise<void> {
   console.log(`Derived ${outputRecords.length} LayoutGenome records, ${clusters.length} clusters, ${candidates.filter((record) => record.matches.length).length} slop-candidate records.`);
 }
 
-main().catch((error) => { console.error(error); process.exit(1); });
+// Guard CLI execution so importing this module (e.g. from tests, to reuse
+// the exported pure section-classification helpers) does not kick off a
+// real derivation run.
+const isMain = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1]);
+if (isMain) {
+  main().catch((error) => { console.error(error); process.exit(1); });
+}

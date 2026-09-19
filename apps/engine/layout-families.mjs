@@ -603,7 +603,11 @@ function composeGenome(family, intent, iv, recentFingerprints, seed) {
     quality: { score: null, confidence: null, provenance: ["hand-authored"] },
     slop: { score: null, matchedRules: [] },
   };
-  if (seed == null) return base; // amplitude 0 — current byte-for-byte behavior, no draws at all
+  // amplitude 0 — current byte-for-byte behavior, no draws at all. This is the path every
+  // PRODUCTION caller takes (styleGenome, the worker's suggest_layout tool, and explore's own
+  // ranking pass all omit `seed`); the branch below is explore/test/proof-only. See the
+  // suggestLayout doc comment for why single-shot is deterministic best-fit by design.
+  if (seed == null) return base;
   const amplitude = 0.35 + 0.65 * iv.layoutVariance;
   const streamSeedFor = (rerollCount) => hashToUint32(`${seed}:${family.name}:0:${rerollCount}`);
   return perturbAndValidate(base, family, streamSeedFor, iv, amplitude);
@@ -618,6 +622,24 @@ function composeGenome(family, intent, iv, recentFingerprints, seed) {
  * (amplitude = 0.35 + 0.65·layoutVariance — see composeGenome). When absent, amplitude is 0:
  * byte-for-byte identical to the pre-perturbation behavior, so existing callers/tests are
  * unaffected by this change.
+ *
+ * BY DESIGN, NOT AN OVERSIGHT — no production caller passes `seed`, and none should:
+ *
+ *   - genome.mjs:styleGenome() and worker tool `suggest_layout` want the single BEST FIT
+ *     for one intent. Perturbing a single-genome answer would make the same brief return a
+ *     different skeleton on every call for no gain: there is nothing to be diverse FROM.
+ *     Single-shot is therefore a deterministic best-fit and stays that way.
+ *   - Variety is the EXPLORE path's job, and it happens elsewhere: explore.mjs calls
+ *     suggestLayout WITHOUT a seed to get the clean, unperturbed ranking, picks a
+ *     max-min-distance spread of families (greedyDiverseFamilies), and only then perturbs
+ *     each slot with its own stream. Seeding here as well would perturb the ranking that
+ *     the diversity selection is computed from, i.e. it would fight that mechanism.
+ *
+ * So the `seed != null` branch in composeGenome is reachable only from the explore/test and
+ * proof-generation paths (scripts/build-layout-grammar-proofs.mjs). Do not "fix" the absent
+ * seed by threading one through styleGenome — that changes engine output for every existing
+ * input. If single-shot layouts ever need to vary, that is a new opt-in parameter on the
+ * public API, not a default.
  */
 export function suggestLayout(intent = {}, { recentFingerprints = [], seed = null } = {}) {
   const iv = {

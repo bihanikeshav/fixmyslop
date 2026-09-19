@@ -1,5 +1,11 @@
 # Humanization behavior families
 
+> **Attribution:** this taxonomy of behavior families is derived from Wikipedia's
+> "Signs of AI writing" guidance,
+> https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing, licensed CC BY-SA 4.0.
+> No text is reproduced verbatim from that guide; families, wording, and detection
+> logic below are original.
+
 Use these families to decide where a passage needs revision. Interpret every signal
 against genre, audience, and neighboring sentences.
 

@@ -139,11 +139,24 @@ avoids indigo/Inter/glassmorphism on its own — and reflexively reaches for thi
 "tasteful editorial" template instead. It is just as generic. Caught in live A/B
 testing (an unguided build fell straight into it). Avoid the cluster, not one item:
 - Oversized **italic serif hero** (Playfair Display, Cormorant) — both on the font avoid-list.
+  **Do instead:** pick a characterful, non-darling serif or display face from
+  `type-and-color.md`'s fresh lists and set it upright at scale; save italics for a
+  single emphasized word, if any.
 - **Cream/beige paper background** + a single **gold/amber/brass "ink"** accent.
+  **Do instead:** derive ground + accent from the subject's actual material or energy
+  (see `slop-colors.md` → "The dark trap" for the same logic applied to darkness).
 - Tiny uppercase tracked **eyebrow chip** above the headline.
+  **Do instead:** if you need a label, integrate it into the layout (a rule, a margin
+  note, a running header) rather than a pill/chip — or drop it and let the headline lead.
 - **01 / 02 / 03** numbered editorial step markers.
+  **Do instead:** let the content's own structure (a timeline, a table, a map, a
+  diagram) carry the sequence; number only when the steps are genuinely ordered actions.
 - **Three-stat hero-metric block** (big number, small label, ×3).
+  **Do instead:** use `hero-artifacts.md`'s standout archetypes — a single computed
+  instrument beats three static stat tiles.
 - Vibe: "we're the calm, human, anti-AI tool" — signalled by warm serif + ruled paper.
+  **Do instead:** let the subject's own register set the tone; a calm subject can still
+  be loud in scale/contrast (see "Boldness" in SKILL.md) instead of reaching for this tell.
 - Rotate the palette family across builds — if the last premium build was cream+brass,
   this one must not be. tasteskill bans the cream+brass "premium consumer" default outright;
   the fix is grounding the palette in THIS subject's world, not swapping to the next
@@ -159,10 +172,23 @@ What a model converges to once it's avoiding indigo AND avoiding Playfair-on-cre
 one safe, uniform, timid template. Caught in live A/B (five different briefs all came
 out near-identical). The cluster:
 - Light warm off-white ground + one earthy accent (terracotta/ochre/crust-brown).
+  **Do instead:** ground the palette in the subject's real material/energy, per
+  `slop-colors.md`; if the subject genuinely has energy, commit to a bold/bright hue
+  instead of the muted-earthy default.
 - A neutral grotesque doing everything (Outfit, Cabinet Grotesk, General Sans).
+  **Do instead:** pick a characterful display face for headings from `type-and-color.md`
+  and vary it per build; a saturated grotesque may still carry body text (see `tensions.md`).
 - One italic-serif accent word in the headline.
+  **Do instead:** pick a real type move from `composition-and-boldness.md` — scale
+  contrast, a mixed-weight headline, or a structural type gesture, not one italic word.
 - A bordered "tool" widget card — the input→number reflex (calculator / clock / gauge).
+  **Do instead:** reach for a more expressive standout archetype (generative visual,
+  spatial/map, simulation, explorable diagram, before/after) per `hero-artifacts.md`;
+  only use the number widget when the subject's number is genuinely central.
 - Monospace micro-labels; left-aligned; a calm two-column split (headline left, card right).
+  **Do instead:** pick a layout archetype from `composition-and-boldness.md` other than
+  the split-hero+card default, and reserve mono for genuinely typographic/data use
+  (see `tensions.md`).
 It passes every slop gate and is still forgettable, because it is *safe*. The tells:
 timidity (nothing is loud or at scale), and sameness (it could be any of a dozen
 other products). Escape via `composition-and-boldness.md`: forbid the median, pick a

@@ -47,9 +47,11 @@ def _sents(t):
     return [s.strip() for s in _SENT.findall(t) if s.strip()]
 
 
+from common import jaccard as _jaccard
+
+
 def _jac(a, b):
-    sa, sb = set(_toks(a)), set(_toks(b))
-    return len(sa & sb) / len(sa | sb) if (sa or sb) else 0.0
+    return _jaccard(a, b, _toks)
 
 
 def _rep_score(text):

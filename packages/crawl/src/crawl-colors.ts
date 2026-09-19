@@ -3,6 +3,7 @@
  *
  *   npx tsx src/crawl-colors.ts                       # re-crawl the 44 corpus sites
  *   npx tsx src/crawl-colors.ts --urls https://a.com,https://b.com
+ *   npx tsx src/crawl-colors.ts --ignore-robots        # bypass robots.txt (off by default)
  *
  * Measures REAL-SITE COLOR the same way crawl.ts measures font overuse:
  * frequency across the crawled AI-product sites. For each site we read the
@@ -76,12 +77,12 @@ function hexToOklch(hex: string): [number, number, number] {
 function parseColor(s: string): { r: number; g: number; b: number; a: number } | null {
   const m = s.match(/rgba?\(([^)]+)\)/i);
   if (!m) return null;
-  const parts = m[1].split(",").map((p) => p.trim());
+  const parts = m[1]?.split(",").map((p) => p.trim()) ?? [];
   if (parts.length < 3) return null;
-  const r = parseFloat(parts[0]);
-  const g = parseFloat(parts[1]);
-  const b = parseFloat(parts[2]);
-  const a = parts.length >= 4 ? parseFloat(parts[3]) : 1;
+  const r = parseFloat(parts[0]!);
+  const g = parseFloat(parts[1]!);
+  const b = parseFloat(parts[2]!);
+  const a = parts[3] === undefined ? 1 : parseFloat(parts[3]);
   if ([r, g, b].some((v) => Number.isNaN(v))) return null;
   return { r, g, b, a: Number.isNaN(a) ? 1 : a };
 }
@@ -154,11 +155,13 @@ function siteDistinctColors(raws: RawColor[]): Set<string> {
 
 interface Args {
   urls: string[] | null;
+  ignoreRobots: boolean;
 }
 function parseArgs(argv: string[]): Args {
-  const out: Args = { urls: null };
+  const out: Args = { urls: null, ignoreRobots: false };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--urls") out.urls = (argv[++i] ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+    else if (argv[i] === "--ignore-robots") out.ignoreRobots = true;
   }
   return out;
 }
@@ -181,7 +184,7 @@ async function main(): Promise<void> {
 
   await withBrowser(async (browser) => {
     for (const url of urls) {
-      const raws = await withPage(browser, url, collectColors);
+      const raws = await withPage(browser, url, collectColors, 20000, { ignoreRobots: args.ignoreRobots });
       if (!raws) {
         console.log(`  ✗ ${url}`);
         continue;

@@ -1,5 +1,9 @@
 # Premade-components + contrast + layout round
 
+> **Informal dev log, not a benchmark.** Unblinded, single-author (N=1–5), no
+> statistical claims. For a blinded, multi-rater comparison see
+> `benchmarks/ui-skills/`.
+
 User: still off — stop Claude drawing illustrative SVG (use premade components), contrast
 off on saffron, bake in more UI patterns, play with layouts. Decisions: ban illustrative
 SVG (keep data-driven instruments), use icon libraries + UI component patterns + a

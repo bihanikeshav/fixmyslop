@@ -1,4 +1,10 @@
-# FixMySlop v2 — confirmed baseline (`A_nolock`)
+# FixMySlop v2 — historical baseline (`A_nolock`)
+
+> **2026-08-23 erratum:** the confirmation harness used an invalid non-inferiority
+> decision rule and an abbreviated prompt rather than the complete external Humanizer
+> protocol. Treat the results below as historical development evidence only. They do not
+> establish a Pareto gain or superiority over the Humanizer skill. See
+> [V2_CONFIRMATION_PREREG.md](V2_CONFIRMATION_PREREG.md) for the correction.
 
 Frozen 2026-08-19. Tag: `v2-confirmed-baseline`. This is the exact architecture that passed the
 preregistered held-out confirmation (`V2_CONFIRMATION_PREREG.md`, result appended there;
@@ -30,13 +36,11 @@ stopping early when the anchor/fidelity audit is clean.
 - **Runner** = `textslopbench/v2_confirmed_baseline.py` (the exact confirmation harness). Cached
   generations for the confirmed run are `textslopbench/results/policy-smoke-conf-*.raw.json`.
 
-## Held-out confirmation result (untouched data; Beemo holdout-80 + LAMP holdout-100, k=3)
-v2 is a **Pareto gain over Humanizer on both corpora**: strictly superior on fidelity (+0.40 Beemo /
-+0.51 LAMP) and exact-anchor (+10), non-inferior on every alignment axis (point-margin AND CI), jaccard
-non-inferior (slightly beats). Coherence gate passed (10/10). LAMP meets every criterion incl. v1-parity
-fidelity ceiling. Beemo fidelity 0.9625 / exact 98.83 fall just under the v1-parity ceiling (0.98/99.5) —
-the only preregistered miss, and a v2-vs-v1 safety issue, NOT a loss to Humanizer. Full table in the
-prereg RESULT section.
+## Historical held-out result (untouched data; Beemo holdout-80 + LAMP holdout-100, k=3)
+The old harness reported higher fidelity point estimates (+0.40 Beemo / +0.51 LAMP),
+exact-anchor (+10), and a 10/10 coherence gate. Its Pareto and non-inferiority labels are withdrawn:
+the old confidence-bound rule did not establish those conclusions. The point estimates remain here
+only to reproduce the archived run; see the corrected status at the top of this file.
 
 ## Status of the v1 path
 v1 (conservative FixMySlop) remains the default and is unchanged. v2 is a distinct mode; wiring adds a
@@ -49,5 +53,5 @@ Close Beemo's ~3.75% residual fidelity failures — the full-paraphrase class wi
 only as last resort) on fresh development examples of that failure class, validate on new untouched data.
 Longer-term v2.1 goal: replace the Humanizer Stage-1 with **our own** high-coverage Stage 1 (operator
 audit of Humanizer's mechanisms; keep/modify/avoid per operator by benchmark contribution), benchmarked
-separately from the repair, so Stage 1 provably beats Humanizer on coverage/direction/rhetoric before
+separately from the repair, so Stage 1 can be compared on coverage/direction/rhetoric before
 the repair stage is applied.

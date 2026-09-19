@@ -94,9 +94,10 @@ function parseArgs(argv: string[]) {
   const args: Record<string, string> = {};
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    if (a.startsWith("--")) {
+    if (a?.startsWith("--")) {
       const key = a.slice(2);
-      const val = argv[i + 1] && !argv[i + 1].startsWith("--") ? argv[++i] : "true";
+      const candidate = argv[i + 1];
+      const val = candidate !== undefined && !candidate.startsWith("--") ? (i++, candidate) : "true";
       args[key] = val;
     }
   }
@@ -118,7 +119,9 @@ function shuffle<T>(arr: T[], rng: () => number): T[] {
   const out = arr.slice();
   for (let i = out.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
-    [out[i], out[j]] = [out[j], out[i]];
+    const left = out[i]!;
+    out[i] = out[j]!;
+    out[j] = left;
   }
   return out;
 }
@@ -153,8 +156,13 @@ function main() {
   let deadSkipped = 0;
 
   for (let i = 0; i < genomeLines.length; i++) {
-    const genome: LayoutGenomeV3 = JSON.parse(genomeLines[i]);
-    const manifest: ManifestEntry = JSON.parse(manifestLines[i]);
+    const genomeLine = genomeLines[i];
+    const manifestLine = manifestLines[i];
+    if (genomeLine === undefined || manifestLine === undefined) {
+      throw new Error(`missing aligned record at line ${i + 1}`);
+    }
+    const genome: LayoutGenomeV3 = JSON.parse(genomeLine);
+    const manifest: ManifestEntry = JSON.parse(manifestLine);
     const sectionCount = genome.sectionGrammar?.length ?? 0;
     const bucket = bucketFor(sectionCount);
     if (!bucket) continue;

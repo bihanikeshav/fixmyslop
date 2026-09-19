@@ -1,0 +1,20 @@
+fixmyslop
+Copyright 2026 Keshav Bihani
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This licence covers the source code and the project's own derived data. It does not
+relicense third-party material. See docs/DATA-AND-LICENSING.md for full provenance.
+
+Third-party material and attributions:
+
+- Font personality attributes: O'Donovan, Libeks, Agarwala, Hertzmann, "Exploratory Font
+  Selection Using Crowdsourced Attributes", ACM SIGGRAPH 2014.
+- Fontjoy font vectors: Jack000/fontjoy, MIT License.
+- DINOv2: Meta AI (facebookresearch/dinov2), Apache License 2.0.
+- "Signs of AI writing": Wikipedia contributors, CC BY-SA 4.0. Pattern descriptions in
+  skills/fixmyslop-humanizer are adapted from it.
+- Design-rule references credited inline in the skills: impeccable.style, Anthropic's
+  frontend-design skill, tasteskill.dev (Leonxlnx/taste-skill).
+- Fonts referenced by the index remain under their own licences (SIL OFL, Apache-2.0,
+  Ubuntu Font Licence, ITF Free Font License). No font binaries are distributed here.

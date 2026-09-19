@@ -1,0 +1,19 @@
+# Cloudflare static-assets headers (served by the "fixmyslop" Worker's
+# [assets] binding — see apps/worker/wrangler.toml). Origins below were
+# enumerated by grepping apps/web for every https:// reference actually
+# loaded by a live page (index.html, dashboard.html, app.js, vendor/engine.mjs,
+# viz/font-map.html): unpkg.com (React/ReactDOM, pinned by SRI), Google Fonts
+# (fonts.googleapis.com CSS + fonts.gstatic.com font files), and Fontshare
+# (api.fontshare.com CSS + cdn.fontshare.com font files). No page performs a
+# cross-origin fetch/XHR at runtime, so connect-src stays 'self'.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.fontshare.com; font-src 'self' https://fonts.gstatic.com https://cdn.fontshare.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
+# apps/web/build/* filenames are NOT content-hashed (app.js, engine-bootstrap.mjs,
+# etc. keep stable names across builds — only index.html's own ?v= query is
+# stamped per build by scripts/build-web.mjs), so this stays a modest cache
+# rather than a long/immutable one.
+/build/*
+  Cache-Control: public, max-age=300, must-revalidate

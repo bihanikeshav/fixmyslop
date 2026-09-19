@@ -1,0 +1,35 @@
+{
+  "schema": "fixmyslop-ui-rubric/1.0",
+  "version": "1.0.0",
+  "score_scale": {
+    "min": 0,
+    "max": 4,
+    "anchors": {
+      "0": "absent, broken, or contradicts the brief",
+      "1": "weak; generic treatment or major usability problem",
+      "2": "competent but conventional or uneven",
+      "3": "strong, coherent, and clearly grounded in the subject",
+      "4": "exceptional; the implementation itself is persuasive evidence"
+    }
+  },
+  "required_gates": [
+    "loads_without_errors",
+    "desktop_and_mobile_complete",
+    "keyboard_path_complete",
+    "visible_focus",
+    "contrast_and_non_color_cues",
+    "reduced_motion_path",
+    "required_states_present",
+    "no_blocking_overflow"
+  ],
+  "rated_dimensions": [
+    { "id": "intent_fidelity", "question": "Does the interface solve the supplied product and audience problem?" },
+    { "id": "mechanism_legibility", "question": "Is the subject-specific mechanism visible, useful, and central?" },
+    { "id": "hierarchy", "question": "Does one element win per view, with clear reading and action order?" },
+    { "id": "system_coherence", "question": "Do type, colour, spacing, material, and motion form one authored language?" },
+    { "id": "state_completeness", "question": "Are interaction, loading, empty, error, success, and disabled states handled where relevant?" },
+    { "id": "responsive_translation", "question": "Does mobile recompose the experience instead of merely shrinking it?" },
+    { "id": "distinctive_restraint", "question": "Is the result recognisable and specific without stacked effects or borrowed skins?" },
+    { "id": "truth_and_provenance", "question": "Are claims, data, assets, and reference-derived choices honest and inspectable?" }
+  ]
+}

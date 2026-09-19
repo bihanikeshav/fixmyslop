@@ -42,7 +42,7 @@ function axisFpsFor(directions) {
 test("purity: divergence.mjs carries no Math.random/Date.now/new Date in executable code", () => {
   const path = fileURLToPath(new URL("divergence.mjs", import.meta.url));
   const src = readFileSync(path, "utf8");
-  const codeOnly = src.split("\n").map((l) => l.replace(/\/\/.*$/, "")).join("\n");
+  const codeOnly = src.split("\n").map((l) => l.replace(/\/\/.*/, "")).join("\n");
   assert.ok(!/Math\.random/.test(codeOnly));
   assert.ok(!/Date\.now/.test(codeOnly));
   assert.ok(!/new Date/.test(codeOnly));

@@ -1,9 +1,15 @@
+// REPO-LEVEL INTEGRATION TEST, parked in this package: it exercises the color model under
+// viz/personality-test/color (owned outside packages/pipeline), not code in this package. It
+// lives here because `npx vitest run` in this package is where vitest already runs in this
+// repo; there's no vitest runner configured for viz/. Do not move it without also wiring up a
+// runner there, and coordinate with whoever owns viz/personality-test first.
+// @ts-nocheck -- standalone JavaScript color modules intentionally have no declarations.
 import { describe, it, expect } from "vitest";
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 // The color model lives as standalone Node ESM under viz/personality-test/color
 // (it ships next to slop-check.mjs as a runnable CLI). We import the pure .mjs
-// modules directly; vitest resolves .mjs fine. No types — treat as any.
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
+// modules directly; vitest resolves .mjs fine.
 import {
   hexToRgb, rgbToHex, hexToOklab, oklabToSrgb, hexToOklch,
   srgbToLinear, linearToSrgb, linearToOklab, oklabToLinear,
@@ -13,6 +19,17 @@ import {
   classify, isOverused, isNeutral, hardBanned, nearestSafe, densityHex,
   nearDuplicates,
 } from "../../../viz/personality-test/color/density.mjs";
+
+// These cases read gitignored local pipeline output (font index, neighbours, crawl colours,
+// structural prevalence, scraped reference index). On a fresh clone / CI that data does not
+// exist, so they skip — same policy as tests/_corpus_guard.py on the Python side.
+const LOCAL_DATA = [
+  "data/fonts.index.json", "data/font-neighbors.json", "data/observations.colors.json",
+  "data/structural-prevalence.json", "data/reference/getdesign/index.json",
+].map((p) => resolve(__dirname, "../../..", p));
+const HAS_LOCAL_DATA = LOCAL_DATA.every((p) => existsSync(p));
+const dataIt = HAS_LOCAL_DATA ? it : it.skip;
+
 
 describe("color-space conversions", () => {
   it("round-trips hex <-> rgb", () => {
@@ -125,7 +142,7 @@ describe("nearestSafe snapping", () => {
     expect(sugg[0].density).toBeLessThanOrEqual(before);
   });
 
-  it("snaps an OVERUSED color to a lower-density neighbour", () => {
+  dataIt("snaps an OVERUSED color to a lower-density neighbour", () => {
     // a genuine hot peak from the crawl (red, ~62 density at BANDWIDTH 0.02 / threshold 40)
     const c = classify("#f04848");
     expect(c.verdict).toBe("OVERUSED");

@@ -10,6 +10,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
+import { objectiveQuality, compositeQuality, attributeQualityVote } from "@fixmyslop/core";
 import { loadOdonovan } from "./sources/odonovan.js";
 import type { IndexedFont } from "./types.js";
 
@@ -32,6 +33,15 @@ async function main(): Promise<void> {
     if (Object.keys(vec).length === 0) continue;
     f.personality = vec;
     f.personalityReal = true;
+    // The documented three-vote quality blend (see @fixmyslop/core quality.ts)
+    // includes an "attribute" vote — the O'Donovan-derived confidence/craft
+    // signal — which was previously never recomputed once real personality
+    // attributes landed. Recompute it now so f.quality actually reflects votes
+    // 1+2, not just the objective metrics vote.
+    f.quality = compositeQuality({
+      objective: objectiveQuality(f.metrics),
+      attribute: attributeQualityVote(f.personality),
+    });
     matched++;
   }
 

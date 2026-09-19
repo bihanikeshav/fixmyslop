@@ -160,4 +160,7 @@ def run(source: str, generate: Generate, mode: str = "v1", rounds: int = DEFAULT
         if not needed:
             break
         current = _parse_one(generate(messages), doc_id)
-    return current
+    # Generation is never trusted merely because repair rounds were exhausted.
+    # The safe fallback is the source, which preserves every claim and anchor.
+    final_audit = fidelity_audit(source, current, protected or [])
+    return current if final_audit["passed"] else source

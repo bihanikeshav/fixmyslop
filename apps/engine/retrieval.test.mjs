@@ -11,7 +11,7 @@ import { LAYOUT_FAMILIES, suggestLayout } from "./layout-families.mjs";
 import { hasIndex, indexStats, intentToQuery, retrieveLayouts } from "./retrieval.mjs";
 import { checkBackgroundViolations } from "./background.mjs";
 import { checkMotionViolations } from "./motion.mjs";
-import { cosine } from "../../viz/layout-embeddings/genome-vector.mjs";
+import { cosine } from "./genome-vector.mjs";
 import index from "./data/retrieval-index.v1.json" with { type: "json" };
 import corpus from "./data/corpus.json" with { type: "json" };
 import brands from "./data/brands.json" with { type: "json" };
@@ -24,7 +24,7 @@ const FAMILY_BY_NAME = new Map(LAYOUT_FAMILIES.map((f) => [f.name, f]));
 test("purity: retrieval.mjs carries no Math.random/Date.now/new Date in executable code", () => {
   const path = fileURLToPath(new URL("retrieval.mjs", import.meta.url));
   const src = readFileSync(path, "utf8");
-  const codeOnly = src.split("\n").map((line) => line.replace(/\/\/.*$/, "")).join("\n");
+  const codeOnly = src.split("\n").map((line) => line.replace(/\/\/.*/, "")).join("\n");
   assert.ok(!/Math\.random/.test(codeOnly), "retrieval.mjs calls Math.random");
   assert.ok(!/Date\.now/.test(codeOnly), "retrieval.mjs calls Date.now");
   assert.ok(!/new Date/.test(codeOnly), "retrieval.mjs calls new Date");

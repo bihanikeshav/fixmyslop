@@ -4,13 +4,17 @@ import {
   metricsFloorFailures,
   objectiveQuality,
   compositeQuality,
+  attributeQualityVote,
   personalityMatch,
   classifyRoles,
   normalizeFamily,
   computeSaturation,
   DEFAULT_SATURATION_CONFIG,
+  MIN_TREND_EVIDENCE,
   recommend,
   slopScore,
+  clamp01,
+  clamp01OrMid,
   type FontMetrics,
   type FontRecord,
   type Candidate,
@@ -59,6 +63,26 @@ function cand(over: Partial<Candidate> & { font: FontRecord }): Candidate {
   };
 }
 
+describe("clamp01 / clamp01OrMid", () => {
+  it("clamp01 clamps to [0,1]", () => {
+    expect(clamp01(-1)).toBe(0);
+    expect(clamp01(2)).toBe(1);
+    expect(clamp01(0.42)).toBe(0.42);
+  });
+
+  it("clamp01OrMid treats non-finite input as the 0.5 midpoint", () => {
+    expect(clamp01OrMid(NaN)).toBe(0.5);
+    expect(clamp01OrMid(Infinity)).toBe(0.5);
+    expect(clamp01OrMid(-Infinity)).toBe(0.5);
+  });
+
+  it("clamp01OrMid still clamps finite out-of-range input", () => {
+    expect(clamp01OrMid(-1)).toBe(0);
+    expect(clamp01OrMid(2)).toBe(1);
+    expect(clamp01OrMid(0.3)).toBe(0.3);
+  });
+});
+
 describe("metrics floor", () => {
   it("passes a well-formed font", () => {
     expect(metricsFloorPass(goodMetrics)).toBe(true);
@@ -78,6 +102,74 @@ describe("objectiveQuality", () => {
   it("stays within 0..1", () => {
     expect(objectiveQuality(goodMetrics)).toBeLessThanOrEqual(1);
     expect(objectiveQuality(brokenMetrics)).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe("objectiveQuality: unmeasured aperture", () => {
+  const measured: FontMetrics = { ...goodMetrics, apertureOpenness: 0.7 };
+  const unmeasured: FontMetrics = { ...goodMetrics, apertureOpenness: null };
+
+  it("doesn't tank the score when aperture is unmeasured", () => {
+    // A font whose real aperture happens to equal the neutral score for the
+    // other metrics should score about the same whether aperture is measured
+    // at a middling value or left null (renormalized away), not systematically
+    // lower just because one metric is missing.
+    const withMidAperture: FontMetrics = { ...goodMetrics, apertureOpenness: 0.5 };
+    expect(objectiveQuality(unmeasured)).toBeCloseTo(objectiveQuality(withMidAperture), 1);
+  });
+
+  it("a bad unmeasured font still scores lower than a good unmeasured font", () => {
+    const badUnmeasured: FontMetrics = { ...brokenMetrics, apertureOpenness: null };
+    expect(objectiveQuality(unmeasured)).toBeGreaterThan(objectiveQuality(badUnmeasured));
+  });
+
+  it("measured aperture still moves the score", () => {
+    const highAperture: FontMetrics = { ...goodMetrics, apertureOpenness: 1 };
+    const lowAperture: FontMetrics = { ...goodMetrics, apertureOpenness: 0 };
+    expect(objectiveQuality(highAperture)).toBeGreaterThan(objectiveQuality(lowAperture));
+  });
+
+  it("stays within 0..1 whether measured or not", () => {
+    expect(objectiveQuality(measured)).toBeLessThanOrEqual(1);
+    expect(objectiveQuality(unmeasured)).toBeLessThanOrEqual(1);
+  });
+});
+
+describe("metricsFloorFailures: unmeasured aperture never gates", () => {
+  it("a font that would fail the aperture floor passes it when unmeasured", () => {
+    const closedAperture: FontMetrics = { ...goodMetrics, apertureOpenness: 0.1 };
+    expect(metricsFloorFailures(closedAperture)).toContain("apertures too closed");
+
+    const unmeasured: FontMetrics = { ...goodMetrics, apertureOpenness: null };
+    expect(metricsFloorFailures(unmeasured)).not.toContain("apertures too closed");
+    expect(metricsFloorPass(unmeasured)).toBe(true);
+  });
+
+  it("measured aperture still gates a genuinely closed font", () => {
+    const closedAperture: FontMetrics = { ...goodMetrics, apertureOpenness: 0.1 };
+    expect(metricsFloorPass(closedAperture)).toBe(false);
+  });
+});
+
+describe("attributeQualityVote", () => {
+  it("returns undefined for an empty vector (no vote to cast)", () => {
+    expect(attributeQualityVote({})).toBeUndefined();
+  });
+
+  it("scores a decisive, characterful vector high", () => {
+    const v = attributeQualityVote({ bold: 0.95, dramatic: 0.9, calm: 0.05 });
+    expect(v).toBeGreaterThan(0.7);
+  });
+
+  it("scores a flat, neutral vector low", () => {
+    const v = attributeQualityVote({ bold: 0.5, calm: 0.5, formal: 0.5 });
+    expect(v).toBeCloseTo(0, 5);
+  });
+
+  it("stays within 0..1", () => {
+    const v = attributeQualityVote({ bold: 1, thin: 0 });
+    expect(v).toBeLessThanOrEqual(1);
+    expect(v).toBeGreaterThanOrEqual(0);
   });
 });
 
@@ -156,6 +248,39 @@ describe("saturation (role-aware, recency-weighted)", () => {
     const s = sat.get("stable")!;
     expect(s.body).toBeGreaterThan(0);
     expect(s.display).toBe(0);
+  });
+});
+
+describe("saturation trend: thin evidence can't fake a max trend", () => {
+  it("a single low-weight sighting from zero produces a small trend, not 1.0", () => {
+    const obs: Observation[] = [
+      { fontId: "one-off", role: "display", window: 5, count: 1, signal: "community" },
+    ];
+    const sat = computeSaturation(obs, { currentWindow: 5, ...DEFAULT_SATURATION_CONFIG });
+    const s = sat.get("one-off")!;
+    expect(s.trend).toBeGreaterThan(0);
+    expect(s.trend).toBeLessThan(0.5);
+  });
+
+  it("enough evidence from zero still reaches a strong trend", () => {
+    const obs: Observation[] = [
+      { fontId: "surging", role: "display", window: 5, count: MIN_TREND_EVIDENCE * 4, signal: "crawl" },
+    ];
+    const sat = computeSaturation(obs, { currentWindow: 5, ...DEFAULT_SATURATION_CONFIG });
+    const s = sat.get("surging")!;
+    expect(s.trend).toBeCloseTo(1, 5);
+  });
+
+  it("is monotonic: more evidence at the same ratio never lowers the trend", () => {
+    const low: Observation[] = [
+      { fontId: "x", role: "display", window: 5, count: 1, signal: "community" },
+    ];
+    const high: Observation[] = [
+      { fontId: "x", role: "display", window: 5, count: 3, signal: "community" },
+    ];
+    const satLow = computeSaturation(low, { currentWindow: 5, ...DEFAULT_SATURATION_CONFIG }).get("x")!;
+    const satHigh = computeSaturation(high, { currentWindow: 5, ...DEFAULT_SATURATION_CONFIG }).get("x")!;
+    expect(satHigh.trend).toBeGreaterThanOrEqual(satLow.trend);
   });
 });
 

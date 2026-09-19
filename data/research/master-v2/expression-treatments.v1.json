@@ -1,0 +1,185 @@
+{
+  "schemaVersion": "expression-treatments.v1",
+  "source": [
+    "skills/fix-ai-slop",
+    "local Impeccable and Taste reviews",
+    "gallery expression observations"
+  ],
+  "treatments": [
+    {
+      "id": "cursor-magnetic-action",
+      "category": "cursor",
+      "whenToUse": [
+        "portfolio",
+        "agency",
+        "experimental-campaign"
+      ],
+      "notFor": [
+        "dashboard",
+        "documentation",
+        "touch-primary"
+      ],
+      "mobileTransform": "disable",
+      "reducedMotion": "static-pointer",
+      "performanceCost": "low",
+      "maxPerPage": 1
+    },
+    {
+      "id": "cursor-image-trail",
+      "category": "cursor",
+      "whenToUse": [
+        "gallery",
+        "portfolio"
+      ],
+      "notFor": [
+        "dense-product",
+        "trust-heavy"
+      ],
+      "mobileTransform": "remove",
+      "reducedMotion": "remove",
+      "performanceCost": "medium",
+      "maxPerPage": 1
+    },
+    {
+      "id": "scroll-reveal-stagger",
+      "category": "scroll",
+      "whenToUse": [
+        "most-marketing",
+        "editorial"
+      ],
+      "notFor": [
+        "long-reading-with-low-motion"
+      ],
+      "mobileTransform": "reduce-to-fade",
+      "reducedMotion": "static-order",
+      "performanceCost": "low",
+      "maxPerPage": 1
+    },
+    {
+      "id": "sticky-narrative-stack",
+      "category": "scroll",
+      "whenToUse": [
+        "case-study",
+        "process",
+        "campaign"
+      ],
+      "notFor": [
+        "dense-docs",
+        "forms"
+      ],
+      "mobileTransform": "stack",
+      "reducedMotion": "normal-flow",
+      "performanceCost": "medium",
+      "maxPerPage": 1
+    },
+    {
+      "id": "horizontal-gallery-pan",
+      "category": "scroll",
+      "whenToUse": [
+        "gallery",
+        "timeline",
+        "process"
+      ],
+      "notFor": [
+        "primary-reading",
+        "checkout"
+      ],
+      "mobileTransform": "native-horizontal-scroll",
+      "reducedMotion": "static-rail",
+      "performanceCost": "medium",
+      "maxPerPage": 1
+    },
+    {
+      "id": "asymmetric-split-pinning",
+      "category": "scroll",
+      "whenToUse": [
+        "portfolio",
+        "editorial",
+        "campaign"
+      ],
+      "notFor": [
+        "dense-admin",
+        "high-trust-utility"
+      ],
+      "mobileTransform": "ordered-stack",
+      "reducedMotion": "normal-flow",
+      "performanceCost": "medium",
+      "maxPerPage": 1
+    },
+    {
+      "id": "grain-surface-overlay",
+      "category": "texture",
+      "whenToUse": [
+        "editorial",
+        "film",
+        "paper",
+        "craft"
+      ],
+      "notFor": [
+        "tight-dense-ui",
+        "low-power-only"
+      ],
+      "mobileTransform": "same-or-lighter",
+      "reducedMotion": "static",
+      "performanceCost": "low",
+      "maxPerPage": 1
+    },
+    {
+      "id": "type-mask-crop",
+      "category": "typography",
+      "whenToUse": [
+        "short-display-copy",
+        "poster",
+        "campaign"
+      ],
+      "notFor": [
+        "body-copy",
+        "localization-heavy"
+      ],
+      "mobileTransform": "smaller-crop-or-uncrop",
+      "reducedMotion": "static",
+      "performanceCost": "low",
+      "maxPerPage": 1
+    },
+    {
+      "id": "outline-solid-type",
+      "category": "typography",
+      "whenToUse": [
+        "display-hierarchy",
+        "editorial",
+        "poster"
+      ],
+      "notFor": [
+        "body-copy",
+        "low-contrast-surfaces"
+      ],
+      "mobileTransform": "reduce-outline-weight",
+      "reducedMotion": "static",
+      "performanceCost": "low",
+      "maxPerPage": 1
+    },
+    {
+      "id": "variable-axis-kinetic-type",
+      "category": "typography",
+      "whenToUse": [
+        "campaign",
+        "experimental-brand"
+      ],
+      "notFor": [
+        "sustained-reading",
+        "accessibility-sensitive"
+      ],
+      "mobileTransform": "static-or-reduced",
+      "reducedMotion": "static",
+      "performanceCost": "medium",
+      "maxPerPage": 1
+    }
+  ],
+  "combinationRules": [
+    "one-centrepiece",
+    "one-continuous-decorative-motion",
+    "no-default-scroll-hijack",
+    "text-effects-display-only",
+    "mobile-and-reduced-motion-required"
+  ]
+}

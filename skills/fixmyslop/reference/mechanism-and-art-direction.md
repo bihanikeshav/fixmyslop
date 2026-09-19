@@ -1,0 +1,11 @@
+# fixmyslop reference — Mechanism & art direction
+
+_Craft knowledge to draw on, not a template. The gates in design-law.md are the only hard rules — invent for THIS subject and diverge freely._
+
+Use this pass before choosing a visual skin for any interactive product, tool, dashboard, form, or product-led landing page. Write a **mechanism contract** first: the object model users manipulate; representative data and at least one meaningful state; three primary user actions; the visible outcome of each action; one failure or recovery path; and keyboard, touch, narrow-screen, and reduced-motion equivalents. A product screenshot, animated mock card, or decorative canvas is not a mechanism. Build the smallest truthful working loop before polishing the frame around it.
+
+Then write an **art-direction plan** that names the subject and explains how composition, type, material, motion, and one optional centrepiece clarify that mechanism. The expression layer supports product behavior; it never replaces it. Apply a relevance gate before implementation: reject a direction when its profile, concept, art-direction rationale, or centrepiece could survive a subject swap unchanged; when it does not name the product objects/actions; when it conflicts with the requested surface; or when the connected result carries an unresolved slop marker or warning that invalidates the claim. Do not describe a rejected or internally flagged direction as gate-passing.
+
+Route depth by task. Interactive tools load this reference plus components, foundations, motion, mobile, and the checklist. Product landings add landing and, for developer or infrastructure products, technical-product. Dashboards add dashboards or product-ui. Writing tools add text-and-proof. These are lenses, not a fixed recipe: hard accessibility, asset, contrast, render, and relevance gates remain exact; aesthetic token and layout suggestions stay bounded and adaptable to product truth.
+
+Before shipping, run a rendered evidence loop: implement the mechanism first; capture desktop and mobile; exercise the keyboard path and a touch-sized path; verify reduced motion preserves every function; run the blur/squint and subject-swap tests; record the visible failure; revise at least once based on that evidence. A static spec, clean scanner, or plausible token set cannot substitute for this loop.

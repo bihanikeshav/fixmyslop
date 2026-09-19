@@ -15,3 +15,29 @@ compatibility_date = "2026-08-11"
 [assets]
 directory = "../web"
 binding = "ASSETS"
+
+# ---------------------------------------------------------------------------
+# Per-IP rate limiting for the compute surface (POST /api/tool/*, /mcp, /api/*).
+#
+# This Worker is public and unauthenticated, and its tools run a 1,971-point KDE and a
+# layout retrieval index — cheap per call, but trivially loopable. The Rate Limiting
+# binding is enforced at the edge, costs nothing when under the limit, and needs no
+# storage of our own.
+#
+# `namespace_id` is a per-account identifier for THIS limiter, not a secret; bump it if the
+# limit/period below changes and you want the counters reset. src/guard.mjs degrades OPEN
+# when the binding is missing (node --test has no env at all) or when .limit() throws, so
+# local dev and the test suite keep working unchanged.
+[[unsafe.bindings]]
+name = "RATE_LIMITER"
+type = "ratelimit"
+namespace_id = "1001"
+simple = { limit = 60, period = 60 }
+
+[vars]
+# Hosts allowed to appear inside the `curl | sh` installer at /skill and the copy-paste
+# commands at /install.md — see src/guard.mjs (installOrigin). Comma-separated; the
+# canonical workers.dev host plus localhost are always allowed. Anything else falls back
+# to the canonical origin instead of reflecting the caller's Host header into a shell
+# script. Set this when deploying behind a custom domain.
+SKILL_ORIGIN_ALLOWLIST = ""

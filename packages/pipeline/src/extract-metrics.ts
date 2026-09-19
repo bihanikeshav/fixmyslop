@@ -9,7 +9,9 @@
  *   - strokeContrast : scanline of 'o' — (thick vertical wall - thin horizontal) / thick
  *   - counterSize    : inner-gap / outer-width of 'o'
  *   - charsetCompleteness : cmap coverage of basic Latin + digits + punctuation
- * apertureOpenness stays provisional (outline aperture analysis is a later refinement).
+ * apertureOpenness stays UNMEASURED (null) — outline aperture analysis is a
+ * later refinement. It is deliberately left out of the returned Partial so
+ * callers don't overwrite a real value with a placeholder.
  *
  * Updates data/fonts.index.json in place and recomputes quality.
  */
@@ -18,7 +20,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, resolve } from "node:path";
 import opentype from "opentype.js";
-import { objectiveQuality, compositeQuality, type FontMetrics } from "@fixmyslop/core";
+import { objectiveQuality, compositeQuality, clamp01OrMid, type FontMetrics } from "@fixmyslop/core";
 import type { IndexedFont } from "./types.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -79,7 +81,7 @@ export function metricsFromBuffer(buf: ArrayBuffer): Partial<FontMetrics> {
   const font = opentype.parse(buf);
   const xH = glyphBBoxHeight(font, "x");
   const capH = glyphBBoxHeight(font, "H");
-  const xHeightRatio = xH && capH ? clamp01(xH / capH) : 0.5;
+  const xHeightRatio = xH && capH ? clamp01OrMid(xH / capH) : 0.5;
   const { strokeContrast, counterSize } = measureO(font);
   const charsetCompleteness = cmapCoverage(font);
   return { xHeightRatio, strokeContrast, counterSize, charsetCompleteness };
@@ -217,10 +219,10 @@ function measureO(font: opentype.Font): { strokeContrast: number; counterSize: n
   const botStroke = ys[3]! - ys[2]!;
   const thin = (topStroke + botStroke) / 2;
 
-  const strokeContrast = thick > 0 ? clamp01((thick - thin) / thick) : 0.3;
+  const strokeContrast = thick > 0 ? clamp01OrMid((thick - thin) / thick) : 0.3;
   const outerW = xs[3]! - xs[0]!;
   const innerGap = xs[2]! - xs[1]!;
-  const counterSize = outerW > 0 ? clamp01(innerGap / outerW) : 0.5;
+  const counterSize = outerW > 0 ? clamp01OrMid(innerGap / outerW) : 0.5;
   return { strokeContrast, counterSize };
 }
 
@@ -228,10 +230,9 @@ function cmapCoverage(font: opentype.Font): number {
   const need = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,;:!?'\"()-";
   let have = 0;
   for (const ch of need) if (font.charToGlyphIndex(ch) > 0) have++;
-  return clamp01(have / need.length);
+  return clamp01OrMid(have / need.length);
 }
 
-const clamp01 = (n: number): number => (Number.isFinite(n) ? (n < 0 ? 0 : n > 1 ? 1 : n) : 0.5);
 const r = (n: number): number => Math.round(n * 100) / 100;
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {

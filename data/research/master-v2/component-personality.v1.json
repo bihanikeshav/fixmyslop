@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "component-personality.v1",
+  "source": "component-observations.v1.ndjson",
+  "independence": {
+    "personality": true,
+    "quality": true,
+    "slop": true
+  },
+  "dialects": [
+    "calm",
+    "crisp",
+    "tactile",
+    "playful",
+    "editorial",
+    "luxury",
+    "technical",
+    "brutalist",
+    "organic"
+  ],
+  "interactionStatesRequired": [
+    "default",
+    "hover",
+    "focus",
+    "active",
+    "disabled",
+    "loading",
+    "success",
+    "error"
+  ],
+  "staticCaptureLimitation": "Hover and press states are not observed in the current raw crawl; replay capture remains required.",
+  "observedRecords": 744
+}

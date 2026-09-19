@@ -6,6 +6,9 @@
 
 import type { Browser } from "playwright";
 import { UA } from "./extract.js";
+import { isSafePublicUrl } from "./url-safety.js";
+import { checkRobotsAllowed } from "./robots.js";
+import { CRAWLER_UA_TOKEN } from "./user-agent.mjs";
 
 /** Hosts that are never the product we're after. */
 const SOCIAL_INFRA = [
@@ -26,7 +29,11 @@ export async function discoverOutboundLinks(
   browser: Browser,
   listingUrl: string,
   limit = 20,
+  opts: { ignoreRobots?: boolean } = {},
 ): Promise<string[]> {
+  if (!isSafePublicUrl(listingUrl)) return [];
+  const robots = await checkRobotsAllowed(listingUrl, { ua: UA, uaToken: CRAWLER_UA_TOKEN, ignoreRobots: opts.ignoreRobots });
+  if (!robots.allowed) return [];
   const ctx = await browser.newContext({ userAgent: UA });
   const page = await ctx.newPage();
   let hrefs: string[] = [];
@@ -46,6 +53,7 @@ export async function discoverOutboundLinks(
   const seen = new Set<string>();
   const out: string[] = [];
   for (const h of hrefs) {
+    if (!isSafePublicUrl(h)) continue;
     let host: string;
     try {
       const u = new URL(h);

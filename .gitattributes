@@ -1,0 +1,7 @@
+# Store and check out text as LF on every platform. Generated skill files are compared
+# byte-for-byte against their sources (apps/engine/prompts.test.mjs), so CRLF checkouts break tests.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.docx binary

@@ -1,9 +1,11 @@
 /** Recover valid, unique geometry-crawl.v2 records into a new versioned NDJSON stream. */
 import { createReadStream, createWriteStream } from "node:fs";
 import { createInterface } from "node:readline";
-import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
 
-const root = resolve(new URL(".", import.meta.url).pathname.replace(/^\/(?:[A-Za-z]:)/, (m) => m.slice(1)), "../../..");
+const HERE = dirname(fileURLToPath(import.meta.url));
+const root = resolve(HERE, "../../..");
 const inputPath = resolve(root, "data/geometry-crawl-raw.v2.ndjson");
 const outputPath = resolve(root, "data/geometry-crawl-raw.v2.1.ndjson");
 

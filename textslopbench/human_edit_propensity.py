@@ -40,17 +40,7 @@ TRICOLON_RE = re.compile(r"\b\w+,\s+\w+,\s+(?:and|or)\s+\w+\b")
 HELDOUT = {"LAMP": "lamp-heldout-{n}.jsonl", "Beemo": "beemo-heldout-{n}.jsonl"}
 
 
-def _parse_refs(raw):
-    if isinstance(raw, list):
-        return raw
-    for parser in (json.loads, ast.literal_eval):
-        try:
-            v = parser(raw)
-            if isinstance(v, list):
-                return v
-        except Exception:
-            pass
-    return [raw] if isinstance(raw, str) and raw.strip() else []
+from common import parse_human_references as _parse_refs
 
 
 def pattern_counts(text: str, profile: dict) -> Counter:

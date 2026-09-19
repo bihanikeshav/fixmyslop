@@ -2,6 +2,7 @@
   "name": "@fixmyslop/crawl",
   "version": "0.1.4",
   "description": "Deterministic, LLM-free role-aware font crawler (headless Chromium).",
+  "license": "Apache-2.0",
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",

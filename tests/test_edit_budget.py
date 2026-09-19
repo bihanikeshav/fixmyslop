@@ -9,10 +9,13 @@ from _corpus_guard import requires_corpora
 
 from edit_budget import (
     ASPECT_WEIGHT,
+    MIN_TOKENS_FOR_SLOP_CAP,
     _load_E,
     _uncertainty_round,
     build_plan,
     counterfactual_item,
+    slop_cap_for_floor,
+    slop_cap_for_floor_detail,
 )
 
 
@@ -24,6 +27,37 @@ class WeightTests(unittest.TestCase):
     def test_uncertainty_round_floors_when_low(self):
         self.assertEqual(_uncertainty_round(1.8, "low"), 1)     # floor
         self.assertEqual(_uncertainty_round(1.6, "medium"), 2)  # round
+
+
+class SlopCapForFloorReasonTests(unittest.TestCase):
+    """Audit fix (item 13): a cap of 0 must be distinguishable — short document vs. a genuine
+    zero budget vs. no occurrences at all — not collapsed into a bare, ambiguous int."""
+
+    def test_no_occurrences_is_trivially_zero(self):
+        cap, reason = slop_cap_for_floor_detail([], 200, 10.0)
+        self.assertEqual((cap, reason), (0, "no_occurrences"))
+
+    def test_short_document_flagged_distinctly(self):
+        occs = [{"weight": 5.0}]
+        cap, reason = slop_cap_for_floor_detail(occs, MIN_TOKENS_FOR_SLOP_CAP - 1, 0.0)
+        self.assertEqual((cap, reason), (0, "short_document"))
+
+    def test_already_at_floor_is_a_genuine_zero_budget(self):
+        # High floor relative to weight/tokens: even removing nothing is already below it.
+        occs = [{"weight": 1.0}]
+        cap, reason = slop_cap_for_floor_detail(occs, 1000, 1_000_000.0)
+        self.assertEqual((cap, reason), (0, "already_at_floor"))
+
+    def test_ok_reason_when_cap_is_computed_normally(self):
+        occs = [{"weight": 5.0}, {"weight": 3.0}]
+        cap, reason = slop_cap_for_floor_detail(occs, 1000, 0.5)
+        self.assertEqual(reason, "ok")
+        self.assertGreaterEqual(cap, 0)
+
+    def test_wrapper_returns_same_cap_as_detail(self):
+        occs = [{"weight": 5.0}, {"weight": 3.0}]
+        cap, _ = slop_cap_for_floor_detail(occs, 1000, 0.5)
+        self.assertEqual(slop_cap_for_floor(occs, 1000, 0.5), cap)
 
 
 @requires_corpora

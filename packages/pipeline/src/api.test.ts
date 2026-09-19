@@ -1,20 +1,46 @@
+// REPO-LEVEL INTEGRATION TEST, parked in this package: it exercises viz/personality-test/api.mjs
+// (owned outside packages/pipeline) rather than anything in this package. It lives here — not
+// next to the code it tests — because `npx vitest run` in this package is where vitest already
+// runs in this repo; there's no vitest runner configured for viz/. Do not move it without also
+// wiring up a runner there, and coordinate with whoever owns viz/personality-test first.
+// @ts-nocheck -- build-time JavaScript API intentionally has no declaration file.
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-// The build-time API lives as standalone Node ESM next to the other checkers
-// (viz/personality-test/api.mjs). We import the pure functions directly; vitest
-// resolves .mjs fine. No types — treat as any.
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
-import {
-  colorReport, paletteReport, fontReport, freshFonts, audit, autoFix,
-} from "../../../viz/personality-test/api.mjs";
 import { writeFileSync, rmSync, copyFileSync, readFileSync, existsSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
+// These cases read gitignored local pipeline output (font index, neighbours, crawl colours,
+// structural prevalence, scraped reference index). On a fresh clone / CI that data does not
+// exist, so they skip — same policy as tests/_corpus_guard.py on the Python side.
+const LOCAL_DATA = [
+  "data/fonts.index.json", "data/font-neighbors.json", "data/observations.colors.json",
+  "data/structural-prevalence.json", "data/reference/getdesign/index.json",
+].map((p) => resolve(__dirname, "../../..", p));
+const HAS_LOCAL_DATA = LOCAL_DATA.every((p) => existsSync(p));
+const dataIt = HAS_LOCAL_DATA ? it : it.skip;
+
+
 const HTML_DIR = resolve(__dirname, "../../../viz/personality-test");
+const API = resolve(HTML_DIR, "api.mjs");
+
+function api(command: string, args: string[] = []) {
+  const output = execFileSync(process.execPath, [API, command, ...args, "--json"], {
+    encoding: "utf8",
+    maxBuffer: 10 * 1024 * 1024,
+  });
+  return JSON.parse(output);
+}
+
+const colorReport = (hex: string) => api("color", [hex]);
+const paletteReport = (...colors: string[]) => api("palette", colors);
+const fontReport = (family: string) => api("font", [family]);
+const freshFonts = (count: number) => api("fonts", [String(count)]);
+const audit = (file: string) => api("audit", [file]);
+const autoFix = (file: string) => api("audit", [file, "--fix"]);
 
 describe("color()", () => {
-  it("flags #6366f1 as banned with a lower-slop alternative", () => {
+  dataIt("flags #6366f1 as banned with a lower-slop alternative", () => {
     const r = colorReport("#6366f1");
     expect(r.verdict).toBe("HARD-BANNED");
     expect(r.slop).toBeGreaterThan(0);
@@ -40,7 +66,7 @@ describe("color()", () => {
 });
 
 describe("font() — SLOP-unless-foundational", () => {
-  it("treats Inter as slop but ALLOWED because it is foundational", () => {
+  dataIt("treats Inter as slop but ALLOWED because it is foundational", () => {
     const r = fontReport("Inter");
     expect(r.isFoundational).toBe(true);
     expect(r.verdict).toBe("SLOP-allowed-foundational");
@@ -49,7 +75,7 @@ describe("font() — SLOP-unless-foundational", () => {
     expect(r.alternatives.length).toBeGreaterThan(0);
   });
 
-  it("treats a non-foundational avoid-list font (Space Grotesk) as hard SLOP", () => {
+  dataIt("treats a non-foundational avoid-list font (Space Grotesk) as hard SLOP", () => {
     const r = fontReport("Space Grotesk");
     expect(r.isFoundational).toBe(false);
     expect(r.verdict).toBe("SLOP");
@@ -64,7 +90,7 @@ describe("font() — SLOP-unless-foundational", () => {
 });
 
 describe("fonts()", () => {
-  it("suggests fresh, non-slop families (display + body), none on the avoid list", () => {
+  dataIt("suggests fresh, non-slop families (display + body), none on the avoid list", () => {
     const r = freshFonts(4);
     expect(r.picks.length).toBe(4);
     const avoid = ["inter", "poppins", "montserrat", "roboto", "space grotesk", "fraunces"];
@@ -86,7 +112,7 @@ describe("palette()", () => {
 });
 
 describe("audit()", () => {
-  it("returns issues on a crafted slop snippet", () => {
+  dataIt("returns issues on a crafted slop snippet", () => {
     const f = resolve(tmpdir(), `slop-${Date.now()}.html`);
     writeFileSync(
       f,
@@ -115,7 +141,7 @@ describe("audit()", () => {
     }
   });
 
-  it("passes a clean snippet", () => {
+  dataIt("passes a clean snippet", () => {
     const f = resolve(tmpdir(), `clean-${Date.now()}.html`);
     writeFileSync(
       f,
@@ -163,7 +189,7 @@ describe("audit --fix (autoFix)", () => {
     rmSync(bak, { force: true });
   });
 
-  it("snaps slop colors in place, writes a .bak, and reports remaining non-color issues", () => {
+  dataIt("snaps slop colors in place, writes a .bak, and reports remaining non-color issues", () => {
     const r = autoFix(copy);
     expect(existsSync(bak)).toBe(true);
     expect(r.colorsFixed).toBeGreaterThan(0);

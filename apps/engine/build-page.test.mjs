@@ -15,7 +15,7 @@ const genomeFor = (input, seed = 3) => styleGenome(eng, input, { seed });
 
 test("build-page purity: no fs/Date.now/new Date/Math.random", () => {
   const src = readFileSync(fileURLToPath(new URL("build-page.mjs", import.meta.url)), "utf8")
-    .split("\n").map((l) => l.replace(/\/\/.*$/, "")).join("\n");
+    .split("\n").map((l) => l.replace(/\/\/.*/, "")).join("\n");
   assert.ok(!/Math\.random|Date\.now|new Date|require\(|from "node:fs"/.test(src));
 });
 

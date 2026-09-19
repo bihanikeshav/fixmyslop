@@ -122,6 +122,16 @@ class RepairLoopTests(unittest.TestCase):
         self.assertEqual(len(calls), 1)   # only stage-1; repair not needed
         self.assertIn("2021", out)
 
+    def test_run_fails_closed_when_repairs_exhausted(self):
+        source = "Acme revenue increased in 2025 because demand rose."
+        corrupted = "Acme revenue decreased in 2025 because demand collapsed."
+
+        def generate(_messages):
+            return json.dumps({"doc": corrupted})
+
+        out = vp.run(source, generate, mode="v2", rounds=1)
+        self.assertEqual(out, source)
+
 
 if __name__ == "__main__":
     unittest.main()

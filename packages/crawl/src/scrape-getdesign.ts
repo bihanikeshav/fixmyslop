@@ -5,12 +5,22 @@
  * full text (frontmatter + prose). Tokens (colors, fonts) are regex-parsed from
  * the YAML frontmatter block.
  *
+ * *** LOCAL RESEARCH ONLY — DO NOT COMMIT OR REDISTRIBUTE THE OUTPUT ***
+ * The scraped text is getdesign.md's own third-party prose/analysis, not
+ * ours to publish. It is written under data/reference/getdesign/, and the
+ * whole data/ tree is gitignored (verified via `git check-ignore -v
+ * data/reference/getdesign/index.json`) specifically so this corpus can
+ * never be accidentally committed. Treat every file this script writes as a
+ * private local cache for our own analysis, never as something to ship,
+ * paste into a PR, or re-host.
+ *
  * Output:
- *   data/reference/getdesign/<slug>.md   — full analysis text
- *   data/reference/getdesign/index.json  — [{slug, name, category, descriptor, url, colors, fonts}]
+ *   data/reference/getdesign/<slug>.md   — full analysis text (local-only, gitignored)
+ *   data/reference/getdesign/index.json  — [{slug, name, category, descriptor, url, colors, fonts}] (local-only, gitignored)
  *
  * Usage:
  *   npx tsx packages/crawl/src/scrape-getdesign.ts
+ *   npx tsx packages/crawl/src/scrape-getdesign.ts --ignore-robots  # bypass robots.txt (off by default)
  */
 
 import { chromium, type Browser, type Page } from "playwright";
@@ -18,6 +28,9 @@ import { mkdir, writeFile, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
+import { CRAWLER_UA, CRAWLER_UA_TOKEN } from "./user-agent.mjs";
+import { checkRobotsAllowed } from "./robots.js";
+import { isSafePublicUrl } from "./url-safety.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = resolve(HERE, "../../../data/reference/getdesign");
@@ -159,12 +172,14 @@ function extractFonts(text: string): string[] {
 
   // Match fontFamily: <rest-of-line>
   for (const m of text.matchAll(/fontFamily:\s*([^\n]+)/g)) {
-    parseFontFamilyLine(m[1]);
+    const value = m[1];
+    if (value !== undefined) parseFontFamilyLine(value);
   }
 
   // Match font-family: <rest-of-line> (kebab variant)
   for (const m of text.matchAll(/font-family:\s*([^\n]+)/g)) {
-    parseFontFamilyLine(m[1]);
+    const value = m[1];
+    if (value !== undefined) parseFontFamilyLine(value);
   }
 
   // ── Markdown-prose font mentions ──────────────────────────────────────────
@@ -178,7 +193,8 @@ function extractFonts(text: string): string[] {
     ];
     for (const pat of proseFontPatterns) {
       for (const m of text.matchAll(pat)) {
-        const candidate = m[1].trim();
+        const candidate = m[1]?.trim();
+        if (candidate === undefined) continue;
         if (
           candidate.length > 2 &&
           candidate.length < 60 &&
@@ -192,7 +208,8 @@ function extractFonts(text: string): string[] {
 
     // Backtick-quoted font names only when no YAML tokens found
     for (const m of text.matchAll(/`([A-Z][A-Za-z0-9\s\-]+)`/g)) {
-      const candidate = m[1].trim();
+      const candidate = m[1]?.trim();
+      if (candidate === undefined) continue;
       if (/^[A-Z]/.test(candidate) && !/[{}:;=@#]/.test(candidate) && candidate.length < 50) {
         if (!GENERIC_FAMILIES.test(candidate) && !/^(Design|System|Color|Button|Section|Feature|Background)$/.test(candidate)) {
           addFontStack(candidate, seen);
@@ -223,10 +240,19 @@ function extractFonts(text: string): string[] {
 async function scrapeBrand(
   browser: Browser,
   brand: BrandEntry,
+  ignoreRobots = false,
 ): Promise<{ content: string; colors: string[]; fonts: string[] } | null> {
+  if (!isSafePublicUrl(brand.url)) {
+    console.warn(`  [warn] ${brand.slug}: blocked (unsafe URL)`);
+    return null;
+  }
+  const robots = await checkRobotsAllowed(brand.url, { ua: CRAWLER_UA, uaToken: CRAWLER_UA_TOKEN, ignoreRobots });
+  if (!robots.allowed) {
+    console.warn(`  [warn] ${brand.slug}: blocked by robots.txt`);
+    return null;
+  }
   const context = await browser.newContext({
-    userAgent:
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+    userAgent: CRAWLER_UA,
     viewport: { width: 1366, height: 900 },
   });
 
@@ -399,6 +425,7 @@ async function reindexFromSavedFiles(): Promise<void> {
 
 async function main(): Promise<void> {
   await mkdir(DATA_DIR, { recursive: true });
+  const ignoreRobots = process.argv.includes("--ignore-robots");
 
   // --reindex: re-parse tokens from already-saved .md files, no network
   if (process.argv.includes("--reindex")) {
@@ -438,10 +465,11 @@ async function main(): Promise<void> {
   try {
     for (let i = 0; i < todo.length; i++) {
       const brand = todo[i];
+      if (brand === undefined) continue;
       const progress = `[${i + 1}/${todo.length}]`;
       process.stdout.write(`${progress} ${brand.name.padEnd(20)} `);
 
-      const result = await scrapeBrand(browser, brand);
+      const result = await scrapeBrand(browser, brand, ignoreRobots);
 
       if (result) {
         const mdPath = resolve(DATA_DIR, `${brand.slug}.md`);

@@ -15,6 +15,7 @@ class RegressionPreservationTests(unittest.TestCase):
         p2 = "Your order shipped on 5 May for $40."  # drops #123
         res = regression_preservation(src, p1, p2, ["#123", "5 May", "$40"])
         self.assertIn("#123", res["anchor_regressions"])
+        self.assertNotIn("{'kind'", " ".join(res["anchor_regressions"]))
         self.assertFalse(res["clean"])
 
     def test_pass2_reintroducing_slop_is_flagged(self):

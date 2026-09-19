@@ -36,8 +36,31 @@ export async function fetchGoogleFontsMetadata(): Promise<RawFamily[]> {
   const res = await fetch(METADATA_URL, { headers: { "user-agent": "fixmyslop/0.1" } });
   if (!res.ok) throw new Error(`Google Fonts metadata HTTP ${res.status}`);
   const text = (await res.text()).replace(/^\)\]\}'\s*/, "");
-  const data = JSON.parse(text) as { familyMetadataList: RawFamily[] };
-  return data.familyMetadataList;
+  const data = JSON.parse(text) as { familyMetadataList: unknown[] };
+  const list = data.familyMetadataList ?? [];
+  const valid = list.filter(isValidRawFamily);
+  const bad = list.length - valid.length;
+  if (bad > 0) {
+    console.warn(`Skipped ${bad} malformed Google Fonts metadata row(s) (missing family/popularity).`);
+  }
+  return valid;
+}
+
+/**
+ * Minimal runtime shape check on a fetched metadata row. The endpoint is an
+ * undocumented, keyless, unversioned JSON blob — worth a floor check before we
+ * trust `family`/`popularity` deep into the pipeline (isFoundational, ids,
+ * quality all key off them).
+ */
+export function isValidRawFamily(raw: unknown): raw is RawFamily {
+  if (typeof raw !== "object" || raw === null) return false;
+  const r = raw as Record<string, unknown>;
+  return (
+    typeof r.family === "string" &&
+    r.family.trim().length > 0 &&
+    typeof r.popularity === "number" &&
+    Number.isFinite(r.popularity)
+  );
 }
 
 export function normalizeFamily(raw: RawFamily): IndexedFont {
@@ -49,10 +72,12 @@ export function normalizeFamily(raw: RawFamily): IndexedFont {
   const charsetCompleteness = charsetProxy(raw.subsets);
 
   // Provisional metrics: neutral placeholders for glyph-derived values (filled by
-  // extract-metrics.ts), real values where metadata gives them.
+  // extract-metrics.ts), real values where metadata gives them. apertureOpenness
+  // is left `null` (unmeasured) rather than a fabricated placeholder — no source
+  // in this pipeline currently measures it.
   const metrics: FontMetrics = {
     xHeightRatio: 0.5,
-    apertureOpenness: 0.5,
+    apertureOpenness: null,
     counterSize: 0.5,
     strokeContrast: 0.3,
     weightCount,
@@ -70,7 +95,7 @@ export function normalizeFamily(raw: RawFamily): IndexedFont {
     category,
     metrics,
     personality,
-    isFoundational: raw.popularity <= FOUNDATIONAL_TOP_RANK,
+    isFoundational: isFoundationalRank(raw.popularity),
     popularityRank: raw.popularity,
     trendingRank: raw.trending,
     isBrandFont: raw.isBrandFont,
@@ -79,6 +104,11 @@ export function normalizeFamily(raw: RawFamily): IndexedFont {
     metricsReal: false,
     personalityReal: false,
   };
+}
+
+/** Robust to a missing/malformed popularity: only a real finite rank can be foundational. */
+function isFoundationalRank(popularity: unknown): boolean {
+  return typeof popularity === "number" && Number.isFinite(popularity) && popularity <= FOUNDATIONAL_TOP_RANK;
 }
 
 function mapCategory(c: string): IndexedFont["category"] {
