@@ -1,5 +1,7 @@
 # /personality Skill — Implementation Plan
 
+> **Status (2026-09-19): shipped.** This is a historical execution plan. Its `- [ ]` checkboxes were never ticked; see [`docs/README.md`](../../README.md) for what actually shipped.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build a single Claude Code skill, `/personality`, that makes a model invent page-specific personality inside anti-slop constraints — a forced ideation process + a personality-move catalog + a merged slop manifest + researched craft guardrails + per-vibe type/color option-sets grounded in this repo's font data.

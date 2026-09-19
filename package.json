@@ -3,6 +3,7 @@
   "version": "0.1.4",
   "private": true,
   "description": "Mechanism-first design engine, fail-closed humanizer, and inspectable UI/text evaluation suite.",
+  "license": "Apache-2.0",
   "workspaces": [
     "packages/*",
     "apps/*"

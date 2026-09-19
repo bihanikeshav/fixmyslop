@@ -70,10 +70,18 @@ packages/pipeline/           font indexing and glyph-metric data pipeline
 packages/crawl/              source collection and corpus derivation
 skills/fixmyslop/            generated UI skill and craft references
 skills/fixmyslop-humanizer/  prose revision skill and verification pipeline
+skills/personality/          ideation-forcing design skill
 textslopbench/               text evaluation runners and dataset adapters
-benchmarks/ui-skills/        blinded functional + visual comparison protocol
-docs/                        product, benchmark, research, and deployment notes
+benchmarks/                  engine regression pack + blinded UI comparison protocol
+viz/                         visualisations, prototypes, and a few production modules
+scripts/                     build, data, proof, and QA scripts (see scripts/README.md)
+tests/                       Python test suite for the text side
+docs/                        specs, research, plans (index: docs/README.md)
+archive/                     retired code, not built or deployed
 ```
+
+Agents and new contributors: start with [`AGENTS.md`](AGENTS.md). Every directory above
+has its own README; [`docs/README.md`](docs/README.md) indexes all documentation.
 
 `apps/engine` is pure: the same inputs and seed produce the same output. The worker and
 web application share that engine so their gates do not drift. The generated skill has
@@ -123,3 +131,10 @@ their useful relationships for the current brief instead of cloning any complete
 
 The final token and browser audit is in
 [`docs/research/2026-08-24-ui-quality-audit.md`](docs/research/2026-08-24-ui-quality-audit.md).
+
+## License
+
+Apache-2.0 — see [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE). Fonts, crawled sites, text
+corpora and borrowed guidance keep their own terms:
+[`docs/DATA-AND-LICENSING.md`](docs/DATA-AND-LICENSING.md). Contributing:
+[`CONTRIBUTING.md`](CONTRIBUTING.md).
