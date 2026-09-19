@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "color-scene-space.v2",
+  "source": [
+    "data/observations.colors.json",
+    "palette-material-observations.v2.ndjson",
+    "data/layout-crawl/master-v2/layout-genomes.gallery-v2.ndjson"
+  ],
+  "sceneAxes": [
+    "temperature",
+    "lightness",
+    "chroma",
+    "contrast",
+    "accentRatio",
+    "surfaceRange",
+    "textureRef"
+  ],
+  "observedRecords": 744,
+  "textureIsMaterialChannel": true,
+  "humanReview": "pending"
+}

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "material-texture-space.v2",
+  "source": [
+    "material-observations.v2.ndjson",
+    "data/observations.styles.json"
+  ],
+  "dialects": [
+    "none-observed",
+    "paper-grain",
+    "film-grain",
+    "halftone",
+    "dither",
+    "mesh",
+    "glass-or-backdrop",
+    "filtered-surface",
+    "image-or-pattern-surface"
+  ],
+  "observedRecords": 744,
+  "humanReview": "pending"
+}

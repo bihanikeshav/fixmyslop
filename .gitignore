@@ -7,8 +7,25 @@ dist/
 .next/
 *.log
 
-# Generated data (regenerable via the pipeline: npm run index / metrics / synthetic)
+# Generated data (regenerable via the pipeline: npm run index / metrics / synthetic).
+# Everything under a data/ directory is ignored EXCEPT the small frozen bundles the
+# engine imports at module load — without them a fresh clone cannot run, test or deploy.
 data/
+!apps/engine/data/
+!apps/engine/data/*.json
+!/data/
+/data/*
+!/data/research/
+/data/research/*
+!/data/research/master-v2/
+/data/research/master-v2/*
+!/data/research/master-v2/INDEX.md
+!/data/research/master-v2/font-space.v2.json
+!/data/research/master-v2/component-personality.v1.json
+!/data/research/master-v2/expression-treatments.v1.json
+!/data/research/master-v2/expression-compatibility.v1.json
+!/data/research/master-v2/color-scene-space.v2.json
+!/data/research/master-v2/material-texture-space.v2.json
 
 # Env
 .env
@@ -38,6 +55,7 @@ benchmarks/ui-skills/runs/
 # Local visual-research workspace and root-level QA captures. Curated references
 # belong under docs/, viz/, or apps/web; raw video/frame dumps stay local.
 kole-ui-guide/
+.scratch/
 /archetype-viewer.html
 /*.png
 /*.jpg
