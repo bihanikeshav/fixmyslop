@@ -10,6 +10,9 @@
  * against re-introducing AI taste bias.
  */
 
+import type { PersonalityVector } from "./types.js";
+import { clamp01 } from "./util.js";
+
 export interface QualityVotes {
   /** From metrics.objectiveQuality(), 0..1. */
   objective: number;
@@ -39,8 +42,6 @@ export const DEFAULT_QUALITY_WEIGHTS: QualityWeights = {
   llm: 0.15,
 };
 
-const clamp01 = (n: number): number => (n < 0 ? 0 : n > 1 ? 1 : n);
-
 /**
  * Blend available votes by their weights, renormalizing over only the votes that
  * are present. Always returns 0..1.
@@ -58,4 +59,24 @@ export function compositeQuality(
   if (totalWeight === 0) return 0;
   const weighted = present.reduce((s, [v, w]) => s + v * w, 0);
   return clamp01(weighted / totalWeight);
+}
+
+/**
+ * Derive the "attribute" quality vote (vote 2 — see file header) from a
+ * personality vector: the confidence/craft signal carried by the O'Donovan
+ * crowdsourced attributes. A font with clearly-perceived, decisive character
+ * (ratings far from the 0.5 neutral midpoint, in either direction) reflects a
+ * confident crowd signal; a flat/near-neutral or empty vector reflects a weak
+ * or absent one.
+ *
+ * Returns `undefined` — not 0 — when there's no personality data to vote from,
+ * so `compositeQuality` drops the vote entirely (renormalizing over the votes
+ * that remain) instead of asserting a false "no character" opinion.
+ */
+export function attributeQualityVote(personality: PersonalityVector): number | undefined {
+  const values = Object.values(personality).filter((v): v is number => v !== undefined);
+  if (values.length === 0) return undefined;
+  const avgDistanceFromNeutral =
+    values.reduce((sum, v) => sum + Math.abs(v - 0.5) * 2, 0) / values.length;
+  return clamp01(avgDistanceFromNeutral);
 }

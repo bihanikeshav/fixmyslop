@@ -1,6 +1,7 @@
 /** @fixmyslop/core — the deterministic Brain. */
 
 export * from "./types.js";
+export * from "./util.js";
 export * from "./metrics.js";
 export * from "./quality.js";
 export * from "./personality.js";

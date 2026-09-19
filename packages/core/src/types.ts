@@ -44,8 +44,23 @@ export const SHAIKH_FACTORS = {
 export interface FontMetrics {
   /** x-height / cap-height. Taller reads better at small sizes. ~0.4..0.8 typical. */
   xHeightRatio: number;
-  /** Openness of c/e/s apertures, 0 (closed) .. 1 (open). Open reads better. */
-  apertureOpenness: number;
+  /**
+   * Openness of c/e/s apertures, 0 (closed) .. 1 (open). Open reads better.
+   *
+   * `null` means UNMEASURED, not "neutral" or "average". No pipeline source
+   * currently computes real aperture openness from the glyph outline (that's a
+   * later refinement to extract-metrics.ts); until then this stays `null`
+   * rather than a fabricated placeholder. `objectiveQuality()` renormalizes its
+   * weights to skip a `null` aperture, and `metricsFloorFailures()` skips the
+   * `minApertureOpenness` gate when it's `null`.
+   *
+   * IMPORTANT: earlier index builds wrote a hard-coded `0.5` placeholder here
+   * for every font, which is indistinguishable from a real measured 0.5. There
+   * is no way to tell old fake values apart from real ones after the fact —
+   * `data/fonts.index.json` MUST be rebuilt (re-run the pipeline's `index` /
+   * `metrics` / `fontshare` scripts) for this field to mean what it says.
+   */
+  apertureOpenness: number | null;
   /** Counter (enclosed white space) size, 0 (clogged) .. 1 (generous). */
   counterSize: number;
   /** Stroke contrast thick:thin. 0 = monoline, 1 = extreme. Extreme hurts at small sizes. */

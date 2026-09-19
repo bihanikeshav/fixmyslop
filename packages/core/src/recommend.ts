@@ -22,6 +22,7 @@ import type {
   RecommendQuery,
   SaturationStat,
 } from "./types.js";
+import { clamp01 } from "./util.js";
 
 export interface Candidate {
   font: FontRecord;
@@ -29,8 +30,6 @@ export interface Candidate {
   quality: number;
   saturation: SaturationStat;
 }
-
-const clamp01 = (n: number): number => (n < 0 ? 0 : n > 1 ? 1 : n);
 
 export function recommend(
   candidates: readonly Candidate[],

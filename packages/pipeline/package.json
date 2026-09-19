@@ -2,6 +2,7 @@
   "name": "@fixmyslop/pipeline",
   "version": "0.1.4",
   "description": "Ingestion: builds the font index (Google Fonts metadata + glyph metrics + attributes) and saturation signals.",
+  "license": "Apache-2.0",
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -10,7 +11,8 @@
     "index": "tsx src/build-index.ts",
     "metrics": "tsx src/extract-metrics.ts",
     "personality": "tsx src/seed-personality.ts",
-    "synthetic": "tsx src/sample-synthetic.ts"
+    "synthetic": "tsx src/sample-synthetic.ts",
+    "fontshare": "tsx src/integrate-fontshare.ts"
   },
   "dependencies": {
     "@fixmyslop/core": "*",
