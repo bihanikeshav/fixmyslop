@@ -12,12 +12,13 @@
     "build": "npm run build:web && npm run build --workspaces --if-present",
     "build:web": "node scripts/build-web.mjs",
     "test:web": "node scripts/check-web-build.mjs",
-    "test:packages": "npm run test --workspaces --if-present",
+    "test:packages": "npm run build:core && npm run test --workspaces --if-present",
     "test:apps": "node --test \"apps/engine/*.test.mjs\" \"apps/worker/src/*.test.mjs\"",
     "test:ui-bench": "node --test \"benchmarks/ui-skills/*.test.mjs\"",
     "benchmark:engine": "node benchmarks/engine/run-semantic-routing.mjs",
     "test": "npm run test:packages && npm run test:apps && npm run test:ui-bench",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run build:core && npm run typecheck --workspaces --if-present",
+    "build:core": "npm run build -w @fixmyslop/core"
   },
   "devDependencies": {
     "typescript": "^5.5.4",
