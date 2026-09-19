@@ -17,10 +17,10 @@ for (const script of scripts.filter((src) => !/^https?:/.test(src))) {
   if (!existsSync(resolve(web, script))) failures.push(`missing browser script: ${script}`);
 }
 
-const summaryIndex = scripts.indexOf("demo/textslop-summary.js");
-const textPageIndex = scripts.indexOf("build/pg-text.js");
-if (summaryIndex < 0 || textPageIndex < 0 || summaryIndex > textPageIndex) {
-  failures.push("generated TextSlopBench summary must load before the Text route");
+// The Slop-o-meter demo (and its unused PageText/TextSlopBench summary route)
+// moved to archive/web-slop-o-meter/ — index.html must not reference it.
+for (const dead of ["build/pg-text.js"]) {
+  if (scripts.includes(dead)) failures.push(`index.html must not load the archived ${dead}`);
 }
 
 const compiledApp = readFileSync(resolve(web, "build", "app.js"), "utf8");

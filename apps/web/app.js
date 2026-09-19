@@ -19,6 +19,13 @@ const norm = (h) => {
   return h.toLowerCase();
 };
 
+// Every innerHTML assignment below (even ones only fed values that look
+// constant today, e.g. role labels or font-index data) routes any interpolated
+// string through this — so a future data source can't silently reopen an XSS.
+const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (c) => (
+  { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+));
+
 // ===========================================================================
 // Palette Lab
 // ===========================================================================
@@ -39,14 +46,14 @@ for (const role of ROLES) {
   wrap.dataset.key = role.key;
   wrap.innerHTML = `
     <div class="role-top">
-      <span class="role-name">${role.label}</span>
+      <span class="role-name">${escapeHtml(role.label)}</span>
       <span class="verdict" data-v="">—</span>
     </div>
     <div class="swatch-row">
-      <label class="swatch" style="background:${state[role.key]}">
-        <input type="color" value="${state[role.key]}" aria-label="${role.label} color picker">
+      <label class="swatch" style="background:${escapeHtml(state[role.key])}">
+        <input type="color" value="${escapeHtml(state[role.key])}" aria-label="${escapeHtml(role.label)} color picker">
       </label>
-      <input class="hexin" value="${state[role.key]}" spellcheck="false" aria-label="${role.label} hex">
+      <input class="hexin" value="${escapeHtml(state[role.key])}" spellcheck="false" aria-label="${escapeHtml(role.label)} hex">
     </div>
     <div class="reason"></div>
     <div class="fixes"></div>`;
@@ -90,7 +97,7 @@ function renderRole(key) {
     for (const a of r.alternatives) {
       const b = document.createElement("button");
       b.className = "fix";
-      b.innerHTML = `<span class="chip" style="background:${a.hex}"></span>${a.hex}`;
+      b.innerHTML = `<span class="chip" style="background:${escapeHtml(a.hex)}"></span>${escapeHtml(a.hex)}`;
       b.title = a.reason;
       b.addEventListener("click", () => {
         const w = controls.querySelector(`.role[data-key="${key}"]`);
@@ -106,7 +113,7 @@ function renderRole(key) {
 function renderComposite() {
   let p;
   try { p = eng.checkPalette(state.ground, state.ink, state.accent); } catch { return; }
-  const dupeNote = p.duplicates.length ? ` · <b style="color:var(--bad)">${p.duplicates.map((d) => d.a + "≈" + d.b).join(", ")} too close</b>` : "";
+  const dupeNote = p.duplicates.length ? ` · <b style="color:var(--bad)">${p.duplicates.map((d) => escapeHtml(d.a) + "≈" + escapeHtml(d.b)).join(", ")} too close</b>` : "";
   const contrastNote = p.contrast != null
     ? `ink/ground contrast <b>${p.contrast}:1</b> ${p.contrast >= 4.5 ? "(AA ✓)" : "(below AA)"}`
     : "";
@@ -270,11 +277,11 @@ async function rollPairing(animate) {
   const bFam = `"${b.family}", system-ui, sans-serif`;
   specName.textContent = `${d.family} / ${b.family}`;
   specRank.textContent = `display rank ${d.popularityRank} · body rank ${b.popularityRank}`;
-  pairingNote.innerHTML = `Display <b>${d.family}</b> <span style="color:var(--ink-3)">[${d.supplier}]</span><br>Body <b>${b.family}</b> <span style="color:var(--ink-3)">[${b.supplier}]</span>`;
+  pairingNote.innerHTML = `Display <b>${escapeHtml(d.family)}</b> <span style="color:var(--ink-3)">[${escapeHtml(d.supplier)}]</span><br>Body <b>${escapeHtml(b.family)}</b> <span style="color:var(--ink-3)">[${escapeHtml(b.supplier)}]</span>`;
   specTags.innerHTML =
     `<span class="tag fresh">FRESH</span>` +
-    `<span class="tag">${d.supplier}</span>` +
-    `<span class="tag">${b.supplier}</span>` +
+    `<span class="tag">${escapeHtml(d.supplier)}</span>` +
+    `<span class="tag">${escapeHtml(b.supplier)}</span>` +
     `<span class="tag">off the avoid-list</span>`;
   if (pv) { pv.style.setProperty("--display", dFam); pv.style.fontFamily = bFam; } // live preview becomes the theme
   if (!animate) {
@@ -304,12 +311,30 @@ const fontalts = document.getElementById("fontalts");
 const VC = { FRESH: "var(--ok)", SLOP: "var(--bad)", "SLOP-allowed-foundational": "var(--warn)", UNKNOWN: "var(--ink-3)" };
 function checkFontUI() {
   const q = fontq.value.trim();
-  if (!q) { fontverdict.innerHTML = ""; fontalts.innerHTML = ""; return; }
+  fontverdict.replaceChildren();
+  fontalts.replaceChildren();
+  if (!q) return;
+  // r.why can echo the raw query verbatim (e.g. the UNKNOWN-font case in
+  // vendor/engine.mjs), so this is built from DOM nodes with textContent —
+  // never innerHTML — even though r.verdict itself is a fixed enum value.
   const r = eng.checkFont(q);
-  fontverdict.innerHTML = `<span class="v" style="color:${VC[r.verdict] || "var(--ink)"}">${r.verdict}</span> — ${r.why}`;
+  const verdictSpan = document.createElement("span");
+  verdictSpan.className = "v";
+  verdictSpan.style.color = VC[r.verdict] || "var(--ink)";
+  verdictSpan.textContent = r.verdict;
+  fontverdict.append(verdictSpan, document.createTextNode(` — ${r.why}`));
   if (r.alternatives && r.alternatives.length && r.verdict !== "FRESH") {
-    fontalts.innerHTML = "try instead: " + r.alternatives.slice(0, 4).map((a) => `<b>${a.family}</b> <span style="color:var(--ink-3)">[${a.supplier}]</span>`).join(" · ");
-  } else fontalts.innerHTML = "";
+    fontalts.append(document.createTextNode("try instead: "));
+    r.alternatives.slice(0, 4).forEach((a, i) => {
+      if (i > 0) fontalts.append(document.createTextNode(" · "));
+      const b = document.createElement("b");
+      b.textContent = a.family;
+      const supplier = document.createElement("span");
+      supplier.style.color = "var(--ink-3)";
+      supplier.textContent = ` [${a.supplier}]`;
+      fontalts.append(b, supplier);
+    });
+  }
 }
 document.getElementById("fontgo").addEventListener("click", checkFontUI);
 fontq.addEventListener("keydown", (e) => { if (e.key === "Enter") checkFontUI(); });
@@ -319,7 +344,15 @@ fontq.addEventListener("keydown", (e) => { if (e.key === "Enter") checkFontUI();
 // ===========================================================================
 document.getElementById("copycfg").addEventListener("click", async (e) => {
   const cfg = document.getElementById("mcpcfg").innerText;
-  try { await navigator.clipboard.writeText(cfg); e.target.textContent = "Copied ✓"; setTimeout(() => (e.target.textContent = "Copy config"), 1500); } catch { /* ignore */ }
+  const btn = e.target;
+  const original = btn.textContent;
+  try {
+    await navigator.clipboard.writeText(cfg);
+    btn.textContent = "Copied ✓";
+  } catch {
+    btn.textContent = "Copy failed — select & copy manually";
+  }
+  setTimeout(() => (btn.textContent = original), 1800);
 });
 
 // ===========================================================================

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { copyFileSync, cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
@@ -7,23 +8,12 @@ import ts from "typescript";
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const sourceDir = join(root, "apps", "web", "demo");
 const outputDir = join(root, "apps", "web", "build");
-const entries = [
-  "tweaks-panel.jsx",
-  "chrome.jsx",
-  "slop-act.jsx",
-  "second-order-act.jsx",
-  "pg-glass.jsx",
-  "pg-color.jsx",
-  "pg-imagery.jsx",
-  "pg-controls.jsx",
-  "pg-motion.jsx",
-  "pg-type.jsx",
-  "pg-compose.jsx",
-  "pg-copy.jsx",
-  "pg-text.jsx",
-  "index-act.jsx",
-  "app.jsx",
-];
+// Only the entry the live pages actually load: index.html mounts the decision
+// bench (build/app.js) via build/engine-bootstrap.mjs. The Slop-o-meter demo
+// and its page components (tweaks-panel, chrome, slop-act, second-order-act,
+// pg-*, index-act, pg-text) live in archive/web-slop-o-meter/ now — they are
+// not compiled or shipped.
+const entries = ["app.jsx"];
 
 rmSync(outputDir, { recursive: true, force: true });
 mkdirSync(outputDir, { recursive: true });
@@ -56,7 +46,7 @@ for (const entry of entries) {
 const engineFiles = [
   "background.mjs", "components.mjs", "connected-v2.mjs", "connected.mjs",
   "dashboard.mjs", "divergence.mjs", "engine.mjs", "explore.mjs", "fingerprint.mjs",
-  "font-pair-judgments.v2.json", "genome.mjs", "intent.mjs",
+  "font-pair-judgments.v2.json", "genome-vector.mjs", "genome.mjs", "intent.mjs",
   "layout-families.mjs", "motion.mjs", "perturb.mjs", "retrieval.mjs",
   "role-aliases.mjs", "section-purpose.mjs", "spec.mjs", "system.mjs",
 ];
@@ -79,4 +69,26 @@ mkdirSync(builtVectorDir, { recursive: true });
 copyFileSync(join(root, "viz", "layout-embeddings", "genome-vector.mjs"), join(builtVectorDir, "genome-vector.mjs"));
 copyFileSync(join(sourceDir, "engine-bootstrap.mjs"), join(outputDir, "engine-bootstrap.mjs"));
 
+// Cache-busting: stamp index.html's `?v=` query params with a short hash of
+// the files that actually change output (the stylesheet + the compiled entry
+// point), instead of the old hand-maintained `?b=51`/`?b=52` counters that
+// drifted out of sync with each other. Bump automatically on every build —
+// nothing to remember to edit by hand.
+const stylesheetSource = readFileSync(join(sourceDir, "app-styles.css"), "utf8");
+const bootstrapSourceForHash = readFileSync(join(sourceDir, "engine-bootstrap.mjs"), "utf8");
+const compiledAppSource = readFileSync(join(outputDir, "app.js"), "utf8");
+const buildId = createHash("sha256")
+  .update(stylesheetSource)
+  .update(bootstrapSourceForHash)
+  .update(compiledAppSource)
+  .digest("hex")
+  .slice(0, 10);
+
+const indexPath = join(root, "apps", "web", "index.html");
+const indexHtml = readFileSync(indexPath, "utf8")
+  .replace(/(demo\/app-styles\.css)\?[^"]*/, `$1?v=${buildId}`)
+  .replace(/(build\/engine-bootstrap\.mjs)\?[^"]*/, `$1?v=${buildId}`);
+writeFileSync(indexPath, indexHtml, "utf8");
+
 console.log(`Built ${entries.length} browser scripts and the connected engine runtime in apps/web/build.`);
+console.log(`Stamped index.html cache-busting query with build id ${buildId}.`);
