@@ -50,7 +50,7 @@
  * the aggregation — deterministic given the raw log.
  */
 
-import { readFile, writeFile, appendFile, mkdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { existsSync, readFileSync } from "node:fs";
 import { createReadStream } from "node:fs";
 import { createInterface } from "node:readline";
@@ -58,6 +58,10 @@ import { fileURLToPath } from "node:url";
 import { dirname, relative, resolve } from "node:path";
 import { chromium, type Browser, type Page } from "playwright";
 import { UA } from "./extract.js";
+import { createSerialAppender } from "./io.js";
+import { isSafePublicUrl } from "./url-safety.js";
+import { checkRobotsAllowed } from "./robots.js";
+import { CRAWLER_UA_TOKEN } from "./user-agent.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = resolve(HERE, "../../../data");
@@ -71,7 +75,7 @@ let LAYOUT_SCREENSHOT_DIR_V2 = resolve(DATA_DIR, "layout-crawl/screenshots");
 // --- tunables -------------------------------------------------------------
 const MAX_ELEMENTS = 600;
 const QUANT = 24;          // RGB quantization step for intra-site color dedup (matches crawl-colors.ts)
-const CHROMA_CUTOFF = 0.03; // min OKLCH chroma for a chromatic identity color (matches crawl-colors.ts)
+export const CHROMA_CUTOFF = 0.03; // min OKLCH chroma for a chromatic identity color (matches crawl-colors.ts)
 
 // ===========================================================================
 // COLOR MATH (mirrors crawl-colors.ts / color-space.mjs) — Node side only.
@@ -118,7 +122,7 @@ function quantHex(r: number, g: number, b: number): string {
 // ===========================================================================
 // SHAPES — the raw per-site observation written to the NDJSON log.
 // ===========================================================================
-interface ElementStyle {
+export interface ElementStyle {
   color: string;
   backgroundColor: string;
   borderColor: string | null; // only when a visible border (width>0) exists
@@ -813,7 +817,11 @@ async function crawlLayoutViewport(
   viewport: { name: ViewportName; width: number; height: number },
   timeoutMs: number,
   richCapture = false,
+  ignoreRobots = false,
 ): Promise<{ layout: LayoutViewportRecord; fp: PageFingerprint } | null> {
+  if (!isSafePublicUrl(url)) return null;
+  const robots = await checkRobotsAllowed(url, { ua: UA, uaToken: CRAWLER_UA_TOKEN, ignoreRobots });
+  if (!robots.allowed) return null;
   let context;
   try {
     context = await browser.newContext({
@@ -1021,10 +1029,10 @@ function compareResponsive(desktop: LayoutViewportRecord, mobile: LayoutViewport
   };
 }
 
-async function crawlLayoutSite(browser: Browser, host: string, url: string, timeoutMs: number, richCapture = false): Promise<LayoutSiteRaw> {
+async function crawlLayoutSite(browser: Browser, host: string, url: string, timeoutMs: number, richCapture = false, ignoreRobots = false): Promise<LayoutSiteRaw> {
   const captures: Partial<Record<ViewportName, { layout: LayoutViewportRecord; fp: PageFingerprint }>> = {};
   for (const viewport of LAYOUT_VIEWPORTS) {
-    const capture = await crawlLayoutViewport(browser, host, url, viewport, timeoutMs, richCapture);
+    const capture = await crawlLayoutViewport(browser, host, url, viewport, timeoutMs, richCapture, ignoreRobots);
     if (capture) captures[viewport.name] = capture;
   }
   const desktop = captures.desktop?.layout || null;
@@ -1049,7 +1057,20 @@ async function crawlLayoutSite(browser: Browser, host: string, url: string, time
 // ===========================================================================
 // CRAWL ONE SITE — own context, resource-blocking route (keep CSS+JS).
 // ===========================================================================
-async function crawlSite(browser: Browser, host: string, url: string, timeoutMs: number): Promise<SiteRaw> {
+async function crawlSite(browser: Browser, host: string, url: string, timeoutMs: number, ignoreRobots = false): Promise<SiteRaw> {
+  if (!isSafePublicUrl(url)) {
+    return {
+      host, url, ok: false, error: "blocked: unsafe/private/internal URL",
+      elements: [], fp: { components: [], animationLibs: [], tailwindAnimate: [], gradientText: false, sparkleBadge: false },
+    };
+  }
+  const robots = await checkRobotsAllowed(url, { ua: UA, uaToken: CRAWLER_UA_TOKEN, ignoreRobots });
+  if (!robots.allowed) {
+    return {
+      host, url, ok: false, error: "blocked: disallowed by robots.txt",
+      elements: [], fp: { components: [], animationLibs: [], tailwindAnimate: [], gradientText: false, sparkleBadge: false },
+    };
+  }
   let context;
   try {
     context = await browser.newContext({ userAgent: UA, viewport: { width: 1366, height: 900 } });
@@ -1060,7 +1081,17 @@ async function crawlSite(browser: Browser, host: string, url: string, timeoutMs:
       return route.continue();
     });
     const page = await context.newPage();
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: timeoutMs });
+    // Bounded retry: one retry with a short backoff, only for navigation
+    // timeouts/net errors (playwright's goto never throws on HTTP 4xx/5xx —
+    // those resolve normally — so this never retries a real 4xx).
+    try {
+      await page.goto(url, { waitUntil: "domcontentloaded", timeout: timeoutMs });
+    } catch (e) {
+      const msg = (e as Error).message || "";
+      if (!/Timeout|net::ERR_|ECONNRESET|ENOTFOUND|EAI_AGAIN/i.test(msg)) throw e;
+      await new Promise((r) => setTimeout(r, 800));
+      await page.goto(url, { waitUntil: "domcontentloaded", timeout: timeoutMs });
+    }
     await page.waitForTimeout(1200);
     const { elements, fp } = await extractFeatures(page);
     return { host, url, ok: true, elements, fp };
@@ -1078,7 +1109,7 @@ async function crawlSite(browser: Browser, host: string, url: string, timeoutMs:
 // AGGREGATION — derive all observations.*.json from the raw site records.
 // Every signal is a SITE COUNT: we dedup within a site first, then increment.
 // ===========================================================================
-function isGlow(boxShadow: string): boolean {
+export function isGlow(boxShadow: string): boolean {
   // colored glow = a box-shadow whose color is chromatic (not grey/black) and spread/blur present
   const colors = Array.from(boxShadow.matchAll(/rgba?\([^)]+\)/g)).map((m) => m[0]);
   for (const cs of colors) {
@@ -1091,7 +1122,7 @@ function isGlow(boxShadow: string): boolean {
   return false;
 }
 
-function radiusClass(px: number): "sharp" | "rounded" | "pill" {
+export function radiusClass(px: number): "sharp" | "rounded" | "pill" {
   if (px >= 100) return "pill";
   if (px >= 8) return "rounded";
   return "sharp";
@@ -1154,7 +1185,7 @@ function isGenericFamily(name: string): boolean {
     "arial", "helvetica", "roboto", "segoe ui", "tahoma", "verdana"].includes(n);
 }
 
-function detectBento(elements: ElementStyle[]): boolean {
+export function detectBento(elements: ElementStyle[]): boolean {
   // heuristic: many similar-sized rounded cards with shadow/border in a grid-ish cluster
   const cards = elements.filter((e) =>
     e.borderRadius >= 8 && e.area > 20000 && e.area < 400000 &&
@@ -1396,6 +1427,7 @@ interface Args {
   richCapture: boolean;
   screenshotDir: string | null;
   onlyHosts: string[] | null;
+  ignoreRobots: boolean;
 }
 function parseArgs(argv: string[]): Args {
   const out: Args = {
@@ -1409,6 +1441,7 @@ function parseArgs(argv: string[]): Args {
     richCapture: false,
     screenshotDir: null,
     onlyHosts: null,
+    ignoreRobots: false,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -1432,6 +1465,7 @@ function parseArgs(argv: string[]): Args {
     else if (a === "--screenshot-dir") out.screenshotDir = takeValue() || null;
     // Comma-separated host allowlist, for targeted re-crawl samples.
     else if (a === "--only-hosts") out.onlyHosts = takeValue().split(",").map((h) => h.trim()).filter(Boolean);
+    else if (a === "--ignore-robots") out.ignoreRobots = true;
   }
   return out;
 }
@@ -1529,7 +1563,9 @@ async function mainLayoutV2(args: Args): Promise<void> {
     const browser = await chromium.launch({ headless: true });
     try {
       let index = 0;
-      let appendTail = Promise.resolve();
+      // Serialize large NDJSON writes. Concurrent appendFile calls can
+      // interleave multi-megabyte records on Windows, corrupting lines.
+      const rawLogAppender = createSerialAppender(LAYOUT_RAW_LOG_V2);
       const worker = async (): Promise<void> => {
         while (true) {
           const myIndex = index++;
@@ -1538,7 +1574,7 @@ async function mainLayoutV2(args: Args): Promise<void> {
           if (site === undefined) return;
           let record: LayoutSiteRaw;
           try {
-            record = await crawlLayoutSite(browser, site.host, site.url, args.timeout, args.richCapture);
+            record = await crawlLayoutSite(browser, site.host, site.url, args.timeout, args.richCapture, args.ignoreRobots);
           } catch (e) {
             record = {
               schemaVersion: "geometry-crawl.v2",
@@ -1553,11 +1589,8 @@ async function mainLayoutV2(args: Args): Promise<void> {
               fp: { components: [], animationLibs: [], tailwindAnimate: [], gradientText: false, sparkleBadge: false },
             };
           }
-          // Serialize large NDJSON writes. Concurrent appendFile calls can
-          // interleave multi-megabyte records on Windows, corrupting lines.
           const serialized = JSON.stringify(record) + "\n";
-          appendTail = appendTail.then(() => appendFile(LAYOUT_RAW_LOG_V2, serialized));
-          await appendTail;
+          await rawLogAppender.append(serialized);
           completed++;
           const mark = record.ok ? "ok" : "x ";
           if (completed % 10 === 0 || !record.ok) {
@@ -1604,6 +1637,9 @@ async function main(): Promise<void> {
     const browser = await chromium.launch({ headless: true });
     try {
       let idx = 0;
+      // Serialize appends (see createSerialAppender): concurrent appendFile
+      // calls from this worker pool can interleave records on Windows.
+      const rawLogAppender = createSerialAppender(RAW_LOG);
       const worker = async (): Promise<void> => {
         while (true) {
           const myIdx = idx++;
@@ -1612,12 +1648,12 @@ async function main(): Promise<void> {
           if (s === undefined) return;
           let rec: SiteRaw;
           try {
-            rec = await crawlSite(browser, s.host, s.url, args.timeout);
+            rec = await crawlSite(browser, s.host, s.url, args.timeout, args.ignoreRobots);
           } catch (e) {
             rec = { host: s.host, url: s.url, ok: false, error: ("driver:" + (e as Error).message).slice(0, 160),
               elements: [], fp: { components: [], animationLibs: [], tailwindAnimate: [], gradientText: false, sparkleBadge: false } };
           }
-          await appendFile(RAW_LOG, JSON.stringify(rec) + "\n");
+          await rawLogAppender.append(JSON.stringify(rec) + "\n");
           completed++;
           const mark = rec.ok ? "ok" : "x ";
           if (completed % 10 === 0 || !rec.ok) {
@@ -1676,4 +1712,9 @@ async function main(): Promise<void> {
   console.log(`\nWrote observations.{colors,accents,styles,gradients,radii,animation,components,type}.json to data/`);
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+// Guard CLI execution so importing this module (e.g. from tests, to reuse
+// the pure helpers below) does not kick off a real crawl.
+const isMain = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1]);
+if (isMain) {
+  main().catch((e) => { console.error(e); process.exit(1); });
+}

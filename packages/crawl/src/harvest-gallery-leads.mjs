@@ -6,16 +6,24 @@
  * - it records robots/diagnosis information;
  * - it keeps gallery pages and screenshots out of the destination corpus;
  * - it leaves crawling to crawl-features.ts with the rich-capture recipe.
+ *
+ * robots.txt is checked (via the shared src/robots.mjs parser — proper
+ * per-user-agent groups + longest-prefix Allow/Disallow matching, not a
+ * regex) before every navigation, listing pages AND detail pages alike.
+ * Pass --ignore-robots to bypass this (off by default).
  */
 import fs from "node:fs";
 import path from "node:path";
 import { chromium } from "playwright";
+import { CRAWLER_UA } from "./user-agent.mjs";
+import { checkRobotsAllowed } from "./robots.mjs";
 
 const ROOT = path.basename(process.cwd()) === "crawl" && path.basename(path.dirname(process.cwd())) === "packages" ? path.resolve(process.cwd(), "../..") : process.cwd();
 const OUT = path.join(ROOT, "data", "layout-crawl", "master-v2");
 fs.mkdirSync(OUT, { recursive: true });
 
-const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36 fixmyslop-gallery-research/2.0";
+const USER_AGENT = CRAWLER_UA;
+const IGNORE_ROBOTS = process.argv.includes("--ignore-robots");
 const SOURCES = [
   { id: "curated-design", source: "gallery:curated.design", url: "https://craftwork.design/curated/websites", roots: ["craftwork.design"] },
   { id: "landing-gallery", source: "gallery:landing.gallery", url: "https://www.landing.gallery/", roots: ["landing.gallery"] },
@@ -53,17 +61,27 @@ const isNoise = (href, rootHosts) => {
   if (/\.(pdf|zip|png|jpe?g|gif|webp|svg|mp4|mov)(\?|$)/i.test(href)) return true;
   return false;
 };
+// Uses the shared, proper robots.txt parser (per-user-agent groups,
+// longest-prefix Allow/Disallow matching) instead of the old coarse regex,
+// which could neither special-case our own UA group nor handle a
+// non-root Disallow correctly. Source-listing pages are checked with
+// robotsStatus() (kept for the summary report's disallowAll flag); actual
+// navigation is additionally gated per-URL via checkRobotsAllowed() in
+// collectPage() below, so a source's listing page and any deeper detail
+// pages are each checked against their own robots.txt.
 const robotsStatus = async (url) => {
   try {
     const origin = new URL(url).origin;
-    const r = await fetch(`${origin}/robots.txt`, { headers: { "user-agent": USER_AGENT } });
-    const text = await r.text();
-    const disallowAll = /user-agent:\s*\*[^]*?disallow:\s*\/\s*(?:$|\n)/i.test(text);
-    return { status: r.status, disallowAll, url: `${origin}/robots.txt` };
+    const result = await checkRobotsAllowed(url, { ua: USER_AGENT, ignoreRobots: IGNORE_ROBOTS });
+    return { status: result.allowed ? 200 : 403, disallowAll: !result.allowed && !IGNORE_ROBOTS, url: `${origin}/robots.txt` };
   } catch (error) { return { status: 0, disallowAll: true, error: String(error.message || error) }; }
 };
 
 async function collectPage(page, source, url) {
+  const robots = await checkRobotsAllowed(url, { ua: USER_AGENT, ignoreRobots: IGNORE_ROBOTS });
+  if (!robots.allowed) {
+    throw new Error(`robots.txt disallows ${url}`);
+  }
   await page.goto(url, { waitUntil: "domcontentloaded", timeout: 15000 });
   await page.waitForTimeout(900);
   for (let i = 0; i < 3; i++) {

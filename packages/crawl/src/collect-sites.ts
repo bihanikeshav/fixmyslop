@@ -9,6 +9,7 @@
  *
  *   npx tsx src/collect-sites.ts
  *   npx tsx src/collect-sites.ts --no-reach   # skip reachability (faster)
+ *   npx tsx src/collect-sites.ts --ignore-robots   # bypass robots.txt (off by default)
  *
  * Every source runs inside try/catch and continues on failure — a blocked or
  * dead source never aborts the run. It does NOT touch the font-crawl outputs
@@ -21,6 +22,9 @@ import { dirname, resolve } from "node:path";
 import type { Browser } from "playwright";
 import { withBrowser, UA } from "./extract.js";
 import { discoverOutboundLinks, AI_DIRECTORIES } from "./sources.js";
+import { isSafePublicUrl } from "./url-safety.js";
+import { checkRobotsAllowed } from "./robots.js";
+import { CRAWLER_UA_TOKEN } from "./user-agent.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = resolve(HERE, "../../../data");
@@ -89,10 +93,10 @@ function toCandidate(href: string, source: string): Candidate | null {
   } catch {
     return null;
   }
+  if (!isSafePublicUrl(href)) return null;
   if (u.protocol !== "https:" && u.protocol !== "http:") return null;
   const host = normHost(u);
-  if (!host || !host.includes(".")) return null;
-  if (host === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(host)) return null;
+  if (!host) return null;
   if (isNoise(host)) return null;
   return { url: `https://${host}/`, host, source };
 }
@@ -132,12 +136,12 @@ const DIR_PAGES: Record<string, string[]> = {
   ],
 };
 
-async function fromDirectories(browser: Browser, perPage: number): Promise<Candidate[]> {
+async function fromDirectories(browser: Browser, perPage: number, ignoreRobots: boolean): Promise<Candidate[]> {
   const out: Candidate[] = [];
   for (const [dir, pages] of Object.entries(DIR_PAGES)) {
     for (const page of pages) {
       try {
-        const found = await discoverOutboundLinks(browser, page, perPage);
+        const found = await discoverOutboundLinks(browser, page, perPage, { ignoreRobots });
         let kept = 0;
         for (const href of found) {
           const c = toCandidate(href, `dir:${dir}`);
@@ -192,6 +196,7 @@ const PH_PAGES = [
 async function fromProductHunt(
   browser: Browser,
   maxDetail: number,
+  ignoreRobots: boolean,
 ): Promise<{ candidates: Candidate[]; note: string }> {
   const ctx = await browser.newContext({ userAgent: UA, viewport: { width: 1366, height: 900 } });
   const candidates: Candidate[] = [];
@@ -202,6 +207,8 @@ async function fromProductHunt(
   try {
     for (const url of PH_PAGES) {
       try {
+        const robots = await checkRobotsAllowed(url, { ua: UA, uaToken: CRAWLER_UA_TOKEN, ignoreRobots });
+        if (!robots.allowed) { console.log(`  [producthunt] ${url} skipped (robots.txt)`); continue; }
         const page = await ctx.newPage();
         await page.goto(url, { waitUntil: "domcontentloaded", timeout: 25000 });
         await page.waitForTimeout(2500);
@@ -229,6 +236,8 @@ async function fromProductHunt(
     let detailExternal = 0;
     for (const dp of toVisit) {
       try {
+        const robots = await checkRobotsAllowed(dp, { ua: UA, uaToken: CRAWLER_UA_TOKEN, ignoreRobots });
+        if (!robots.allowed) continue;
         const page = await ctx.newPage();
         await page.goto(dp, { waitUntil: "domcontentloaded", timeout: 20000 });
         await page.waitForTimeout(1500);
@@ -379,6 +388,7 @@ async function pool<T, R>(items: T[], size: number, fn: (item: T) => Promise<R>)
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const doReach = !args.includes("--no-reach");
+  const ignoreRobots = args.includes("--ignore-robots");
   const perPage = 150; // HIGH limit per directory listing page
 
   // Add the directories' own first-party hosts to the noise filter dynamically.
@@ -394,7 +404,7 @@ async function main(): Promise<void> {
   await withBrowser(async (browser) => {
     console.log("== Source 1: AI directories ==");
     try {
-      const dirC = await fromDirectories(browser, perPage);
+      const dirC = await fromDirectories(browser, perPage, ignoreRobots);
       allRaw.push(...dirC);
     } catch (e) {
       sourceNotes.push(`directories: FAILED ${(e as Error).message.slice(0, 120)}`);
@@ -402,7 +412,7 @@ async function main(): Promise<void> {
 
     console.log("\n== Source 2: Product Hunt ==");
     try {
-      const { candidates, note } = await fromProductHunt(browser, 60);
+      const { candidates, note } = await fromProductHunt(browser, 60, ignoreRobots);
       allRaw.push(...candidates);
       sourceNotes.push(note);
     } catch (e) {
