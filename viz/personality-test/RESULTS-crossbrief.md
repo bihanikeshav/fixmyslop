@@ -1,5 +1,9 @@
 # Cross-brief test — 5 DIFFERENT subjects through the bias-fixed skill
 
+> **Informal dev log, not a benchmark.** Unblinded, single-author (N=5), no
+> statistical claims. For a blinded, multi-rater comparison see
+> `benchmarks/ui-skills/`.
+
 The right test for real usage (each task is a different brief). Subjects chosen to
 probe the two biases: hot sauce + toddler music (does color go bold, not earthy?),
 jazz club (dark-trap + non-numeric), poetry magazine (no number — avoid a forced

@@ -1,5 +1,9 @@
 # Polish & motion round
 
+> **Informal dev log, not a benchmark.** Unblinded, single-author (N=1–3), no
+> statistical claims. For a blinded, multi-rater comparison see
+> `benchmarks/ui-skills/`.
+
 Goal (user): pages are now unique, but need polish + animations. Distilled the craft +
 motion research into `reference/polish.md` + `reference/motion.md`, added a Polish &
 motion pass to the skill, and a grounded motion gate to `slop-check.mjs`. Builds:

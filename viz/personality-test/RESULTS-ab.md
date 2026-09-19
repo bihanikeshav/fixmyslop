@@ -1,5 +1,12 @@
 # A/B/C test — no-skill vs /frontend-design vs our skill+API
 
+> **Informal dev log, not a benchmark.** Unblinded, single-author (N=1), no
+> statistical claims. This one additionally scores with `api.mjs audit` — the
+> same structural checker the treatment (our skill+API) is built to satisfy.
+> That's circular: it is not evidence our treatment beats the alternatives,
+> only that it beats them *by its own metric*. For a blinded, multi-rater
+> comparison see `benchmarks/ui-skills/`.
+
 Same briefs + same output spec (single self-contained HTML, hero + section). Only the
 *method* varies. Objective score = structural severity (lower = better) from `api.mjs audit`.
 

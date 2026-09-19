@@ -57,3 +57,24 @@ and preregistered statistical analysis before making a broader claim.
 `runs/` is ignored because it can contain large screenshots and the private
 unblinding key. Publish a deliberately reviewed result bundle elsewhere if a
 run should become a permanent benchmark snapshot.
+
+## What is measured
+
+A blinded, multi-rater head-to-head across four frozen briefs (technical
+workspace, public-service form, research story, creative-tool landing page),
+scored 0–4 on eight dimensions (intent fidelity, mechanism legibility,
+hierarchy, system coherence, state completeness, responsive translation,
+distinctive restraint, truth and provenance) plus per-brief functional
+mechanism checks with required evidence artifacts. A gate failure on a
+mechanism check is not averaged into the taste score.
+
+## CI status
+
+**Not run in CI.** `npm run test:ui-bench` (`node --test benchmarks/ui-skills/*.test.mjs`)
+*is* wired into CI (`.github/workflows/ci.yml` → `npm test` → `test:ui-bench`),
+but that only exercises `harness.mjs`'s own mechanics (`prepare`/`summarize`
+against fixture data) — it is a unit test of the harness, not an actual
+benchmark run. The full protocol above requires human builders and at least
+two independent human raters and cannot be automated; it is run manually and
+the result bundle published separately (see "Publish a deliberately reviewed
+result bundle" above).

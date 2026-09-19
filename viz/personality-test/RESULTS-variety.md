@@ -1,5 +1,9 @@
 # Variety test — same brief (bookstore) built 5× through the hardened skill
 
+> **Informal dev log, not a benchmark.** Unblinded, single-author (N=5), no
+> statistical claims. For a blinded, multi-rater comparison see
+> `benchmarks/ui-skills/`.
+
 Goal: does the v3 skill (forbid-the-median + layout/type/boldness mandates) make
 independent builds of ONE brief actually *differ*? Identical prompts; only the skill
 can create variety. Files: `var-bookstore-1..5.html` (+ `-full.png`).

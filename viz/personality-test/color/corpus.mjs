@@ -6,10 +6,15 @@
 //     boilerplate, and AI-generated page reaches for the framework default, so
 //     those exact swatches are massively over-represented in training data.
 //     Tailwind's default palette is the single largest contributor.
-//   kind:'ourbuild' — every hex we have actually shipped in
-//     viz/personality-test/*.html. This is the self-heating feedback loop: it
-//     makes the validator flag OUR OWN convergence (we have over-used oxblood,
-//     earthy browns, and bright reds), not just the canonical AI palette.
+//   kind:'ourbuild' — every hex we have actually shipped in the top-level
+//     viz/personality-test/*.html files (readdirSync is non-recursive, so
+//     viz/personality-test/ab/*.html is deliberately excluded — those are
+//     rapid-sweep pipeline-order variants, not shipped examples, and folding
+//     their many near-duplicate permutations into this corpus would skew the
+//     density field disproportionately toward whatever colors that one sweep
+//     happened to use). This is the self-heating feedback loop: it makes the
+//     validator flag OUR OWN convergence (we have over-used oxblood, earthy
+//     browns, and bright reds), not just the canonical AI palette.
 //
 // Pure-ish: framework lists are hardcoded literals. The ourbuild points are read
 // from disk at load time via loadCorpus() (no network, deterministic given the

@@ -1,19 +1,22 @@
-// Late-fusion sketch: visual cosine (DINOv2, top-viewport strategy) + rough
-// genome-cosine, at a couple of weightings. Compares hybrid NN vs pure-visual NN.
+// Late-fusion sketch: visual cosine (DINOv2, top-viewport strategy) + genome
+// cosine (production genomeVector, see genome-vector.mjs), at a couple of
+// weightings. Compares hybrid NN vs pure-visual NN.
 //
 //   node viz/layout-embeddings/hybrid_fusion.mjs
 import { readFile, writeFile } from "node:fs/promises";
-import { genomeVec, cos } from "./genome_vec.mjs";
+import { fitGenomeCorpus, genomeVector, cosine as cos } from "./genome-vector.mjs";
 
 const visEmb = JSON.parse(await readFile("viz/layout-embeddings/layout-visual-embeddings.json", "utf8"));
 const manifestLines = (await readFile("data/layout-crawl/layout-genome-manifest.v3.ndjson", "utf8")).trim().split("\n");
 const genomeLines = (await readFile("data/layout-crawl/layout-genomes.v3.ndjson", "utf8")).trim().split("\n");
 
 const hostAtLine = manifestLines.map((l) => JSON.parse(l).host);
+const allGenomes = genomeLines.map((l) => JSON.parse(l));
+const stats = fitGenomeCorpus(allGenomes);
 const genomeByHost = {};
 for (let i = 0; i < hostAtLine.length; i++) {
   const h = hostAtLine[i];
-  if (visEmb[h]) genomeByHost[h] = genomeVec(JSON.parse(genomeLines[i]));
+  if (visEmb[h]) genomeByHost[h] = genomeVector(allGenomes[i], stats);
 }
 
 const hosts = Object.keys(visEmb).filter((h) => genomeByHost[h]);

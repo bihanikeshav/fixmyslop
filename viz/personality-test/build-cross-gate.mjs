@@ -23,8 +23,9 @@ const RAW = join(REPO, "data", "feature-crawl-raw.ndjson");
 const OUT_JSON = join(REPO, "data", "cross-gate-sites.json");
 const OUT_HTML = join(__dirname, "cross-gate-sites.html");
 
-// IMPORTANT: the density corpus (color/corpus.mjs -> ourbuildCorpus) scans EVERY
-// *.html in this directory and turns every hex literal it finds into a corpus
+// IMPORTANT: the density corpus (color/corpus.mjs -> ourbuildCorpus) scans every
+// top-level *.html in this directory (readdirSync, non-recursive — viz/personality-test/ab/
+// is deliberately excluded) and turns every hex literal it finds into a corpus
 // point. Our own viewer lives here and embeds the accent swatches as hex, so a
 // leftover cross-gate-sites.html from a previous run would pollute the corpus
 // (raising the density of the very accents we're judging) and make the verdict

@@ -33,33 +33,44 @@ import { loadCorpus } from "./corpus.mjs";
 // ===========================================================================
 export const CONFIG = {
   // Gaussian bandwidth in OKLab units (ΔEok). One corpus point's blob has this
-  // standard deviation. ~0.04 sits at the small end of a just-noticeable
-  // difference, so a corpus point only heats colors a viewer would confuse with
-  // it. Smaller => tighter, flags fewer near-neighbours; larger => broader.
-  // TIGHTENED 0.04 -> 0.02 (~1 JND): with the crawl corpus (~7.7k points) 0.04
-  // smeared heat across nearly the whole gamut (~95% flagged). 0.02 keeps each
-  // color's footprint to its immediate neighbourhood, so individual-color space
-  // stays WIDE OPEN. The heavy lifting now moves to the PALETTE gate (the whole
-  // combination), not individual hexes.
+  // standard deviation. Smaller => tighter, flags fewer near-neighbours;
+  // larger => broader.
+  //
+  // CURRENT: 0.02 (~1 JND). Keeps each color's footprint to its immediate
+  // neighbourhood, so individual-color space stays WIDE OPEN. The heavy
+  // lifting for "is this palette generic" now moves to the PALETTE gate (the
+  // whole combination), not individual hexes.
+  //
+  // HISTORICAL (superseded): 0.04 sat at the small end of a just-noticeable
+  // difference, but with the crawl corpus (~7.7k points) it smeared heat
+  // across nearly the whole gamut (~95% flagged) — too broad to be useful, so
+  // it was tightened to the current 0.02.
   BANDWIDTH: 0.02,
 
-  // Overuse threshold on the raw KDE heat (density() = sum of unit-peak Gaussian
-  // blobs). With ~925 corpus points and BANDWIDTH 0.04 the usable-space density
-  // distribution runs from ~0.2 (cool, empty regions) to ~42 (the warm cluster
-  // we keep reaching for), with a median around 8. A region is "overused" when
-  // its heat sits in the upper tail of that distribution. 18.0 ≈ the 85th
-  // percentile of usable space (measured by calibrate()), so by construction the
-  // density check flags a clear minority (~15%) — the genuinely crowded zones —
-  // not the majority. Lower it to be stricter, raise it to be more permissive.
+  // Overuse threshold on the raw KDE heat (density() = sum of unit-peak
+  // Gaussian blobs). A region is "overused" when its heat sits in the upper
+  // tail of the usable-space density distribution. Lower it to be stricter,
+  // raise it to be more permissive.
   //
-  // NOTE on the canonical Tailwind indigo/blue/cyan: those swatches actually sit
-  // BELOW this density (the blue-purple band is *under*-populated in OUR builds —
-  // we converge on warm earth, not blue). They are still caught, by the hard ban
-  // (which is the stronger verdict). The density field's distinct job is to catch
-  // OUR convergence (oxblood/brick/ochre) that no fixed blocklist would name.
-  OVERUSE_THRESHOLD: 40.0,  // at BANDWIDTH 0.02 over the crawl corpus this flags
-  // ~10% of usable space (was ~95% at 0.04/18) — only the genuine hot peaks trip
-  // it; the exact Tailwind tokens are still caught by the (stronger) hard ban.
+  // CURRENT: 40.0, paired with BANDWIDTH 0.02. At this bandwidth over the
+  // crawl corpus, 40.0 flags ~10% of usable space — only the genuine hot
+  // peaks trip it.
+  //
+  // HISTORICAL (superseded, paired with the old BANDWIDTH 0.04): with ~925
+  // corpus points and bandwidth 0.04, the usable-space density distribution
+  // ran from ~0.2 (cool, empty regions) to ~42 (the warm cluster we keep
+  // reaching for), median ~8, and a threshold of 18.0 (~85th percentile,
+  // measured by calibrate()) flagged ~95% of space once the corpus grew to
+  // ~7.7k points — both the old bandwidth and the old threshold were
+  // recalibrated together to the current 0.02 / 40.0 pair.
+  //
+  // NOTE on the canonical Tailwind indigo/blue/cyan: those swatches actually
+  // sit BELOW this density (the blue-purple band is *under*-populated in OUR
+  // builds — we converge on warm earth, not blue). They are still caught, by
+  // the hard ban (which is the stronger verdict). The density field's
+  // distinct job is to catch OUR convergence (oxblood/brick/ochre) that no
+  // fixed blocklist would name.
+  OVERUSE_THRESHOLD: 40.0,
 
   // Below this OKLCH chroma a color reads as a neutral (grey/near-grey). Neutrals
   // are exempt from the density penalty. 0.04 ≈ the line where a tint stops

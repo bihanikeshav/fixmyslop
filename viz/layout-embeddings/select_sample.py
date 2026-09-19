@@ -1,5 +1,6 @@
 """Pick ~50 representative hosts for the small-scale visual-retrieval prototype.
-Writes viz/layout-embeddings/sample-hosts.json (scratch artifact, not committed)."""
+Writes viz/layout-embeddings/sample-hosts.json (tracked in git, despite being a
+generated artifact -- it's small and other scripts/tests read it directly)."""
 import json
 from pathlib import Path
 
