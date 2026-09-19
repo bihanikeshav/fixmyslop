@@ -245,6 +245,8 @@ export function familyRoot(name) {
 // low density, high energy/experimentalism) stay well under it.
 //   functionalScore = 0.4·contentDensity + 0.35·formality + 0.25·(1−energy)
 //   FUNCTIONAL_THRESHOLD = 0.55
+// Both are IMPORTED from intent.mjs (the single definition, shared with background.mjs and
+// spec.mjs) — this module never re-implements the formula.
 //
 // ENVELOPE RULES (documented per the task):
 //   - functional (score ≥ 0.55): body/metric role MUST be sans-serif or monospace
@@ -391,8 +393,36 @@ export function mulberry32(a) {
 // Engine factory — inject {corpus:[{hex,weight}], brands:[{name,ic:[]}], fonts:[...]}
 // ===========================================================================
 export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace = FONT_SPACE, fontRuntime = FONT_RUNTIME } = {}) {
-  // pre-compute corpus labs + weights for the KDE
+  // pre-compute corpus labs + weights for the KDE.
+  // Stored BOTH as objects (kept for readability/other consumers) and as four flat
+  // Float64Arrays in the SAME order — density() walks the flat arrays, which is a
+  // straight cache-locality win with bit-identical arithmetic.
   const pts = corpus.map((c) => ({ lab: hexToOklab(c.hex), w: c.weight || 1 }));
+  const nPts = pts.length;
+  const ptL = new Float64Array(nPts), ptA = new Float64Array(nPts), ptB = new Float64Array(nPts), ptW = new Float64Array(nPts);
+  for (let i = 0; i < nPts; i++) { ptL[i] = pts[i].lab[0]; ptA[i] = pts[i].lab[1]; ptB[i] = pts[i].lab[2]; ptW[i] = pts[i].w; }
+  let maxW = 1;
+  for (let i = 0; i < nPts; i++) if (ptW[i] > maxW) maxW = ptW[i];
+
+  // EXACT far-field cutoff for the Gaussian KDE. Math.exp(-x) underflows to a true
+  // +0.0 for large x, so past some squared distance every corpus point contributes
+  // EXACTLY +0.0 and `sum += 0` is a bit-for-bit no-op. We bisect for the smallest
+  // such d2 (using the heaviest weight, so every lighter point is covered too) rather
+  // than hard-coding a constant — the result is guaranteed identical, never approximate.
+  const cutCache = new Map();
+  const cutFor = (twoSigma2) => {
+    let cut = cutCache.get(twoSigma2);
+    if (cut !== undefined) return cut;
+    let lo = 0, hi = 1;
+    while (maxW * Math.exp(-hi / twoSigma2) !== 0 && hi < 1e12) hi *= 2;
+    for (let i = 0; i < 128; i++) {
+      const mid = (lo + hi) / 2;
+      if (mid <= lo || mid >= hi) break;
+      if (maxW * Math.exp(-mid / twoSigma2) === 0) hi = mid; else lo = mid;
+    }
+    cutCache.set(twoSigma2, hi);
+    return hi;
+  };
   const brandLabs = brands.flatMap((b) => (b.ic || []).map((hex) => {
     try { return { name: b.name, hex, lab: hexToOklab(hex) }; } catch { return null; }
   }).filter(Boolean));
@@ -448,10 +478,18 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
 
   function density(lab, bandwidth = CONFIG.BANDWIDTH) {
     const twoSigma2 = 2 * bandwidth * bandwidth;
+    const cut = cutFor(twoSigma2);
+    const l0 = lab[0], a0 = lab[1], b0 = lab[2];
     let sum = 0;
-    for (const p of pts) {
-      const d2 = (lab[0] - p.lab[0]) ** 2 + (lab[1] - p.lab[1]) ** 2 + (lab[2] - p.lab[2]) ** 2;
-      sum += p.w * Math.exp(-d2 / twoSigma2);
+    for (let i = 0; i < nPts; i++) {
+      const dl = l0 - ptL[i], da = a0 - ptA[i], db = b0 - ptB[i];
+      const d2 = dl * dl + da * da + db * db;
+      // In practice this prunes only the far corners of the gamut (the underflow radius is
+      // ~0.77 in OKLab, wider than most of the corpus) — it is kept because it is free and
+      // provably lossless, not because it is the main win. The main wins are the flat
+      // arrays above, the single KDE pass per candidate in nearestSafe, and the LRU there.
+      if (d2 >= cut) continue;              // term is exactly +0.0 — skipping is a no-op
+      sum += ptW[i] * Math.exp(-d2 / twoSigma2);
     }
     return sum;
   }
@@ -471,18 +509,49 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
     return { hex: hex.toLowerCase(), oklch: { L, C, H }, verdict, density: d, ban, neutral };
   }
 
-  function isSafeAccentLab(lab, { minChroma = CONFIG.MIN_INTENTIONAL_CHROMA, allowBandEdge = false } = {}) {
-    if (!isInGamut(lab)) return false;
+  // Everything isSafeAccentLab tests EXCEPT the density gate, in the same order, plus the
+  // chroma test hoisted ahead of density. All of these are pure, side-effect-free
+  // predicates AND-ed together, so reordering them cannot change the verdict — it only
+  // stops us paying for a 1,971-point KDE evaluation on a candidate that a float compare
+  // already rejects. Returns the derived {hex, lch} so callers don't recompute them.
+  function safeAccentPrecheck(lab, minChroma, allowBandEdge) {
+    if (!isInGamut(lab)) return null;
     const { hex } = oklabToSrgb(lab);
-    if (hardBanned(hex)) return false;
+    if (hardBanned(hex)) return null;
     const lch = oklabToOklch(lab);
-    if (!allowBandEdge && inBannedHueBand(lch)) return false;
-    if (density(lab) >= CONFIG.OVERUSE_THRESHOLD) return false;
-    if (lch[1] < minChroma) return false;
-    return true;
+    if (!allowBandEdge && inBannedHueBand(lch)) return null;
+    if (lch[1] < minChroma) return null;
+    return { hex, lch };
   }
 
-  function nearestSafe(hex, { count = 3, maxDelta = 0.6 } = {}) {
+  function isSafeAccentLab(lab, { minChroma = CONFIG.MIN_INTENTIONAL_CHROMA, allowBandEdge = false } = {}) {
+    if (!safeAccentPrecheck(lab, minChroma, allowBandEdge)) return false;
+    return density(lab) < CONFIG.OVERUSE_THRESHOLD;
+  }
+
+  // nearestSafe is the hot path: ~3,900 lattice candidates, each of which used to cost up
+  // to THREE full KDE passes (one inside isSafeAccentLab, one for `cd`, one more when the
+  // candidate got picked). density() is pure, so we evaluate it once per candidate and
+  // reuse the value; the candidate order, the predicates and every emitted number are
+  // unchanged. Results are additionally memoised in a small LRU, since checkPalette calls
+  // this once per flagged role and the same accents recur constantly.
+  // A tiny bounded LRU. Public entry points that are (a) pure, (b) expensive and (c)
+  // reachable by an unauthenticated caller go through it, so a hostile client replaying
+  // the same slop palette cannot spin the CPU. Values are structuredClone()d on the way
+  // out, so a caller mutating a result can never poison a later one.
+  const lru = (max, compute) => {
+    const store = new Map();
+    return (key, ...args) => {
+      const hit = store.get(key);
+      if (hit !== undefined) { store.delete(key); store.set(key, hit); return structuredClone(hit); }
+      const out = compute(...args);
+      store.set(key, out);
+      if (store.size > max) store.delete(store.keys().next().value);
+      return structuredClone(out);
+    };
+  };
+
+  function computeNearestSafe(hex, count, maxDelta) {
     const startLab = hexToOklab(hex);
     const startDensity = density(startLab);
     const [L0, C0, H0] = oklabToOklch(startLab);
@@ -497,10 +566,12 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
       const L = L0 + dL, C = Math.max(0, C0 + dC), H = (H0 + dH + 360) % 360;
       if (L <= 0.05 || L >= 0.99) continue;
       const lab = oklchToOklab([L, C, H]);
-      if (!isSafeAccentLab(lab, { minChroma, allowBandEdge: true })) continue;
-      const cd = density(lab);
+      const pre = safeAccentPrecheck(lab, minChroma, true);
+      if (!pre) continue;
+      const cd = density(lab);                       // the ONE KDE pass per candidate
+      if (cd >= CONFIG.OVERUSE_THRESHOLD) continue;  // …the isSafeAccentLab density gate
       if (cd >= startDensity) continue;
-      const { hex: chex } = oklabToSrgb(lab);
+      const chex = pre.hex;
       if (seen.has(chex)) continue;
       seen.add(chex);
       const delta = deltaEok(startLab, lab);
@@ -513,7 +584,7 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
       if (picked.some((p) => deltaEok(p.lab, c.lab) < CONFIG.DUPLICATE_DELTA)) continue;
       const sameFamily = Math.abs(c.dH) <= 15;
       picked.push({
-        hex: c.hex, lab: c.lab, oklch: { L: c.L, C: c.C, H: c.H }, density: density(c.lab), delta: c.delta,
+        hex: c.hex, lab: c.lab, oklch: { L: c.L, C: c.C, H: c.H }, density: c.density, delta: c.delta,
         reason: sameFamily
           ? `same hue family, shifted out of the hot zone (ΔEok ${c.delta.toFixed(2)})`
           : `hue shifted ${c.dH > 0 ? "+" : ""}${c.dH}° to escape the slop band (ΔEok ${c.delta.toFixed(2)})`,
@@ -521,6 +592,11 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
       if (picked.length >= count) break;
     }
     return picked.map(({ lab, ...rest }) => rest);
+  }
+
+  const nearestSafeMemo = lru(256, computeNearestSafe);
+  function nearestSafe(hex, { count = 3, maxDelta = 0.6 } = {}) {
+    return nearestSafeMemo(`${String(hex)}\u0000${count}\u0000${maxDelta}`, hex, count, maxDelta);
   }
 
   function brandClone(hex, maxDelta = 0.06) {
@@ -541,7 +617,7 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
     return { kind: "fresh", detail: "not a brand clone, not a framework default, low corpus density — fresh" };
   }
 
-  function checkColor(hex) {
+  function computeCheckColor(hex) {
     const cls = classify(hex);
     const reason = colorReason(hex, cls);
     const flagged = cls.verdict === "HARD-BANNED" || cls.verdict === "OVERUSED";
@@ -552,6 +628,8 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
       alternatives: flagged ? nearestSafe(hex).map((s) => ({ hex: s.hex, slop: slopScore(s.density), deltaEok: +s.delta.toFixed(3), reason: s.reason })) : [],
     };
   }
+  const checkColorMemo = lru(512, computeCheckColor);
+  function checkColor(hex) { return checkColorMemo(String(hex), hex); }
 
   // checkPalette(ground, ink, accent, accent2?, surface?) — role-by-role slop gate plus the
   // COMBINATION gates a per-hex check can't see: near-duplicate roles, ink↔ground contrast, the
@@ -559,7 +637,7 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
   // individually legal while the pair is the banned look), and (when `surface` is supplied) the
   // surface-elevation step (cards must sit visibly above the ground, and surface is deliberately
   // EXCLUDED from the duplicate check — it is supposed to live near the ground).
-  function checkPalette(ground, ink, accent, accent2, surface) {
+  function computeCheckPalette(ground, ink, accent, accent2, surface) {
     const roles = [["ground", ground], ["ink", ink], ["accent", accent]];
     if (accent2) roles.push(["accent2", accent2]);
     const perRole = {};
@@ -622,6 +700,18 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
       surface: surfaceReport, issues,
       pass: Object.values(perRole).every((r) => r.verdict === "SAFE" || r.verdict === "NEUTRAL-ok") && dupes.length === 0 && issues.length === 0,
     };
+  }
+  const checkPaletteMemo = lru(256, computeCheckPalette);
+  // Key on the normalised roles: positional, joined by a separator that cannot occur in a
+  // hex. Missing roles (null/undefined/"") collapse to the same empty slot, exactly as
+  // computeCheckPalette's own falsy tests treat them. Case is deliberately PRESERVED —
+  // the invalid-surface branch echoes the caller's raw string back in `issues`, so
+  // case-folding the key could hand one caller another caller's spelling.
+  function checkPalette(ground, ink, accent, accent2, surface) {
+    return checkPaletteMemo(
+      [ground, ink, accent, accent2, surface].map((v) => (v ? String(v) : "")).join("\u0000"),
+      ground, ink, accent, accent2, surface,
+    );
   }
 
   /**
@@ -791,7 +881,8 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
     const displayGenre = classifyFontGenre(display);
     if (["decorative", "blackletter"].includes(displayGenre)) return -Infinity;
     const dm = metricsFor(display), bm = metricsFor(body);
-    const finite = (v) => Number.isFinite(Number(v));
+    // null = unmeasured (packages/core FontMetrics.apertureOpenness); Number(null) is 0, so guard it.
+    const finite = (v) => v != null && Number.isFinite(Number(v));
     let score = display.isFoundational ? 0.15 : 0.35;
     if (display.category !== body.category) score += 0.7;
     if (["serif", "slab", "ornate-serif"].includes(displayGenre) && body.category === "sans-serif") score += 0.65;
@@ -827,7 +918,8 @@ export function createEngine({ corpus = [], brands = [], fonts = [], fontSpace =
   function readabilityChecks(f, { allowMonospaceBody = false } = {}) {
     const metrics = metricsFor(f);
     const x = Number(metrics.xHeightRatio);
-    const aperture = Number(metrics.apertureOpenness);
+    // Unmeasured aperture (null) must skip the gate, not read as 0 and fail every font.
+    const aperture = metrics.apertureOpenness == null ? NaN : Number(metrics.apertureOpenness);
     const counter = Number(metrics.counterSize);
     // HARD body gate: a text workhorse must be serif/sans (or, on a functional/
     // data-dense surface, monospace — numeral alignment) with a generous x-height.

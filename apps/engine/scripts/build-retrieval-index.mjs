@@ -12,7 +12,7 @@
 // `layout-genome.gallery-corpus-v1` — each host manifest row carries its own
 // `genome.recordIndex`, verified 1:1 with the genome stream's line index for all 509 rows),
 // vectorizes it with the SAME genome-vector logic the rumik retrieval run used (REUSE, not a new
-// vector space — viz/layout-embeddings/genome-vector.mjs), and writes one compact JSON artifact:
+// vector space — apps/engine/genome-vector.mjs), and writes one compact JSON artifact:
 // an array of {host, source, vector, centroidSimilarity, distinctiveness, layoutSummary}.
 // Swappable: when a better/bigger corpus lands, point this script at the new host manifest +
 // genome ndjson and rerun — nothing downstream (retrieval.mjs) hardcodes these 509 hosts.
@@ -45,7 +45,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import {
   fitGenomeCorpus, genomeVector, cosine, NUMERIC_FIELDS, ROLE_VOCAB, GROUP_WEIGHTS,
-} from "../../../viz/layout-embeddings/genome-vector.mjs";
+} from "../genome-vector.mjs";
 import { canonicalRole } from "../role-aliases.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -180,7 +180,9 @@ function main() {
       hostManifest: "data/tmp/gallery-corpus-v1/good-hosts.gallery-corpus-v1.ndjson",
       genomes: "data/tmp/gallery-corpus-v1/layout-genomes.gallery-corpus-v1.ndjson",
       genomeSchema: "layout-genome.gallery-corpus-v1",
-      vectorizer: "viz/layout-embeddings/genome-vector.mjs",
+      // Provenance only. The implementation moved to apps/engine/genome-vector.mjs (the old
+      // viz path is now a thin re-export of it); the vector space itself is unchanged.
+      vectorizer: "apps/engine/genome-vector.mjs",
     },
     counts: {
       corpusTotal: hostRows.length, indexed: entries.length, missing: missing.length,

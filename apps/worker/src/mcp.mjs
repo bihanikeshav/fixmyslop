@@ -9,6 +9,7 @@
 import { TOOLS, TOOL_BY_NAME } from "./tools.mjs";
 import { VERBS, renderPrompt, INSTRUCTIONS, STRICT_HANDOFF } from "../../engine/prompts.mjs";
 import { VERSION } from "./version.mjs";
+import { readBoundedJson, BodyTooLarge, headersFor, CACHE } from "./guard.mjs";
 
 const PROTOCOL_VERSION = "2024-11-05";
 const SERVER_INFO = { name: "fixmyslop", version: VERSION };
@@ -81,11 +82,22 @@ function handleMessage(msg) {
 }
 
 // Handle POST /mcp (Streamable HTTP). Supports a single message or a batch.
+//
+// The body goes through the SAME 256 KB cap as the REST surface (guard.mjs). This endpoint
+// is unauthenticated, and a JSON-RPC batch is an amplification primitive — one request can
+// carry arbitrarily many tools/call messages, each of which runs the engine. Capping the
+// body is what bounds that fan-out. An oversized body is answered with a real HTTP 413
+// rather than a JSON-RPC error, because the request never became a JSON-RPC message.
 export async function handleMcpPost(request, cors) {
   let payload;
   try {
-    payload = await request.json();
-  } catch {
+    payload = await readBoundedJson(request);
+    // An empty body used to throw out of request.json(); keep that as a Parse error.
+    if (payload === undefined) return json(rpcError(null, -32700, "Parse error"), 200, cors);
+  } catch (e) {
+    if (e instanceof BodyTooLarge) {
+      return json({ error: e.message }, 413, cors);
+    }
     return json(rpcError(null, -32700, "Parse error"), 200, cors);
   }
 
@@ -95,7 +107,7 @@ export async function handleMcpPost(request, cors) {
   }
   const response = handleMessage(payload);
   // Notifications get 202 with no body.
-  if (response === null) return new Response(null, { status: 202, headers: cors });
+  if (response === null) return new Response(null, { status: 202, headers: headersFor({ ...cors }, CACHE.none) });
   return json(response, 200, cors);
 }
 
@@ -108,13 +120,13 @@ export function handleSse(url, cors) {
   const body = `event: endpoint\ndata: ${endpoint}\n\n`;
   return new Response(body, {
     status: 200,
-    headers: { ...cors, "content-type": "text/event-stream; charset=utf-8", "cache-control": "no-cache" },
+    headers: headersFor({ ...cors, "content-type": "text/event-stream; charset=utf-8", "cache-control": "no-cache" }),
   });
 }
 
 function json(obj, status, cors) {
   return new Response(obj === null ? "" : JSON.stringify(obj), {
     status,
-    headers: { ...cors, "content-type": "application/json; charset=utf-8" },
+    headers: headersFor({ ...cors, "content-type": "application/json; charset=utf-8" }, CACHE.none),
   });
 }

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { resolveIntent, STYLE_INTENT_FIELDS, SURFACE_JOB_PRIORS } from "./intent.mjs";
+import { resolveIntent, STYLE_INTENT_FIELDS, SURFACE_JOB_PRIORS, functionalScore, FUNCTIONAL_THRESHOLD } from "./intent.mjs";
 
 test("schema descriptor exports the dial list", () => {
   assert.equal(STYLE_INTENT_FIELDS.dials.length, 12);
@@ -105,4 +105,25 @@ test("resolveIntent never throws on empty input and returns the expected shape",
   assert.ok("intent" in result);
   assert.ok("seed" in result);
   assert.ok(Array.isArray(result.warnings));
+});
+
+// functionalScore used to be hand-copied into engine.mjs (surfaceFontEnvelope), background.mjs
+// (functionalScoreOf) and spec.mjs (functionalScoreOf). All three now import it from here.
+// This guards the consolidation: the shared definition must still be the exact formula the
+// copies implemented, over the same clamp01(v, 0.5) fallback behaviour.
+test("functionalScore: single shared definition, unchanged formula", () => {
+  const literal = (iv) => {
+    const c = (n) => { const x = Number(n); return Number.isFinite(x) ? Math.min(1, Math.max(0, x)) : 0.5; };
+    return c(0.4 * c(iv.contentDensity) + 0.35 * c(iv.formality) + 0.25 * (1 - c(iv.energy)));
+  };
+  const cases = [
+    {}, { contentDensity: 0, formality: 0, energy: 0 }, { contentDensity: 1, formality: 1, energy: 1 },
+    { contentDensity: 0.8, formality: 0.7, energy: 0.35 }, { contentDensity: 0.2, formality: 0.1, energy: 0.9 },
+    { contentDensity: "0.63", formality: null, energy: undefined },
+    { contentDensity: -3, formality: 4, energy: NaN },
+    { contentDensity: 0.5123456789, formality: 0.3333333333, energy: 0.6666666667 },
+  ];
+  for (const iv of cases) assert.equal(functionalScore(iv), literal(iv), JSON.stringify(iv));
+  // every consumer must be reading the SAME number
+  assert.equal(FUNCTIONAL_THRESHOLD, 0.55);
 });

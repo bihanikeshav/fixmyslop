@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Cloudflare Worker wrapping the fixmyslop engine as a REST API and a remote MCP server.",
+  "license": "Apache-2.0",
   "scripts": {
     "dev": "wrangler dev --port 8788",
     "deploy": "wrangler deploy"

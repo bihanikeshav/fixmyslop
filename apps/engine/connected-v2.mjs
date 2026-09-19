@@ -1,4 +1,12 @@
-// Connected v2 enrichment layer.
+// Connected v2 enrichment layer — A SUB-LAYER OF ./connected.mjs, NOT its successor.
+//
+// NAMING, because the filename misleads: the "v2" here refers to the v2 research
+// CATALOGUES this module reads (font-space.v2.json, color-scene-space.v2.json,
+// material-texture-space.v2.json, …) — it is not a second generation of connected.mjs.
+// connected.mjs is the live orchestrator and the only thing the Worker calls; it imports
+// applyConnectedV2() from here to enrich a genome it has already produced. This module
+// has no orchestration of its own: on its own it emits no genome, no spec and no
+// directions. Do not "migrate" callers from connected.mjs to this file.
 //
 // This module consumes the empirical v2 catalogues without changing the frozen
 // intent/genome/layout/worker interfaces. It intentionally returns interpretable

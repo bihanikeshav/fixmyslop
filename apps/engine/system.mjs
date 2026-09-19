@@ -142,8 +142,14 @@ export function radiusScale({ base = 8 } = {}) {
 }
 export const nestedRadius = (outer, padding) => Math.max(0, outer - padding);
 export const outerRadius = (inner, padding) => inner + padding;
+// auditRadius(values, pairs) — `values` accepts EITHER an array of radii OR the object
+// shape radiusScale() returns ({none,sm,md,lg,xl,full}), because auditSystem hands it
+// designSystem().radius straight through. Entries are normalised with the same toPx()
+// the sibling audits use (so {px}/{value} token objects work too), and the `full`
+// pill sentinel (>= 9999) is ignored — it is not part of the radius *scale*.
 export function auditRadius(values, pairs = []) {
-  const v = [...new Set(values.map(Number))].filter((n) => n < 9999);
+  const raw = Array.isArray(values) ? values : Object.values(values || {});
+  const v = [...new Set(raw.map(toPx))].filter((n) => Number.isFinite(n) && n < 9999);
   const issues = [];
   if (v.length > 5) issues.push(`${v.length} distinct radii — sprawl (aim ≤5 + full)`);
   for (const p of pairs) {

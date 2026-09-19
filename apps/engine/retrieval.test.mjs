@@ -11,7 +11,7 @@ import { LAYOUT_FAMILIES, suggestLayout } from "./layout-families.mjs";
 import { hasIndex, indexStats, intentToQuery, retrieveLayouts } from "./retrieval.mjs";
 import { checkBackgroundViolations } from "./background.mjs";
 import { checkMotionViolations } from "./motion.mjs";
-import { cosine } from "../../viz/layout-embeddings/genome-vector.mjs";
+import { cosine } from "./genome-vector.mjs";
 import index from "./data/retrieval-index.v1.json" with { type: "json" };
 import corpus from "./data/corpus.json" with { type: "json" };
 import brands from "./data/brands.json" with { type: "json" };

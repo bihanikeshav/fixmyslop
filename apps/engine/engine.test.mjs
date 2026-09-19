@@ -130,3 +130,111 @@ test("audit_system on designSystem output scores 100 (not silent NaN-CLEAN)", ()
   assert.doesNotMatch(JSON.stringify(r.domains), /NaN/);
   assert.equal(r.coherence, 100);
 });
+
+// Regression: auditSystem used to throw "values.map is not a function" here, because
+// designSystem().radius is the radiusScale OBJECT while auditRadius only handled arrays.
+// The test above hand-converts the shape and so hid the crash; this one does not.
+test("audit_system accepts designSystem() output verbatim (radius object, no hand-conversion)", () => {
+  const ds = eng.designSystem({ seed: 5 });
+  const r = eng.auditSystem({ type: ds.type, spacing: ds.spacing, radius: ds.radius });
+  assert.equal(r.domains.radius.verdict, "CLEAN");
+  assert.doesNotMatch(JSON.stringify(r.domains), /NaN/);
+  assert.equal(r.coherence, 100);
+  // array form and object form must agree
+  const asArray = eng.auditSystem({ radius: Object.values(ds.radius) });
+  assert.deepEqual(asArray.domains.radius, r.domains.radius);
+  // the `full` pill sentinel is ignored, and {px} token objects normalise
+  assert.equal(eng.auditSystem({ radius: [{ px: 4 }, { px: 8 }, 9999] }).domains.radius.verdict, "CLEAN");
+});
+
+// ---------------------------------------------------------------------------
+// Colour-gate perf hardening (exactness guard).
+//
+// nearestSafe() used to cost ~3,900 lattice candidates x THREE full 1,971-point KDE
+// passes each, once per flagged role — checkPalette on five banned hexes burned ~500ms
+// of CPU on a public, unauthenticated Worker endpoint. It now runs ONE KDE pass per
+// candidate, walks flat Float64Arrays, skips terms that underflow to an exact +0.0, and
+// memoises through a bounded LRU.
+//
+// Every expectation below is a snapshot captured from the PRE-optimisation code. If any
+// of it moves, the optimisation stopped being exact and the change must be reverted.
+// ---------------------------------------------------------------------------
+const NEAREST_SAFE_SNAPSHOT = {
+  "#6366f1": { verdict: "HARD-BANNED", slop: 100, oklch: { L: 0.585, C: 0.204, H: 277.1 }, alternatives: [
+    { hex: "#6f67e4", slop: 61, deltaEok: 0.026, reason: "same hue family, shifted out of the hot zone (ΔEok 0.03)" },
+    { hex: "#644fec", slop: 72, deltaEok: 0.048, reason: "same hue family, shifted out of the hot zone (ΔEok 0.05)" },
+    { hex: "#8454f2", slop: 54, deltaEok: 0.059, reason: "same hue family, shifted out of the hot zone (ΔEok 0.06)" }] },
+  "#22d3ee": { verdict: "HARD-BANNED", slop: 50, oklch: { L: 0.797, C: 0.134, H: 211.5 }, alternatives: [
+    { hex: "#56cfec", slop: 33, deltaEok: 0.023, reason: "same hue family, shifted out of the hot zone (ΔEok 0.02)" },
+    { hex: "#66cac5", slop: 13, deltaEok: 0.059, reason: "hue shifted -20° to escape the slop band (ΔEok 0.06)" },
+    { hex: "#79dce3", slop: 24, deltaEok: 0.06, reason: "same hue family, shifted out of the hot zone (ΔEok 0.06)" }] },
+  "#a78bfa": { verdict: "HARD-BANNED", slop: 77, oklch: { L: 0.709, C: 0.159, H: 293.5 }, alternatives: [
+    { hex: "#af88f6", slop: 71, deltaEok: 0.014, reason: "same hue family, shifted out of the hot zone (ΔEok 0.01)" },
+    { hex: "#988ee0", slop: 34, deltaEok: 0.046, reason: "same hue family, shifted out of the hot zone (ΔEok 0.05)" },
+    { hex: "#937efa", slop: 24, deltaEok: 0.047, reason: "same hue family, shifted out of the hot zone (ΔEok 0.05)" }] },
+  "#c2410c": { verdict: "OVERUSED", slop: 100, oklch: { L: 0.553, C: 0.174, H: 38.4 }, alternatives: [
+    { hex: "#c94817", slop: 85, deltaEok: 0.02, reason: "same hue family, shifted out of the hot zone (ΔEok 0.02)" },
+    { hex: "#bd352c", slop: 90, deltaEok: 0.036, reason: "same hue family, shifted out of the hot zone (ΔEok 0.04)" },
+    { hex: "#aa4e22", slop: 46, deltaEok: 0.047, reason: "same hue family, shifted out of the hot zone (ΔEok 0.05)" }] },
+  "#3b82f6": { verdict: "HARD-BANNED", slop: 100, oklch: { L: 0.623, C: 0.188, H: 259.8 }, alternatives: [
+    { hex: "#7d80e4", slop: 17, deltaEok: 0.073, reason: "hue shifted +20° to escape the slop band (ΔEok 0.07)" },
+    { hex: "#7969eb", slop: 54, deltaEok: 0.084, reason: "hue shifted +25° to escape the slop band (ΔEok 0.08)" },
+    { hex: "#6488c2", slop: 14, deltaEok: 0.09, reason: "same hue family, shifted out of the hot zone (ΔEok 0.09)" }] },
+  "#eab308": { verdict: "OVERUSED", slop: 100, oklch: { L: 0.795, C: 0.162, H: 86 }, alternatives: [
+    { hex: "#e3b707", slop: 59, deltaEok: 0.014, reason: "same hue family, shifted out of the hot zone (ΔEok 0.01)" },
+    { hex: "#ddad53", slop: 49, deltaEok: 0.046, reason: "same hue family, shifted out of the hot zone (ΔEok 0.05)" },
+    { hex: "#fcb24f", slop: 68, deltaEok: 0.049, reason: "same hue family, shifted out of the hot zone (ΔEok 0.05)" }] },
+  // a safe/neutral input: no alternatives are computed at all
+  "#ffffff": { verdict: "NEUTRAL-ok", slop: 100, oklch: { L: 1, C: 0, H: 89.9 }, alternatives: [] },
+};
+
+test("checkColor/nearestSafe: byte-identical to the pre-optimisation snapshot", () => {
+  for (const [hex, want] of Object.entries(NEAREST_SAFE_SNAPSHOT)) {
+    const got = eng.checkColor(hex);
+    assert.equal(got.verdict, want.verdict, hex);
+    assert.equal(got.slop, want.slop, hex);
+    assert.deepEqual(got.oklch, want.oklch, hex);
+    assert.deepEqual(got.alternatives, want.alternatives, hex);
+  }
+});
+
+test("checkPalette: byte-identical to the pre-optimisation snapshot (five banned roles)", () => {
+  const p = eng.checkPalette("#6366f1", "#7c3aed", "#8b5cf6", "#818cf8", "#a78bfa");
+  assert.equal(p.pass, false);
+  assert.equal(p.contrast, 1.28);
+  assert.equal(p.contrastAccent, 1.05);
+  assert.deepEqual(p.duplicates, []);
+  assert.deepEqual(p.issues, ["surface #a78bfa is HARD-BANNED (literal slop hex #a78bfa)"]);
+  assert.deepEqual(Object.keys(p.perRole), ["ground", "ink", "accent", "accent2"]);
+  assert.deepEqual(p.perRole.ground.fix.map((f) => f.hex), ["#6f67e4", "#644fec", "#8454f2"]);
+  assert.deepEqual(p.perRole.ink.fix.map((f) => f.hex), ["#7a43e3", "#7b08fa", "#911fea"]);
+  assert.deepEqual(p.perRole.accent.fix.map((f) => f.hex), ["#9558f1", "#7564fe", "#7d5ad4"]);
+  assert.deepEqual(p.perRole.accent2.fix.map((f) => f.hex), ["#8a89f6", "#798ddb", "#929dee"]);
+  assert.deepEqual([p.perRole.ground.density, p.perRole.ink.density, p.perRole.accent.density, p.perRole.accent2.density],
+    [48.89, 40.68, 31.3, 18.87]);
+});
+
+test("colour-gate memoisation is transparent: repeat calls agree and cannot be poisoned", () => {
+  const a = eng.checkPalette("#6366f1", "#7c3aed", "#8b5cf6", "#818cf8", "#a78bfa");
+  const b = eng.checkPalette("#6366f1", "#7c3aed", "#8b5cf6", "#818cf8", "#a78bfa");
+  assert.deepEqual(a, b);
+  assert.notEqual(a, b);                       // distinct objects, not the cached instance
+  a.perRole.ground.fix[0].hex = "#deadbe";     // a caller mutating its result…
+  a.issues.push("tampered");
+  const c = eng.checkPalette("#6366f1", "#7c3aed", "#8b5cf6", "#818cf8", "#a78bfa");
+  assert.deepEqual(c, b);                      // …must not affect the next caller
+  // nearestSafe options participate in the key, so a different count is not a false hit
+  assert.equal(eng.nearestSafe("#6366f1").length, 3);
+  assert.equal(eng.nearestSafe("#6366f1", { count: 5 }).length, 5);
+  assert.equal(eng.nearestSafe("#6366f1").length, 3);
+  // checkColor of a safe colour still short-circuits to no alternatives
+  assert.deepEqual(eng.checkColor("#ffffff"), eng.checkColor("#ffffff"));
+});
+
+test("checkPalette on five banned hexes is not a CPU sink", () => {
+  const t0 = process.hrtime.bigint();
+  for (let i = 0; i < 50; i++) eng.checkPalette("#6366f1", "#7c3aed", "#8b5cf6", "#818cf8", "#a78bfa");
+  const msPerCall = Number(process.hrtime.bigint() - t0) / 1e6 / 50;
+  // Pre-fix this was ~250-500ms PER CALL with no memoisation, on a public endpoint.
+  assert.ok(msPerCall < 5, `checkPalette averaged ${msPerCall.toFixed(2)}ms/call`);
+});

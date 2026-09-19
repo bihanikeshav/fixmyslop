@@ -1,4 +1,13 @@
-// Connected one-shot adapter.
+// Connected one-shot adapter — THE LIVE ORCHESTRATOR.
+//
+// NAMING, because the filenames mislead: this file and ./connected-v2.mjs are NOT a v1
+// and its replacement. This file is the entry point everything actually calls
+// (apps/worker/src/tools.mjs imports connectedStyleGenome / connectedExploreDirections /
+// connectedBuildSpec from HERE), and it imports ./connected-v2.mjs as a SUB-LAYER —
+// "v2" there names the v2 research catalogues that layer consumes (font-space.v2,
+// color-scene-space.v2, material-texture-space.v2, …), not a second generation of this
+// orchestrator. Neither file supersedes the other; deleting or "upgrading to" v2 would
+// remove the orchestration, and connected-v2.mjs on its own produces no genome or spec.
 //
 // The frozen engine remains the source of truth for math, gates, retrieval, and
 // genome shape. This seam adds the missing semantic bridge: a short subject

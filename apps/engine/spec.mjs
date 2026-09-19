@@ -15,6 +15,7 @@
 
 import { typeScale, spacingScale } from "./system.mjs";
 import { purposeForRole, centrepieceRoleOf } from "./section-purpose.mjs";
+import { functionalScore } from "./intent.mjs";
 
 const pct = (n) => `${Math.round((Number(n) || 0) * 100)}%`;
 const num = (n, d = 2) => (Number.isFinite(Number(n)) ? Number(n).toFixed(d).replace(/\.?0+$/, "") : String(n));
@@ -25,18 +26,16 @@ const clamp01 = (n, fallback = 0.5) => {
   return Number.isFinite(x) ? Math.min(1, Math.max(0, x)) : fallback;
 };
 
-// functionalScore — SAME formula as engine.mjs's surfaceFontEnvelope / intent.mjs's deriveBaseHue /
-// background.mjs's functionalScoreOf (0.4·contentDensity + 0.35·formality + 0.25·(1−energy)),
-// duplicated here (matches the existing duplication pattern between those three modules) so this
-// serializer can make the brief SURFACE-AWARE: expressive/marketing surfaces (low score) get the
-// "go bold, build one centrepiece" framing; functional/dense surfaces (high score) get the "stay
-// dense and legible, boldness is data hierarchy" framing.
-function functionalScoreOf(intent = {}) {
-  const cd = clamp01(intent.contentDensity);
-  const formality = clamp01(intent.formality);
-  const energy = clamp01(intent.energy);
-  return clamp01(0.4 * cd + 0.35 * formality + 0.25 * (1 - energy));
-}
+// functionalScore (0.4·contentDensity + 0.35·formality + 0.25·(1−energy)) — IMPORTED from
+// intent.mjs, the single definition. It used to be hand-copied into four modules (intent.mjs,
+// engine.mjs's surfaceFontEnvelope, background.mjs and here). intent.mjs is a leaf module with
+// no imports at all, so importing it introduces no cycle, and all four copies computed the same
+// expression over the same clamp01(v, 0.5) — the numbers are unchanged.
+//
+// Used here so this serializer can make the brief SURFACE-AWARE: expressive/marketing surfaces
+// (low score) get the "go bold, build one centrepiece" framing; functional/dense surfaces (high
+// score) get the "stay dense and legible, boldness is data hierarchy" framing.
+const functionalScoreOf = (intent = {}) => functionalScore(intent);
 
 // ── type scale derivation (spec §2 wiring: genome carries headingScaleRatio, a heading:body
 // ratio, but no modular *step* ratio for the rest of the scale — that's a build-spec concern this

@@ -19,7 +19,7 @@
 // changes — it only ever reads `entries[].vector` / `.layoutSummary` /  `.centroidSimilarity` and
 // `vectorSpace.numericStats` off whatever JSON is bundled here.
 //
-// VECTOR SPACE: reuses viz/layout-embeddings/genome-vector.mjs verbatim — the SAME production
+// VECTOR SPACE: ./genome-vector.mjs — the SAME production
 // vectorizer (z-scored macro/hierarchy numerics + one-hot alignment + role histogram + role-bigram
 // histogram, group-weighted, unit-normed per group) the rumik hybrid-retrieval run used. That file
 // is pure JS with no fs/node dependency, so importing it here bundles cleanly wherever this module
@@ -37,7 +37,7 @@
 // neighbor. `distance` in the returned records stays the PURE 1-cosine metric (never adjusted) —
 // the penalty only affects sort order, via the internal `rankScore`.
 import index from "./data/retrieval-index.v1.json" with { type: "json" };
-import { genomeVector, cosine } from "../../viz/layout-embeddings/genome-vector.mjs";
+import { genomeVector, cosine } from "./genome-vector.mjs";
 
 const EMPTY_INDEX = { entries: [], vectorSpace: null, schemaVersion: null, counts: null };
 
